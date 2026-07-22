@@ -169,6 +169,11 @@
   .rodape{text-align:center;margin-top:22px;font-family:'Barlow Condensed',sans-serif;
     font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
   .rodape b{color:var(--dourado)}
+  .versao{
+    font-family:'Barlow Condensed',sans-serif;font-size:.72rem;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    text-align:center;margin-top:6px;
+  }
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);
     color:#fff;padding:11px 18px;border-radius:8px;font-size:.86rem;z-index:99;
     box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw}
@@ -240,6 +245,7 @@
     <button class="btn" id="btnEntrar">Entrar</button>
     <div class="aviso" id="avisoLogin" hidden></div>
     <p class="dica">Esqueceu a senha? Peça ao administrador para redefinir.</p>
+    <p class="versao" id="versaoLogin"></p>
   </div>
 </div>
 
@@ -463,12 +469,21 @@
     </div>
 
     <div class="rodape">O que é bom a gente <b>brinda</b></div>
+    <div class="versao" id="versaoRodape"></div>
   </main>
 </div>
 
 <script>
 (function(){
 "use strict";
+
+/* ==================================================================
+   VERSÃO DO APP
+   Ao publicar uma atualização, altere as duas linhas abaixo
+   e registre a mudança no arquivo CHANGELOG.md.
+   ================================================================== */
+var VERSAO = "1.0.0";
+var DATA_VERSAO = "22/07/2026";
 
 /* ==================================================================
    Estado global
@@ -482,8 +497,6 @@ var donoAtual = null;   // login de quem está sendo gerenciado na aba tarefas
 var editando = null;    // id da tarefa em edição
 var segAtual = segundaDe(new Date());
 var segHoje  = segundaDe(new Date());
-var VERSAO = "1.0.0";
-var DATA_VERSAO = "22/07/2026";
 
 var DIAS = ["seg","ter","qua","qui","sex"];
 var NOMES = {seg:"Seg",ter:"Ter",qua:"Qua",qui:"Qui",sex:"Sex",sab:"Sáb"};
@@ -1190,6 +1203,10 @@ $("btnAtualizarBase").addEventListener("click", function(){
 });
 
 /* ---------- partida ---------- */
+["versaoRodape","versaoLogin"].forEach(function(id){
+  var el = $(id);
+  if (el) el.textContent = "Versão " + VERSAO + " · " + DATA_VERSAO;
+});
 $("tfFreq").dispatchEvent(new Event("change"));
 iniciar();
 })();
