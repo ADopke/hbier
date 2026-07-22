@@ -1,0 +1,8 @@
+{
+  "name": "rotina-hbier",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Checklist operacional da fábrica HBier com login e sincronização",
+  "engines": { "node": ">=20" }
+}
