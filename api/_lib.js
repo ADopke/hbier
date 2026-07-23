@@ -54,6 +54,23 @@ export async function gravar(chave, valor) {
   return redis(["SET", `${PREFIXO}:${chave}`, JSON.stringify(valor)]);
 }
 
+/** Lê várias chaves de uma vez — usado pelos relatórios. */
+export async function lerVarios(chaves) {
+  if (!chaves.length) return [];
+  const valores = await redis([
+    "MGET",
+    ...chaves.map((c) => `${PREFIXO}:${c}`),
+  ]);
+  return (valores || []).map((v) => {
+    if (v === null || v === undefined) return null;
+    try {
+      return typeof v === "string" ? JSON.parse(v) : v;
+    } catch {
+      return null;
+    }
+  });
+}
+
 export async function apagar(chave) {
   return redis(["DEL", `${PREFIXO}:${chave}`]);
 }

@@ -57,6 +57,8 @@ export default protegido(async function handler(req, res) {
         dia: dados.dia || "",
         data: dados.data || "",
         lembrete: (dados.lembrete || "").trim(),
+        vinculo: (dados.vinculo || "").trim(),
+        vinculoCampo: (dados.vinculoCampo || "").trim(),
         origem:
           sessao.papel === "admin" && destino !== sessao.login
             ? "admin"
@@ -91,6 +93,8 @@ export default protegido(async function handler(req, res) {
       dia: dados.dia || "",
       data: dados.data || "",
       lembrete: (dados.lembrete || "").trim(),
+      vinculo: (dados.vinculo || "").trim(),
+      vinculoCampo: (dados.vinculoCampo || "").trim(),
     };
     await gravar(`tasks:${alvo}`, tarefas);
     return res.json({ ok: true });
@@ -117,6 +121,63 @@ export default protegido(async function handler(req, res) {
       tarefas.filter((t) => t.id !== dados.id)
     );
     return res.json({ ok: true });
+  }
+
+  /* ---------- importar em lote (da planilha) ---------- */
+  if (dados.acao === "importar") {
+    const alvo = (dados.usuario || sessao.login).toLowerCase();
+    if (alvo !== sessao.login && sessao.papel !== "admin") {
+      return erro(res, 403, "Sem permissão.");
+    }
+    if (!Array.isArray(dados.tarefas) || !dados.tarefas.length) {
+      return erro(res, 400, "Nenhuma tarefa para importar.");
+    }
+    if (!(await buscarUsuario(alvo))) {
+      return erro(res, 404, "Usuário não encontrado.");
+    }
+
+    const tarefas = (await ler(`tasks:${alvo}`)) || [];
+    // evita cadastrar duas vezes a mesma tarefa se a importação for repetida
+    const jaExistem = new Set(
+      tarefas.map((t) => (t.nome || "").trim().toLowerCase())
+    );
+
+    let criadas = 0;
+    const ignoradas = [];
+
+    for (const nova of dados.tarefas.slice(0, 100)) {
+      const problema = validarTarefa(nova);
+      if (problema) {
+        ignoradas.push(`${nova.nome || "(sem nome)"}: ${problema}`);
+        continue;
+      }
+      const chave = nova.nome.trim().toLowerCase();
+      if (jaExistem.has(chave)) {
+        ignoradas.push(`${nova.nome}: já cadastrada`);
+        continue;
+      }
+      tarefas.push({
+        id: novoId(),
+        nome: nova.nome.trim(),
+        desc: (nova.desc || "").trim(),
+        freq: nova.freq,
+        dia: nova.dia || "",
+        data: nova.data || "",
+        lembrete: (nova.lembrete || "").trim(),
+        vinculo: (nova.vinculo || "").trim(),
+        vinculoCampo: (nova.vinculoCampo || "").trim(),
+        origem:
+          sessao.papel === "admin" && alvo !== sessao.login
+            ? "admin"
+            : "proprio",
+        criadaPor: sessao.login,
+      });
+      jaExistem.add(chave);
+      criadas++;
+    }
+
+    await gravar(`tasks:${alvo}`, tarefas);
+    return res.json({ ok: true, criadas, ignoradas });
   }
 
   return erro(res, 400, "Ação desconhecida.");
