@@ -174,6 +174,58 @@
     letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
     text-align:center;margin-top:6px;
   }
+
+  /* ---- acompanhamento da equipe ---- */
+  .pessoa-linha{padding:13px 14px;border-top:1px solid var(--linha)}
+  .pessoa-linha:first-child{border-top:none}
+  .pl-topo{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .pl-nome{font-weight:600;font-size:.93rem}
+  .pl-pct{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.15rem}
+  .pl-barra{height:7px;background:#EDEBE1;border-radius:99px;overflow:hidden;margin-top:7px}
+  .pl-barra i{display:block;height:100%;border-radius:99px;transition:width .3s}
+  .pl-pend{margin-top:7px;font-size:.78rem;color:var(--muted);line-height:1.5}
+  .pl-pend b{color:var(--vermelho);font-weight:600}
+  .v-alto{color:var(--verde)} .b-alto{background:var(--verde)}
+  .v-medio{color:var(--dourado)} .b-medio{background:var(--dourado)}
+  .v-baixo{color:var(--vermelho)} .b-baixo{background:var(--vermelho)}
+
+  /* ---- relatórios ---- */
+  .rel-cel{
+    text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.92rem;padding:9px 4px;min-width:56px;
+  }
+  .rel-nome{padding:9px 12px;font-size:.86rem;font-weight:600;min-width:130px;
+    position:sticky;left:0;background:#fff}
+  .rel-media{background:var(--verde-claro)}
+  .legenda{padding:10px 14px;font-size:.76rem;color:var(--muted);
+    border-top:1px solid var(--linha);display:flex;gap:14px;flex-wrap:wrap}
+  .legenda span{display:flex;align-items:center;gap:5px}
+  .bolinha{width:9px;height:9px;border-radius:99px;display:inline-block}
+
+  /* ---- vínculo com a base ---- */
+  .vinculo-box{
+    margin-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    background:var(--verde-claro);border:1px solid var(--verde);
+    border-radius:8px;padding:8px 10px;
+  }
+  .vinculo-box label{margin:0;font-size:.76rem;color:var(--verde);font-weight:600;
+    white-space:nowrap}
+  .vinculo-box select{flex:1;min-width:150px;padding:6px 8px;font-size:.85rem;
+    border-color:var(--verde)}
+  .vinculo-aviso{margin-top:7px;font-size:.77rem;font-weight:600;color:var(--vermelho)}
+
+  /* ---- importação ---- */
+  .imp-lista{max-height:280px;overflow-y:auto;border-top:1px solid var(--linha)}
+  .imp-item{display:flex;align-items:flex-start;gap:10px;padding:9px 14px;
+    border-bottom:1px solid var(--linha);font-size:.86rem}
+  .imp-item input{width:17px;height:17px;accent-color:var(--verde);margin-top:2px;
+    cursor:pointer;flex-shrink:0}
+  .imp-item small{display:block;color:var(--muted);font-size:.75rem}
+  .resumo-txt{
+    width:100%;min-height:150px;padding:10px;border:1.5px solid var(--linha);
+    border-radius:8px;font-family:'Barlow',sans-serif;font-size:.84rem;
+    line-height:1.5;resize:vertical;
+  }
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);
     color:#fff;padding:11px 18px;border-radius:8px;font-size:.86rem;z-index:99;
     box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw}
@@ -278,6 +330,7 @@
         <button data-aba="checklist" class="ativa">Checklist</button>
         <button data-aba="tarefas">Minhas tarefas</button>
         <button data-aba="base">Base</button>
+        <button data-aba="relatorios">Relatórios</button>
         <button data-aba="equipe" id="abaEquipe" hidden>Equipe</button>
       </nav>
     </div>
@@ -368,6 +421,16 @@
             <label for="tfLembrete">Lembrete ao executar (opcional)</label>
             <input type="text" id="tfLembrete" placeholder="Ex.: atrelar o tanque na aba Análise de Equipamentos">
           </div>
+          <div id="campoVinculo">
+            <label for="tfVinculo">Vincular à base (opcional)</label>
+            <select id="tfVinculo">
+              <option value="">Sem vínculo</option>
+            </select>
+          </div>
+          <div id="campoVinculoCampo" hidden>
+            <label for="tfVinculoCampo">Coluna a exibir</label>
+            <select id="tfVinculoCampo"></select>
+          </div>
           <div class="largo" id="campoPara" hidden>
             <label for="tfPara">Atribuir para</label>
             <select id="tfPara"></select>
@@ -387,6 +450,31 @@
         <ul class="lista" id="listaGerenciar"></ul>
       </section>
 
+      <section id="secImportar">
+        <div class="sec-head">
+          <span class="sec-title">📥 Importar da planilha</span>
+          <span class="sec-sub">aba “Tarefas Padrão”</span>
+        </div>
+        <div style="padding:14px">
+          <p style="font-size:.85rem;color:var(--muted);line-height:1.55">
+            Traz de uma vez as tarefas cadastradas na aba <b>Tarefas Padrão</b> da
+            base de referência. Tarefas com nome já existente são ignoradas — dá
+            para importar de novo sem duplicar.
+          </p>
+          <div class="acoes-form" style="margin-top:12px">
+            <button class="btn mini secundario" id="btnBuscarImport">Buscar na planilha</button>
+          </div>
+        </div>
+        <div id="impResultado" hidden>
+          <div class="imp-lista" id="impLista"></div>
+          <div style="padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button class="btn mini" id="btnConfirmarImport">Importar selecionadas</button>
+            <button class="btn mini secundario" id="btnCancelarImport">Cancelar</button>
+            <span class="sec-sub" id="impContagem"></span>
+          </div>
+        </div>
+      </section>
+
       <section>
         <div class="sec-head"><span class="sec-title">🔑 Minha senha</span></div>
         <div class="form-grid">
@@ -403,6 +491,26 @@
 
     <!-- ---------- ABA EQUIPE (admin) ---------- -->
     <div id="painelEquipe" hidden>
+      <section>
+        <div class="sec-head">
+          <span class="sec-title">📊 Acompanhamento da semana</span>
+          <span class="sec-sub" id="acompSemana"></span>
+        </div>
+        <div id="acompLista"><div class="vazio">Carregando…</div></div>
+        <div style="padding:12px 14px;border-top:1px solid var(--linha);
+                    display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn mini secundario" id="btnAtualizarAcomp">Atualizar</button>
+          <button class="btn mini secundario" id="btnResumo">Gerar resumo p/ WhatsApp</button>
+        </div>
+        <div id="caixaResumo" hidden style="padding:0 14px 14px">
+          <textarea class="resumo-txt" id="txtResumo" readonly></textarea>
+          <div class="acoes-form" style="margin-top:8px">
+            <button class="btn mini" id="btnCopiarResumo">Copiar texto</button>
+            <button class="btn mini secundario" id="btnFecharResumo">Fechar</button>
+          </div>
+        </div>
+      </section>
+
       <section>
         <div class="sec-head"><span class="sec-title">👥 Pessoas com acesso</span>
           <span class="sec-sub">clique em “tarefas” para gerenciar</span></div>
@@ -427,6 +535,45 @@
             <button class="btn mini" id="btnCriarUsuario">Criar acesso</button>
           </div>
         </div>
+      </section>
+    </div>
+
+    <!-- ---------- ABA RELATÓRIOS ---------- -->
+    <div id="painelRelatorios" hidden>
+      <section>
+        <div class="sec-head">
+          <span class="sec-title">📈 Cumprimento por semana</span>
+          <span class="sec-sub" id="relPeriodo"></span>
+        </div>
+        <div class="form-grid" style="padding-bottom:4px">
+          <div>
+            <label for="relSemanas">Período</label>
+            <select id="relSemanas">
+              <option value="4">Últimas 4 semanas</option>
+              <option value="8" selected>Últimas 8 semanas</option>
+              <option value="12">Últimas 12 semanas</option>
+              <option value="26">Últimas 26 semanas</option>
+            </select>
+          </div>
+          <div class="acoes-form">
+            <button class="btn mini secundario" id="btnAtualizarRel">Atualizar</button>
+          </div>
+        </div>
+        <div class="grade-wrap"><table id="tabelaRel"></table></div>
+        <div class="legenda">
+          <span><i class="bolinha b-alto"></i> 80% ou mais</span>
+          <span><i class="bolinha b-medio"></i> entre 50% e 79%</span>
+          <span><i class="bolinha b-baixo"></i> abaixo de 50%</span>
+          <span>— sem tarefas na semana</span>
+        </div>
+      </section>
+
+      <section id="secTarefasFalhas">
+        <div class="sec-head">
+          <span class="sec-title">🔁 Tarefas que mais ficam em aberto</span>
+          <span class="sec-sub">no período selecionado</span>
+        </div>
+        <ul class="lista" id="listaFalhas"></ul>
       </section>
     </div>
 
@@ -482,8 +629,8 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.0.0";
-var DATA_VERSAO = "22/07/2026";
+var VERSAO = "1.1.0";
+var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
    Estado global
@@ -502,7 +649,7 @@ var DIAS = ["seg","ter","qua","qui","sex"];
 var NOMES = {seg:"Seg",ter:"Ter",qua:"Qua",qui:"Qui",sex:"Sex",sab:"Sáb"};
 var MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 
-function vazio(){ return {d:{},w:{},c:{},l:{}}; }
+function vazio(){ return {d:{},w:{},c:{},l:{},v:{}}; }
 
 /* ==================================================================
    Utilidades
@@ -630,7 +777,16 @@ async function abrirApp(){
   $("abaEquipe").hidden = sessao.papel !== "admin";
   $("campoPara").hidden = sessao.papel !== "admin";
   donoAtual = sessao.login;
+  relCarregado = false;
+  acompCarregado = false;
   await carregarSemana();
+  // se alguma tarefa depende da base, carrega em segundo plano para os
+  // seletores já aparecerem preenchidos no checklist
+  if (tarefas.some(function(t){ return t.vinculo; }) && !baseCarregada){
+    carregarBase().then(function(){
+      renderSemanais(); renderQuinzenais(); renderDemanda();
+    });
+  }
   if (sessao.papel === "admin") await carregarEquipe();
 }
 
@@ -740,9 +896,44 @@ function renderSemanais(){
         html += "<div class='alerta'>⚠ Tarefa marcada, mas o lembrete ainda não foi confirmado!</div>";
       }
     }
+    html += caixaVinculo(t, feito);
     html += "</div></li>";
   });
   $("listaSemanais").innerHTML = html;
+}
+
+/* Monta o seletor ligado à base de referência (ex.: qual tanque foi usado).
+   Só aparece se a tarefa tiver vínculo configurado. */
+function caixaVinculo(t, marcada){
+  if (!t.vinculo) return "";
+  var tab = baseTabelas[t.vinculo];
+  var escolhido = (estado.v || {})[t.id] || "";
+
+  if (!tab || !tab.linhas.length){
+    return "<div class='vinculo-box' style='background:#FBFAF5;border-color:var(--linha)'>"+
+      "<label style='color:var(--muted)'>"+esc(t.vinculo)+":</label>"+
+      "<span class='item-desc'>base não carregada — confira a aba Base</span></div>";
+  }
+
+  var col = tab.colunas.indexOf(t.vinculoCampo);
+  if (col < 0) col = 0;
+  var rotulo = tab.colunas.indexOf("Nome") > -1 ? tab.colunas.indexOf("Nome") : -1;
+
+  var opcoes = "<option value=''>— selecione —</option>";
+  tab.linhas.forEach(function(l){
+    var valor = l[col] || "";
+    if (!valor) return;
+    var extra = (rotulo > -1 && rotulo !== col && l[rotulo]) ? " · " + l[rotulo] : "";
+    opcoes += "<option value='"+esc(valor)+"'"+
+      (valor === escolhido ? " selected" : "")+">"+esc(valor + extra)+"</option>";
+  });
+
+  var aviso = (marcada && !escolhido)
+    ? "<div class='vinculo-aviso'>⚠ Tarefa marcada sem informar "+esc(t.vinculo).toLowerCase()+"!</div>"
+    : "";
+
+  return "<div class='vinculo-box'><label for='vc"+t.id+"'>"+esc(t.vinculo)+":</label>"+
+    "<select id='vc"+t.id+"' data-vinculo='"+t.id+"'>"+opcoes+"</select></div>"+aviso;
 }
 
 function venceu(id){
@@ -771,7 +962,8 @@ function renderQuinzenais(){
     html += "<li class='item'><button class='check "+cls+"' data-q='"+t.id+"'>"+simbolo+"</button>"+
       "<div class='item-info'><div class='item-nome'>"+esc(t.nome)+
       "<span class='tag ouro'>Quinzenal</span></div>"+
-      (t.desc ? "<div class='item-desc'>"+esc(t.desc)+"</div>" : "")+nota+"</div></li>";
+      (t.desc ? "<div class='item-desc'>"+esc(t.desc)+"</div>" : "")+nota+
+      caixaVinculo(t, feitaAgora)+"</div></li>";
   });
   $("listaQuinzenais").innerHTML = html;
 }
@@ -783,7 +975,8 @@ function renderDemanda(){
   lista.forEach(function(t){
     var n = estado.c[t.id] || 0;
     html += "<li class='item'><div class='item-info'><div class='item-nome'>"+esc(t.nome)+"</div>"+
-      (t.desc ? "<div class='item-desc'>"+esc(t.desc)+"</div>" : "")+"</div>"+
+      (t.desc ? "<div class='item-desc'>"+esc(t.desc)+"</div>" : "")+
+      caixaVinculo(t, n>0)+"</div>"+
       "<div class='contador'>"+
       "<button data-c='"+t.id+"' data-v='-1'>−</button>"+
       "<span class='num"+(n>0?" tem":"")+"'>"+n+"</span>"+
@@ -821,26 +1014,59 @@ function renderLembretes(){
   $("listaLembretes").innerHTML = html;
 }
 
-function renderProgresso(){
-  var total = 0, feitas = 0;
-  porFreq("diaria").forEach(function(t){
-    DIAS.forEach(function(d){
+/* Calcula o progresso de UMA semana para QUALQUER pessoa.
+   Usada tanto pela barra do topo quanto pelos relatórios — assim as duas
+   telas nunca mostram números diferentes. */
+function calcular(listaTarefas, est, cic, segunda){
+  var total = 0, feitas = 0, pendentes = [];
+  est = est || {}; cic = cic || {};
+  var d = est.d || {}, w = est.w || {}, chave = chaveSemana(segunda);
+
+  listaTarefas.forEach(function(t){
+    if (t.freq === "diaria"){
+      DIAS.forEach(function(dia){
+        total++;
+        if (d[t.id] && d[t.id][dia]) feitas++;
+      });
+      var faltam = DIAS.filter(function(dia){
+        return !(d[t.id] && d[t.id][dia]);
+      }).length;
+      if (faltam) pendentes.push(t.nome + " (" + faltam + " dia" +
+        (faltam > 1 ? "s" : "") + ")");
+    } else if (t.freq === "semanal"){
       total++;
-      if (estado.d[t.id] && estado.d[t.id][d]) feitas++;
-    });
+      if (w[t.id]) feitas++; else pendentes.push(t.nome);
+    } else if (t.freq === "quinzenal"){
+      var feitaAgora = cic[t.id] === chave;
+      var venceuAqui = venceuEm(cic[t.id], segunda);
+      if (feitaAgora || venceuAqui){
+        total++;
+        if (feitaAgora) feitas++; else pendentes.push(t.nome);
+      }
+    }
   });
-  porFreq("semanal").forEach(function(t){
-    total++;
-    if (estado.w[t.id]) feitas++;
-  });
-  porFreq("quinzenal").forEach(function(t){
-    var agora = ciclos[t.id] === chaveSemana(segAtual);
-    if (agora || venceu(t.id)){ total++; if (agora) feitas++; }
-  });
-  var pct = total ? Math.round(feitas/total*100) : 0;
-  $("barraFill").style.width = pct+"%";
-  $("progTxt").textContent = total
-    ? feitas+" de "+total+" tarefas · "+pct+"%"
+
+  return {
+    total: total,
+    feitas: feitas,
+    pct: total ? Math.round(feitas / total * 100) : null,
+    pendentes: pendentes
+  };
+}
+
+/* Uma quinzenal vence se a última execução foi há 14 dias ou mais. */
+function venceuEm(ultima, segunda){
+  if (!ultima) return true;
+  var ld = new Date(ultima + "T00:00:00");
+  var dias = (segunda - ld) / 86400000;
+  return !(dias >= 0 && dias < 14);
+}
+
+function renderProgresso(){
+  var r = calcular(tarefas, estado, ciclos, segAtual);
+  $("barraFill").style.width = (r.pct || 0) + "%";
+  $("progTxt").textContent = r.total
+    ? r.feitas + " de " + r.total + " tarefas · " + r.pct + "%"
     : "Sem tarefas nesta semana";
 }
 
@@ -888,6 +1114,11 @@ $("painelChecklist").addEventListener("change", function(ev){
     estado.l[ev.target.dataset.l] = ev.target.checked;
     salvar(); renderSemanais();
   }
+  if (ev.target.dataset && ev.target.dataset.vinculo){
+    estado.v = estado.v || {};
+    estado.v[ev.target.dataset.vinculo] = ev.target.value;
+    salvar(); renderSemanais(); renderQuinzenais(); renderDemanda();
+  }
 });
 
 /* ---------- navegação de semanas ---------- */
@@ -907,7 +1138,10 @@ document.querySelectorAll(".abas button").forEach(function(b){
     $("painelTarefas").hidden   = b.dataset.aba !== "tarefas";
     $("painelEquipe").hidden    = b.dataset.aba !== "equipe";
     $("painelBase").hidden      = b.dataset.aba !== "base";
+    $("painelRelatorios").hidden = b.dataset.aba !== "relatorios";
     if (b.dataset.aba === "base" && !baseCarregada) carregarBase();
+    if (b.dataset.aba === "relatorios" && !relCarregado) carregarRelatorio();
+    if (b.dataset.aba === "equipe" && !acompCarregado) carregarAcompanhamento();
   });
 });
 
@@ -918,6 +1152,22 @@ $("tfFreq").addEventListener("change", function(){
   var f = this.value;
   $("campoData").hidden = f !== "lembrete";
   $("campoDia").hidden  = (f === "lembrete" || f === "demanda" || f === "diaria");
+  // vínculo não cabe na grade diária (uma coluna por dia), então fica de fora
+  $("campoVinculo").hidden = (f === "diaria" || f === "lembrete");
+  if ($("campoVinculo").hidden){
+    $("tfVinculo").value = "";
+    $("campoVinculoCampo").hidden = true;
+  }
+});
+
+$("tfVinculo").addEventListener("change", function(){
+  var tab = baseTabelas[this.value];
+  $("campoVinculoCampo").hidden = !this.value || !tab;
+  if (tab){
+    $("tfVinculoCampo").innerHTML = tab.colunas.map(function(c){
+      return "<option value='"+esc(c)+"'>"+esc(c)+"</option>";
+    }).join("");
+  }
 });
 
 $("btnSalvarTarefa").addEventListener("click", async function(){
@@ -931,7 +1181,9 @@ $("btnSalvarTarefa").addEventListener("click", async function(){
     freq: $("tfFreq").value,
     dia: $("campoDia").hidden ? "" : $("tfDia").value,
     data: $("tfData").value,
-    lembrete: $("tfLembrete").value
+    lembrete: $("tfLembrete").value,
+    vinculo: $("campoVinculo").hidden ? "" : $("tfVinculo").value,
+    vinculoCampo: $("campoVinculoCampo").hidden ? "" : $("tfVinculoCampo").value
   };
   if (!editando && sessao.papel === "admin") corpo.para = $("tfPara").value;
   try{
@@ -951,6 +1203,7 @@ function limparForm(){
   $("tfNome").value = ""; $("tfDesc").value = "";
   $("tfLembrete").value = ""; $("tfData").value = "";
   $("tfDia").value = ""; $("tfFreq").value = "diaria";
+  $("tfVinculo").value = ""; $("campoVinculoCampo").hidden = true;
   $("tfFreq").dispatchEvent(new Event("change"));
   $("tituloForm").textContent = "➕ Nova tarefa";
   $("btnSalvarTarefa").textContent = "Adicionar tarefa";
@@ -1012,6 +1265,9 @@ $("listaGerenciar").addEventListener("click", async function(ev){
     $("tfFreq").value = t.freq; $("tfDia").value = t.dia || "";
     $("tfData").value = t.data || ""; $("tfLembrete").value = t.lembrete || "";
     $("tfFreq").dispatchEvent(new Event("change"));
+    $("tfVinculo").value = t.vinculo || "";
+    $("tfVinculo").dispatchEvent(new Event("change"));
+    if (t.vinculoCampo) $("tfVinculoCampo").value = t.vinculoCampo;
     $("tituloForm").textContent = "✏️ Editando tarefa";
     $("btnSalvarTarefa").textContent = "Salvar alterações";
     $("btnCancelarEdicao").hidden = false;
@@ -1156,6 +1412,15 @@ async function carregarBase(forcar){
         ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
     }
     if (r.falhas && r.falhas.length) toast("Algumas abas falharam: "+r.falhas.join(" · "), "erro");
+
+    // alimenta o seletor de vínculo do formulário de tarefas
+    var atualVinc = $("tfVinculo").value;
+    $("tfVinculo").innerHTML = "<option value=''>Sem vínculo</option>" +
+      nomes.map(function(n){
+        return "<option value='"+esc(n)+"'>"+esc(n)+"</option>";
+      }).join("");
+    if (nomes.indexOf(atualVinc) > -1) $("tfVinculo").value = atualVinc;
+
     renderBase();
   }catch(e){
     baseCarregada = true;
@@ -1200,6 +1465,301 @@ $("baseBusca").addEventListener("input", renderBase);
 $("btnAtualizarBase").addEventListener("click", function(){
   toast("Buscando dados da planilha…");
   carregarBase(true);
+});
+
+/* ==================================================================
+   Acompanhamento e relatórios
+   ================================================================== */
+var relCarregado = false;
+var acompCarregado = false;
+var dadosRel = null;      // resposta crua de /api/report
+var semanaAcomp = null;   // dados da semana atual, para o resumo
+
+/* Devolve as chaves das últimas N semanas, da mais recente para a mais antiga */
+function ultimasSemanas(n){
+  var lista = [], base = new Date(segHoje);
+  for (var i = 0; i < n; i++){
+    lista.push(chaveSemana(base));
+    base.setDate(base.getDate() - 7);
+  }
+  return lista;
+}
+
+function faixa(pct){
+  if (pct === null) return "";
+  if (pct >= 80) return "alto";
+  if (pct >= 50) return "medio";
+  return "baixo";
+}
+
+async function buscarRelatorio(n){
+  var semanas = ultimasSemanas(n);
+  return api("/api/report?semanas=" + semanas.join(","));
+}
+
+/* ---------- acompanhamento da semana (aba Equipe) ---------- */
+async function carregarAcompanhamento(){
+  acompCarregado = true;
+  $("acompLista").innerHTML = "<div class='vazio'>Carregando…</div>";
+  try{
+    var r = await buscarRelatorio(1);
+    var chave = r.semanas[0];
+    var fim = new Date(segHoje); fim.setDate(fim.getDate() + 6);
+    $("acompSemana").textContent = fmtDia(segHoje) + " a " + fmtDia(fim);
+
+    semanaAcomp = r.usuarios.map(function(u){
+      var seg = new Date(chave + "T00:00:00");
+      var calc = calcular(u.tarefas, u.estados[chave], u.ciclos, seg);
+      return { nome: u.nome, login: u.login, calc: calc };
+    });
+
+    var html = "";
+    semanaAcomp.forEach(function(p){
+      var f = faixa(p.calc.pct);
+      var pct = p.calc.pct === null ? "—" : p.calc.pct + "%";
+      html += "<div class='pessoa-linha'><div class='pl-topo'>"+
+        "<span class='pl-nome'>"+esc(p.nome)+"</span>"+
+        "<span class='pl-pct v-"+f+"'>"+pct+"</span></div>"+
+        "<div class='pl-barra'><i class='b-"+f+"' style='width:"+
+        (p.calc.pct||0)+"%'></i></div>";
+      if (!p.calc.total){
+        html += "<div class='pl-pend'>sem tarefas cadastradas</div>";
+      } else if (p.calc.pendentes.length){
+        html += "<div class='pl-pend'><b>"+p.calc.pendentes.length+
+          " em aberto:</b> "+esc(p.calc.pendentes.slice(0,4).join(" · "))+
+          (p.calc.pendentes.length > 4 ? " …" : "")+"</div>";
+      } else {
+        html += "<div class='pl-pend'>✅ tudo em dia</div>";
+      }
+      html += "</div>";
+    });
+    $("acompLista").innerHTML = html || "<div class='vazio'>Nenhuma pessoa cadastrada.</div>";
+  }catch(e){
+    $("acompLista").innerHTML = "<div class='vazio'>"+esc(e.message)+"</div>";
+  }
+}
+
+$("btnAtualizarAcomp").addEventListener("click", function(){
+  acompCarregado = false; carregarAcompanhamento();
+});
+
+/* ---------- resumo em texto (para colar no WhatsApp) ---------- */
+$("btnResumo").addEventListener("click", function(){
+  if (!semanaAcomp){ toast("Aguarde o acompanhamento carregar.", "erro"); return; }
+  var fim = new Date(segHoje); fim.setDate(fim.getDate() + 6);
+  var txt = "📋 Rotina HBier — semana de " + fmtDia(segHoje) + " a " + fmtDia(fim) + "\n\n";
+  semanaAcomp.forEach(function(p){
+    if (!p.calc.total){ txt += p.nome + ": sem tarefas\n"; return; }
+    txt += p.nome + ": " + p.calc.pct + "%";
+    txt += p.calc.pendentes.length
+      ? " (" + p.calc.pendentes.length + " em aberto)\n"
+      : " ✅\n";
+    p.calc.pendentes.slice(0, 6).forEach(function(nome){
+      txt += "   • " + nome + "\n";
+    });
+    txt += "\n";
+  });
+  $("txtResumo").value = txt.trim();
+  $("caixaResumo").hidden = false;
+});
+
+$("btnCopiarResumo").addEventListener("click", async function(){
+  var campo = $("txtResumo");
+  try{
+    await navigator.clipboard.writeText(campo.value);
+    toast("Resumo copiado.");
+  }catch(e){
+    // navegadores mais antigos ou sem permissão: seleciona para copiar à mão
+    campo.removeAttribute("readonly");
+    campo.select();
+    toast("Selecionado — use Ctrl+C para copiar.");
+    campo.setAttribute("readonly", "readonly");
+  }
+});
+
+$("btnFecharResumo").addEventListener("click", function(){
+  $("caixaResumo").hidden = true;
+});
+
+/* ---------- relatórios ---------- */
+async function carregarRelatorio(){
+  relCarregado = true;
+  $("tabelaRel").innerHTML = "";
+  try{
+    var n = parseInt($("relSemanas").value, 10) || 8;
+    dadosRel = await buscarRelatorio(n);
+    renderRelatorio();
+  }catch(e){ toast(e.message, "erro"); }
+}
+
+function renderRelatorio(){
+  if (!dadosRel) return;
+  var semanas = dadosRel.semanas;           // recente → antiga
+  var ordem = semanas.slice().reverse();    // antiga → recente, para ler natural
+
+  var ini = new Date(ordem[0] + "T00:00:00");
+  var fimSem = new Date(ordem[ordem.length-1] + "T00:00:00");
+  fimSem.setDate(fimSem.getDate() + 6);
+  $("relPeriodo").textContent = fmtDia(ini) + " a " + fmtDia(fimSem);
+
+  var html = "<thead><tr><th class='rel-nome' style='text-align:left'>Pessoa</th>";
+  ordem.forEach(function(s){
+    var d = new Date(s + "T00:00:00");
+    html += "<th>"+d.getDate()+"/"+(d.getMonth()+1)+"</th>";
+  });
+  html += "<th class='rel-media'>Média</th></tr></thead><tbody>";
+
+  var falhas = {};
+
+  dadosRel.usuarios.forEach(function(u){
+    html += "<tr><td class='rel-nome'>"+esc(u.nome)+"</td>";
+    var soma = 0, conta = 0;
+    ordem.forEach(function(s){
+      var seg = new Date(s + "T00:00:00");
+      var c = calcular(u.tarefas, u.estados[s], u.ciclos, seg);
+      if (c.pct === null){
+        html += "<td class='rel-cel' style='color:var(--muted)'>—</td>";
+      } else {
+        soma += c.pct; conta++;
+        html += "<td class='rel-cel v-"+faixa(c.pct)+"'>"+c.pct+"%</td>";
+        c.pendentes.forEach(function(nome){
+          var limpo = nome.replace(/ \(\d+ dias?\)$/, "");
+          falhas[limpo] = (falhas[limpo] || 0) + 1;
+        });
+      }
+    });
+    var media = conta ? Math.round(soma/conta) : null;
+    html += "<td class='rel-cel rel-media "+(media===null?"":"v-"+faixa(media))+"'>"+
+      (media === null ? "—" : media+"%")+"</td></tr>";
+  });
+
+  $("tabelaRel").innerHTML = html + "</tbody>";
+
+  // ranking das tarefas que mais ficam em aberto
+  var lista = Object.keys(falhas).map(function(k){
+    return { nome: k, n: falhas[k] };
+  }).sort(function(a,b){ return b.n - a.n; }).slice(0, 8);
+
+  $("secTarefasFalhas").hidden = !lista.length;
+  $("listaFalhas").innerHTML = lista.map(function(f){
+    return "<li class='item'><div class='item-info'>"+
+      "<div class='item-nome'>"+esc(f.nome)+"</div></div>"+
+      "<div class='contador'><span class='num tem'>"+f.n+"</span></div></li>";
+  }).join("");
+}
+
+$("btnAtualizarRel").addEventListener("click", carregarRelatorio);
+$("relSemanas").addEventListener("change", carregarRelatorio);
+
+/* ==================================================================
+   Importar tarefas da planilha
+   ================================================================== */
+var importCandidatas = [];
+
+var MAPA_FREQ = {
+  "diaria":"diaria", "diária":"diaria",
+  "semanal":"semanal",
+  "quinzenal":"quinzenal",
+  "conforme demanda":"demanda", "demanda":"demanda",
+  "lembrete":"lembrete", "lembrete programado":"lembrete"
+};
+var MAPA_DIA = {
+  "segunda":"seg","segunda-feira":"seg","terca":"ter","terça":"ter",
+  "terça-feira":"ter","quarta":"qua","quarta-feira":"qua",
+  "quinta":"qui","quinta-feira":"qui","sexta":"sex","sexta-feira":"sex",
+  "sabado":"sab","sábado":"sab"
+};
+
+function limpa(s){ return String(s||"").trim().toLowerCase(); }
+
+$("btnBuscarImport").addEventListener("click", async function(){
+  var b = this; b.disabled = true;
+  try{
+    if (!baseCarregada) await carregarBase();
+    var tab = baseTabelas["Tarefas Padrão"] || baseTabelas["Tarefas Padrao"];
+    if (!tab){
+      toast("A aba “Tarefas Padrão” não está publicada na base.", "erro");
+      b.disabled = false; return;
+    }
+
+    var iNome = tab.colunas.indexOf("Tarefa");
+    var iDesc = tab.colunas.indexOf("Descrição");
+    var iFreq = tab.colunas.indexOf("Frequência");
+    var iDia  = tab.colunas.indexOf("Dia fixo");
+    var iLemb = tab.colunas.indexOf("Lembrete ao executar");
+    if (iNome < 0 || iFreq < 0){
+      toast("A planilha precisa ter as colunas “Tarefa” e “Frequência”.", "erro");
+      b.disabled = false; return;
+    }
+
+    importCandidatas = [];
+    tab.linhas.forEach(function(l){
+      var nome = (l[iNome]||"").trim();
+      var freq = MAPA_FREQ[limpa(l[iFreq])];
+      if (!nome || !freq) return;
+      importCandidatas.push({
+        nome: nome,
+        desc: iDesc > -1 ? (l[iDesc]||"").trim() : "",
+        freq: freq,
+        dia: iDia > -1 ? (MAPA_DIA[limpa(l[iDia])] || "") : "",
+        data: freq === "lembrete" ? "2027-02" : "",
+        lembrete: iLemb > -1 ? (l[iLemb]||"").trim() : ""
+      });
+    });
+
+    if (!importCandidatas.length){
+      toast("Nenhuma linha válida encontrada na aba.", "erro");
+      b.disabled = false; return;
+    }
+
+    var existentes = {};
+    (donoAtual === sessao.login ? tarefas : tarefasGerenciadas)
+      .forEach(function(t){ existentes[limpa(t.nome)] = true; });
+
+    $("impLista").innerHTML = importCandidatas.map(function(t, i){
+      var repetida = existentes[limpa(t.nome)];
+      return "<label class='imp-item'>"+
+        "<input type='checkbox' data-imp='"+i+"'"+(repetida?"":" checked")+">"+
+        "<span>"+esc(t.nome)+
+        (repetida ? " <span class='tag cinza'>já existe</span>" : "")+
+        "<small>"+esc(t.freq)+(t.desc ? " · "+esc(t.desc) : "")+"</small></span></label>";
+    }).join("");
+    $("impResultado").hidden = false;
+    atualizaContagemImport();
+  }catch(e){ toast(e.message, "erro"); }
+  b.disabled = false;
+});
+
+function atualizaContagemImport(){
+  var n = $("impLista").querySelectorAll("input:checked").length;
+  $("impContagem").textContent = n + (n === 1 ? " selecionada" : " selecionadas");
+}
+$("impLista").addEventListener("change", atualizaContagemImport);
+
+$("btnCancelarImport").addEventListener("click", function(){
+  $("impResultado").hidden = true;
+});
+
+$("btnConfirmarImport").addEventListener("click", async function(){
+  var b = this; b.disabled = true;
+  var escolhidas = [];
+  $("impLista").querySelectorAll("input:checked").forEach(function(el){
+    escolhidas.push(importCandidatas[parseInt(el.dataset.imp, 10)]);
+  });
+  if (!escolhidas.length){
+    toast("Selecione ao menos uma tarefa.", "erro"); b.disabled = false; return;
+  }
+  try{
+    var r = await api("/api/tasks", {method:"POST", body:{
+      acao:"importar", usuario: donoAtual, tarefas: escolhidas
+    }});
+    toast(r.criadas + " tarefa(s) importada(s)" +
+      (r.ignoradas && r.ignoradas.length ? " · " + r.ignoradas.length + " ignorada(s)" : "") + ".");
+    $("impResultado").hidden = true;
+    await recarregarGerenciar();
+    if (donoAtual === sessao.login) await carregarSemana();
+  }catch(e){ toast(e.message, "erro"); }
+  b.disabled = false;
 });
 
 /* ---------- partida ---------- */
