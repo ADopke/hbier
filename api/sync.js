@@ -122,18 +122,36 @@ export default protegido(async function handler(req, res) {
     return erro(res, e.status || 500, e.message);
   }
 
-  const doSheet = tarefasDaPlanilha(tabelas);
-  if (!doSheet) {
-    return erro(
-      res,
-      400,
-      'A aba "Tarefas Padrão" não está publicada, ou faltam as colunas "Tarefa" e "Frequência".'
-    );
-  }
-
   const dados = corpo(req);
   const alvo = (dados.usuario || sessao.login).toLowerCase();
   const simular = req.method === "GET";
+
+  // Diagnóstico: quando a sincronização não acha o que precisa, é essencial
+  // dizer POR QUÊ. Antes isto virava um erro genérico que o app engolia em
+  // silêncio, e não havia como descobrir o que estava errado.
+  const abas = Object.keys(tabelas);
+  const nomeAba = ["Tarefas Padrão", "Tarefas Padrao", "Tarefas"].find(
+    (n) => tabelas[n]
+  );
+  const colunas = nomeAba ? tabelas[nomeAba].colunas : [];
+
+  const doSheet = tarefasDaPlanilha(tabelas);
+
+  if (!doSheet) {
+    return res.json({
+      configurado: true,
+      ok: false,
+      diagnostico: {
+        abasPublicadas: abas,
+        abaTarefas: nomeAba || null,
+        colunas,
+        problema: !nomeAba
+          ? 'A aba "Tarefas Padrão" não está na variável BASE_CSV_URLS. Publique-a em CSV e acrescente à variável — o nome antes do "=" precisa ser exatamente "Tarefas Padrão".'
+          : 'A aba foi encontrada, mas faltam as colunas obrigatórias "Tarefa" e "Frequência".',
+      },
+      resultados: [],
+    });
+  }
 
   if (alvo !== sessao.login && sessao.papel !== "admin") {
     return erro(res, 403, "Sem permissão para sincronizar outra pessoa.");
@@ -164,13 +182,32 @@ export default protegido(async function handler(req, res) {
       atualizadas: r.atualizadas,
       novas: r.novas,
       orfas: r.orfas,
+      // quantas tarefas dessa pessoa vieram da planilha e acharam par
+      pareadas: tarefas.filter(
+        (t) =>
+          (t.fonte === "planilha" || t.origem === "admin") &&
+          doSheet.some((s) => s.chave === chaveDaTarefa(t))
+      ).length,
+      daPlanilha: tarefas.filter(
+        (t) => t.fonte === "planilha" || t.origem === "admin"
+      ).length,
     });
   }
 
   res.json({
     configurado: true,
+    ok: true,
     simulacao: simular,
     linhasNaPlanilha: doSheet.length,
+    diagnostico: {
+      abasPublicadas: abas,
+      abaTarefas: nomeAba,
+      colunas,
+      // sem a coluna Código, renomear a tarefa na planilha quebra o vínculo
+      temCodigo: colunas.some(
+        (c) => normalizar(c) === "codigo"
+      ),
+    },
     resultados,
   });
 });
