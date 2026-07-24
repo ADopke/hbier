@@ -44,6 +44,28 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 1.6.2 — 24/07/2026
+
+**Correção: marcar na aba Semana não atualizava a aba Hoje**
+
+As duas abas mostram o mesmo estado, mas os handlers da Semana redesenhavam
+apenas as próprias listas. O da aba Hoje já chamava `renderTudo()` — por isso
+o sentido inverso funcionava.
+
+- Todos os pontos de marcação passam a redesenhar as duas abas
+- Vale para diárias, semanais, quinzenais, lembretes e contadores
+
+**Correção: vínculo e lembrete não salvavam pela aba Hoje**
+
+Encontrado no mesmo caminho. O tratamento de *escolher o item da base* e
+*confirmar o lembrete* estava preso ao painel da Semana — escolher o tanque
+pela tela Hoje não gravava nada.
+
+- Medição, vínculo e lembrete agora são tratados num listener único, válido em
+  qualquer aba
+
+---
+
 ## 1.6.1 — 24/07/2026
 
 **Correção: a sincronização apagava o que era configurado no app**

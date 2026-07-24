@@ -882,7 +882,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.6.1";
+var VERSAO = "1.6.2";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -1522,19 +1522,19 @@ $("painelChecklist").addEventListener("click", function(ev){
     estado.d[id] = estado.d[id] || {};
     estado.d[id][dia] = !estado.d[id][dia];
     carimbar(id+"|"+dia, estado.d[id][dia]);
-    salvar(); renderDiarias(); renderProgresso(); return;
+    salvar(); renderTudo(); return;
   }
   if (b.dataset.w){                       // semanal
     estado.w[b.dataset.w] = !estado.w[b.dataset.w];
     carimbar(b.dataset.w, estado.w[b.dataset.w]);
-    salvar(); renderSemanais(); renderProgresso(); return;
+    salvar(); renderTudo(); return;
   }
   if (b.dataset.q){                       // quinzenal
     var q = b.dataset.q;
     if (ciclos[q] === chaveSemana(segAtual)) delete ciclos[q];
     else ciclos[q] = chaveSemana(segAtual);
     carimbar(q, ciclos[q] === chaveSemana(segAtual));
-    salvar(); renderQuinzenais(); renderProgresso(); return;
+    salvar(); renderTudo(); return;
   }
   if (b.dataset.r){                       // lembrete programado
     var r = b.dataset.r;
@@ -1544,24 +1544,12 @@ $("painelChecklist").addEventListener("click", function(ev){
       ciclos[r] = h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);
     }
     carimbar(r, !!ciclos[r]);
-    salvar(); renderLembretes(); return;
+    salvar(); renderTudo(); return;
   }
   if (b.dataset.c){                       // contador
     var c = b.dataset.c;
     estado.c[c] = Math.max(0, (estado.c[c]||0) + parseInt(b.dataset.v,10));
-    salvar(); renderDemanda(); return;
-  }
-});
-
-$("painelChecklist").addEventListener("change", function(ev){
-  if (ev.target.dataset && ev.target.dataset.l){
-    estado.l[ev.target.dataset.l] = ev.target.checked;
-    salvar(); renderSemanais();
-  }
-  if (ev.target.dataset && ev.target.dataset.vinculo){
-    estado.v = estado.v || {};
-    estado.v[ev.target.dataset.vinculo] = ev.target.value;
-    salvar(); renderSemanais(); renderQuinzenais(); renderDemanda();
+    salvar(); renderTudo(); return;
   }
 });
 
@@ -2925,14 +2913,27 @@ $("painelHoje").addEventListener("click", function(ev){
   salvar(); renderTudo();
 });
 
-/* medições e vínculos, em qualquer painel */
+/* Medições, vínculos e confirmação de lembrete — um listener só, no documento.
+   Antes o vínculo e o lembrete só eram tratados dentro do painel da Semana:
+   escolher o tanque pela aba Hoje não salvava nada. */
 document.addEventListener("change", function(ev){
   var el = ev.target;
-  if (el.dataset && el.dataset.med){
+  if (!el.dataset) return;
+
+  if (el.dataset.med){                       // leitura numérica
     estado.m = estado.m || {};
     if (el.value === "") delete estado.m[el.dataset.med];
     else estado.m[el.dataset.med] = el.value;
-    salvar(); renderTudo();
+    salvar(); renderTudo(); return;
+  }
+  if (el.dataset.vinculo){                   // item escolhido na base
+    estado.v = estado.v || {};
+    estado.v[el.dataset.vinculo] = el.value;
+    salvar(); renderTudo(); return;
+  }
+  if (el.dataset.l){                         // confirmação do lembrete
+    estado.l[el.dataset.l] = el.checked;
+    salvar(); renderTudo(); return;
   }
 });
 
