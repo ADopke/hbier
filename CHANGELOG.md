@@ -44,6 +44,29 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 1.6.1 — 24/07/2026
+
+**Correção: a sincronização apagava o que era configurado no app**
+
+Marcar uma tarefa como prioritária funcionava, mas a configuração sumia poucos
+segundos depois — na sincronização automática seguinte.
+
+Causa: a sincronização sobrescrevia **todos** os campos da tarefa, inclusive os
+que não têm coluna na planilha. Sem a coluna, a planilha era lida como se
+dissesse "vazio", e o valor definido no app era apagado.
+
+Afetava seis campos: prioridade, criticidade, medição, unidade, código do
+parâmetro e procedimento (POP) — ou seja, praticamente tudo que veio da 1.3.0
+e da 1.6.0.
+
+- A planilha agora só governa os campos que **realmente têm coluna**. Coluna
+  ausente significa que ela não opina, e o valor do app é preservado
+- Criando a coluna correspondente, a planilha volta a mandar naquele campo
+- O diagnóstico da aba Equipe passou a listar quais campos vêm da planilha e
+  quais ficam por conta do app
+
+---
+
 ## 1.6.0 — 24/07/2026
 
 **Prioridade**

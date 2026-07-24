@@ -882,7 +882,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.6.0";
+var VERSAO = "1.6.1";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -2443,6 +2443,28 @@ function renderDiagnosticoSync(){
       "Clique em <i>Ver o que mudaria</i>: lá dá para religar cada uma à linha "+
       "correta, e o vínculo passa a ser pelo código.</label></div>";
   }
+  // deixa explícito o que a planilha manda e o que fica por conta do app
+  var ROTULO_CAMPO = {
+    nome:"nome", freq:"frequência", desc:"descrição", dia:"dia fixo",
+    data:"mês do lembrete", lembrete:"lembrete", vinculo:"vínculo",
+    vinculoCampo:"coluna do vínculo", medicao:"medição", unidade:"unidade",
+    paramCodigo:"código do parâmetro", pop:"procedimento",
+    critica:"criticidade", prioridade:"prioridade"
+  };
+  var gov = d.camposGovernados || [];
+  var soApp = Object.keys(ROTULO_CAMPO).filter(function(c){
+    return gov.indexOf(c) < 0;
+  });
+  if (soApp.length){
+    html += "<div class='lembrete-box' style='margin-top:8px'><label>"+
+      "<b>Definidos só no app:</b> "+
+      esc(soApp.map(function(c){ return ROTULO_CAMPO[c]; }).join(" · "))+
+      "<br><span style='color:var(--muted)'>A planilha não tem estas colunas, "+
+      "então não mexe nesses campos — o que você configurar no app fica. "+
+      "Para passar a controlá-los pela planilha, crie a coluna correspondente."+
+      "</span></label></div>";
+  }
+
   if (!d.temCodigo){
     html += "<div class='lembrete-box' style='margin-top:8px'><label>"+
       "<b>A aba não tem coluna “Código”.</b> Sem ela, o pareamento é feito pelo "+
