@@ -65,6 +65,7 @@ export default protegido(async function handler(req, res) {
         paramCodigo: (dados.paramCodigo || "").trim(),
         pop: (dados.pop || "").trim(),
         critica: Boolean(dados.critica),
+        prioridade: Boolean(dados.prioridade),
         origem:
           sessao.papel === "admin" && destino !== sessao.login
             ? "admin"
@@ -106,6 +107,7 @@ export default protegido(async function handler(req, res) {
       paramCodigo: (dados.paramCodigo || "").trim(),
       pop: (dados.pop || "").trim(),
       critica: Boolean(dados.critica),
+      prioridade: Boolean(dados.prioridade),
     };
     await gravar(`tasks:${alvo}`, tarefas);
     return res.json({ ok: true });
@@ -177,6 +179,12 @@ export default protegido(async function handler(req, res) {
         lembrete: (nova.lembrete || "").trim(),
         vinculo: (nova.vinculo || "").trim(),
         vinculoCampo: (nova.vinculoCampo || "").trim(),
+        medicao: Boolean(nova.medicao),
+        unidade: (nova.unidade || "").trim(),
+        paramCodigo: (nova.paramCodigo || "").trim(),
+        pop: (nova.pop || "").trim(),
+        critica: Boolean(nova.critica),
+        prioridade: Boolean(nova.prioridade),
         // marca a procedência para a sincronização saber o que atualizar
         fonte: "planilha",
         codigoBase: (nova.codigoBase || "").trim(),

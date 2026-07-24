@@ -195,6 +195,7 @@ export function tarefasDaPlanilha(tabelas) {
   const iUni = col(c, "Unidade");
   const iParam = col(c, "Código do parâmetro", "Codigo do parametro", "Parâmetro");
   const iCrit = col(c, "Crítica", "Critica");
+  const iPri = col(c, "Prioridade", "Prioritária", "Prioritaria");
 
   if (iNome < 0 || iFreq < 0) return null;
 
@@ -226,6 +227,7 @@ export function tarefasDaPlanilha(tabelas) {
       unidade: iUni > -1 ? (l[iUni] || "").trim() : "",
       paramCodigo: iParam > -1 ? (l[iParam] || "").trim() : "",
       critica: iCrit > -1 ? /^(sim|s|x|true|1)$/i.test((l[iCrit] || "").trim()) : false,
+      prioridade: iPri > -1 ? /^(sim|s|x|true|1)$/i.test((l[iPri] || "").trim()) : false,
     });
   }
   return saida;

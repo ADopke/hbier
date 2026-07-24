@@ -18,7 +18,7 @@ import { carregarTabelas, tarefasDaPlanilha, normalizar } from "./_base.js";
 const CAMPOS = [
   "nome", "desc", "freq", "dia", "data", "lembrete",
   "vinculo", "vinculoCampo",
-  "medicao", "unidade", "paramCodigo", "pop", "critica",
+  "medicao", "unidade", "paramCodigo", "pop", "critica", "prioridade",
 ];
 
 /**
