@@ -59,6 +59,12 @@ export default protegido(async function handler(req, res) {
         lembrete: (dados.lembrete || "").trim(),
         vinculo: (dados.vinculo || "").trim(),
         vinculoCampo: (dados.vinculoCampo || "").trim(),
+        // 1.3.0 — leitura numérica, procedimento vinculado e criticidade
+        medicao: Boolean(dados.medicao),
+        unidade: (dados.unidade || "").trim(),
+        paramCodigo: (dados.paramCodigo || "").trim(),
+        pop: (dados.pop || "").trim(),
+        critica: Boolean(dados.critica),
         origem:
           sessao.papel === "admin" && destino !== sessao.login
             ? "admin"
@@ -95,6 +101,11 @@ export default protegido(async function handler(req, res) {
       lembrete: (dados.lembrete || "").trim(),
       vinculo: (dados.vinculo || "").trim(),
       vinculoCampo: (dados.vinculoCampo || "").trim(),
+      medicao: Boolean(dados.medicao),
+      unidade: (dados.unidade || "").trim(),
+      paramCodigo: (dados.paramCodigo || "").trim(),
+      pop: (dados.pop || "").trim(),
+      critica: Boolean(dados.critica),
     };
     await gravar(`tasks:${alvo}`, tarefas);
     return res.json({ ok: true });
@@ -166,6 +177,9 @@ export default protegido(async function handler(req, res) {
         lembrete: (nova.lembrete || "").trim(),
         vinculo: (nova.vinculo || "").trim(),
         vinculoCampo: (nova.vinculoCampo || "").trim(),
+        // marca a procedência para a sincronização saber o que atualizar
+        fonte: "planilha",
+        codigoBase: (nova.codigoBase || "").trim(),
         origem:
           sessao.papel === "admin" && alvo !== sessao.login
             ? "admin"
