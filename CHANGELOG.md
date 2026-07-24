@@ -44,6 +44,53 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 1.4.1 — 24/07/2026
+
+**Correção da falha que eu mesmo introduzi na 1.4.0**
+
+Recomendei acrescentar a coluna "Código" à planilha — e isso desligava em
+silêncio todos os vínculos existentes. Motivo: com a coluna, a chave da
+planilha passa a ser o código, enquanto as tarefas já atribuídas continuavam
+carimbadas pelo nome. As duas pontas deixavam de se encontrar.
+
+- O pareamento agora tenta o **código** e, não achando, cai no **nome** —
+  carimbando o código na tarefa. Depois disso, renomear na planilha funciona
+- **Vincular tarefas antigas**: adota de uma vez as tarefas importadas antes
+  da 1.2.0, que nunca receberam carimbo de origem
+- **Religação manual**: quando a tarefa perdeu o vínculo E o nome já mudou na
+  planilha, não sobra chave nenhuma. O relatório agora lista essas tarefas com
+  um seletor das linhas livres, para ligar à mão
+- O diagnóstico passou a listar as tarefas sem par, com o motivo de cada uma
+
+---
+
+## 1.4.0 — 23/07/2026
+
+**Por que a sincronização parecia não funcionar**
+
+Dois motivos, corrigidos:
+
+1. *A falha era invisível.* Se a aba "Tarefas Padrão" não estivesse publicada,
+   ou faltasse uma coluna, a sincronização automática engolia o erro em
+   silêncio — sem aviso, sem log, sem pista. Agora existe um diagnóstico na
+   aba Equipe que diz em português o que está errado e o que fazer.
+2. *Renomear a tarefa na planilha quebrava o vínculo.* Sem a coluna Código, o
+   pareamento é feito pelo nome; mudou o nome, o app não reconhece mais.
+
+**Sincroniza com mais frequência**
+- Ao abrir o app, ao voltar para a aba, ao recuperar a conexão e a cada 4
+  minutos com o app aberto
+- Quando o **administrador** abre o app, a equipe inteira é sincronizada de
+  uma vez — não é preciso esperar cada pessoa abrir
+
+**Diagnóstico da sincronização** (aba Equipe, só admin)
+- Quais abas estão publicadas e qual foi usada
+- Quantas linhas foram lidas e quantas tarefas atribuídas acharam par
+- Aviso quando há tarefas sem par (quase sempre nome alterado na planilha)
+- Aviso quando falta a coluna Código
+
+---
+
 ## 1.3.0 — 23/07/2026
 
 Cinco melhorias de adoção. A ideia por trás de todas: tirar atrito de quem

@@ -680,6 +680,7 @@
           <div class="acoes-form" style="margin-top:12px">
             <button class="btn mini secundario" id="btnPreverSync">Ver o que mudaria</button>
             <button class="btn mini" id="btnAplicarSync">Sincronizar equipe</button>
+            <button class="btn mini secundario" id="btnAdotar">Vincular tarefas antigas</button>
           </div>
           <div id="syncDiagnostico" hidden style="margin-top:12px"></div>
           <div id="syncRelatorio" hidden style="margin-top:12px"></div>
@@ -815,7 +816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.4.0";
+var VERSAO = "1.4.1";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -2132,22 +2133,22 @@ function renderDiagnosticoSync(){
 
   // funcionando: mostra o essencial e alerta sobre o risco de renomear
   var d = r.diagnostico || {};
-  var totalPar = 0, totalPlan = 0;
+  var vinc = 0, tot = 0, semPar = 0;
   (r.resultados || []).forEach(function(p){
-    totalPar += p.pareadas || 0; totalPlan += p.daPlanilha || 0;
+    vinc += p.vinculadas || 0; tot += p.total || 0;
+    semPar += (p.semPar || []).length;
   });
-  var semPar = totalPlan - totalPar;
 
   var html = "<div class='lembrete-box ok'><label>"+
     "<b>Sincronização ativa.</b> Aba <b>"+esc(d.abaTarefas)+"</b> com "+
-    r.linhasNaPlanilha+" linha(s). "+totalPar+" de "+totalPlan+
-    " tarefas atribuídas estão pareadas com a planilha.</label></div>";
+    r.linhasNaPlanilha+" linha(s), "+(d.comCodigo||0)+" com código. "+
+    vinc+" de "+tot+" tarefas da equipe estão vinculadas à planilha.</label></div>";
 
   if (semPar > 0){
     html += "<div class='lembrete-box' style='margin-top:8px'><label>"+
-      "<b>"+semPar+" tarefa(s) atribuída(s) não encontram par na planilha.</b><br>"+
-      "Quase sempre é porque o nome foi alterado na planilha depois da "+
-      "atribuição. Use <i>Ver o que mudaria</i> para ver quais.</label></div>";
+      "<b>"+semPar+" tarefa(s) sem par na planilha.</b><br>"+
+      "Clique em <i>Ver o que mudaria</i>: lá dá para religar cada uma à linha "+
+      "correta, e o vínculo passa a ser pelo código.</label></div>";
   }
   if (!d.temCodigo){
     html += "<div class='lembrete-box' style='margin-top:8px'><label>"+
@@ -2199,13 +2200,17 @@ async function rodarSync(simular){
 }
 
 function montaRelatorioSync(r, simular){
-  var totalAtu = 0, novas = [], orfas = [];
+  var totalAtu = 0, novas = [], semPar = [];
   var linhas = "";
 
   (r.resultados || []).forEach(function(p){
     totalAtu += p.atualizadas.length;
-    (p.novas || []).forEach(function(n){ if (novas.indexOf(n) < 0) novas.push(n); });
-    (p.orfas || []).forEach(function(n){ if (orfas.indexOf(n) < 0) orfas.push(n); });
+    (p.novas || []).forEach(function(n){
+      if (!novas.some(function(x){ return x.chave === n.chave; })) novas.push(n);
+    });
+    (p.semPar || []).forEach(function(sp){
+      semPar.push({login:p.login, pessoa:p.nome, id:sp.id, nome:sp.nome, motivo:sp.motivo});
+    });
     if (!p.atualizadas.length) return;
     linhas += "<li class='item'><div class='item-info'>"+
       "<div class='item-nome'>"+esc(p.nome)+"</div>"+
@@ -2215,33 +2220,92 @@ function montaRelatorioSync(r, simular){
       }).join("")+"</div></li>";
   });
 
-  var topo = simular
-    ? (totalAtu ? "<b>"+totalAtu+" tarefa(s)</b> seriam atualizadas:"
-                : "Nenhuma tarefa precisa de atualização — tudo já está igual à planilha.")
-    : (totalAtu ? "<b>"+totalAtu+" tarefa(s)</b> atualizadas:"
-                : "Nada a atualizar — tudo já estava igual à planilha.");
+  var topo = totalAtu
+    ? "<b>"+totalAtu+" tarefa(s)</b> "+(simular ? "seriam atualizadas" : "atualizadas")+":"
+    : "Nenhuma tarefa precisou de atualização.";
 
   var html = "<div style='font-size:.86rem;line-height:1.6'>"+topo+"</div>";
   if (linhas) html += "<ul class='lista' style='margin-top:8px;border:1px solid "+
     "var(--linha);border-radius:8px'>"+linhas+"</ul>";
 
+  // Tarefas sem par: aqui é onde a religação manual acontece. Quando a tarefa
+  // perdeu o vínculo E o nome já mudou na planilha, não sobra chave em comum —
+  // só uma escolha humana resolve.
+  if (semPar.length){
+    var opcoes = novas.map(function(n){
+      return "<option value='"+esc(n.chave)+"'>"+esc(n.rotulo)+"</option>";
+    }).join("");
+    html += "<div class='lembrete-box' style='margin-top:10px;display:block'>"+
+      "<b>"+semPar.length+" tarefa(s) sem par na planilha.</b>"+
+      "<div style='font-size:.79rem;color:var(--muted);margin:4px 0 8px'>"+
+      "Acontece quando o nome foi alterado na planilha depois da atribuição. "+
+      "Escolha a linha correspondente e religue — o vínculo passa a ser pelo "+
+      "código e renomear deixa de quebrar.</div>";
+    semPar.forEach(function(sp){
+      html += "<div style='display:flex;gap:6px;align-items:center;flex-wrap:wrap;"+
+        "padding:7px 0;border-top:1px solid var(--linha)'>"+
+        "<span style='flex:1;min-width:150px;font-size:.83rem'><b>"+esc(sp.nome)+"</b>"+
+        "<br><span style='color:var(--muted)'>"+esc(sp.pessoa)+" · "+esc(sp.motivo)+"</span></span>"+
+        (opcoes && sp.id
+          ? "<select data-relig-linha style='flex:1;min-width:150px;padding:6px'>"+
+            "<option value=''>— escolher linha —</option>"+opcoes+"</select>"+
+            "<button class='btn-mini' data-relig='"+esc(sp.id)+"' "+
+            "data-relig-user='"+esc(sp.login)+"'>religar</button>"
+          : "<span class='item-desc'>nenhuma linha livre para vincular</span>")+
+        "</div>";
+    });
+    html += "</div>";
+  }
+
   if (novas.length){
     html += "<div class='lembrete-box' style='margin-top:10px'><label>"+
-      "<b>Na planilha, mas ainda não atribuídas a ninguém ("+novas.length+"):</b><br>"+
-      esc(novas.slice(0,8).join(" · "))+(novas.length>8?" …":"")+
-      "<br><span style='color:var(--muted)'>Use a importação, na aba "+
-      "Minhas tarefas, para distribuir.</span></label></div>";
-  }
-  if (orfas.length){
-    html += "<div class='lembrete-box' style='margin-top:10px;background:var(--vermelho-claro);"+
-      "border-color:var(--vermelho)'><label><b>Atribuídas a alguém, mas não estão "+
-      "mais na planilha ("+orfas.length+"):</b><br>"+
-      esc(orfas.slice(0,8).join(" · "))+(orfas.length>8?" …":"")+
-      "<br><span style='color:var(--muted)'>Nada foi apagado — excluir levaria junto "+
-      "o histórico. Remova manualmente se não fizerem mais sentido.</span></label></div>";
+      "<b>Na planilha, sem par no app ("+novas.length+"):</b><br>"+
+      esc(novas.slice(0,8).map(function(n){ return n.rotulo; }).join(" · "))+
+      (novas.length>8?" …":"")+
+      "<br><span style='color:var(--muted)'>Se forem tarefas novas, distribua "+
+      "pela importação, na aba Minhas tarefas.</span></label></div>";
   }
   return html;
 }
+
+/* Religa uma tarefa a uma linha escolhida à mão. */
+$("syncRelatorio").addEventListener("click", async function(ev){
+  var b = ev.target.closest("button[data-relig]");
+  if (!b) return;
+  var sel = b.parentNode.querySelector("select[data-relig-linha]");
+  if (!sel || !sel.value){ toast("Escolha a linha da planilha.", "erro"); return; }
+  b.disabled = true;
+  try{
+    var r = await api("/api/sync", {method:"POST", body:{
+      acao: "vincular",
+      usuario: b.dataset.religUser,
+      tarefaId: b.dataset.relig,
+      chave: sel.value
+    }});
+    toast("Religada: " + r.vinculou.tarefa +
+      (r.vinculou.codigo ? " → " + r.vinculou.codigo : ""));
+    await rodarSync(true);
+    await carregarSemana();
+  }catch(e){ toast(e.message, "erro"); b.disabled = false; }
+});
+
+$("btnAdotar").addEventListener("click", async function(){
+  if (!confirm("Vincular à planilha as tarefas antigas que ainda não têm origem "+
+               "registrada? Só afeta tarefas cujo nome bate com uma linha da planilha.")) return;
+  var b = this; b.disabled = true;
+  try{
+    var r = await api("/api/sync?atualizar=1", {method:"POST",
+      body:{usuario:"__todos__", adotar:true}});
+    var n = 0;
+    (r.resultados||[]).forEach(function(p){ n += (p.adotadas||[]).length; });
+    toast(n ? n+" tarefa(s) vinculada(s) à planilha." : "Nenhuma tarefa antiga para vincular.");
+    ultimoSync = r; renderDiagnosticoSync();
+    $("syncRelatorio").hidden = false;
+    $("syncRelatorio").innerHTML = montaRelatorioSync(r, false);
+    await carregarSemana();
+  }catch(e){ toast(e.message, "erro"); }
+  b.disabled = false;
+});
 
 $("btnPreverSync").addEventListener("click", function(){ rodarSync(true); });
 $("btnAplicarSync").addEventListener("click", function(){
