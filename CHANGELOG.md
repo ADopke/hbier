@@ -44,6 +44,91 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 1.3.0 — 23/07/2026
+
+Cinco melhorias de adoção. A ideia por trás de todas: tirar atrito de quem
+executa e dar utilidade à tarefa, em vez de só cobrar.
+
+**Funciona sem internet**
+- Marcação grava no aparelho primeiro e sobe depois — o clique nunca depende
+  da rede
+- Indicador discreto no topo mostra "sem rede" ou quantas marcações estão
+  pendentes de envio; some sozinho quando tudo sobe
+- Service worker permite ABRIR o app sem sinal, com a última versão salva
+- Sem cópia local da semana, o app avisa em vez de mostrar tela vazia
+
+**Tela Hoje** (agora é a aba inicial)
+- Só as tarefas do dia, em cartões grandes, sem grade
+- Pendências de dias anteriores aparecem agrupadas à parte
+- Itens críticos sobem para o topo da lista
+- A visão semanal continua na aba "Semana"
+
+**Registro de leitura**
+- Tarefas de medição ganham campo numérico em vez de um simples check
+- Ligando a tarefa a um código da aba *Parâmetros de Processo*, o app mostra a
+  faixa aceitável e avisa na hora quando o valor sai dela
+- Aceita vírgula decimal e valores negativos
+
+**Procedimento dentro da tarefa**
+- Tarefa pode apontar para um POP da aba *Procedimentos*
+- Um toque abre os passos na ordem, com IMPORTANTE / ATENÇÃO / PROIBIDO
+  destacados
+
+**Escalonamento do crítico**
+- Tarefa pode ser marcada como crítica
+- Críticos em aberto viram alerta no topo da tela Hoje e entram destacados no
+  resumo do WhatsApp
+- Sem notificação por push: isso exigiria serviço externo, conta e chave de API
+
+**Correções**
+- A tela Hoje não entrava na troca de abas e ficava visível em todas
+- `renderHoje()` nunca era chamada — o painel abria vazio
+- O service worker existia no projeto mas nunca era registrado
+
+---
+
+## 1.2.1 — 23/07/2026
+
+- Relatórios passaram a ser exclusivos do administrador: a aba não aparece
+  para colaboradores e o endpoint recusa o acesso, mesmo por URL direta
+- Cada pessoa continua vendo o próprio percentual da semana na barra do topo
+
+---
+
+## 1.2.0 — 23/07/2026
+
+**Sincronização com a planilha**
+
+Antes, a importação copiava as tarefas: editar a planilha depois não mudava
+nada para quem já as tinha atribuídas. Agora existe vínculo de verdade.
+
+- Ao abrir o app, cada pessoa recebe automaticamente as alterações feitas na
+  planilha desde o último acesso
+- Aba *Equipe* ganhou **Ver o que mudaria** (prévia, sem gravar) e
+  **Sincronizar equipe** (aplica em todos)
+- O ID da tarefa nunca muda — **todo o histórico de marcações é preservado**
+- Só mexe em tarefas vindas da planilha; o que a pessoa criou fica intacto
+- Linha nova na planilha é relatada, não criada. Linha removida é relatada,
+  nunca apagada — apagar levaria junto o histórico de quem já cumpriu
+- Coluna **Código** passou a ser reconhecida (opcional): com ela, dá para
+  renomear a tarefa na planilha sem perder o vínculo
+
+**Correção — linhas sumindo da Base**
+
+O leitor de CSV descartava em silêncio qualquer linha com a primeira coluna
+vazia, e também as que tinham só um campo preenchido. Numa planilha com o
+código em branco a partir de certo ponto, a aba Base parava de mostrar
+registros sem avisar. Agora toda linha com qualquer célula preenchida é lida,
+e as colunas são alinhadas ao cabeçalho.
+
+**Por baixo do capô**
+
+- Leitura da planilha movida para `api/_base.js`, compartilhada entre a aba
+  Base e a sincronização — as duas não têm mais como divergir
+- Novo endpoint `api/sync.js`
+
+---
+
 ## 1.1.0 — 23/07/2026
 
 Cinco melhorias que estavam no radar.

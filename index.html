@@ -226,6 +226,114 @@
     border-radius:8px;font-family:'Barlow',sans-serif;font-size:.84rem;
     line-height:1.5;resize:vertical;
   }
+
+  /* ---- 1.3.0 · estado da conexão ---- */
+  .conexao{
+    display:inline-flex;align-items:center;gap:6px;font-size:.72rem;
+    font-weight:600;letter-spacing:.04em;padding:3px 9px;border-radius:99px;
+    background:rgba(255,255,255,.15);color:#fff;
+  }
+  .conexao.pend{background:var(--dourado);color:#3A2D00}
+  .conexao.off{background:var(--vermelho);color:#fff}
+  .conexao i{width:7px;height:7px;border-radius:99px;background:currentColor;
+    display:inline-block}
+
+  /* ---- 1.3.0 · tela Hoje ---- */
+  .hoje-data{
+    padding:14px 14px 4px;font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;font-size:1.15rem;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--verde);
+  }
+  .hoje-item{
+    display:flex;align-items:center;gap:14px;padding:16px 14px;
+    border-top:1px solid var(--linha);
+  }
+  .hoje-item:first-child{border-top:none}
+  .hoje-item.done{background:#FAFDFA}
+  .hoje-check{
+    width:52px;height:52px;border-radius:12px;border:2.5px solid var(--linha);
+    background:#fff;cursor:pointer;font-size:1.4rem;line-height:1;
+    color:transparent;flex-shrink:0;transition:all .12s;
+  }
+  .hoje-check:hover{border-color:var(--verde)}
+  .hoje-check.feito{background:var(--verde);border-color:var(--verde);color:#fff}
+  .hoje-check.aberto{background:var(--dourado-claro);border-color:var(--dourado);
+    color:var(--dourado)}
+  .hoje-nome{font-weight:600;font-size:1rem;line-height:1.3}
+  .hoje-item.done .hoje-nome{color:var(--muted);text-decoration:line-through}
+  .hoje-desc{font-size:.8rem;color:var(--muted);margin-top:3px}
+  .hoje-tudo{
+    padding:26px 16px;text-align:center;color:var(--verde);font-weight:600;
+    font-size:.95rem;line-height:1.6;
+  }
+  .hoje-tudo span{font-size:2rem;display:block;margin-bottom:6px}
+
+  /* ---- 1.3.0 · leitura numérica ---- */
+  .medicao-box{
+    margin-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    background:#F4F8FB;border:1px solid #BFD4E4;border-radius:8px;padding:8px 10px;
+  }
+  .medicao-box label{margin:0;font-size:.76rem;font-weight:600;color:#2C5470;
+    white-space:nowrap}
+  .medicao-box input{
+    width:110px;padding:7px 9px;font-size:.95rem;font-weight:600;
+    border:1.5px solid #BFD4E4;border-radius:7px;text-align:right;
+  }
+  .medicao-box input:focus{border-color:#2C5470;outline:none}
+  .medicao-un{font-size:.82rem;color:var(--muted);font-weight:600}
+  .medicao-faixa{font-size:.74rem;color:var(--muted);width:100%}
+  .medicao-fora{
+    width:100%;margin-top:4px;font-size:.79rem;font-weight:700;color:var(--vermelho);
+  }
+  .medicao-ok{width:100%;margin-top:4px;font-size:.79rem;font-weight:600;color:var(--verde)}
+
+  /* ---- 1.3.0 · criticidade ---- */
+  .tag.crit{background:var(--vermelho-claro);color:var(--vermelho);
+    border-color:var(--vermelho)}
+  .alerta-critico{
+    background:var(--vermelho-claro);border:1px solid var(--vermelho);
+    border-radius:10px;padding:12px 14px;margin-bottom:16px;
+  }
+  .alerta-critico b{color:var(--vermelho)}
+  .alerta-critico ul{margin:7px 0 0 18px;font-size:.85rem;line-height:1.6}
+
+  /* ---- 1.3.0 · procedimento (POP) ---- */
+  .btn-pop{
+    margin-top:8px;background:var(--verde-claro);border:1px solid var(--verde);
+    color:var(--verde);border-radius:7px;padding:6px 12px;font-size:.79rem;
+    font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif;
+  }
+  .btn-pop:hover{background:var(--verde);color:#fff}
+  .sobreposicao{
+    position:fixed;inset:0;background:rgba(20,26,18,.55);z-index:200;
+    display:flex;align-items:flex-end;justify-content:center;
+  }
+  .folha{
+    background:var(--bg);width:100%;max-width:720px;max-height:88vh;
+    border-radius:14px 14px 0 0;overflow:hidden;display:flex;flex-direction:column;
+  }
+  .folha-topo{
+    background:var(--verde);color:#fff;padding:14px 16px;display:flex;
+    justify-content:space-between;align-items:center;gap:10px;
+  }
+  .folha-topo h2{font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;
+    text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+  .folha-fechar{background:rgba(255,255,255,.15);border:none;color:#fff;
+    width:32px;height:32px;border-radius:8px;font-size:1.1rem;cursor:pointer}
+  .folha-corpo{overflow-y:auto;padding:0 0 20px}
+  .pop-secao{
+    padding:10px 16px 4px;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;font-size:.88rem;color:var(--verde);
+    background:#fff;border-top:1px solid var(--linha);
+  }
+  .pop-passo{display:flex;gap:11px;padding:9px 16px;background:#fff;font-size:.88rem;
+    line-height:1.5}
+  .pop-num{font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--muted);
+    min-width:20px}
+  .pop-passo.crit{background:var(--vermelho-claro)}
+  .pop-passo.crit .pop-num{color:var(--vermelho)}
+  .pop-crit-tag{font-weight:700;color:var(--vermelho);font-size:.74rem;
+    letter-spacing:.06em;display:block;margin-bottom:2px}
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);
     color:#fff;padding:11px 18px;border-radius:8px;font-size:.86rem;z-index:99;
     box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw}
@@ -311,6 +419,7 @@
           <h1>Rotina da Fábrica</h1>
         </div>
         <div class="usuario">
+          <span class="conexao" id="conexao" hidden><i></i><span id="conexaoTxt"></span></span>
           <b id="userNome">—</b>
           <span id="userPapel" style="color:rgba(255,255,255,.7)"></span><br>
           <button class="link-sair" id="btnSair">sair</button>
@@ -327,18 +436,39 @@
         <span class="prog-txt" id="progTxt">—</span>
       </div>
       <nav class="abas">
-        <button data-aba="checklist" class="ativa">Checklist</button>
+        <button data-aba="hoje" class="ativa">Hoje</button>
+        <button data-aba="checklist">Semana</button>
         <button data-aba="tarefas">Minhas tarefas</button>
         <button data-aba="base">Base</button>
-        <button data-aba="relatorios">Relatórios</button>
+        <button data-aba="relatorios" id="abaRelatorios" hidden>Relatórios</button>
         <button data-aba="equipe" id="abaEquipe" hidden>Equipe</button>
       </nav>
     </div>
   </header>
 
   <main>
+    <!-- ---------- ABA HOJE ---------- -->
+    <div id="painelHoje">
+      <div id="alertaCriticos"></div>
+      <section>
+        <div class="sec-head">
+          <span class="sec-title">✅ Para fazer hoje</span>
+          <span class="sec-sub" id="hojeResumo"></span>
+        </div>
+        <div class="hoje-data" id="hojeData"></div>
+        <div id="hojeLista"></div>
+      </section>
+      <section id="hojeAtrasadasSec" hidden>
+        <div class="sec-head">
+          <span class="sec-title">⏰ Ficou para trás nesta semana</span>
+          <span class="sec-sub">dias anteriores</span>
+        </div>
+        <div id="hojeAtrasadas"></div>
+      </section>
+    </div>
+
     <!-- ---------- ABA CHECKLIST ---------- -->
-    <div id="painelChecklist">
+    <div id="painelChecklist" hidden>
       <section id="secDiarias" hidden>
         <div class="sec-head"><span class="sec-title">📅 Tarefas diárias</span>
           <span class="sec-sub">marcar todo dia útil</span></div>
@@ -431,6 +561,31 @@
             <label for="tfVinculoCampo">Coluna a exibir</label>
             <select id="tfVinculoCampo"></select>
           </div>
+          <div>
+            <label for="tfPop">Procedimento (POP)</label>
+            <select id="tfPop"><option value="">Nenhum</option></select>
+          </div>
+          <div>
+            <label for="tfCritica">Criticidade</label>
+            <select id="tfCritica">
+              <option value="">Normal</option>
+              <option value="1">Crítica — avisa o gestor se atrasar</option>
+            </select>
+          </div>
+          <div class="largo">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:2px">
+              <input type="checkbox" id="tfMedicao" style="width:17px;height:17px;accent-color:var(--verde)">
+              Registrar uma leitura numérica em vez de só marcar
+            </label>
+          </div>
+          <div id="campoUnidade" hidden>
+            <label for="tfUnidade">Unidade</label>
+            <input type="text" id="tfUnidade" placeholder="Ex.: °C, kgf/cm², ppm, vol">
+          </div>
+          <div id="campoParam" hidden>
+            <label for="tfParam">Código na aba Parâmetros (opcional)</label>
+            <input type="text" id="tfParam" placeholder="Ex.: MAT-06 — traz a faixa aceitável">
+          </div>
           <div class="largo" id="campoPara" hidden>
             <label for="tfPara">Atribuir para</label>
             <select id="tfPara"></select>
@@ -508,6 +663,25 @@
             <button class="btn mini" id="btnCopiarResumo">Copiar texto</button>
             <button class="btn mini secundario" id="btnFecharResumo">Fechar</button>
           </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="sec-head">
+          <span class="sec-title">🔄 Sincronizar com a planilha</span>
+          <span class="sec-sub">aba “Tarefas Padrão”</span>
+        </div>
+        <div style="padding:14px">
+          <p style="font-size:.85rem;color:var(--muted);line-height:1.55">
+            Editou uma tarefa na planilha? Isto leva a alteração para todo mundo
+            que já a tem atribuída — mantendo o histórico de marcações.
+            Tarefas criadas pela própria pessoa não são tocadas.
+          </p>
+          <div class="acoes-form" style="margin-top:12px">
+            <button class="btn mini secundario" id="btnPreverSync">Ver o que mudaria</button>
+            <button class="btn mini" id="btnAplicarSync">Sincronizar equipe</button>
+          </div>
+          <div id="syncRelatorio" hidden style="margin-top:12px"></div>
         </div>
       </section>
 
@@ -620,6 +794,17 @@
   </main>
 </div>
 
+<!-- ---------- FOLHA DO PROCEDIMENTO ---------- -->
+<div class="sobreposicao" id="folhaPop" hidden>
+  <div class="folha">
+    <div class="folha-topo">
+      <h2 id="popTitulo">Procedimento</h2>
+      <button class="folha-fechar" id="popFechar" aria-label="Fechar">✕</button>
+    </div>
+    <div class="folha-corpo" id="popCorpo"></div>
+  </div>
+</div>
+
 <script>
 (function(){
 "use strict";
@@ -629,7 +814,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.1.0";
+var VERSAO = "1.3.0";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -649,7 +834,7 @@ var DIAS = ["seg","ter","qua","qui","sex"];
 var NOMES = {seg:"Seg",ter:"Ter",qua:"Qua",qui:"Qui",sex:"Sex",sab:"Sáb"};
 var MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 
-function vazio(){ return {d:{},w:{},c:{},l:{},v:{}}; }
+function vazio(){ return {d:{},w:{},c:{},l:{},v:{},m:{}}; }
 
 /* ==================================================================
    Utilidades
@@ -775,6 +960,7 @@ async function abrirApp(){
   $("userNome").textContent = sessao.nome;
   $("userPapel").textContent = sessao.papel === "admin" ? "administrador" : "colaborador";
   $("abaEquipe").hidden = sessao.papel !== "admin";
+  $("abaRelatorios").hidden = sessao.papel !== "admin";
   $("campoPara").hidden = sessao.papel !== "admin";
   donoAtual = sessao.login;
   relCarregado = false;
@@ -788,30 +974,137 @@ async function abrirApp(){
     });
   }
   if (sessao.papel === "admin") await carregarEquipe();
+  // busca alterações feitas na planilha desde o último acesso
+  sincronizarSilencioso();
 }
 
-async function carregarSemana(){
-  try{
-    var semana = chaveSemana(segAtual);
-    var t = await api("/api/tasks?usuario=" + encodeURIComponent(sessao.login));
-    var s = await api("/api/state?semana=" + semana);
-    tarefas = t.tarefas || [];
-    estado  = Object.assign(vazio(), s.estado || {});
-    ciclos  = s.ciclos || {};
-    renderTudo();
-  }catch(e){ toast(e.message, "erro"); }
+/* ==================================================================
+   Camada offline
+   Numa fábrica o sinal cai. Marcação que falha e não volta faz a pessoa
+   desistir do app — então nada depende da rede na hora do clique:
+   grava no aparelho primeiro, envia depois.
+   ================================================================== */
+var LS_FILA = "hbier-fila";      // marcações aguardando envio
+var LS_CACHE = "hbier-cache";    // última cópia lida do servidor
+var _ls = null;
+
+function temLS(){
+  if (_ls !== null) return _ls;
+  try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); _ls = true; }
+  catch(e){ _ls = false; }
+  return _ls;
+}
+function lerLS(chave, padrao){
+  if (!temLS()) return padrao;
+  try{ var v = localStorage.getItem(chave); return v ? JSON.parse(v) : padrao; }
+  catch(e){ return padrao; }
+}
+function gravarLS(chave, valor){
+  if (!temLS()) return;
+  try{ localStorage.setItem(chave, JSON.stringify(valor)); }catch(e){}
 }
 
-var salvarTimer;
-function salvar(){
-  clearTimeout(salvarTimer);
-  salvarTimer = setTimeout(async function(){
+function lerFila(){ return lerLS(LS_FILA, {}); }
+function contarFila(){ return Object.keys(lerFila()).length; }
+
+/* Envia tudo que está na fila. Devolve true se a fila esvaziou. */
+async function enviarFila(){
+  var fila = lerFila();
+  var chaves = Object.keys(fila);
+  if (!chaves.length) return true;
+  for (var i = 0; i < chaves.length; i++){
+    var semana = chaves[i];
     try{
       await api("/api/state", {method:"POST", body:{
-        semana: chaveSemana(segAtual), estado: estado, ciclos: ciclos
+        semana: semana, estado: fila[semana].estado, ciclos: fila[semana].ciclos
       }});
-    }catch(e){ toast("Não foi possível salvar: " + e.message, "erro"); }
-  }, 400);
+      delete fila[semana];
+      gravarLS(LS_FILA, fila);
+    }catch(e){
+      gravarLS(LS_FILA, fila);
+      mostrarConexao();
+      return false;
+    }
+  }
+  gravarLS(LS_FILA, fila);
+  mostrarConexao();
+  return true;
+}
+
+function mostrarConexao(){
+  var el = $("conexao"), txt = $("conexaoTxt");
+  if (!el) return;
+  var pend = contarFila();
+  if (!navigator.onLine){
+    el.hidden = false; el.className = "conexao off";
+    txt.textContent = pend ? "sem rede · " + pend + " pendente" : "sem rede";
+  } else if (pend){
+    el.hidden = false; el.className = "conexao pend";
+    txt.textContent = pend + (pend === 1 ? " pendente" : " pendentes");
+  } else {
+    el.hidden = true;
+  }
+}
+
+window.addEventListener("online", function(){
+  mostrarConexao();
+  enviarFila().then(function(ok){ if (ok) toast("Marcações sincronizadas."); });
+});
+window.addEventListener("offline", mostrarConexao);
+
+/* ==================================================================
+   Carga e gravação da semana
+   ================================================================== */
+async function carregarSemana(){
+  var semana = chaveSemana(segAtual);
+
+  // o que está na fila é mais novo que o servidor: envia antes de ler
+  await enviarFila();
+
+  try{
+    var t = await api("/api/tasks?usuario=" + encodeURIComponent(sessao.login));
+    var r = await api("/api/state?semana=" + semana);
+    tarefas = t.tarefas || [];
+    estado  = Object.assign(vazio(), r.estado || {});
+    ciclos  = r.ciclos || {};
+    // guarda para conseguir abrir offline da próxima vez
+    var cache = lerLS(LS_CACHE, {});
+    cache[sessao.login] = cache[sessao.login] || {};
+    cache[sessao.login].tarefas = tarefas;
+    cache[sessao.login].ciclos = ciclos;
+    cache[sessao.login]["s:" + semana] = estado;
+    gravarLS(LS_CACHE, cache);
+  }catch(e){
+    // sem rede: abre com a última cópia local, aplicando o que está na fila
+    var c = (lerLS(LS_CACHE, {})[sessao.login]) || {};
+    var fila = lerFila();
+    tarefas = c.tarefas || [];
+    ciclos  = (fila[semana] && fila[semana].ciclos) || c.ciclos || {};
+    estado  = Object.assign(vazio(),
+      (fila[semana] && fila[semana].estado) || c["s:" + semana] || {});
+    if (!tarefas.length) toast("Sem conexão e sem cópia local desta semana.", "erro");
+    else toast("Sem conexão — mostrando a última versão salva no aparelho.");
+  }
+  mostrarConexao();
+  renderTudo();
+}
+
+/* Grava na fila local imediatamente e tenta enviar em seguida.
+   O clique nunca espera a rede. */
+var salvarTimer;
+function salvar(){
+  var semana = chaveSemana(segAtual);
+  var fila = lerFila();
+  fila[semana] = {
+    estado: JSON.parse(JSON.stringify(estado)),
+    ciclos: JSON.parse(JSON.stringify(ciclos)),
+    em: Date.now()
+  };
+  gravarLS(LS_FILA, fila);
+  mostrarConexao();
+
+  clearTimeout(salvarTimer);
+  salvarTimer = setTimeout(function(){ enviarFila(); }, 500);
 }
 
 /* ==================================================================
@@ -821,6 +1114,7 @@ function porFreq(f){ return tarefas.filter(function(t){ return t.freq === f; });
 
 function renderTudo(){
   renderCabecalho();
+  renderHoje();
   renderDiarias();
   renderSemanais();
   renderQuinzenais();
@@ -1134,6 +1428,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
   b.addEventListener("click", function(){
     document.querySelectorAll(".abas button").forEach(function(x){ x.classList.remove("ativa"); });
     b.classList.add("ativa");
+    $("painelHoje").hidden      = b.dataset.aba !== "hoje";
     $("painelChecklist").hidden = b.dataset.aba !== "checklist";
     $("painelTarefas").hidden   = b.dataset.aba !== "tarefas";
     $("painelEquipe").hidden    = b.dataset.aba !== "equipe";
@@ -1583,6 +1878,7 @@ $("btnFecharResumo").addEventListener("click", function(){
 
 /* ---------- relatórios ---------- */
 async function carregarRelatorio(){
+  if (sessao.papel !== "admin") return;   // relatórios são só do administrador
   relCarregado = true;
   $("tabelaRel").innerHTML = "";
   try{
@@ -1762,7 +2058,414 @@ $("btnConfirmarImport").addEventListener("click", async function(){
   b.disabled = false;
 });
 
+/* ==================================================================
+   Sincronização com a planilha
+   ================================================================== */
+
+/* Roda sozinha ao abrir o app: se o gestor alterou algo na planilha,
+   a pessoa já entra com a versão atual. Falha em silêncio — sem planilha
+   ou sem rede, o app continua funcionando normalmente. */
+async function sincronizarSilencioso(){
+  try{
+    var r = await api("/api/sync", {method:"POST", body:{}});
+    if (!r.configurado) return;
+    var meu = (r.resultados || [])[0];
+    if (meu && meu.atualizadas && meu.atualizadas.length){
+      await carregarSemana();
+      toast(meu.atualizadas.length +
+        (meu.atualizadas.length === 1
+          ? " tarefa foi atualizada pela planilha."
+          : " tarefas foram atualizadas pela planilha."));
+    }
+  }catch(e){ /* silêncio proposital */ }
+}
+
+async function rodarSync(simular){
+  var btn = simular ? $("btnPreverSync") : $("btnAplicarSync");
+  btn.disabled = true;
+  var caixa = $("syncRelatorio");
+  caixa.hidden = false;
+  caixa.innerHTML = "<div class='item-desc'>Consultando a planilha…</div>";
+  try{
+    var r = simular
+      ? await api("/api/sync?usuario=__todos__&atualizar=1")
+      : await api("/api/sync?atualizar=1", {method:"POST", body:{usuario:"__todos__"}});
+
+    if (!r.configurado){
+      caixa.innerHTML = "<div class='aviso'>A planilha ainda não foi conectada "+
+        "(variável BASE_CSV_URLS).</div>";
+      btn.disabled = false; return;
+    }
+    caixa.innerHTML = montaRelatorioSync(r, simular);
+    if (!simular){
+      await carregarSemana();
+      await carregarAcompanhamento();
+    }
+  }catch(e){
+    caixa.innerHTML = "<div class='aviso'>"+esc(e.message)+"</div>";
+  }
+  btn.disabled = false;
+}
+
+function montaRelatorioSync(r, simular){
+  var totalAtu = 0, novas = [], orfas = [];
+  var linhas = "";
+
+  (r.resultados || []).forEach(function(p){
+    totalAtu += p.atualizadas.length;
+    (p.novas || []).forEach(function(n){ if (novas.indexOf(n) < 0) novas.push(n); });
+    (p.orfas || []).forEach(function(n){ if (orfas.indexOf(n) < 0) orfas.push(n); });
+    if (!p.atualizadas.length) return;
+    linhas += "<li class='item'><div class='item-info'>"+
+      "<div class='item-nome'>"+esc(p.nome)+"</div>"+
+      p.atualizadas.map(function(a){
+        return "<div class='item-desc'>• "+esc(a.nome)+
+          " <span class='tag cinza'>"+esc(a.campos.join(", "))+"</span></div>";
+      }).join("")+"</div></li>";
+  });
+
+  var topo = simular
+    ? (totalAtu ? "<b>"+totalAtu+" tarefa(s)</b> seriam atualizadas:"
+                : "Nenhuma tarefa precisa de atualização — tudo já está igual à planilha.")
+    : (totalAtu ? "<b>"+totalAtu+" tarefa(s)</b> atualizadas:"
+                : "Nada a atualizar — tudo já estava igual à planilha.");
+
+  var html = "<div style='font-size:.86rem;line-height:1.6'>"+topo+"</div>";
+  if (linhas) html += "<ul class='lista' style='margin-top:8px;border:1px solid "+
+    "var(--linha);border-radius:8px'>"+linhas+"</ul>";
+
+  if (novas.length){
+    html += "<div class='lembrete-box' style='margin-top:10px'><label>"+
+      "<b>Na planilha, mas ainda não atribuídas a ninguém ("+novas.length+"):</b><br>"+
+      esc(novas.slice(0,8).join(" · "))+(novas.length>8?" …":"")+
+      "<br><span style='color:var(--muted)'>Use a importação, na aba "+
+      "Minhas tarefas, para distribuir.</span></label></div>";
+  }
+  if (orfas.length){
+    html += "<div class='lembrete-box' style='margin-top:10px;background:var(--vermelho-claro);"+
+      "border-color:var(--vermelho)'><label><b>Atribuídas a alguém, mas não estão "+
+      "mais na planilha ("+orfas.length+"):</b><br>"+
+      esc(orfas.slice(0,8).join(" · "))+(orfas.length>8?" …":"")+
+      "<br><span style='color:var(--muted)'>Nada foi apagado — excluir levaria junto "+
+      "o histórico. Remova manualmente se não fizerem mais sentido.</span></label></div>";
+  }
+  return html;
+}
+
+$("btnPreverSync").addEventListener("click", function(){ rodarSync(true); });
+$("btnAplicarSync").addEventListener("click", function(){
+  if (!confirm("Levar as alterações da planilha para toda a equipe?")) return;
+  rodarSync(false);
+});
+
+/* ==================================================================
+   Leitura numérica (medição)
+   ================================================================== */
+/* Chave da medição: diária guarda um valor por dia; as demais, um só. */
+function chaveMed(t, dia){ return dia ? t.id + "|" + dia : t.id; }
+
+/* Faixa aceitável, buscada na aba Parâmetros de Processo pelo código. */
+function faixaDoParametro(codigo){
+  if (!codigo) return null;
+  var tab = baseTabelas["Parâmetros de Processo"] || baseTabelas["Parametros de Processo"];
+  if (!tab) return null;
+  var iCod = tab.colunas.indexOf("Código");
+  var iMin = tab.colunas.indexOf("Mínimo");
+  var iMax = tab.colunas.indexOf("Máximo");
+  var iUni = tab.colunas.indexOf("Unidade");
+  if (iCod < 0) return null;
+  var alvo = String(codigo).trim().toLowerCase();
+  for (var i = 0; i < tab.linhas.length; i++){
+    if (String(tab.linhas[i][iCod] || "").trim().toLowerCase() === alvo){
+      var l = tab.linhas[i];
+      return {
+        min: num(iMin > -1 ? l[iMin] : ""),
+        max: num(iMax > -1 ? l[iMax] : ""),
+        unidade: iUni > -1 ? l[iUni] : ""
+      };
+    }
+  }
+  return null;
+}
+function num(v){
+  if (v === "" || v === null || v === undefined) return null;
+  var n = parseFloat(String(v).replace(",", "."));
+  return isNaN(n) ? null : n;
+}
+
+function caixaMedicao(t, dia){
+  if (!t.medicao) return "";
+  var k = chaveMed(t, dia);
+  var val = (estado.m || {})[k];
+  var faixa = faixaDoParametro(t.paramCodigo);
+  var un = t.unidade || (faixa && faixa.unidade) || "";
+
+  var html = "<div class='medicao-box'>"+
+    "<label for='md"+k+"'>Leitura:</label>"+
+    "<input type='number' step='any' inputmode='decimal' id='md"+k+"' "+
+    "data-med='"+esc(k)+"' value='"+esc(val === undefined ? "" : val)+"' "+
+    "placeholder='—'>"+
+    (un ? "<span class='medicao-un'>"+esc(un)+"</span>" : "");
+
+  if (faixa && (faixa.min !== null || faixa.max !== null)){
+    var txt = faixa.min !== null && faixa.max !== null
+      ? "faixa aceitável: " + faixa.min + " a " + faixa.max
+      : (faixa.min !== null ? "mínimo: " + faixa.min : "máximo: " + faixa.max);
+    html += "<span class='medicao-faixa'>"+esc(txt)+
+      (t.paramCodigo ? " · " + esc(t.paramCodigo) : "")+"</span>";
+  }
+
+  var n = num(val);
+  if (n !== null && faixa){
+    var fora = (faixa.min !== null && n < faixa.min) ||
+               (faixa.max !== null && n > faixa.max);
+    html += fora
+      ? "<div class='medicao-fora'>⚠ FORA DA FAIXA — não seguir sem corrigir</div>"
+      : "<div class='medicao-ok'>✓ dentro da faixa</div>";
+  }
+  return html + "</div>";
+}
+
+/* ==================================================================
+   Procedimento (POP) dentro da tarefa
+   ================================================================== */
+function botaoPop(t){
+  if (!t.pop) return "";
+  return "<button class='btn-pop' data-pop='"+esc(t.pop)+"'>📋 Ver procedimento</button>";
+}
+
+function abrirPop(nome){
+  var tab = baseTabelas["Procedimentos"];
+  $("popTitulo").textContent = nome;
+  if (!tab){
+    $("popCorpo").innerHTML = "<div class='vazio'>A aba Procedimentos não está "+
+      "publicada na base de referência.</div>";
+    $("folhaPop").hidden = false; return;
+  }
+  var iProc = tab.colunas.indexOf("Procedimento");
+  var iSec  = tab.colunas.indexOf("Seção");
+  var iOrd  = tab.colunas.indexOf("Ordem");
+  var iInst = tab.colunas.indexOf("Instrução");
+  var iCrit = tab.colunas.indexOf("Criticidade");
+
+  var linhas = tab.linhas.filter(function(l){
+    return String(l[iProc] || "").trim().toLowerCase() === nome.trim().toLowerCase();
+  });
+  linhas.sort(function(a,b){
+    return (parseInt(a[iOrd],10) || 0) - (parseInt(b[iOrd],10) || 0);
+  });
+
+  if (!linhas.length){
+    $("popCorpo").innerHTML = "<div class='vazio'>Nenhum passo encontrado para “"+
+      esc(nome)+"”.</div>";
+    $("folhaPop").hidden = false; return;
+  }
+
+  var html = "", secaoAtual = null;
+  linhas.forEach(function(l){
+    var sec = iSec > -1 ? (l[iSec] || "") : "";
+    if (sec !== secaoAtual){
+      secaoAtual = sec;
+      if (sec) html += "<div class='pop-secao'>"+esc(sec)+"</div>";
+    }
+    var crit = iCrit > -1 ? (l[iCrit] || "") : "";
+    html += "<div class='pop-passo"+(crit ? " crit" : "")+"'>"+
+      "<span class='pop-num'>"+esc(l[iOrd] || "•")+"</span><span>"+
+      (crit ? "<span class='pop-crit-tag'>"+esc(crit)+"</span>" : "")+
+      esc(iInst > -1 ? l[iInst] : "")+"</span></div>";
+  });
+  $("popCorpo").innerHTML = html;
+  $("folhaPop").hidden = false;
+}
+
+$("popFechar").addEventListener("click", function(){ $("folhaPop").hidden = true; });
+$("folhaPop").addEventListener("click", function(ev){
+  if (ev.target === this) this.hidden = true;   // clicar fora fecha
+});
+document.addEventListener("keydown", function(ev){
+  if (ev.key === "Escape") $("folhaPop").hidden = true;
+});
+
+/* ==================================================================
+   Tela "Hoje"
+   ================================================================== */
+var NOMES_LONGOS = ["Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira",
+                    "Sexta-feira","Sábado","Domingo"];
+
+function renderHoje(){
+  var ih = idxHoje();
+  var hojeReal = chaveSemana(segAtual) === chaveSemana(segHoje);
+  var d = hojeReal ? hoje() : segAtual;
+  $("hojeData").textContent = (hojeReal ? NOMES_LONGOS[(d.getDay()+6)%7] : "Semana de " + fmtDia(segAtual)) +
+    " · " + d.getDate() + " de " + MESES[d.getMonth()];
+
+  var dia = ih > -1 && ih < DIAS.length ? DIAS[ih] : null;
+  var itens = [];
+
+  if (dia){
+    porFreq("diaria").forEach(function(t){
+      itens.push({t:t, dia:dia, feito: !!(estado.d[t.id] && estado.d[t.id][dia])});
+    });
+  }
+  porFreq("semanal").forEach(function(t){
+    if (t.dia && dia && t.dia !== dia && !estado.w[t.id]) return;  // ainda não é o dia
+    itens.push({t:t, dia:null, feito: !!estado.w[t.id], tipo:"w"});
+  });
+  porFreq("quinzenal").forEach(function(t){
+    var agora = ciclos[t.id] === chaveSemana(segAtual);
+    if (!agora && !venceu(t.id)) return;   // em dia, não precisa aparecer
+    itens.push({t:t, dia:null, feito: agora, tipo:"q"});
+  });
+  porFreq("lembrete").forEach(function(t){
+    var partes = (t.data||"2099-01").split("-");
+    var alvo = new Date(parseInt(partes[0],10), parseInt(partes[1],10)-1, 1);
+    if (hoje() < alvo || ciclos[t.id]) return;
+    itens.push({t:t, dia:null, feito:false, tipo:"r"});
+  });
+
+  var pendentes = itens.filter(function(i){ return !i.feito; }).length;
+  $("hojeResumo").textContent = itens.length
+    ? (pendentes ? pendentes + " em aberto" : "tudo feito")
+    : "";
+
+  if (!itens.length){
+    $("hojeLista").innerHTML = "<div class='hoje-tudo'><span>🍺</span>"+
+      "Nenhuma tarefa para hoje.</div>";
+  } else if (!pendentes){
+    $("hojeLista").innerHTML = "<div class='hoje-tudo'><span>🍺</span>"+
+      "Tudo em dia por hoje.<br>Bom trabalho!</div>" + itens.map(itemHoje).join("");
+  } else {
+    // pendentes primeiro, críticas no topo
+    itens.sort(function(a,b){
+      if (a.feito !== b.feito) return a.feito ? 1 : -1;
+      return (b.t.critica?1:0) - (a.t.critica?1:0);
+    });
+    $("hojeLista").innerHTML = itens.map(itemHoje).join("");
+  }
+
+  renderAtrasadas(ih);
+  renderAlertaCriticos();
+}
+
+function itemHoje(i){
+  var t = i.t;
+  var cls = i.feito ? "feito" : "";
+  var attr = i.dia
+    ? "data-hj-d='"+t.id+"' data-hj-dia='"+i.dia+"'"
+    : (i.tipo === "q" ? "data-hj-q='"+t.id+"'"
+      : i.tipo === "r" ? "data-hj-r='"+t.id+"'" : "data-hj-w='"+t.id+"'");
+  var etiquetas =
+    (t.critica ? "<span class='tag crit'>Crítica</span>" : "") +
+    (i.tipo === "q" ? "<span class='tag ouro'>Quinzenal</span>" : "") +
+    (i.tipo === "r" ? "<span class='tag ouro'>Lembrete</span>" : "") +
+    (i.tipo === "w" ? "<span class='tag'>Semanal</span>" : "");
+  return "<div class='hoje-item"+(i.feito?" done":"")+"'>"+
+    "<button class='hoje-check "+cls+"' "+attr+">✓</button>"+
+    "<div class='item-info'><div class='hoje-nome'>"+esc(t.nome)+etiquetas+"</div>"+
+    (t.desc ? "<div class='hoje-desc'>"+esc(t.desc)+"</div>" : "")+
+    caixaMedicao(t, i.dia)+
+    caixaVinculo(t, i.feito)+
+    botaoPop(t)+
+    "</div></div>";
+}
+
+/* Dias anteriores da semana que ficaram sem marcação */
+function renderAtrasadas(ih){
+  if (ih < 1){ $("hojeAtrasadasSec").hidden = true; return; }
+  var html = "";
+  porFreq("diaria").forEach(function(t){
+    for (var i = 0; i < ih && i < DIAS.length; i++){
+      var dia = DIAS[i];
+      if (estado.d[t.id] && estado.d[t.id][dia]) continue;
+      html += "<div class='hoje-item'>"+
+        "<button class='hoje-check aberto' data-hj-d='"+t.id+"' data-hj-dia='"+dia+"'>!</button>"+
+        "<div class='item-info'><div class='hoje-nome'>"+esc(t.nome)+
+        "<span class='tag ouro'>"+NOMES[dia]+"</span></div>"+
+        caixaMedicao(t, dia)+"</div></div>";
+    }
+  });
+  $("hojeAtrasadasSec").hidden = !html;
+  $("hojeAtrasadas").innerHTML = html;
+}
+
+/* Aviso de itens críticos em aberto */
+function renderAlertaCriticos(){
+  var criticas = [];
+  var ih = idxHoje();
+  porFreq("diaria").forEach(function(t){
+    if (!t.critica) return;
+    for (var i = 0; i <= ih && i < DIAS.length; i++){
+      if (!(estado.d[t.id] && estado.d[t.id][DIAS[i]]))
+        criticas.push(t.nome + " (" + NOMES[DIAS[i]] + ")");
+    }
+  });
+  porFreq("semanal").forEach(function(t){
+    if (t.critica && !estado.w[t.id] && pendenteSemanal(t)) criticas.push(t.nome);
+  });
+  porFreq("quinzenal").forEach(function(t){
+    if (t.critica && venceu(t.id) && ciclos[t.id] !== chaveSemana(segAtual))
+      criticas.push(t.nome);
+  });
+
+  $("alertaCriticos").innerHTML = criticas.length
+    ? "<div class='alerta-critico'><b>⚠ "+criticas.length+
+      (criticas.length===1?" item crítico em aberto":" itens críticos em aberto")+"</b>"+
+      "<ul>"+criticas.slice(0,6).map(function(n){ return "<li>"+esc(n)+"</li>"; }).join("")+
+      "</ul></div>"
+    : "";
+}
+
+/* ---------- cliques da tela Hoje ---------- */
+$("painelHoje").addEventListener("click", function(ev){
+  var b = ev.target.closest("button");
+  if (!b) return;
+  if (b.dataset.pop){ abrirPop(b.dataset.pop); return; }
+  if (b.dataset.hjD){
+    var id = b.dataset.hjD, dia = b.dataset.hjDia;
+    estado.d[id] = estado.d[id] || {};
+    estado.d[id][dia] = !estado.d[id][dia];
+  } else if (b.dataset.hjW){
+    estado.w[b.dataset.hjW] = !estado.w[b.dataset.hjW];
+  } else if (b.dataset.hjQ){
+    var q = b.dataset.hjQ;
+    if (ciclos[q] === chaveSemana(segAtual)) delete ciclos[q];
+    else ciclos[q] = chaveSemana(segAtual);
+  } else if (b.dataset.hjR){
+    var r = b.dataset.hjR;
+    if (ciclos[r]) delete ciclos[r];
+    else {
+      var h = hoje();
+      ciclos[r] = h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);
+    }
+  } else return;
+  salvar(); renderTudo();
+});
+
+/* medições e vínculos, em qualquer painel */
+document.addEventListener("change", function(ev){
+  var el = ev.target;
+  if (el.dataset && el.dataset.med){
+    estado.m = estado.m || {};
+    if (el.value === "") delete estado.m[el.dataset.med];
+    else estado.m[el.dataset.med] = el.value;
+    salvar(); renderTudo();
+  }
+});
+
 /* ---------- partida ---------- */
+
+/* Service worker: é o que permite ABRIR o app sem internet.
+   Sem ele, a fila offline só funcionaria com a aba já aberta — na fábrica
+   a pessoa abre o app do zero, muitas vezes sem sinal. */
+if ("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("/sw.js").catch(function(){
+      /* ambiente sem HTTPS ou navegador antigo: o app segue funcionando
+         normalmente, só perde a abertura offline */
+    });
+  });
+}
+
 ["versaoRodape","versaoLogin"].forEach(function(id){
   var el = $(id);
   if (el) el.textContent = "Versão " + VERSAO + " · " + DATA_VERSAO;
