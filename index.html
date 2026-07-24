@@ -681,6 +681,7 @@
             <button class="btn mini secundario" id="btnPreverSync">Ver o que mudaria</button>
             <button class="btn mini" id="btnAplicarSync">Sincronizar equipe</button>
           </div>
+          <div id="syncDiagnostico" hidden style="margin-top:12px"></div>
           <div id="syncRelatorio" hidden style="margin-top:12px"></div>
         </div>
       </section>
@@ -814,7 +815,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.3.0";
+var VERSAO = "1.4.0";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -976,6 +977,7 @@ async function abrirApp(){
   if (sessao.papel === "admin") await carregarEquipe();
   // busca alterações feitas na planilha desde o último acesso
   sincronizarSilencioso();
+  agendarSync();
 }
 
 /* ==================================================================
@@ -1048,7 +1050,10 @@ function mostrarConexao(){
 
 window.addEventListener("online", function(){
   mostrarConexao();
-  enviarFila().then(function(ok){ if (ok) toast("Marcações sincronizadas."); });
+  enviarFila().then(function(ok){
+    if (ok) toast("Marcações sincronizadas.");
+    if (typeof sessao !== "undefined" && sessao) sincronizarSilencioso();
+  });
 });
 window.addEventListener("offline", mostrarConexao);
 
@@ -2065,11 +2070,23 @@ $("btnConfirmarImport").addEventListener("click", async function(){
 /* Roda sozinha ao abrir o app: se o gestor alterou algo na planilha,
    a pessoa já entra com a versão atual. Falha em silêncio — sem planilha
    ou sem rede, o app continua funcionando normalmente. */
+/* Guarda o resultado da última sincronização automática para o painel de
+   diagnóstico. Antes o erro era engolido e não havia como saber o motivo. */
+var ultimoSync = null;
+
 async function sincronizarSilencioso(){
+  if (!navigator.onLine) return;
   try{
-    var r = await api("/api/sync", {method:"POST", body:{}});
-    if (!r.configurado) return;
-    var meu = (r.resultados || [])[0];
+    // admin sincroniza a equipe inteira; colaborador, só a si mesmo
+    var corpoReq = sessao.papel === "admin" ? {usuario:"__todos__"} : {};
+    var r = await api("/api/sync", {method:"POST", body:corpoReq});
+    ultimoSync = r;
+
+    if (!r.configurado || r.ok === false){ renderDiagnosticoSync(); return; }
+
+    var meu = (r.resultados || []).filter(function(p){
+      return p.login === sessao.login;
+    })[0];
     if (meu && meu.atualizadas && meu.atualizadas.length){
       await carregarSemana();
       toast(meu.atualizadas.length +
@@ -2077,7 +2094,81 @@ async function sincronizarSilencioso(){
           ? " tarefa foi atualizada pela planilha."
           : " tarefas foram atualizadas pela planilha."));
     }
-  }catch(e){ /* silêncio proposital */ }
+    renderDiagnosticoSync();
+  }catch(e){
+    ultimoSync = {erroRede: e.message};
+    renderDiagnosticoSync();
+  }
+}
+
+/* Mostra, em português claro, por que a sincronização não está funcionando. */
+function renderDiagnosticoSync(){
+  var el = $("syncDiagnostico");
+  if (!el || sessao.papel !== "admin") return;
+  var r = ultimoSync;
+  if (!r){ el.hidden = true; return; }
+
+  if (r.erroRede){
+    el.hidden = false;
+    el.innerHTML = "<div class='aviso'>Não consegui falar com o servidor: "+
+      esc(r.erroRede)+"</div>";
+    return;
+  }
+  if (!r.configurado){
+    el.hidden = false;
+    el.innerHTML = "<div class='aviso'>A planilha não está conectada. "+
+      "Falta a variável <b>BASE_CSV_URLS</b> na Vercel.</div>";
+    return;
+  }
+  if (r.ok === false){
+    var d = r.diagnostico || {};
+    el.hidden = false;
+    el.innerHTML = "<div class='aviso'><b>A sincronização não está rodando.</b><br>"+
+      esc(d.problema || "")+
+      "<br><br>Abas publicadas hoje: <b>"+
+      esc((d.abasPublicadas || []).join(", ") || "nenhuma")+"</b></div>";
+    return;
+  }
+
+  // funcionando: mostra o essencial e alerta sobre o risco de renomear
+  var d = r.diagnostico || {};
+  var totalPar = 0, totalPlan = 0;
+  (r.resultados || []).forEach(function(p){
+    totalPar += p.pareadas || 0; totalPlan += p.daPlanilha || 0;
+  });
+  var semPar = totalPlan - totalPar;
+
+  var html = "<div class='lembrete-box ok'><label>"+
+    "<b>Sincronização ativa.</b> Aba <b>"+esc(d.abaTarefas)+"</b> com "+
+    r.linhasNaPlanilha+" linha(s). "+totalPar+" de "+totalPlan+
+    " tarefas atribuídas estão pareadas com a planilha.</label></div>";
+
+  if (semPar > 0){
+    html += "<div class='lembrete-box' style='margin-top:8px'><label>"+
+      "<b>"+semPar+" tarefa(s) atribuída(s) não encontram par na planilha.</b><br>"+
+      "Quase sempre é porque o nome foi alterado na planilha depois da "+
+      "atribuição. Use <i>Ver o que mudaria</i> para ver quais.</label></div>";
+  }
+  if (!d.temCodigo){
+    html += "<div class='lembrete-box' style='margin-top:8px'><label>"+
+      "<b>A aba não tem coluna “Código”.</b> Sem ela, o pareamento é feito pelo "+
+      "nome da tarefa — e <b>renomear na planilha quebra o vínculo</b>. "+
+      "Acrescente a coluna e o problema acaba.</label></div>";
+  }
+  el.hidden = false;
+  el.innerHTML = html;
+}
+
+/* Mantém a sincronização acontecendo sem a pessoa precisar reabrir o app:
+   ao voltar para a aba e a cada 4 minutos com o app aberto. */
+function agendarSync(){
+  document.addEventListener("visibilitychange", function(){
+    if (document.visibilityState === "visible") sincronizarSilencioso();
+  });
+  window.addEventListener("focus", function(){ sincronizarSilencioso(); });
+  setInterval(function(){
+    if (document.visibilityState === "visible") sincronizarSilencioso();
+  }, 4 * 60000);
 }
 
 async function rodarSync(simular){
