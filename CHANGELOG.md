@@ -44,6 +44,34 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 1.6.0 — 24/07/2026
+
+**Prioridade**
+- Nova opção na tarefa: *Prioritária*
+- Ponto vermelho ao lado do nome e barra vermelha na lateral
+- Sobe para a primeira posição nas telas Hoje e Semana
+- Diferente de *Crítica*: prioridade é ordem de execução, criticidade é
+  consequência de atrasar (alerta e escalonamento). Podem ser usadas juntas
+
+**Ordenação alfabética**
+- Botão **A–Z** na barra do topo, ao lado da navegação de semanas
+- Alterna entre a ordem de cadastro e a ordem alfabética
+- Respeita acentuação portuguesa (Álcool antes de Lançar antes de Órgão)
+- Prioritárias continuam no topo nos dois modos
+- A escolha fica salva no aparelho
+
+**Voltar para a semana atual**
+- Botão **↩ semana atual** ao lado das setas
+- Aparece só quando se está em outra semana
+
+**Correção importante**
+- Os campos de **medição, unidade, código do parâmetro, procedimento (POP) e
+  criticidade** existiam no formulário desde a 1.3.0, mas **nunca eram
+  enviados ao servidor** — preencher não surtia efeito. Agora são salvos,
+  recarregados ao editar e limpos ao criar nova tarefa
+
+---
+
 ## 1.5.0 — 24/07/2026
 
 **Registro de data e hora nas marcações**

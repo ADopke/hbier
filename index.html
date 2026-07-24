@@ -169,6 +169,25 @@
   .rodape{text-align:center;margin-top:22px;font-family:'Barlow Condensed',sans-serif;
     font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
   .rodape b{color:var(--dourado)}
+  .btn-hoje-sem,.btn-ordem{
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);
+    color:#fff;border-radius:8px;padding:5px 11px;cursor:pointer;
+    font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.78rem;
+    letter-spacing:.06em;text-transform:uppercase;
+  }
+  .btn-hoje-sem:hover,.btn-ordem:hover{background:rgba(255,255,255,.24)}
+  .btn-ordem.ativo{background:var(--dourado);color:#3A2D00;border-color:var(--dourado)}
+
+  /* ponto vermelho da tarefa prioritária */
+  .ponto-pri{
+    display:inline-block;width:9px;height:9px;border-radius:99px;
+    background:var(--vermelho);margin-right:7px;vertical-align:middle;
+    flex-shrink:0;
+  }
+  tr.linha-pri td.tarefa{border-left:3px solid var(--vermelho)}
+  .hoje-item.pri{border-left:3px solid var(--vermelho)}
+  .item.pri{border-left:3px solid var(--vermelho)}
+
   /* ---- visão ampliada por operador ---- */
   .detalhe-op{
     margin-top:10px;border:1px solid var(--linha);border-radius:8px;
@@ -467,6 +486,8 @@
         <span class="semana-label" id="semanaLabel">—</span>
         <button id="nextSem" aria-label="Próxima semana">›</button>
         <span class="badge" id="badgeAtual" hidden>Semana atual</span>
+        <button class="btn-hoje-sem" id="voltarSemana" hidden>↩ semana atual</button>
+        <button class="btn-ordem" id="btnOrdem" title="Alternar ordenação">A–Z</button>
       </div>
       <div class="progresso">
         <div class="barra"><i id="barraFill"></i></div>
@@ -601,6 +622,13 @@
           <div>
             <label for="tfPop">Procedimento (POP)</label>
             <select id="tfPop"><option value="">Nenhum</option></select>
+          </div>
+          <div>
+            <label for="tfPrioridade">Prioridade</label>
+            <select id="tfPrioridade">
+              <option value="">Normal</option>
+              <option value="1">Prioritária — ponto vermelho, primeira da lista</option>
+            </select>
           </div>
           <div>
             <label for="tfCritica">Criticidade</label>
@@ -854,7 +882,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.5.0";
+var VERSAO = "1.6.0";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -1180,7 +1208,42 @@ function salvar(){
 /* ==================================================================
    Renderização do checklist
    ================================================================== */
-function porFreq(f){ return tarefas.filter(function(t){ return t.freq === f; }); }
+/* Ordem das listas.
+   Prioritárias sempre no topo — é o que o ponto vermelho promete. Dentro de
+   cada grupo, ordem alfabética quando o filtro A–Z está ligado, senão a ordem
+   de cadastro. */
+var ordemAZ = lerLS("hbier-ordem", false) === true;
+
+function ordenar(lista){
+  var copia = lista.slice();
+  copia.sort(function(a, b){
+    var pa = a.prioridade ? 0 : 1, pb = b.prioridade ? 0 : 1;
+    if (pa !== pb) return pa - pb;
+    if (!ordemAZ) return 0;                       // mantém a ordem original
+    return String(a.nome||"").localeCompare(String(b.nome||""), "pt-BR",
+      {sensitivity:"base"});
+  });
+  return copia;
+}
+
+function porFreq(f){
+  return ordenar(tarefas.filter(function(t){ return t.freq === f; }));
+}
+
+function aplicarOrdem(){
+  $("btnOrdem").textContent = ordemAZ ? "A–Z ✓" : "A–Z";
+  $("btnOrdem").classList.toggle("ativo", ordemAZ);
+  $("btnOrdem").title = ordemAZ
+    ? "Ordem alfabética ligada — clique para voltar à ordem de cadastro"
+    : "Ordenar as tarefas em ordem alfabética";
+}
+
+$("btnOrdem").addEventListener("click", function(){
+  ordemAZ = !ordemAZ;
+  gravarLS("hbier-ordem", ordemAZ);
+  aplicarOrdem();
+  renderTudo();
+});
 
 function renderTudo(){
   renderCabecalho();
@@ -1198,7 +1261,9 @@ function renderTudo(){
 function renderCabecalho(){
   var fim = new Date(segAtual); fim.setDate(fim.getDate()+6);
   $("semanaLabel").textContent = "Semana de "+fmtDia(segAtual)+" a "+fmtDia(fim);
-  $("badgeAtual").hidden = chaveSemana(segAtual) !== chaveSemana(segHoje);
+  var naAtual = chaveSemana(segAtual) === chaveSemana(segHoje);
+  $("badgeAtual").hidden = !naAtual;
+  $("voltarSemana").hidden = naAtual;   // some quando já se está nela
 }
 
 function renderDiarias(){
@@ -1212,7 +1277,8 @@ function renderDiarias(){
   });
   html += "</tr></thead><tbody>";
   lista.forEach(function(t){
-    html += "<tr><td class='tarefa'>"+esc(t.nome)+
+    html += "<tr class='"+(t.prioridade?"linha-pri":"")+"'><td class='tarefa'>"+
+            (t.prioridade ? "<span class='ponto-pri'></span>" : "")+esc(t.nome)+
             (t.desc ? "<small>"+esc(t.desc)+"</small>" : "")+"</td>";
     DIAS.forEach(function(d,i){
       var feito = estado.d[t.id] && estado.d[t.id][d];
@@ -1250,9 +1316,10 @@ function renderSemanais(){
     var pend = pendenteSemanal(t);
     var cls = feito ? "feito" : (pend ? "aberto" : "");
     var simbolo = feito ? "✓" : (pend ? "!" : "✓");
-    html += "<li class='item'>"+
+    html += "<li class='item"+(t.prioridade?" pri":"")+"'>"+
       "<button class='check "+cls+"' data-w='"+t.id+"'>"+simbolo+"</button>"+
-      "<div class='item-info'><div class='item-nome'>"+esc(t.nome)+
+      "<div class='item-info'><div class='item-nome'>"+
+      (t.prioridade ? "<span class='ponto-pri'></span>" : "")+esc(t.nome)+
       (t.dia ? "<span class='tag'>"+NOMES[t.dia]+"</span>" : "")+"</div>"+
       (t.desc ? "<div class='item-desc'>"+esc(t.desc)+"</div>" : "");
     if (t.lembrete){
@@ -1328,8 +1395,10 @@ function renderQuinzenais(){
       nota = "<div class='nota'>Em dia — feita na semana de "+fmtDia(ld)+
              " · próxima na semana de "+fmtDia(prox)+"</div>";
     } else { cls = pend ? "aberto" : ""; simbolo = pend ? "!" : "✓"; }
-    html += "<li class='item'><button class='check "+cls+"' data-q='"+t.id+"'>"+simbolo+"</button>"+
-      "<div class='item-info'><div class='item-nome'>"+esc(t.nome)+
+    html += "<li class='item"+(t.prioridade?" pri":"")+"'><button class='check "+cls+
+      "' data-q='"+t.id+"'>"+simbolo+"</button>"+
+      "<div class='item-info'><div class='item-nome'>"+
+      (t.prioridade ? "<span class='ponto-pri'></span>" : "")+esc(t.nome)+
       "<span class='tag ouro'>Quinzenal</span></div>"+
       (t.desc ? "<div class='item-desc'>"+esc(t.desc)+"</div>" : "")+nota+
       caixaVinculo(t, feitaAgora)+
@@ -1497,6 +1566,11 @@ $("painelChecklist").addEventListener("change", function(ev){
 });
 
 /* ---------- navegação de semanas ---------- */
+$("voltarSemana").addEventListener("click", function(){
+  segAtual = segundaDe(new Date());
+  carregarSemana();
+});
+
 $("prevSem").addEventListener("click", function(){
   segAtual.setDate(segAtual.getDate()-7); carregarSemana();
 });
@@ -1559,7 +1633,14 @@ $("btnSalvarTarefa").addEventListener("click", async function(){
     data: $("tfData").value,
     lembrete: $("tfLembrete").value,
     vinculo: $("campoVinculo").hidden ? "" : $("tfVinculo").value,
-    vinculoCampo: $("campoVinculoCampo").hidden ? "" : $("tfVinculoCampo").value
+    vinculoCampo: $("campoVinculoCampo").hidden ? "" : $("tfVinculoCampo").value,
+    // campos que existiam no formulário mas nunca eram enviados
+    medicao: $("tfMedicao").checked,
+    unidade: $("tfUnidade").value,
+    paramCodigo: $("tfParam").value,
+    pop: $("tfPop").value,
+    critica: !!$("tfCritica").value,
+    prioridade: !!$("tfPrioridade").value
   };
   if (!editando && sessao.papel === "admin") corpo.para = $("tfPara").value;
   try{
@@ -1580,6 +1661,10 @@ function limparForm(){
   $("tfLembrete").value = ""; $("tfData").value = "";
   $("tfDia").value = ""; $("tfFreq").value = "diaria";
   $("tfVinculo").value = ""; $("campoVinculoCampo").hidden = true;
+  $("tfMedicao").checked = false;
+  $("tfMedicao").dispatchEvent(new Event("change"));
+  $("tfUnidade").value = ""; $("tfParam").value = "";
+  $("tfPop").value = ""; $("tfCritica").value = ""; $("tfPrioridade").value = "";
   $("tfFreq").dispatchEvent(new Event("change"));
   $("tituloForm").textContent = "➕ Nova tarefa";
   $("btnSalvarTarefa").textContent = "Adicionar tarefa";
@@ -1644,6 +1729,13 @@ $("listaGerenciar").addEventListener("click", async function(ev){
     $("tfVinculo").value = t.vinculo || "";
     $("tfVinculo").dispatchEvent(new Event("change"));
     if (t.vinculoCampo) $("tfVinculoCampo").value = t.vinculoCampo;
+    $("tfMedicao").checked = !!t.medicao;
+    $("tfMedicao").dispatchEvent(new Event("change"));
+    $("tfUnidade").value = t.unidade || "";
+    $("tfParam").value = t.paramCodigo || "";
+    $("tfPop").value = t.pop || "";
+    $("tfCritica").value = t.critica ? "1" : "";
+    $("tfPrioridade").value = t.prioridade ? "1" : "";
     $("tituloForm").textContent = "✏️ Editando tarefa";
     $("btnSalvarTarefa").textContent = "Salvar alterações";
     $("btnCancelarEdicao").hidden = false;
@@ -1980,7 +2072,8 @@ function detalheOperador(p){
     html += "<div class='det-grupo'>"+g.titulo+"</div>";
 
     lista.forEach(function(t){
-      var crit = t.critica ? "<span class='tag crit'>Crítica</span>" : "";
+      var crit = (t.prioridade ? "<span class='tag crit'>Prioritária</span>" : "") +
+                 (t.critica ? "<span class='tag crit'>Crítica</span>" : "");
 
       if (g.freq === "diaria"){
         var celulas = DIAS.map(function(dia){
@@ -2690,10 +2783,17 @@ function renderHoje(){
     $("hojeLista").innerHTML = "<div class='hoje-tudo'><span>🍺</span>"+
       "Tudo em dia por hoje.<br>Bom trabalho!</div>" + itens.map(itemHoje).join("");
   } else {
-    // pendentes primeiro, críticas no topo
+    // pendentes primeiro; entre elas, prioritárias no topo, depois críticas
     itens.sort(function(a,b){
       if (a.feito !== b.feito) return a.feito ? 1 : -1;
-      return (b.t.critica?1:0) - (a.t.critica?1:0);
+      var p = (b.t.prioridade?1:0) - (a.t.prioridade?1:0);
+      if (p) return p;
+      var c = (b.t.critica?1:0) - (a.t.critica?1:0);
+      if (c) return c;
+      return ordemAZ
+        ? String(a.t.nome||"").localeCompare(String(b.t.nome||""), "pt-BR",
+            {sensitivity:"base"})
+        : 0;
     });
     $("hojeLista").innerHTML = itens.map(itemHoje).join("");
   }
@@ -2714,9 +2814,10 @@ function itemHoje(i){
     (i.tipo === "q" ? "<span class='tag ouro'>Quinzenal</span>" : "") +
     (i.tipo === "r" ? "<span class='tag ouro'>Lembrete</span>" : "") +
     (i.tipo === "w" ? "<span class='tag'>Semanal</span>" : "");
-  return "<div class='hoje-item"+(i.feito?" done":"")+"'>"+
+  return "<div class='hoje-item"+(i.feito?" done":"")+(t.prioridade?" pri":"")+"'>"+
     "<button class='hoje-check "+cls+"' "+attr+">✓</button>"+
-    "<div class='item-info'><div class='hoje-nome'>"+esc(t.nome)+etiquetas+"</div>"+
+    "<div class='item-info'><div class='hoje-nome'>"+
+    (t.prioridade ? "<span class='ponto-pri'></span>" : "")+esc(t.nome)+etiquetas+"</div>"+
     (t.desc ? "<div class='hoje-desc'>"+esc(t.desc)+"</div>" : "")+
     caixaMedicao(t, i.dia)+
     caixaVinculo(t, i.feito)+
