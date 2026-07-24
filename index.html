@@ -169,6 +169,43 @@
   .rodape{text-align:center;margin-top:22px;font-family:'Barlow Condensed',sans-serif;
     font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
   .rodape b{color:var(--dourado)}
+  /* ---- visão ampliada por operador ---- */
+  .detalhe-op{
+    margin-top:10px;border:1px solid var(--linha);border-radius:8px;
+    background:#FBFAF5;overflow:hidden;
+  }
+  .det-grupo{
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.74rem;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--verde);
+    background:var(--verde-claro);padding:5px 10px;
+  }
+  .det-item{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:7px 10px;border-top:1px solid var(--linha);flex-wrap:wrap;
+  }
+  .det-nome{font-size:.83rem;font-weight:600;flex:1;min-width:140px}
+  .det-status{font-size:.76rem;font-weight:600;white-space:nowrap}
+  .det-status.ok{color:var(--verde)}
+  .det-status.nao{color:var(--vermelho)}
+  .det-dias{display:flex;gap:4px;flex-wrap:wrap}
+  .det-dia{
+    display:flex;flex-direction:column;align-items:center;min-width:40px;
+    border-radius:6px;padding:3px 4px;font-size:.6rem;line-height:1.25;
+    text-transform:uppercase;letter-spacing:.04em;
+  }
+  .det-dia b{font-size:.78rem;font-weight:700}
+  .det-dia i{font-style:normal;font-size:.58rem;opacity:.75}
+  .det-dia.ok{background:var(--verde-claro);color:var(--verde)}
+  .det-dia.nao{background:#F3F1EA;color:var(--muted)}
+  .tag.crit{background:var(--vermelho-claro);color:var(--vermelho);
+    border-color:var(--vermelho)}
+
+  .carimbo{
+    margin-top:6px;font-size:.75rem;color:var(--verde);font-weight:600;
+  }
+  .carimbo-cel{
+    font-size:.62rem;color:var(--muted);margin-top:2px;line-height:1;
+  }
   .versao{
     font-family:'Barlow Condensed',sans-serif;font-size:.72rem;
     letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
@@ -439,7 +476,7 @@
         <button data-aba="hoje" class="ativa">Hoje</button>
         <button data-aba="checklist">Semana</button>
         <button data-aba="tarefas">Minhas tarefas</button>
-        <button data-aba="base">Base</button>
+        <button data-aba="base">Banco de dados</button>
         <button data-aba="relatorios" id="abaRelatorios" hidden>Relatórios</button>
         <button data-aba="equipe" id="abaEquipe" hidden>Equipe</button>
       </nav>
@@ -757,7 +794,7 @@
     <!-- ---------- ABA BASE DE REFERÊNCIA ---------- -->
     <div id="painelBase" hidden>
       <section id="baseNaoConfig" hidden>
-        <div class="sec-head"><span class="sec-title">📚 Base de referência</span></div>
+        <div class="sec-head"><span class="sec-title">🗄️ Banco de dados</span></div>
         <div style="padding:16px;font-size:.9rem;line-height:1.6">
           <p>A planilha ainda não foi conectada. Para ligar:</p>
           <ol style="padding-left:20px;margin-top:10px;color:var(--muted);line-height:1.8">
@@ -772,7 +809,7 @@
 
       <section id="baseConteudo" hidden>
         <div class="sec-head">
-          <span class="sec-title">📚 Base de referência</span>
+          <span class="sec-title">🗄️ Banco de dados</span>
           <span class="sec-sub" id="baseAtualizado"></span>
         </div>
         <div class="form-grid">
@@ -817,7 +854,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.4.2";
+var VERSAO = "1.5.0";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -837,7 +874,33 @@ var DIAS = ["seg","ter","qua","qui","sex"];
 var NOMES = {seg:"Seg",ter:"Ter",qua:"Qua",qui:"Qui",sex:"Sex",sab:"Sáb"};
 var MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 
-function vazio(){ return {d:{},w:{},c:{},l:{},v:{},m:{}}; }
+function vazio(){ return {d:{},w:{},c:{},l:{},v:{},m:{},h:{}}; }
+
+/* Carimbo de data e hora da marcação. A hora é a do aparelho no momento do
+   clique — o que importa é quando a tarefa foi feita, não quando o registro
+   chegou ao servidor (podem ser bem diferentes quando se marca offline). */
+function carimbar(chave, feito){
+  estado.h = estado.h || {};
+  if (feito) estado.h[chave] = new Date().toISOString();
+  else delete estado.h[chave];
+}
+function carimboDe(chave){
+  var iso = (estado.h || {})[chave];
+  if (!iso) return "";
+  var d = new Date(iso);
+  if (isNaN(d)) return "";
+  return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+
+         " às "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+}
+/* Mesma leitura, a partir de um estado qualquer — usada no painel da equipe. */
+function carimboEm(est, chave){
+  var iso = ((est || {}).h || {})[chave];
+  if (!iso) return "";
+  var d = new Date(iso);
+  if (isNaN(d)) return "";
+  return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+
+         " "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+}
 
 /* ==================================================================
    Utilidades
@@ -1155,9 +1218,13 @@ function renderDiarias(){
       var feito = estado.d[t.id] && estado.d[t.id][d];
       var passado = semanaPassada() || (ih>-1 && i<ih);
       var cls = feito ? "feito" : (passado ? "aberto" : "");
+      var carimbo = feito ? carimboDe(t.id+"|"+d) : "";
       html += "<td class='celula'><button class='check "+cls+"' data-t='"+t.id+
-              "' data-d='"+d+"' aria-label='"+esc(t.nome)+" "+NOMES[d]+"'>"+
-              (feito ? "✓" : (passado ? "!" : "✓"))+"</button></td>";
+              "' data-d='"+d+"' title='"+(carimbo ? "Marcada em "+carimbo : "")+
+              "' aria-label='"+esc(t.nome)+" "+NOMES[d]+"'>"+
+              (feito ? "✓" : (passado ? "!" : "✓"))+"</button>"+
+              (carimbo ? "<div class='carimbo-cel'>"+carimbo.split(" às ")[1]+"</div>" : "")+
+              "</td>";
     });
     html += "</tr>";
   });
@@ -1198,6 +1265,7 @@ function renderSemanais(){
       }
     }
     html += caixaVinculo(t, feito);
+    if (feito) html += "<div class='carimbo'>✓ marcada em "+carimboDe(t.id)+"</div>";
     html += "</div></li>";
   });
   $("listaSemanais").innerHTML = html;
@@ -1264,7 +1332,9 @@ function renderQuinzenais(){
       "<div class='item-info'><div class='item-nome'>"+esc(t.nome)+
       "<span class='tag ouro'>Quinzenal</span></div>"+
       (t.desc ? "<div class='item-desc'>"+esc(t.desc)+"</div>" : "")+nota+
-      caixaVinculo(t, feitaAgora)+"</div></li>";
+      caixaVinculo(t, feitaAgora)+
+      (feitaAgora ? "<div class='carimbo'>✓ marcada em "+carimboDe(t.id)+"</div>" : "")+
+      "</div></li>";
   });
   $("listaQuinzenais").innerHTML = html;
 }
@@ -1382,16 +1452,19 @@ $("painelChecklist").addEventListener("click", function(ev){
     var id = b.dataset.t, dia = b.dataset.d;
     estado.d[id] = estado.d[id] || {};
     estado.d[id][dia] = !estado.d[id][dia];
+    carimbar(id+"|"+dia, estado.d[id][dia]);
     salvar(); renderDiarias(); renderProgresso(); return;
   }
   if (b.dataset.w){                       // semanal
     estado.w[b.dataset.w] = !estado.w[b.dataset.w];
+    carimbar(b.dataset.w, estado.w[b.dataset.w]);
     salvar(); renderSemanais(); renderProgresso(); return;
   }
   if (b.dataset.q){                       // quinzenal
     var q = b.dataset.q;
     if (ciclos[q] === chaveSemana(segAtual)) delete ciclos[q];
     else ciclos[q] = chaveSemana(segAtual);
+    carimbar(q, ciclos[q] === chaveSemana(segAtual));
     salvar(); renderQuinzenais(); renderProgresso(); return;
   }
   if (b.dataset.r){                       // lembrete programado
@@ -1401,6 +1474,7 @@ $("painelChecklist").addEventListener("click", function(ev){
       var h = hoje();
       ciclos[r] = h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);
     }
+    carimbar(r, !!ciclos[r]);
     salvar(); renderLembretes(); return;
   }
   if (b.dataset.c){                       // contador
@@ -1686,7 +1760,7 @@ $("btnCriarUsuario").addEventListener("click", async function(){
 });
 
 /* ==================================================================
-   Aba "Base de referência"
+   Aba "Banco de dados"
    ================================================================== */
 var baseCarregada = false;
 var baseTabelas = {};
@@ -1844,10 +1918,13 @@ async function carregarAcompanhamento(){
     var fim = new Date(segHoje); fim.setDate(fim.getDate() + 6);
     $("acompSemana").textContent = fmtDia(segHoje) + " a " + fmtDia(fim);
 
+    var seg = new Date(chave + "T00:00:00");
     semanaAcomp = r.usuarios.map(function(u){
-      var seg = new Date(chave + "T00:00:00");
-      var calc = calcular(u.tarefas, u.estados[chave], u.ciclos, seg);
-      return { nome: u.nome, login: u.login, calc: calc };
+      return {
+        nome: u.nome, login: u.login,
+        calc: calcular(u.tarefas, u.estados[chave], u.ciclos, seg),
+        tarefas: u.tarefas, estado: u.estados[chave], ciclos: u.ciclos
+      };
     });
 
     var html = "";
@@ -1868,6 +1945,11 @@ async function carregarAcompanhamento(){
       } else {
         html += "<div class='pl-pend'>✅ tudo em dia</div>";
       }
+      if (p.calc.total){
+        html += "<button class='btn-mini' data-detalhe='"+esc(p.login)+"' "+
+          "style='margin-top:8px'>ver todas as tarefas</button>"+
+          "<div class='detalhe-op' id='det-"+esc(p.login)+"' hidden></div>";
+      }
       html += "</div>";
     });
     $("acompLista").innerHTML = html || "<div class='vazio'>Nenhuma pessoa cadastrada.</div>";
@@ -1875,6 +1957,88 @@ async function carregarAcompanhamento(){
     $("acompLista").innerHTML = "<div class='vazio'>"+esc(e.message)+"</div>";
   }
 }
+
+/* Visão ampla de um operador: TODAS as tarefas da semana, feitas e por fazer,
+   com o dia e a hora de cada marcação. É a diferença entre saber o percentual
+   e saber o que exatamente está parado. */
+function detalheOperador(p){
+  var seg = new Date(chaveSemana(segHoje) + "T00:00:00");
+  var est = p.estado || {}, cic = p.ciclos || {};
+  var d = est.d || {}, w = est.w || {}, c = est.c || {}, m = est.m || {};
+  var grupos = [
+    {titulo:"Diárias", freq:"diaria"},
+    {titulo:"Semanais", freq:"semanal"},
+    {titulo:"Quinzenais", freq:"quinzenal"},
+    {titulo:"Sob demanda", freq:"demanda"},
+    {titulo:"Lembretes", freq:"lembrete"}
+  ];
+  var html = "";
+
+  grupos.forEach(function(g){
+    var lista = (p.tarefas || []).filter(function(t){ return t.freq === g.freq; });
+    if (!lista.length) return;
+    html += "<div class='det-grupo'>"+g.titulo+"</div>";
+
+    lista.forEach(function(t){
+      var crit = t.critica ? "<span class='tag crit'>Crítica</span>" : "";
+
+      if (g.freq === "diaria"){
+        var celulas = DIAS.map(function(dia){
+          var feito = d[t.id] && d[t.id][dia];
+          var car = feito ? carimboEm(est, t.id+"|"+dia) : "";
+          var leitura = m[t.id+"|"+dia];
+          return "<span class='det-dia "+(feito?"ok":"nao")+"' title='"+
+            (car ? "marcada "+car : "não marcada")+"'>"+
+            NOMES[dia]+"<b>"+(feito ? (leitura ? esc(leitura) : "✓") : "—")+"</b>"+
+            (car ? "<i>"+esc(car.split(" ")[1] || "")+"</i>" : "")+"</span>";
+        }).join("");
+        html += "<div class='det-item'><div class='det-nome'>"+esc(t.nome)+crit+"</div>"+
+          "<div class='det-dias'>"+celulas+"</div></div>";
+        return;
+      }
+
+      var feito, car = "", extra = "";
+      if (g.freq === "semanal"){ feito = !!w[t.id]; }
+      else if (g.freq === "quinzenal"){
+        feito = cic[t.id] === chaveSemana(segHoje);
+        if (!feito && !venceuEm(cic[t.id], seg)) extra = " (em dia, não vence esta semana)";
+      }
+      else if (g.freq === "demanda"){
+        var n = c[t.id] || 0;
+        html += "<div class='det-item'><div class='det-nome'>"+esc(t.nome)+crit+
+          "</div><div class='det-status "+(n?"ok":"nao")+"'>"+
+          (n ? n+" registro(s)" : "nenhum registro")+"</div></div>";
+        return;
+      }
+      else { feito = !!cic[t.id]; }
+
+      if (feito) car = carimboEm(est, t.id);
+      var leituraW = m[t.id];
+      html += "<div class='det-item'><div class='det-nome'>"+esc(t.nome)+crit+"</div>"+
+        "<div class='det-status "+(feito?"ok":"nao")+"'>"+
+        (feito
+          ? "✓ " + (leituraW ? esc(leituraW)+" · " : "") + (car || "marcada")
+          : "em aberto" + extra)+
+        "</div></div>";
+    });
+  });
+
+  return html || "<div class='item-desc'>Sem tarefas.</div>";
+}
+
+$("acompLista").addEventListener("click", function(ev){
+  var b = ev.target.closest("button[data-detalhe]");
+  if (!b) return;
+  var login = b.dataset.detalhe;
+  var caixa = $("det-" + login);
+  if (!caixa) return;
+  if (!caixa.hidden){ caixa.hidden = true; b.textContent = "ver todas as tarefas"; return; }
+  var p = (semanaAcomp || []).filter(function(x){ return x.login === login; })[0];
+  if (!p) return;
+  caixa.innerHTML = detalheOperador(p);
+  caixa.hidden = false;
+  b.textContent = "ocultar";
+});
 
 $("btnAtualizarAcomp").addEventListener("click", function(){
   acompCarregado = false; carregarAcompanhamento();
@@ -2557,6 +2721,8 @@ function itemHoje(i){
     caixaMedicao(t, i.dia)+
     caixaVinculo(t, i.feito)+
     botaoPop(t)+
+    (i.feito ? "<div class='carimbo'>✓ marcada em "+
+       carimboDe(i.dia ? t.id+"|"+i.dia : t.id)+"</div>" : "")+
     "</div></div>";
 }
 
@@ -2615,12 +2781,15 @@ $("painelHoje").addEventListener("click", function(ev){
     var id = b.dataset.hjD, dia = b.dataset.hjDia;
     estado.d[id] = estado.d[id] || {};
     estado.d[id][dia] = !estado.d[id][dia];
+    carimbar(id+"|"+dia, estado.d[id][dia]);
   } else if (b.dataset.hjW){
     estado.w[b.dataset.hjW] = !estado.w[b.dataset.hjW];
+    carimbar(b.dataset.hjW, estado.w[b.dataset.hjW]);
   } else if (b.dataset.hjQ){
     var q = b.dataset.hjQ;
     if (ciclos[q] === chaveSemana(segAtual)) delete ciclos[q];
     else ciclos[q] = chaveSemana(segAtual);
+    carimbar(q, ciclos[q] === chaveSemana(segAtual));
   } else if (b.dataset.hjR){
     var r = b.dataset.hjR;
     if (ciclos[r]) delete ciclos[r];
@@ -2628,6 +2797,7 @@ $("painelHoje").addEventListener("click", function(ev){
       var h = hoje();
       ciclos[r] = h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);
     }
+    carimbar(r, !!ciclos[r]);
   } else return;
   salvar(); renderTudo();
 });

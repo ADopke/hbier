@@ -44,6 +44,34 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 1.5.0 — 24/07/2026
+
+**Registro de data e hora nas marcações**
+- Toda marcação passa a guardar quando foi feita, e o horário aparece ao lado
+  da tarefa: *"✓ marcada em 24/07 às 14:32"*
+- Na grade semanal, a hora aparece embaixo do check e o dia completo no
+  tooltip
+- A hora registrada é a do aparelho no momento do clique — não a de quando o
+  registro chegou ao servidor. A diferença importa em marcação offline
+- Semanas antigas, sem esse campo, continuam abrindo normalmente
+
+**Visão ampla por operador** (aba Equipe)
+- Botão *ver todas as tarefas* em cada pessoa, abrindo a lista completa da
+  semana: feitas e por fazer, agrupadas por frequência
+- Diárias aparecem como faixa de cinco dias, cada um com ✓, a leitura numérica
+  quando houver, e a hora da marcação
+- Semanais, quinzenais e lembretes mostram *em aberto* ou o horário
+- Quinzenal em dia é identificada como tal, em vez de contar como pendência
+- Sob demanda mostra a contagem de registros
+- Tarefas críticas ficam sinalizadas
+
+**Outros**
+- Aba *Base* renomeada para **Banco de dados**
+- Ferramenta `montar-base-csv-urls.html` reduzida às quatro abas que o app
+  realmente lê: Tanques, Tarefas Padrão, Parâmetros de Processo e Procedimentos
+
+---
+
 ## 1.4.2 — 24/07/2026
 
 - O campo **Procedimento (POP)** nunca era preenchido: ficava só com "Nenhum",
