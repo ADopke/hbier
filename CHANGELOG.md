@@ -44,6 +44,15 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 1.4.2 — 24/07/2026
+
+- O campo **Procedimento (POP)** nunca era preenchido: ficava só com "Nenhum",
+  mesmo com a aba Procedimentos publicada. Agora carrega os processos da base
+- O campo **Código do parâmetro** ganhou sugestões enquanto se digita,
+  puxadas da aba Parâmetros de Processo
+
+---
+
 ## 1.4.1 — 24/07/2026
 
 **Correção da falha que eu mesmo introduzi na 1.4.0**

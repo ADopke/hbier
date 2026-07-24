@@ -584,7 +584,8 @@
           </div>
           <div id="campoParam" hidden>
             <label for="tfParam">Código na aba Parâmetros (opcional)</label>
-            <input type="text" id="tfParam" placeholder="Ex.: MAT-06 — traz a faixa aceitável">
+            <input type="text" id="tfParam" list="listaParams" placeholder="Ex.: MAT-06 — traz a faixa aceitável">
+            <datalist id="listaParams"></datalist>
           </div>
           <div class="largo" id="campoPara" hidden>
             <label for="tfPara">Atribuir para</label>
@@ -816,7 +817,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.4.1";
+var VERSAO = "1.4.2";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -1721,6 +1722,41 @@ async function carregarBase(forcar){
         return "<option value='"+esc(n)+"'>"+esc(n)+"</option>";
       }).join("");
     if (nomes.indexOf(atualVinc) > -1) $("tfVinculo").value = atualVinc;
+
+    // alimenta o seletor de Procedimento (POP) com os processos distintos da
+    // aba Procedimentos — sem isto o campo fica só com "Nenhum"
+    var tabProc = baseTabelas["Procedimentos"];
+    if (tabProc){
+      var iP = tabProc.colunas.indexOf("Procedimento");
+      var vistos = {}, procs = [];
+      if (iP > -1) tabProc.linhas.forEach(function(l){
+        var v = (l[iP] || "").trim();
+        if (v && !vistos[v]){ vistos[v] = 1; procs.push(v); }
+      });
+      procs.sort();
+      var atualPop = $("tfPop").value;
+      $("tfPop").innerHTML = "<option value=''>Nenhum</option>" +
+        procs.map(function(n){
+          return "<option value='"+esc(n)+"'>"+esc(n)+"</option>";
+        }).join("");
+      if (procs.indexOf(atualPop) > -1) $("tfPop").value = atualPop;
+    }
+
+    // sugestões de código de parâmetro no campo de texto
+    var tabPar = baseTabelas["Parâmetros de Processo"] ||
+                 baseTabelas["Parametros de Processo"];
+    if (tabPar){
+      var iC = tabPar.colunas.indexOf("Código");
+      var iN = tabPar.colunas.indexOf("Parâmetro");
+      if (iC > -1){
+        $("listaParams").innerHTML = tabPar.linhas.map(function(l){
+          var cod = (l[iC] || "").trim();
+          if (!cod) return "";
+          return "<option value='"+esc(cod)+"'>"+
+            esc(iN > -1 ? (l[iN] || "") : "")+"</option>";
+        }).join("");
+      }
+    }
 
     renderBase();
   }catch(e){
