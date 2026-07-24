@@ -199,6 +199,28 @@ export function tarefasDaPlanilha(tabelas) {
 
   if (iNome < 0 || iFreq < 0) return null;
 
+  // Quais campos a planilha REALMENTE governa.
+  //
+  // Isto existe por causa de um bug sério: a sincronização sobrescrevia todos
+  // os campos, inclusive os que não têm coluna na planilha. Quem marcasse uma
+  // tarefa como prioritária no app via a configuração sumir na sincronização
+  // seguinte — a planilha "dizia" que era vazio simplesmente por não ter a
+  // coluna. Agora, coluna ausente significa que a planilha não opina, e o
+  // valor definido no app é preservado.
+  const campos = ["nome", "freq"];
+  if (iDesc > -1) campos.push("desc");
+  if (iDia > -1) campos.push("dia");
+  if (iData > -1) campos.push("data");
+  if (iLemb > -1) campos.push("lembrete");
+  if (iVinc > -1) campos.push("vinculo");
+  if (iVCampo > -1) campos.push("vinculoCampo");
+  if (iMed > -1) campos.push("medicao");
+  if (iUni > -1) campos.push("unidade");
+  if (iParam > -1) campos.push("paramCodigo");
+  if (iPop > -1) campos.push("pop");
+  if (iCrit > -1) campos.push("critica");
+  if (iPri > -1) campos.push("prioridade");
+
   const saida = [];
   for (const l of tab.linhas) {
     const nome = (l[iNome] || "").trim();
@@ -230,5 +252,6 @@ export function tarefasDaPlanilha(tabelas) {
       prioridade: iPri > -1 ? /^(sim|s|x|true|1)$/i.test((l[iPri] || "").trim()) : false,
     });
   }
+  saida.campos = campos;
   return saida;
 }

@@ -58,6 +58,10 @@ function veioDaPlanilha(t) {
 
 function aplicar(tarefas, doSheet, adotar) {
   const idx = indices(doSheet);
+  // Só sobrescreve o que a planilha realmente tem como coluna. Sem isto, um
+  // campo configurado no app (prioridade, medição, POP...) era apagado na
+  // sincronização seguinte, porque a ausência da coluna era lida como "vazio".
+  const governados = doSheet.campos || CAMPOS;
   const usadas = new Set();
   const atualizadas = [], adotadas = [], semPar = [];
   let carimbadas = 0;
@@ -92,7 +96,7 @@ function aplicar(tarefas, doSheet, adotar) {
     usadas.add(alvo.chave);
 
     const mudou = [];
-    for (const campo of CAMPOS) {
+    for (const campo of governados) {
       const novo = alvo[campo] === undefined ? "" : alvo[campo] || "";
       const atual = t[campo] === undefined ? "" : t[campo] || "";
       if (String(novo) !== String(atual)) {
@@ -182,7 +186,9 @@ export default protegido(async function handler(req, res) {
     const t = tarefas.find((x) => x.id === dados.tarefaId);
     if (!t) return erro(res, 404, "Tarefa não encontrada.");
 
-    for (const campo of CAMPOS) t[campo] = linha[campo] || "";
+    for (const campo of (doSheet.campos || CAMPOS)) {
+      t[campo] = linha[campo] || "";
+    }
     t.fonte = "planilha";
     t.codigoBase = linha.codigoBase || "";
     await gravar("tasks:" + alvo, tarefas);
@@ -227,6 +233,7 @@ export default protegido(async function handler(req, res) {
     diagnostico: {
       abasPublicadas: abas, abaTarefas: nomeAba, colunas,
       temCodigo: colunas.some((c) => normalizar(c) === "codigo"),
+      camposGovernados: doSheet.campos || [],
       comCodigo: doSheet.filter((s) => s.codigoBase).length,
     },
     resultados,
