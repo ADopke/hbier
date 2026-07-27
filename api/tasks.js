@@ -38,8 +38,8 @@ export default protegido(async function handler(req, res) {
     // destinatários: admin pode atribuir a qualquer um ou a todos
     let destinos = [sessao.login];
     if (dados.para && dados.para !== sessao.login) {
-      if (sessao.papel !== "admin") {
-        return erro(res, 403, "Somente o administrador atribui tarefas a outros.");
+      if (!["admin","gestor"].includes(sessao.papel)) {
+        return erro(res, 403, "Somente o administrador ou gestor atribui tarefas a outros.");
       }
       destinos = dados.para === "__todos__"
         ? await listaUsuarios()
@@ -67,8 +67,8 @@ export default protegido(async function handler(req, res) {
         critica: Boolean(dados.critica),
         prioridade: Boolean(dados.prioridade),
         origem:
-          sessao.papel === "admin" && destino !== sessao.login
-            ? "admin"
+          ["admin","gestor"].includes(sessao.papel) && destino !== sessao.login
+            ? sessao.papel
             : "proprio",
         criadaPor: sessao.login,
       });
@@ -80,7 +80,7 @@ export default protegido(async function handler(req, res) {
   /* ---------- editar ---------- */
   if (dados.acao === "editar") {
     const alvo = (dados.usuario || sessao.login).toLowerCase();
-    if (alvo !== sessao.login && sessao.papel !== "admin") {
+    if (alvo !== sessao.login && !["admin","gestor"].includes(sessao.papel)) {
       return erro(res, 403, "Sem permissão.");
     }
     const validacao = validarTarefa(dados);
@@ -116,7 +116,7 @@ export default protegido(async function handler(req, res) {
   /* ---------- excluir ---------- */
   if (dados.acao === "excluir") {
     const alvo = (dados.usuario || sessao.login).toLowerCase();
-    if (alvo !== sessao.login && sessao.papel !== "admin") {
+    if (alvo !== sessao.login && !["admin","gestor"].includes(sessao.papel)) {
       return erro(res, 403, "Sem permissão.");
     }
     const tarefas = (await ler(`tasks:${alvo}`)) || [];
@@ -139,7 +139,7 @@ export default protegido(async function handler(req, res) {
   /* ---------- importar em lote (da planilha) ---------- */
   if (dados.acao === "importar") {
     const alvo = (dados.usuario || sessao.login).toLowerCase();
-    if (alvo !== sessao.login && sessao.papel !== "admin") {
+    if (alvo !== sessao.login && !["admin","gestor"].includes(sessao.papel)) {
       return erro(res, 403, "Sem permissão.");
     }
     if (!Array.isArray(dados.tarefas) || !dados.tarefas.length) {

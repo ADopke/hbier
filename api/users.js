@@ -51,10 +51,14 @@ export default protegido(async function handler(req, res) {
     }
 
     const { sal, hash } = criarHashSenha(dados.senha);
+    // admin → só admin cria outro admin (já verificado acima)
+    // gestor → admin pode criar; o gestor não chega aqui (falta permissão)
+    const papelNovo = ["admin","gestor"].includes(dados.papel)
+      ? dados.papel : "colaborador";
     await gravar(`user:${login}`, {
       login,
       nome: dados.nome.trim(),
-      papel: dados.papel === "admin" ? "admin" : "colaborador",
+      papel: papelNovo,
       sal,
       hash,
       criadoEm: new Date().toISOString(),
@@ -95,6 +99,24 @@ export default protegido(async function handler(req, res) {
     const logins = (await listaUsuarios()).filter((l) => l !== login);
     await gravar("userlist", logins);
     return res.json({ ok: true });
+  }
+
+  /* ---------- mudar papel ---------- */
+  if (dados.acao === "mudar-papel") {
+    const login = (dados.login || "").trim().toLowerCase();
+    if (login === sessao.login) {
+      return erro(res, 400, "Você não pode alterar o próprio papel.");
+    }
+    const usuario = await buscarUsuario(login);
+    if (!usuario) return erro(res, 404, "Usuário não encontrado.");
+
+    const papelNovo = ["admin","gestor","colaborador"].includes(dados.papel)
+      ? dados.papel : null;
+    if (!papelNovo) return erro(res, 400, "Papel inválido.");
+
+    // tarefas, ciclos e histórico de marcações não são tocados
+    await gravar(`user:${login}`, { ...usuario, papel: papelNovo });
+    return res.json({ ok: true, login, papel: papelNovo });
   }
 
   return erro(res, 400, "Ação desconhecida.");

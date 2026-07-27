@@ -162,7 +162,7 @@ export default protegido(async function handler(req, res) {
     });
   }
 
-  if (alvo !== sessao.login && sessao.papel !== "admin") {
+  if (alvo !== sessao.login && !["admin","gestor"].includes(sessao.papel)) {
     return erro(res, 403, "Sem permissão para sincronizar outra pessoa.");
   }
   if (adotar && sessao.papel !== "admin") {
