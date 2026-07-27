@@ -44,6 +44,25 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 1.7.0 — 27/07/2026
+
+**Registros com data e observação nas tarefas de demanda**
+
+Antes, as tarefas "conforme demanda" guardavam apenas o número de adições. Agora
+cada clique em "+ Adicionar" abre um formulário com data/hora (pré-preenchida com
+o momento atual) e um campo de observação livre.
+
+- A lista de registros aparece dentro da tarefa, com a data e a observação de
+  cada ocorrência
+- Cada registro pode ser editado (✏) ou removido (×) individualmente
+- O contador numérico é mantido em sincronia para compatibilidade com o
+  relatório e a visão da equipe
+- Tarefas com registros antigos (só o número) são migradas automaticamente —
+  elas aparecem com "(sem data)" até que um novo registro seja adicionado
+- A visão ampla do operador (aba Equipe) mostra a lista de registros com data
+
+---
+
 ## 1.6.5 — 27/07/2026
 
 **Correção: aba Equipe (e outras) invisível no celular**

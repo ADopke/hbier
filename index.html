@@ -201,6 +201,33 @@
   .hoje-item.pri{border-left:3px solid var(--vermelho)}
   .item.pri{border-left:3px solid var(--vermelho)}
 
+  /* ---- tarefas de demanda: lista de registros ---- */
+  .dem-item{ align-items:flex-start; }
+  .dem-regs{
+    list-style:none;margin:8px 0 0;padding:0;
+    border-top:1px solid var(--linha);
+  }
+  .dem-reg{
+    display:flex;align-items:center;gap:6px;
+    padding:5px 0;border-bottom:1px solid var(--linha);font-size:.8rem;
+  }
+  .dem-reg:last-child{border-bottom:none}
+  .dem-data{flex:1;color:var(--ink);line-height:1.4}
+  .dem-edit,.dem-del{
+    background:none;border:none;cursor:pointer;padding:2px 5px;
+    font-size:.82rem;border-radius:5px;
+  }
+  .dem-edit{color:var(--muted)} .dem-edit:hover{background:var(--verde-claro);color:var(--verde)}
+  .dem-del {color:var(--muted)} .dem-del:hover {background:var(--vermelho-claro);color:var(--vermelho)}
+  .btn-add-dem{
+    margin-top:6px;padding:7px 14px;border:1.5px solid var(--verde);
+    border-radius:8px;background:#fff;color:var(--verde);cursor:pointer;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;
+    letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;
+  }
+  .btn-add-dem:hover{background:var(--verde-claro)}
+  .contador{ flex-direction:column;align-items:flex-end;gap:4px;min-width:80px; }
+
   /* ---- visão ampliada por operador ---- */
   .detalhe-op{
     margin-top:10px;border:1px solid var(--linha);border-radius:8px;
@@ -898,7 +925,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.6.5";
+var VERSAO = "1.7.0";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -918,7 +945,34 @@ var DIAS = ["seg","ter","qua","qui","sex"];
 var NOMES = {seg:"Seg",ter:"Ter",qua:"Qua",qui:"Qui",sex:"Sex",sab:"Sáb"};
 var MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 
-function vazio(){ return {d:{},w:{},c:{},l:{},v:{},m:{},h:{}}; }
+function vazio(){ return {d:{},w:{},c:{},l:{},v:{},m:{},h:{},r:{}}; }
+
+/* Registros de demanda: cada adição salva {data, obs}. O campo c[]
+   (contador legado) é migrado na primeira leitura para não perder histórico. */
+function lerRegistros(id){
+  var legado = estado.c && estado.c[id];
+  var regs = (estado.r || {})[id];
+  if (!regs && legado){
+    // migração: transforma o número legado em registros sem data conhecida
+    regs = [];
+    for(var i=0;i<legado;i++) regs.push({data:"",obs:""});
+  }
+  return regs || [];
+}
+function salvarRegistros(id, lista){
+  estado.r = estado.r || {};
+  estado.r[id] = lista;
+  // mantém c[] em sincronia para que o relatório e a visão da equipe funcionem
+  estado.c = estado.c || {};
+  estado.c[id] = lista.length;
+}
+function fmtRegistro(r){
+  if(!r.data) return r.obs || "(sem data)";
+  var d=new Date(r.data);
+  return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+
+    " "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2)+
+    (r.obs ? " · "+r.obs : "");
+}
 
 /* Carimbo de data e hora da marcação. A hora é a do aparelho no momento do
    clique — o que importa é quando a tarefa foi feita, não quando o registro
@@ -1429,14 +1483,29 @@ function renderDemanda(){
   $("secDemanda").hidden = lista.length === 0;
   var html = "";
   lista.forEach(function(t){
-    var n = estado.c[t.id] || 0;
-    html += "<li class='item'><div class='item-info'><div class='item-nome'>"+esc(t.nome)+"</div>"+
-      (t.desc ? "<div class='item-desc'>"+esc(t.desc)+"</div>" : "")+
-      caixaVinculo(t, n>0)+"</div>"+
+    var regs = lerRegistros(t.id);
+    var n = regs.length;
+    var pri = t.prioridade ? "<span class='ponto-pri'></span>" : "";
+    html += "<li class='item dem-item"+(t.prioridade?" pri":"")+"'>"+
+      "<div class='item-info'>"+
+        "<div class='item-nome'>"+pri+esc(t.nome)+"</div>"+
+        (t.desc ? "<div class='item-desc'>"+esc(t.desc)+"</div>" : "")+
+        caixaVinculo(t, n>0)+
+        (n>0
+          ? "<ul class='dem-regs'>"+regs.map(function(r,i){
+              return "<li class='dem-reg'>"+
+                "<span class='dem-data'>"+esc(fmtRegistro(r))+"</span>"+
+                "<button class='dem-edit' data-dem-edit='"+t.id+"' data-dem-i='"+i+"' title='Editar'>✏</button>"+
+                "<button class='dem-del' data-dem-del='"+t.id+"' data-dem-i='"+i+"' title='Remover'>×</button>"+
+              "</li>";
+            }).join("")+"</ul>"
+          : "")+
+      "</div>"+
       "<div class='contador'>"+
-      "<button data-c='"+t.id+"' data-v='-1'>−</button>"+
-      "<span class='num"+(n>0?" tem":"")+"'>"+n+"</span>"+
-      "<button data-c='"+t.id+"' data-v='1'>+</button></div></li>";
+        "<span class='num"+(n>0?" tem":"")+"'>"+n+"</span>"+
+        "<button class='btn-add-dem' data-dem-add='"+t.id+"'>+ Adicionar</button>"+
+      "</div>"+
+    "</li>";
   });
   $("listaDemanda").innerHTML = html;
 }
@@ -1562,9 +1631,23 @@ $("painelChecklist").addEventListener("click", function(ev){
     carimbar(r, !!ciclos[r]);
     salvar(); renderTudo(); return;
   }
-  if (b.dataset.c){                       // contador
-    var c = b.dataset.c;
-    estado.c[c] = Math.max(0, (estado.c[c]||0) + parseInt(b.dataset.v,10));
+  if (b.dataset.demAdd){                  // adicionar registro de demanda
+    abrirModalDemanda(b.dataset.demAdd, null, null);
+    return;
+  }
+  if (b.dataset.demEdit){                 // editar registro existente
+    var i = parseInt(b.dataset.demI,10);
+    var regs = lerRegistros(b.dataset.demEdit);
+    abrirModalDemanda(b.dataset.demEdit, i, regs[i]);
+    return;
+  }
+  if (b.dataset.demDel){                  // remover registro
+    var id = b.dataset.demDel;
+    var idx = parseInt(b.dataset.demI,10);
+    var lista = lerRegistros(id);
+    if (!confirm("Remover este registro?")) return;
+    lista.splice(idx, 1);
+    salvarRegistros(id, lista);
     salvar(); renderTudo(); return;
   }
 });
@@ -2136,10 +2219,15 @@ function detalheOperador(p){
         if (!feito && !venceuEm(cic[t.id], seg)) extra = " (em dia, não vence esta semana)";
       }
       else if (g.freq === "demanda"){
-        var n = c[t.id] || 0;
-        html += "<div class='det-item'><div class='det-nome'>"+esc(t.nome)+crit+
-          "</div><div class='det-status "+(n?"ok":"nao")+"'>"+
-          (n ? n+" registro(s)" : "nenhum registro")+"</div></div>";
+        var regsD = lerRegistros(t.id);
+        html += "<div class='det-item' style='flex-direction:column;align-items:flex-start;gap:4px'>"+
+          "<div class='det-nome'>"+esc(t.nome)+crit+"</div>"+
+          (regsD.length
+            ? "<ul class='dem-regs' style='width:100%'>"+regsD.map(function(r){
+                return "<li class='dem-reg'><span class='dem-data'>"+esc(fmtRegistro(r))+"</span></li>";
+              }).join("")+"</ul>"
+            : "<div class='det-status nao'>nenhum registro</div>")+
+          "</div>";
         return;
       }
       else { feito = !!cic[t.id]; }
@@ -2988,6 +3076,45 @@ document.addEventListener("change", function(ev){
   }
 });
 
+/* ==================================================================
+   Modal de demanda — adicionar / editar registro com data e observação
+   ================================================================== */
+var _demModal = {id:null, idx:null};
+
+function abrirModalDemanda(id, idx, reg){
+  _demModal.id  = id;
+  _demModal.idx = idx;
+  var agora = new Date();
+  var iso   = agora.getFullYear()+"-"+("0"+(agora.getMonth()+1)).slice(-2)+"-"+
+              ("0"+agora.getDate()).slice(-2)+"T"+
+              ("0"+agora.getHours()).slice(-2)+":"+("0"+agora.getMinutes()).slice(-2);
+  $("demData").value = (reg && reg.data) ? reg.data.slice(0,16) : iso;
+  $("demObs").value  = (reg && reg.obs)  ? reg.obs : "";
+  $("demTitulo").textContent = idx === null ? "Novo registro" : "Editar registro";
+  $("modalDemanda").hidden = false;
+  $("demObs").focus();
+}
+function fecharModalDemanda(){
+  $("modalDemanda").hidden = true;
+}
+$("btnDemSalvar").addEventListener("click", function(){
+  var id   = _demModal.id;
+  var idx  = _demModal.idx;
+  var data = $("demData").value;          // datetime-local → ISO string parcial
+  var obs  = $("demObs").value.trim();
+  var lista = lerRegistros(id);
+  var reg = {data: data, obs: obs};
+  if (idx === null) lista.push(reg);
+  else lista[idx] = reg;
+  salvarRegistros(id, lista);
+  salvar(); renderTudo();
+  fecharModalDemanda();
+});
+$("btnDemCancelar").addEventListener("click", fecharModalDemanda);
+$("modalDemanda").addEventListener("click", function(ev){
+  if (ev.target === this) fecharModalDemanda();  // clique no fundo fecha
+});
+
 /* ---------- partida ---------- */
 
 /* Service worker: é o que permite ABRIR o app sem internet.
@@ -3010,5 +3137,41 @@ $("tfFreq").dispatchEvent(new Event("change"));
 iniciar();
 })();
 </script>
+  <!-- Modal de demanda -->
+  <div id="modalDemanda" hidden style="
+    position:fixed;inset:0;background:rgba(0,0,0,.55);
+    display:flex;align-items:center;justify-content:center;z-index:999;padding:16px">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:420px;overflow:hidden">
+      <div style="background:var(--verde);color:#fff;padding:14px 16px">
+        <span id="demTitulo" style="font-family:'Barlow Condensed',sans-serif;
+          font-weight:700;text-transform:uppercase;font-size:1.05rem;letter-spacing:.06em">
+          Novo registro</span>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--verde);
+            display:block;margin-bottom:4px">Data e hora</label>
+          <input type="datetime-local" id="demData" style="width:100%;padding:9px;
+            border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--verde);
+            display:block;margin-bottom:4px">Observação (opcional)</label>
+          <textarea id="demObs" rows="3" placeholder="Ex.: Manutenção realizada na envasadora linha 2"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;
+            font-size:.88rem;font-family:'Barlow',sans-serif;resize:vertical"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button id="btnDemCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);
+            border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">
+            Cancelar</button>
+          <button id="btnDemSalvar" style="padding:9px 18px;border:none;border-radius:8px;
+            background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;
+            font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.05em">
+            Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
