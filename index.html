@@ -759,7 +759,7 @@
         <ul class="lista" id="listaPessoas"></ul>
       </section>
 
-      <section>
+      <section id="secCriarAcesso" hidden>
         <div class="sec-head"><span class="sec-title">➕ Novo acesso</span></div>
         <div class="form-grid">
           <div><label for="nvNome">Nome</label>
@@ -771,7 +771,8 @@
           <div><label for="nvPapel">Perfil</label>
             <select id="nvPapel">
               <option value="colaborador">Colaborador</option>
-              <option value="admin">Administrador</option>
+              <option value="gestor">Gestor — cria tarefas para a equipe, sem acesso ao admin</option>
+              <option value="admin" id="opcaoAdmin">Administrador</option>
             </select></div>
           <div class="acoes-form">
             <button class="btn mini" id="btnCriarUsuario">Criar acesso</button>
@@ -882,7 +883,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.6.2";
+var VERSAO = "1.6.4";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -1053,9 +1054,9 @@ async function abrirApp(){
   mostrar("telaApp");
   $("userNome").textContent = sessao.nome;
   $("userPapel").textContent = sessao.papel === "admin" ? "administrador" : "colaborador";
-  $("abaEquipe").hidden = sessao.papel !== "admin";
+  $("abaEquipe").hidden = !["admin","gestor"].includes(sessao.papel);
   $("abaRelatorios").hidden = sessao.papel !== "admin";
-  $("campoPara").hidden = sessao.papel !== "admin";
+  $("campoPara").hidden = !["admin","gestor"].includes(sessao.papel);
   donoAtual = sessao.login;
   relCarregado = false;
   acompCarregado = false;
@@ -1657,7 +1658,7 @@ function limparForm(){
   $("tituloForm").textContent = "➕ Nova tarefa";
   $("btnSalvarTarefa").textContent = "Adicionar tarefa";
   $("btnCancelarEdicao").hidden = true;
-  $("campoPara").hidden = sessao.papel !== "admin";
+  $("campoPara").hidden = !["admin","gestor"].includes(sessao.papel);
 }
 
 var tarefasGerenciadas = [];
@@ -1688,7 +1689,7 @@ function renderGerenciar(){
   var html = "";
   lista.forEach(function(t){
     var doAdmin = t.origem === "admin";
-    var bloqueada = doAdmin && sessao.papel !== "admin";
+    var bloqueada = doAdmin && !["admin","gestor"].includes(sessao.papel);
     html += "<li class='item'><div class='item-info'>"+
       "<div class='item-nome'>"+esc(t.nome)+
       "<span class='tag cinza'>"+rotulos[t.freq]+"</span>"+
@@ -1772,15 +1773,24 @@ async function carregarEquipe(){
 }
 
 function renderEquipe(){
+  var rotuloPapel = {"admin":"admin","gestor":"gestor"};
   var html = "";
   equipe.forEach(function(u){
-    html += "<li class='pessoa'><div><div class='pessoa-nome'>"+esc(u.nome)+
-      (u.papel==="admin" ? "<span class='tag ouro'>admin</span>" : "")+"</div>"+
+    var tag = rotuloPapel[u.papel]
+      ? "<span class='tag "+(u.papel==="admin"?"ouro":"")+"'>"+u.papel+"</span>"
+      : "";
+    html += "<li class='pessoa'><div><div class='pessoa-nome'>"+esc(u.nome)+tag+"</div>"+
       "<div class='pessoa-login'>@"+esc(u.login)+"</div></div>"+
       "<div class='btn-linha'>"+
       "<button class='btn-mini' data-tarefas='"+u.login+"'>tarefas</button>"+
-      "<button class='btn-mini' data-senha='"+u.login+"'>senha</button>"+
-      (u.login !== sessao.login
+      // redefinir e remover: apenas o admin pode (gestor não altera outros acessos)
+      (sessao.papel === "admin"
+        ? "<button class='btn-mini' data-senha='"+u.login+"'>senha</button>"
+        : "")+
+      (sessao.papel === "admin" && u.login !== sessao.login
+        ? "<button class='btn-mini secundario' data-papel='"+u.login+
+          "' data-papel-atual='"+u.papel+"'>papel</button>" : "")+
+      (sessao.papel === "admin" && u.login !== sessao.login
         ? "<button class='btn-mini perigo' data-remover='"+u.login+"'>remover</button>" : "")+
       "</div></li>";
   });
@@ -1812,6 +1822,30 @@ $("listaPessoas").addEventListener("click", async function(ev){
     }catch(e){ toast(e.message, "erro"); }
     return;
   }
+  if (b.dataset.papel){
+    var login = b.dataset.papel;
+    var atual = b.dataset.papelAtual || "colaborador";
+    var opcoes = {"colaborador":"Colaborador","gestor":"Gestor","admin":"Administrador"};
+    var msg = "Papel atual de @"+login+": "+opcoes[atual]+
+      "\n\nEscolha o novo papel:\n  c = Colaborador\n  g = Gestor\n  a = Administrador";
+    var r = prompt(msg);
+    if (!r) return;
+    var mapa = {c:"colaborador",g:"gestor",a:"admin"};
+    var novo = mapa[r.trim().toLowerCase()];
+    if (!novo){ toast("Opção inválida. Use c, g ou a.", "erro"); return; }
+    if (novo === atual){ toast("O papel já é "+opcoes[atual]+"."); return; }
+    if (!confirm("Mudar o papel de @"+login+" de "+opcoes[atual]+" para "+
+                 opcoes[novo]+"?\n\nAs tarefas e o histórico de marcações são preservados.")) return;
+    try{
+      await api("/api/users", {method:"POST", body:{
+        acao:"mudar-papel", login:login, papel:novo
+      }});
+      toast("Papel de @"+login+" alterado para "+opcoes[novo]+".");
+      await carregarEquipe();
+    }catch(e){ toast(e.message, "erro"); }
+    return;
+  }
+
   if (b.dataset.remover){
     if (!confirm("Remover o acesso de @"+b.dataset.remover+"? As tarefas e o histórico dessa pessoa serão apagados.")) return;
     try{

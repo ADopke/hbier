@@ -44,6 +44,40 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 1.6.4 — 25/07/2026
+
+**Mudança de papel sem perda de dados**
+- Botão "papel" na lista de equipe (só para o administrador)
+- Permite mudar qualquer pessoa entre Colaborador, Gestor e Administrador
+- Tarefas, ciclos e histórico de marcações são preservados integralmente
+- Não é permitido alterar o próprio papel
+
+---
+
+## 1.6.3 — 24/07/2026
+
+**Novo papel: Gestor**
+
+Nível intermediário entre colaborador e administrador.
+
+O que o gestor **pode** (além do colaborador):
+- Criar e editar tarefas para outras pessoas da equipe
+- Importar tarefas da planilha para qualquer pessoa
+- Ver o acompanhamento da equipe (percentual, pendências, visão ampla)
+- Gerar o resumo para WhatsApp
+- Sincronizar a equipe com a planilha
+
+O que o gestor **não pode** (exclusivo do admin):
+- Criar, remover ou redefinir senha de usuários
+- Criar um acesso com papel de administrador
+- Ver os relatórios históricos (cumprimento por semana)
+- Usar o botão "Vincular tarefas antigas"
+
+Para criar um gestor: aba Equipe → Novo acesso → Perfil: Gestor.
+(Somente o administrador cria acessos de qualquer papel.)
+
+---
+
 ## 1.6.2 — 24/07/2026
 
 **Correção: marcar na aba Semana não atualizava a aba Hoje**
