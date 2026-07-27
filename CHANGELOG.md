@@ -44,6 +44,22 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 1.6.5 — 27/07/2026
+
+**Correção: aba Equipe (e outras) invisível no celular**
+
+Em telas estreitas a barra de abas não cabia numa linha, e os botões que
+não coubessem simplesmente sumiam. No print: Hoje, Semana, Minhas Tarefas,
+Banco de Dados, Relatórios eram visíveis — Equipe ficava fora da tela.
+
+- A barra de abas agora rola horizontalmente (sem barra de rolagem visível)
+- Ao trocar de aba, o botão ativo rola para o centro automaticamente
+- Botões nunca quebram o texto nem comprimem abaixo do tamanho mínimo
+- Os botões A–Z e ↩ semana atual foram movidos para uma linha separada,
+  abaixo das abas, liberando espaço na barra
+
+---
+
 ## 1.6.4 — 25/07/2026
 
 **Mudança de papel sem perda de dados**
