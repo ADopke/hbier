@@ -44,6 +44,21 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 1.7.1 — 27/07/2026
+
+**Correção crítica: app travava em "Carregando..."**
+
+O modal dos registros de demanda foi inserido depois do `</script>` em vez de
+antes. O browser executa o script imediatamente ao encontrá-lo, antes de
+renderizar o que vem depois — então `$("btnDemSalvar")` e os outros elementos
+do modal não existiam ainda, causando erro de runtime que impedia o app de
+iniciar.
+
+- Modal movido para antes do `<script>`
+- `dispatchEvent` na inicialização protegido com try/catch
+
+---
+
 ## 1.7.0 — 27/07/2026
 
 **Registros com data e observação nas tarefas de demanda**

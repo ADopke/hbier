@@ -916,6 +916,42 @@
   </div>
 </div>
 
+  <!-- Modal de demanda -->
+  <div id="modalDemanda" hidden style="
+    position:fixed;inset:0;background:rgba(0,0,0,.55);
+    display:flex;align-items:center;justify-content:center;z-index:999;padding:16px">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:420px;overflow:hidden">
+      <div style="background:var(--verde);color:#fff;padding:14px 16px">
+        <span id="demTitulo" style="font-family:'Barlow Condensed',sans-serif;
+          font-weight:700;text-transform:uppercase;font-size:1.05rem;letter-spacing:.06em">
+          Novo registro</span>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--verde);
+            display:block;margin-bottom:4px">Data e hora</label>
+          <input type="datetime-local" id="demData" style="width:100%;padding:9px;
+            border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--verde);
+            display:block;margin-bottom:4px">Observação (opcional)</label>
+          <textarea id="demObs" rows="3" placeholder="Ex.: Manutenção realizada na envasadora linha 2"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;
+            font-size:.88rem;font-family:'Barlow',sans-serif;resize:vertical"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button id="btnDemCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);
+            border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">
+            Cancelar</button>
+          <button id="btnDemSalvar" style="padding:9px 18px;border:none;border-radius:8px;
+            background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;
+            font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.05em">
+            Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 <script>
 (function(){
 "use strict";
@@ -925,7 +961,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.7.0";
+var VERSAO = "1.7.1";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -3133,45 +3169,9 @@ if ("serviceWorker" in navigator){
   var el = $(id);
   if (el) el.textContent = "Versão " + VERSAO + " · " + DATA_VERSAO;
 });
-$("tfFreq").dispatchEvent(new Event("change"));
+try{ $("tfFreq").dispatchEvent(new Event("change")); }catch(e){}
 iniciar();
 })();
 </script>
-  <!-- Modal de demanda -->
-  <div id="modalDemanda" hidden style="
-    position:fixed;inset:0;background:rgba(0,0,0,.55);
-    display:flex;align-items:center;justify-content:center;z-index:999;padding:16px">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:420px;overflow:hidden">
-      <div style="background:var(--verde);color:#fff;padding:14px 16px">
-        <span id="demTitulo" style="font-family:'Barlow Condensed',sans-serif;
-          font-weight:700;text-transform:uppercase;font-size:1.05rem;letter-spacing:.06em">
-          Novo registro</span>
-      </div>
-      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-        <div>
-          <label style="font-size:.8rem;font-weight:600;color:var(--verde);
-            display:block;margin-bottom:4px">Data e hora</label>
-          <input type="datetime-local" id="demData" style="width:100%;padding:9px;
-            border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
-        </div>
-        <div>
-          <label style="font-size:.8rem;font-weight:600;color:var(--verde);
-            display:block;margin-bottom:4px">Observação (opcional)</label>
-          <textarea id="demObs" rows="3" placeholder="Ex.: Manutenção realizada na envasadora linha 2"
-            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;
-            font-size:.88rem;font-family:'Barlow',sans-serif;resize:vertical"></textarea>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button id="btnDemCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);
-            border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">
-            Cancelar</button>
-          <button id="btnDemSalvar" style="padding:9px 18px;border:none;border-radius:8px;
-            background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;
-            font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.05em">
-            Salvar</button>
-        </div>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
