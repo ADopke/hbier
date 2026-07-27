@@ -202,31 +202,53 @@
   .item.pri{border-left:3px solid var(--vermelho)}
 
   /* ---- tarefas de demanda: lista de registros ---- */
-  .dem-item{ align-items:flex-start; }
+
+  /* item: info ocupa toda a largura; botão vai para baixo */
+  .dem-item{
+    display:flex;flex-direction:column;align-items:stretch;gap:8px;
+  }
+  .dem-item .item-info{ flex:1; }
+
   .dem-regs{
-    list-style:none;margin:8px 0 0;padding:0;
+    list-style:none;margin:6px 0 0;padding:0;
     border-top:1px solid var(--linha);
   }
   .dem-reg{
-    display:flex;align-items:center;gap:6px;
-    padding:5px 0;border-bottom:1px solid var(--linha);font-size:.8rem;
+    display:flex;align-items:flex-start;gap:6px;
+    padding:6px 0;border-bottom:1px solid var(--linha);font-size:.8rem;
   }
   .dem-reg:last-child{border-bottom:none}
-  .dem-data{flex:1;color:var(--ink);line-height:1.4}
+  .dem-data{
+    flex:1;color:var(--ink);line-height:1.5;
+    word-break:break-word;
+  }
+  .dem-acoes{
+    display:flex;gap:2px;flex-shrink:0;padding-top:1px;
+  }
   .dem-edit,.dem-del{
-    background:none;border:none;cursor:pointer;padding:2px 5px;
-    font-size:.82rem;border-radius:5px;
+    background:none;border:none;cursor:pointer;padding:3px 6px;
+    font-size:.82rem;border-radius:5px;line-height:1;
   }
   .dem-edit{color:var(--muted)} .dem-edit:hover{background:var(--verde-claro);color:var(--verde)}
   .dem-del {color:var(--muted)} .dem-del:hover {background:var(--vermelho-claro);color:var(--vermelho)}
+
+  /* rodapé do item: contador + botão lado a lado */
+  .dem-rodape{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding-top:4px;
+  }
+  .dem-count{
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.1rem;
+    color:var(--verde);min-width:20px;
+  }
+  .dem-count.zero{ color:var(--muted); }
   .btn-add-dem{
-    margin-top:6px;padding:7px 14px;border:1.5px solid var(--verde);
+    padding:7px 14px;border:1.5px solid var(--verde);
     border-radius:8px;background:#fff;color:var(--verde);cursor:pointer;
     font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;
     letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;
   }
   .btn-add-dem:hover{background:var(--verde-claro)}
-  .contador{ flex-direction:column;align-items:flex-end;gap:4px;min-width:80px; }
 
   /* ---- visão ampliada por operador ---- */
   .detalhe-op{
@@ -961,7 +983,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.7.1";
+var VERSAO = "1.7.2";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -1522,26 +1544,37 @@ function renderDemanda(){
     var regs = lerRegistros(t.id);
     var n = regs.length;
     var pri = t.prioridade ? "<span class='ponto-pri'></span>" : "";
-    html += "<li class='item dem-item"+(t.prioridade?" pri":"")+"'>"+
-      "<div class='item-info'>"+
-        "<div class='item-nome'>"+pri+esc(t.nome)+"</div>"+
-        (t.desc ? "<div class='item-desc'>"+esc(t.desc)+"</div>" : "")+
-        caixaVinculo(t, n>0)+
-        (n>0
-          ? "<ul class='dem-regs'>"+regs.map(function(r,i){
-              return "<li class='dem-reg'>"+
-                "<span class='dem-data'>"+esc(fmtRegistro(r))+"</span>"+
-                "<button class='dem-edit' data-dem-edit='"+t.id+"' data-dem-i='"+i+"' title='Editar'>✏</button>"+
-                "<button class='dem-del' data-dem-del='"+t.id+"' data-dem-i='"+i+"' title='Remover'>×</button>"+
-              "</li>";
-            }).join("")+"</ul>"
-          : "")+
-      "</div>"+
-      "<div class='contador'>"+
-        "<span class='num"+(n>0?" tem":"")+"'>"+n+"</span>"+
-        "<button class='btn-add-dem' data-dem-add='"+t.id+"'>+ Adicionar</button>"+
-      "</div>"+
-    "</li>";
+
+    // lista de registros já existentes
+    var listaRegs = n > 0
+      ? "<ul class='dem-regs'>" +
+          regs.map(function(r, i){
+            return "<li class='dem-reg'>" +
+              "<span class='dem-data'>" + esc(fmtRegistro(r)) + "</span>" +
+              "<span class='dem-acoes'>" +
+                "<button class='dem-edit' data-dem-edit='" + t.id +
+                  "' data-dem-i='" + i + "' title='Editar'>✏</button>" +
+                "<button class='dem-del' data-dem-del='" + t.id +
+                  "' data-dem-i='" + i + "' title='Remover'>×</button>" +
+              "</span>" +
+            "</li>";
+          }).join("") +
+        "</ul>"
+      : "";
+
+    html +=
+      "<li class='item dem-item" + (t.prioridade ? " pri" : "") + "'>" +
+        "<div class='item-info'>" +
+          "<div class='item-nome'>" + pri + esc(t.nome) + "</div>" +
+          (t.desc ? "<div class='item-desc'>" + esc(t.desc) + "</div>" : "") +
+          caixaVinculo(t, n > 0) +
+          listaRegs +
+        "</div>" +
+        "<div class='dem-rodape'>" +
+          "<span class='dem-count" + (n === 0 ? " zero" : "") + "'>" + n + "</span>" +
+          "<button class='btn-add-dem' data-dem-add='" + t.id + "'>+ Adicionar</button>" +
+        "</div>" +
+      "</li>";
   });
   $("listaDemanda").innerHTML = html;
 }
@@ -2260,7 +2293,10 @@ function detalheOperador(p){
           "<div class='det-nome'>"+esc(t.nome)+crit+"</div>"+
           (regsD.length
             ? "<ul class='dem-regs' style='width:100%'>"+regsD.map(function(r){
-                return "<li class='dem-reg'><span class='dem-data'>"+esc(fmtRegistro(r))+"</span></li>";
+                return "<li class='dem-reg'>"+
+                  "<span class='dem-data'>"+esc(fmtRegistro(r))+"</span>"+
+                  "<span class='dem-acoes'></span>"+
+                "</li>";
               }).join("")+"</ul>"
             : "<div class='det-status nao'>nenhum registro</div>")+
           "</div>";
