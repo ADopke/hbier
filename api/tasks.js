@@ -150,9 +150,19 @@ export default protegido(async function handler(req, res) {
     }
 
     const tarefas = (await ler(`tasks:${alvo}`)) || [];
-    // evita cadastrar duas vezes a mesma tarefa se a importação for repetida
-    const jaExistem = new Set(
-      tarefas.map((t) => (t.nome || "").trim().toLowerCase())
+
+    // Índices de duplicata — código tem prioridade sobre nome.
+    // Sem isso, duas tarefas com o mesmo nome mas códigos diferentes
+    // (ex.: ROT-64 e ROT-65 ambas chamadas "Cloro") se bloqueiam mutuamente.
+    const jaExistemNome = new Set(
+      tarefas
+        .filter((t) => !(t.codigoBase || "").trim())   // só as sem código
+        .map((t) => (t.nome || "").trim().toLowerCase())
+    );
+    const jaExistemCod = new Set(
+      tarefas
+        .map((t) => (t.codigoBase || "").trim().toLowerCase())
+        .filter(Boolean)
     );
 
     let criadas = 0;
@@ -164,8 +174,12 @@ export default protegido(async function handler(req, res) {
         ignoradas.push(`${nova.nome || "(sem nome)"}: ${problema}`);
         continue;
       }
-      const chave = nova.nome.trim().toLowerCase();
-      if (jaExistem.has(chave)) {
+      const cod = (nova.codigoBase || "").trim().toLowerCase();
+      const nome = nova.nome.trim().toLowerCase();
+
+      // Se tem código: só o código decide (permite mesmo nome, código diferente)
+      // Se não tem código: usa o nome como antes
+      if (cod ? jaExistemCod.has(cod) : jaExistemNome.has(nome)) {
         ignoradas.push(`${nova.nome}: já cadastrada`);
         continue;
       }
@@ -194,7 +208,7 @@ export default protegido(async function handler(req, res) {
             : "proprio",
         criadaPor: sessao.login,
       });
-      jaExistem.add(chave);
+      if (cod) jaExistemCod.add(cod); else jaExistemNome.add(nome);
       criadas++;
     }
 
