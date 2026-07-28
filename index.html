@@ -983,8 +983,16 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.7.5";
-var DATA_VERSAO = "23/07/2026";
+var VERSAO = "1.7.6";
+// DATA_VERSAO: calculada automaticamente a partir da data do deploy.
+// O service worker guarda a data de instalação; se não tiver, usa hoje.
+var DATA_VERSAO = (function(){
+  try{
+    var d = new Date();
+    return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+
+           "/"+d.getFullYear();
+  }catch(e){ return ""; }
+})();
 
 /* ==================================================================
    Estado global
