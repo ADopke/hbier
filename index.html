@@ -983,7 +983,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.7.4";
+var VERSAO = "1.7.5";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -2515,7 +2515,7 @@ $("btnBuscarImport").addEventListener("click", async function(){
     $("impLista").innerHTML = importCandidatas.map(function(t, i){
       var repetida = existentes[limpa(t.nome)];
       return "<label class='imp-item'>"+
-        "<input type='checkbox' data-imp='"+i+"'"+(repetida?"":" checked")+">"+
+        "<input type='checkbox' data-imp='"+i+"'>"+
         "<span>"+esc(t.nome)+
         (repetida ? " <span class='tag cinza'>já existe</span>" : "")+
         "<small>"+esc(t.freq)+(t.desc ? " · "+esc(t.desc) : "")+"</small></span></label>";
