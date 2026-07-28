@@ -983,7 +983,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.7.7";
+var VERSAO = "1.7.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -1810,7 +1810,15 @@ $("btnSalvarTarefa").addEventListener("click", async function(){
     critica: !!$("tfCritica").value,
     prioridade: !!$("tfPrioridade").value
   };
-  if (!editando && sessao.papel === "admin") corpo.para = $("tfPara").value;
+  if (!editando && ["admin","gestor"].includes(sessao.papel)){
+    // se está gerenciando as tarefas de outra pessoa, atribui direto a ela
+    // (o campo tfPara fica oculto nesse contexto)
+    if (donoAtual && donoAtual !== sessao.login){
+      corpo.para = donoAtual;
+    } else {
+      corpo.para = $("tfPara").value;
+    }
+  }
   try{
     await api("/api/tasks", {method:"POST", body:corpo});
     toast(editando ? "Tarefa atualizada." : "Tarefa criada.");
