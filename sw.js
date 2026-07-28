@@ -4,7 +4,7 @@
 // o mesmo número que está em index.html. É isso que faz o navegador descartar
 // o cache antigo e buscar os arquivos novos.
 
-const VERSAO = "1.7.6";
+const VERSAO = "1.7.7";
 const CACHE = "hbier-" + VERSAO;
 
 // o mínimo para a tela abrir offline

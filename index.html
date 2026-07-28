@@ -983,7 +983,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.7.6";
+var VERSAO = "1.7.7";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2516,16 +2516,32 @@ $("btnBuscarImport").addEventListener("click", async function(){
       b.disabled = false; return;
     }
 
-    var existentes = {};
+    var existentes = {};        // chave → true
+    var existentesCod = {};     // código → true (mais confiável que nome)
     (donoAtual === sessao.login ? tarefas : tarefasGerenciadas)
-      .forEach(function(t){ existentes[limpa(t.nome)] = true; });
+      .forEach(function(t){
+        existentes[limpa(t.nome)] = true;
+        if (t.codigoBase) existentesCod[limpa(t.codigoBase)] = true;
+      });
 
     $("impLista").innerHTML = importCandidatas.map(function(t, i){
-      var repetida = existentes[limpa(t.nome)];
+      // código bate → com certeza já existe; nome bate → provavelmente existe
+      var repetida = (t.codigoBase && existentesCod[limpa(t.codigoBase)])
+                  || existentes[limpa(t.nome)];
+
+      // nome real no app (pode diferir do nome na planilha)
+      var nomeNoApp = null;
+      if (repetida && t.codigoBase && existentesCod[limpa(t.codigoBase)]){
+        var tApp = (donoAtual === sessao.login ? tarefas : tarefasGerenciadas)
+          .filter(function(x){ return limpa(x.codigoBase||"") === limpa(t.codigoBase); })[0];
+        if (tApp && limpa(tApp.nome) !== limpa(t.nome)) nomeNoApp = tApp.nome;
+      }
       return "<label class='imp-item'>"+
         "<input type='checkbox' data-imp='"+i+"'>"+
         "<span>"+esc(t.nome)+
         (repetida ? " <span class='tag cinza'>já existe</span>" : "")+
+        (nomeNoApp ? "<span class='item-desc' style='color:var(--muted);font-size:.72rem'>"+
+          "no app: \""+esc(nomeNoApp)+"\"</span>" : "")+
         "<small>"+esc(t.freq)+(t.desc ? " · "+esc(t.desc) : "")+"</small></span></label>";
     }).join("");
     $("impResultado").hidden = false;
