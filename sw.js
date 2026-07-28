@@ -4,7 +4,7 @@
 // o mesmo número que está em index.html. É isso que faz o navegador descartar
 // o cache antigo e buscar os arquivos novos.
 
-const VERSAO = "1.7.2";
+const VERSAO = "1.7.4";
 const CACHE = "hbier-" + VERSAO;
 
 // o mínimo para a tela abrir offline
@@ -18,6 +18,14 @@ self.addEventListener("install", (evento) => {
       .then(() => self.skipWaiting())
       .catch(() => self.skipWaiting())
   );
+});
+
+// Quando a página pede para assumir agora (após detectar versão nova),
+// o service worker ativa imediatamente
+self.addEventListener("message", (evento) => {
+  if (evento.data === "PULAR_ESPERA") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("activate", (evento) => {

@@ -983,7 +983,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.7.2";
+var VERSAO = "1.7.4";
 var DATA_VERSAO = "23/07/2026";
 
 /* ==================================================================
@@ -1188,9 +1188,11 @@ async function abrirApp(){
   relCarregado = false;
   acompCarregado = false;
   await carregarSemana();
-  // se alguma tarefa depende da base, carrega em segundo plano para os
-  // seletores já aparecerem preenchidos no checklist
-  if (tarefas.some(function(t){ return t.vinculo; }) && !baseCarregada){
+  // carrega a base em segundo plano se qualquer tarefa depender dela:
+  // vínculo com tabela, procedimento (POP) ou código de parâmetro
+  if (!baseCarregada && tarefas.some(function(t){
+    return t.vinculo || t.pop || t.paramCodigo;
+  })){
     carregarBase().then(function(){
       renderSemanais(); renderQuinzenais(); renderDemanda();
     });
@@ -2904,13 +2906,19 @@ function botaoPop(t){
 }
 
 function abrirPop(nome){
-  var tab = baseTabelas["Procedimentos"];
   $("popTitulo").textContent = nome;
-  if (!tab){
-    $("popCorpo").innerHTML = "<div class='vazio'>A aba Procedimentos não está "+
-      "publicada na base de referência.</div>";
-    $("folhaPop").hidden = false; return;
-  }
+  $("popCorpo").innerHTML = "<div class='vazio'>Carregando…</div>";
+  $("folhaPop").hidden = false;
+
+  // garante que a base esteja carregada antes de tentar abrir o procedimento
+  var abrir = function(){
+    var tab = baseTabelas["Procedimentos"];
+    if (!tab){
+      $("popCorpo").innerHTML = "<div class='vazio'>A aba Procedimentos não está "+
+        "publicada na base de referência. Acesse a aba Banco de dados e "+
+        "clique em Atualizar para conectar.</div>";
+      return;
+    }
   var iProc = tab.colunas.indexOf("Procedimento");
   var iSec  = tab.colunas.indexOf("Seção");
   var iOrd  = tab.colunas.indexOf("Ordem");
@@ -2944,7 +2952,16 @@ function abrirPop(nome){
       esc(iInst > -1 ? l[iInst] : "")+"</span></div>";
   });
   $("popCorpo").innerHTML = html;
-  $("folhaPop").hidden = false;
+    $("folhaPop").hidden = false;
+  };
+
+  if (!baseCarregada){
+    carregarBase().then(abrir).catch(function(){
+      $("popCorpo").innerHTML = "<div class='vazio'>Não foi possível carregar a base. Verifique a conexão e tente novamente.</div>";
+    });
+  } else {
+    abrir();
+  }
 }
 
 $("popFechar").addEventListener("click", function(){ $("folhaPop").hidden = true; });
@@ -3194,9 +3211,29 @@ $("modalDemanda").addEventListener("click", function(ev){
    a pessoa abre o app do zero, muitas vezes sem sinal. */
 if ("serviceWorker" in navigator){
   window.addEventListener("load", function(){
-    navigator.serviceWorker.register("/sw.js").catch(function(){
-      /* ambiente sem HTTPS ou navegador antigo: o app segue funcionando
-         normalmente, só perde a abertura offline */
+    navigator.serviceWorker.register("/sw.js")
+      .then(function(reg){
+        // Verifica se há uma nova versão esperando para ativar
+        reg.addEventListener("updatefound", function(){
+          var novoSW = reg.installing;
+          if (!novoSW) return;
+          novoSW.addEventListener("statechange", function(){
+            if (novoSW.state === "installed" && navigator.serviceWorker.controller){
+              // Há uma versão nova instalada — pede para assumir agora
+              novoSW.postMessage("PULAR_ESPERA");
+            }
+          });
+        });
+      })
+      .catch(function(){ /* sem HTTPS ou navegador antigo — continua normalmente */ });
+
+    // Quando o SW novo assume, recarrega a página para usar a versão nova
+    var recarregando = false;
+    navigator.serviceWorker.addEventListener("controllerchange", function(){
+      if (!recarregando){
+        recarregando = true;
+        window.location.reload();
+      }
     });
   });
 }
