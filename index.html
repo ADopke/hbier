@@ -983,7 +983,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.7.9";
+var VERSAO = "1.8.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2533,9 +2533,12 @@ $("btnBuscarImport").addEventListener("click", async function(){
       });
 
     $("impLista").innerHTML = importCandidatas.map(function(t, i){
-      // código bate → com certeza já existe; nome bate → provavelmente existe
-      var repetida = (t.codigoBase && existentesCod[limpa(t.codigoBase)])
-                  || existentes[limpa(t.nome)];
+      // Se a tarefa da planilha TEM código: só o código decide (evita falso
+      // positivo quando dois itens têm o mesmo nome mas são coisas diferentes).
+      // Se NÃO tem código: cai para o nome como critério.
+      var repetida = t.codigoBase
+        ? !!existentesCod[limpa(t.codigoBase)]
+        : !!existentes[limpa(t.nome)];
 
       // nome real no app (pode diferir do nome na planilha)
       var nomeNoApp = null;
