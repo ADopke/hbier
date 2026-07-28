@@ -983,7 +983,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.8.1";
+var VERSAO = "1.8.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2494,11 +2494,16 @@ $("btnBuscarImport").addEventListener("click", async function(){
       b.disabled = false; return;
     }
 
+    var iCod  = tab.colunas.indexOf("Código");
     var iNome = tab.colunas.indexOf("Tarefa");
     var iDesc = tab.colunas.indexOf("Descrição");
     var iFreq = tab.colunas.indexOf("Frequência");
     var iDia  = tab.colunas.indexOf("Dia fixo");
     var iLemb = tab.colunas.indexOf("Lembrete ao executar");
+    var iMed  = tab.colunas.indexOf("Medição");
+    var iPop  = tab.colunas.indexOf("Procedimento");
+    var iPar  = tab.colunas.indexOf("Código do parâmetro");
+    var iUni  = tab.colunas.indexOf("Unidade");
     if (iNome < 0 || iFreq < 0){
       toast("A planilha precisa ter as colunas “Tarefa” e “Frequência”.", "erro");
       b.disabled = false; return;
@@ -2510,12 +2515,17 @@ $("btnBuscarImport").addEventListener("click", async function(){
       var freq = MAPA_FREQ[limpa(l[iFreq])];
       if (!nome || !freq) return;
       importCandidatas.push({
+        codigoBase: iCod > -1 ? (l[iCod]||"").trim() : "",
         nome: nome,
         desc: iDesc > -1 ? (l[iDesc]||"").trim() : "",
         freq: freq,
         dia: iDia > -1 ? (MAPA_DIA[limpa(l[iDia])] || "") : "",
         data: freq === "lembrete" ? "2027-02" : "",
-        lembrete: iLemb > -1 ? (l[iLemb]||"").trim() : ""
+        lembrete: iLemb > -1 ? (l[iLemb]||"").trim() : "",
+        medicao: iMed > -1 ? /^(sim|s|x|1|true)$/i.test(limpa(l[iMed]||"")) : false,
+        pop: iPop > -1 ? (l[iPop]||"").trim() : "",
+        paramCodigo: iPar > -1 ? (l[iPar]||"").trim() : "",
+        unidade: iUni > -1 ? (l[iUni]||"").trim() : ""
       });
     });
 
