@@ -44,6 +44,60 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 1.7.4 — 28/07/2026
+
+**Correção: procedimento não abria no celular (mesmo na versão correta)**
+
+A base de referência só era carregada automaticamente ao entrar se alguma
+tarefa tivesse o campo *vínculo* preenchido. Tarefas com procedimento (POP)
+ou código de parâmetro, mas sem vínculo, não disparavam o carregamento —
+e a aba Procedimentos ficava vazia.
+
+No PC a base era carregada por outro caminho (abrir a aba Banco de dados);
+no celular isso não acontecia, causando a mensagem "A aba Procedimentos não
+está publicada" mesmo estando configurada.
+
+- A verificação de carregamento automático passa a incluir tarefas com
+  `pop` ou `paramCodigo`, não só `vinculo`
+- O botão "Ver procedimento" carrega a base sob demanda se ainda não estiver
+  carregada, em vez de mostrar erro imediatamente
+- Mensagem de erro melhorada para orientar o que fazer
+
+---
+
+## 1.7.3 — 27/07/2026
+
+**Correção: celular ficava preso na versão antiga do app**
+
+Quando uma versão nova era publicada, o PC atualizava normalmente mas o
+celular continuava mostrando a versão antiga — porque o service worker antigo
+permanecia ativo enquanto o app ficasse aberto em background (o Android raramente
+fecha abas do navegador).
+
+- O sw.js passa a aceitar a mensagem `PULAR_ESPERA`, que faz o novo service
+  worker assumir imediatamente em vez de esperar o app ser fechado e reaberto
+- O app detecta quando um sw novo terminou de instalar e envia essa mensagem
+- Quando o sw novo assume o controle, a página recarrega automaticamente
+
+Na prática: o celular vai atualizar sozinho assim que detectar que há uma versão
+nova, sem precisar fechar e reabrir o app.
+
+---
+
+## 1.7.2 — 27/07/2026
+
+**Correção: layout das tarefas de demanda no celular**
+
+O botão "+ Adicionar" estava cortado, o contador ficou grande e desalinhado, e
+os ícones de editar/remover estavam soltos. Reestruturado o HTML e o CSS:
+
+- Nome, descrição e registros ocupam a largura total
+- Contador pequeno e botão "+ Adicionar" ficam numa linha de rodapé,
+  alinhados e sem corte
+- Ícones ✏ e × agrupados dentro de cada registro, sem vazar para fora
+
+---
+
 ## 1.7.1 — 27/07/2026
 
 **Correção crítica: app travava em "Carregando..."**
