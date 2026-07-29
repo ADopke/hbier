@@ -867,7 +867,10 @@
         </div>
         <div id="progLista" style="padding:14px"></div>
         <div style="padding:0 14px 14px">
-          <button class="btn mini" id="btnAddProg">+ Adicionar brassagem</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn mini" id="btnAddProg">🍺 Brassagem</button>
+            <button class="btn mini secundario" id="btnAddEnvase">📦 Envase</button>
+          </div>
         </div>
       </section>
     </div>
@@ -1152,22 +1155,73 @@
           font-weight:700;text-transform:uppercase;font-size:1rem">Nova brassagem</span>
       </div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:11px">
-        <div>
-          <label style="font-size:.8rem;font-weight:600;color:var(--verde);
-            display:block;margin-bottom:4px">Estilo *</label>
-          <input type="text" id="progEstilo" placeholder="Ex.: Pilsen, IPA, Weizen…"
-            style="width:100%;padding:9px;border:1.5px solid var(--linha);
-            border-radius:8px;font-size:.9rem">
+
+        <!-- campo hidden: tipo do item -->
+        <input type="hidden" id="progTipo" value="brassagem">
+
+        <!-- campos exclusivos: BRASSAGEM -->
+        <div id="campoBrassagem">
+          <div style="margin-bottom:11px">
+            <label style="font-size:.8rem;font-weight:600;color:var(--verde);
+              display:block;margin-bottom:4px">Estilo *</label>
+            <input type="text" id="progEstilo" placeholder="Ex.: Pilsen, IPA, Weizen…"
+              style="width:100%;padding:9px;border:1.5px solid var(--linha);
+              border-radius:8px;font-size:.9rem">
+          </div>
+          <div>
+            <label style="font-size:.8rem;font-weight:600;color:var(--verde);
+              display:block;margin-bottom:4px">Tanque destino</label>
+            <input type="text" id="progTanque" placeholder="Ex.: TQ-03"
+              style="width:100%;padding:9px;border:1.5px solid var(--linha);
+              border-radius:8px;font-size:.9rem">
+          </div>
         </div>
-        <div>
-          <label style="font-size:.8rem;font-weight:600;color:var(--verde);
-            display:block;margin-bottom:4px">Tanque</label>
-          <input type="text" id="progTanque" placeholder="Ex.: TQ-01"
-            style="width:100%;padding:9px;border:1.5px solid var(--linha);
-            border-radius:8px;font-size:.9rem">
+
+        <!-- campos exclusivos: ENVASE -->
+        <div id="campoEnvase" hidden>
+          <div style="margin-bottom:11px">
+            <label style="font-size:.8rem;font-weight:600;color:#003E99;
+              display:block;margin-bottom:4px">Produto *</label>
+            <input type="text" id="progProduto" placeholder="Ex.: Pilsen Lata 350ml"
+              style="width:100%;padding:9px;border:1.5px solid #B3C8F5;
+              border-radius:8px;font-size:.9rem">
+          </div>
+          <div style="margin-bottom:11px">
+            <label style="font-size:.8rem;font-weight:600;color:#003E99;
+              display:block;margin-bottom:4px">Tanque de origem</label>
+            <input type="text" id="progTanqueOrigem" placeholder="Ex.: TQ-03"
+              style="width:100%;padding:9px;border:1.5px solid #B3C8F5;
+              border-radius:8px;font-size:.9rem">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <label style="font-size:.8rem;font-weight:600;color:#003E99;
+                display:block;margin-bottom:4px">Formato / embalagem</label>
+              <select id="progFormato" style="width:100%;padding:9px;
+                border:1.5px solid #B3C8F5;border-radius:8px;font-size:.88rem">
+                <option value="">Não definido</option>
+                <option>Lata 350ml</option>
+                <option>Lata 473ml</option>
+                <option>Garrafa 500ml</option>
+                <option>Garrafa 600ml</option>
+                <option>Barril 30L</option>
+                <option>Barril 50L</option>
+                <option>PET 2L</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:.8rem;font-weight:600;color:#003E99;
+                display:block;margin-bottom:4px">Quantidade prevista</label>
+              <input type="text" id="progQtd" placeholder="Ex.: 2.000 un"
+                style="width:100%;padding:9px;border:1.5px solid #B3C8F5;
+                border-radius:8px;font-size:.9rem">
+            </div>
+          </div>
         </div>
+
+        <!-- campos comuns -->
         <div>
-          <label style="font-size:.8rem;font-weight:600;color:var(--verde);
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);
             display:block;margin-bottom:4px">Dia previsto</label>
           <select id="progDia" style="width:100%;padding:9px;border:1.5px solid var(--linha);
             border-radius:8px;font-size:.9rem">
@@ -1177,12 +1231,13 @@
           </select>
         </div>
         <div>
-          <label style="font-size:.8rem;font-weight:600;color:var(--verde);
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);
             display:block;margin-bottom:4px">Observação</label>
-          <input type="text" id="progObs" placeholder="Ex.: batch duplo, mosto extra…"
+          <input type="text" id="progObs" placeholder="Ex.: batch duplo, sleeve novo…"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);
             border-radius:8px;font-size:.9rem">
         </div>
+
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button id="btnProgCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);
             border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">
@@ -1286,7 +1341,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.9.0";
+var VERSAO = "1.9.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2635,16 +2690,34 @@ async function carregarProg(){
 
 function renderProg(itens, semana){
   if(!itens || !itens.length){
-    $("progLista").innerHTML="<div class='vazio'>Nenhuma brassagem programada esta semana.</div>";
+    $("progLista").innerHTML="<div class='vazio'>Nenhuma atividade programada esta semana.</div>";
     return;
   }
   $("progLista").innerHTML = itens.map(function(it){
     var podeEditar = ["admin","gestor"].includes(sessao.papel);
+    var isEnvase = it.tipo === "envase";
+    var icone = isEnvase ? "📦" : "🍺";
+    var tagCor = isEnvase
+      ? "background:#E8F0FF;color:#003E99;border-color:#B3C8F5"
+      : "background:var(--verde-c);color:var(--verde);border-color:var(--verde)";
+    var tagTxt = isEnvase ? "Envase" : "Brassagem";
+
+    // campos específicos por tipo
+    var detalhe = "";
+    if (isEnvase){
+      if (it.tanqueOrigem) detalhe += "<span class='item-desc'>Tanque: "+esc(it.tanqueOrigem)+"</span> ";
+      if (it.formato)      detalhe += "<span class='item-desc'>"+esc(it.formato)+"</span> ";
+      if (it.qtd)          detalhe += "<span class='item-desc'>"+esc(it.qtd)+"</span>";
+    } else {
+      if (it.tanque)       detalhe += "<span class='item-desc'>Tanque: "+esc(it.tanque)+"</span>";
+    }
+
     return "<div class='prog-item'>"+
       "<div class='prog-main'>"+
-        "<span class='prog-estilo'>"+esc(it.estilo||"—")+"</span>"+
-        (it.dia?"<span class='tag'>"+esc(it.dia)+"</span>":"")+
-        (it.tanque?"<span class='item-desc'>Tanque: "+esc(it.tanque)+"</span>":"")+
+        icone+" <span class='prog-estilo'>"+esc(it.estilo||it.produto||"—")+"</span>"+
+        "<span class='tag' style='"+tagCor+"'>"+tagTxt+"</span>"+
+        (it.dia?" <span class='tag'>"+esc(it.dia)+"</span>":"")+
+        (detalhe?"<div style='margin-top:4px'>"+detalhe+"</div>":"")+
         (it.obs?"<div class='item-desc'>"+esc(it.obs)+"</div>":"")+
         "<div style='font-size:.73rem;color:var(--muted);margin-top:3px'>por "+esc(it.criadaPor)+"</div>"+
       "</div>"+
@@ -2657,12 +2730,34 @@ function renderProg(itens, semana){
   }).join("");
 }
 
+function abrirModalProg(tipo, editando){
+  _progEditando = editando || null;
+  var isBrassagem = tipo === "brassagem";
+  $("progFormTitulo").textContent = _progEditando
+    ? (isBrassagem ? "Editar brassagem" : "Editar envase")
+    : (isBrassagem ? "Nova brassagem"   : "Novo envase");
+  $("progTipo").value = tipo;
+
+  // campos exclusivos brassagem
+  $("campoBrassagem").hidden = !isBrassagem;
+  // campos exclusivos envase
+  $("campoEnvase").hidden    = isBrassagem;
+
+  if (!editando){
+    $("progEstilo").value=""; $("progTanque").value="";
+    $("progProduto").value=""; $("progTanqueOrigem").value="";
+    $("progFormato").value=""; $("progQtd").value="";
+    $("progDia").value=""; $("progObs").value="";
+  }
+  $("modalProg").hidden=false;
+  (isBrassagem ? $("progEstilo") : $("progProduto")).focus();
+}
+
 $("btnAddProg").addEventListener("click", function(){
-  _progEditando = null;
-  $("progFormTitulo").textContent = "Nova brassagem";
-  $("progEstilo").value=""; $("progTanque").value="";
-  $("progDia").value=""; $("progObs").value="";
-  $("modalProg").hidden=false; $("progEstilo").focus();
+  abrirModalProg("brassagem");
+});
+$("btnAddEnvase").addEventListener("click", function(){
+  abrirModalProg("envase");
 });
 
 $("progLista").addEventListener("click", async function(ev){
@@ -2673,14 +2768,15 @@ $("progLista").addEventListener("click", async function(ev){
     var r=await api("/api/prog?semana="+semana);
     var it=r.itens.find(function(x){return x.id===b.dataset.progEdit;});
     if(!it) return;
-    _progEditando={id:it.id,semana};
-    $("progFormTitulo").textContent="Editar brassagem";
-    $("progEstilo").value=it.estilo||""; $("progTanque").value=it.tanque||"";
-    $("progDia").value=it.dia||""; $("progObs").value=it.obs||"";
-    $("modalProg").hidden=false; $("progEstilo").focus();
+    var tipo = it.tipo || "brassagem";
+    $("progProduto").value = it.produto||""; $("progTanqueOrigem").value = it.tanqueOrigem||"";
+    $("progFormato").value = it.formato||""; $("progQtd").value = it.qtd||"";
+    $("progEstilo").value = it.estilo||""; $("progTanque").value = it.tanque||"";
+    $("progDia").value = it.dia||""; $("progObs").value = it.obs||"";
+    abrirModalProg(tipo, {id:it.id,semana});
   }
   if (b.dataset.progDel){
-    if(!confirm("Remover esta brassagem da programação?")) return;
+    if(!confirm("Remover este item da programação?")) return;
     await api("/api/prog",{method:"POST",body:{
       acao:"remover",semana:b.dataset.progSemana,id:b.dataset.progDel
     }});
@@ -2693,13 +2789,20 @@ $("btnProgSalvar").addEventListener("click", async function(){
   var corpo={
     acao:_progEditando?"editar":"criar",
     semana:seg,
-    estilo:$("progEstilo").value.trim(),
-    tanque:$("progTanque").value.trim(),
-    dia:$("progDia").value,
-    obs:$("progObs").value.trim()
+    tipo: $("progTipo").value || "brassagem",
+    estilo: $("progEstilo").value.trim(),
+    tanque: $("progTanque").value.trim(),
+    produto: $("progProduto").value.trim(),
+    tanqueOrigem: $("progTanqueOrigem").value.trim(),
+    formato: $("progFormato").value,
+    qtd: $("progQtd").value.trim(),
+    dia: $("progDia").value,
+    obs: $("progObs").value.trim()
   };
   if(_progEditando) corpo.id=_progEditando.id;
-  if(!corpo.estilo){toast("Informe o estilo.","erro");return;}
+  var isBrassagem = corpo.tipo === "brassagem";
+  var principal = isBrassagem ? corpo.estilo : corpo.produto;
+  if(!principal){ toast(isBrassagem ? "Informe o estilo." : "Informe o produto.", "erro"); return; }
   try{
     await api("/api/prog",{method:"POST",body:corpo});
     $("modalProg").hidden=true;
