@@ -1479,7 +1479,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.9.5";
+var VERSAO = "1.9.6";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -3016,10 +3016,9 @@ $("progLista").addEventListener("click", async function(ev){
 $("btnProgSalvar").addEventListener("click", async function(){
   // _progTipo é definido em abrirModalProg e nunca deve ser sobrescrito
   // Verificação de segurança: se o header estiver azul, é envase
-  // Triple-check do tipo: variável JS + data-attribute + cor de fundo
-  var tipoFinal = _progTipo ||
-    $("progModalHeader").dataset.tipo ||
-    ($("campoEnvase").hidden === false ? "envase" : "brassagem");
+  // O campo visível na tela é a fonte de verdade absoluta.
+  // campoEnvase.hidden=false significa que o usuário vê e preencheu campos de envase.
+  var tipoFinal = $("campoEnvase").hidden === false ? "envase" : "brassagem";
   var seg=chaveSemana(segAtual);
   var corpo={
     acao:_progEditando?"editar":"criar",
