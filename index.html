@@ -1278,111 +1278,114 @@
     </div>
   </div>
 
-  <!-- Modal de programação de produção -->
-  <div id="modalProg" hidden style="
-    position:fixed;inset:0;background:rgba(0,0,0,.55);
+  <!-- Modal BRASSAGEM (separado do envase para eliminar bug de tipo) -->
+  <div id="modalBrassagem" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.6);
     display:flex;align-items:center;justify-content:center;z-index:996;padding:16px">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:440px">
-      <div id="progModalHeader" data-tipo="brassagem" style="background:var(--verde);color:#fff;padding:14px 16px;
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:420px">
+      <div style="background:var(--verde);color:#fff;padding:14px 16px;
         border-radius:14px 14px 0 0;display:flex;align-items:center;gap:10px">
-        <span id="progFormTitulo" style="font-family:'Barlow Condensed',sans-serif;
-          font-weight:700;text-transform:uppercase;font-size:1rem;flex:1">Nova brassagem</span>
-        <button onclick="fecharModalProg()" style="background:none;border:none;
-          color:rgba(255,255,255,.75);font-size:1.2rem;cursor:pointer;line-height:1">✕</button>
+        <span id="brassFormTitulo" style="font-family:'Barlow Condensed',sans-serif;
+          font-weight:700;text-transform:uppercase;font-size:1rem;flex:1">&#x1F37A; Nova Brassagem</span>
+        <button onclick="$('modalBrassagem').hidden=true"
+          style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
       </div>
-      <div style="padding:16px;display:flex;flex-direction:column;gap:11px">
-
-        <!-- campo hidden: tipo do item -->
-        <input type="hidden" id="progTipo" value="brassagem">
-
-        <!-- campos exclusivos: BRASSAGEM -->
-        <div id="campoBrassagem">
-          <div style="margin-bottom:11px">
-            <label style="font-size:.8rem;font-weight:600;color:var(--verde);
-              display:block;margin-bottom:4px">Estilo *</label>
-            <input type="text" id="progEstilo" placeholder="Ex.: Pilsen, IPA, Weizen…"
-              style="width:100%;padding:9px;border:1.5px solid var(--linha);
-              border-radius:8px;font-size:.9rem">
-          </div>
-          <div>
-            <label style="font-size:.8rem;font-weight:600;color:var(--verde);
-              display:block;margin-bottom:4px">Tanque destino</label>
-            <input type="text" id="progTanque" placeholder="Ex.: TQ-03"
-              style="width:100%;padding:9px;border:1.5px solid var(--linha);
-              border-radius:8px;font-size:.9rem">
-          </div>
-        </div>
-
-        <!-- campos exclusivos: ENVASE -->
-        <div id="campoEnvase" hidden>
-          <div style="margin-bottom:11px">
-            <label style="font-size:.8rem;font-weight:600;color:#003E99;
-              display:block;margin-bottom:4px">Produto *</label>
-            <input type="text" id="progProduto" placeholder="Ex.: Pilsen Lata 350ml"
-              style="width:100%;padding:9px;border:1.5px solid #B3C8F5;
-              border-radius:8px;font-size:.9rem">
-          </div>
-          <div style="margin-bottom:11px">
-            <label style="font-size:.8rem;font-weight:600;color:#003E99;
-              display:block;margin-bottom:4px">Tanque de origem</label>
-            <input type="text" id="progTanqueOrigem" placeholder="Ex.: TQ-03"
-              style="width:100%;padding:9px;border:1.5px solid #B3C8F5;
-              border-radius:8px;font-size:.9rem">
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div>
-              <label style="font-size:.8rem;font-weight:600;color:#003E99;
-                display:block;margin-bottom:4px">Formato / embalagem</label>
-              <select id="progFormato" style="width:100%;padding:9px;
-                border:1.5px solid #B3C8F5;border-radius:8px;font-size:.88rem">
-                <option value="">Não definido</option>
-                <option>Lata 350ml</option>
-                <option>Lata 473ml</option>
-                <option>Garrafa 500ml</option>
-                <option>Garrafa 600ml</option>
-                <option>PET 500ml</option>
-                <option>PET 1L</option>
-                <option>PET 2L</option>
-                <option>Barril 30L</option>
-                <option>Barril 50L</option>
-              </select>
-            </div>
-            <div>
-              <label style="font-size:.8rem;font-weight:600;color:#003E99;
-                display:block;margin-bottom:4px">Quantidade prevista</label>
-              <input type="text" id="progQtd" placeholder="Ex.: 2.000 un"
-                style="width:100%;padding:9px;border:1.5px solid #B3C8F5;
-                border-radius:8px;font-size:.9rem">
-            </div>
-          </div>
-        </div>
-
-        <!-- campos comuns -->
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
         <div>
-          <label style="font-size:.8rem;font-weight:600;color:var(--muted);
-            display:block;margin-bottom:4px">Dia previsto</label>
-          <select id="progDia" style="width:100%;padding:9px;border:1.5px solid var(--linha);
-            border-radius:8px;font-size:.9rem">
-            <option value="">Não definido</option>
-            <option>Segunda</option><option>Terça</option><option>Quarta</option>
-            <option>Quinta</option><option>Sexta</option><option>Sábado</option>
+          <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Estilo *</label>
+          <input type="text" id="brassEstilo" placeholder="Ex.: Pilsen, IPA, Weizen&hellip;"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Tanque destino</label>
+          <input type="text" id="brassTanque" placeholder="Ex.: TQ-03"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Dia previsto</label>
+          <select id="brassDia" style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+            <option value="">N&#xe3;o definido</option>
           </select>
         </div>
         <div>
-          <label style="font-size:.8rem;font-weight:600;color:var(--muted);
-            display:block;margin-bottom:4px">Observação</label>
-          <input type="text" id="progObs" placeholder="Ex.: batch duplo, sleeve novo…"
-            style="width:100%;padding:9px;border:1.5px solid var(--linha);
-            border-radius:8px;font-size:.9rem">
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Observa&#xe7;&#xe3;o</label>
+          <input type="text" id="brassObs" placeholder="Ex.: batch duplo, mosto extra&hellip;"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
         </div>
-
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button id="btnProgCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);
-            border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">
-            Cancelar</button>
-          <button id="btnProgSalvar" style="padding:9px 18px;border:none;border-radius:8px;
-            background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;
-            font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Salvar</button>
+          <button onclick="$('modalBrassagem').hidden=true"
+            style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
+          <button id="btnBrassSalvar"
+            style="padding:9px 18px;border:none;border-radius:8px;background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ENVASE (separado) -->
+  <div id="modalEnvase" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.6);
+    display:flex;align-items:center;justify-content:center;z-index:996;padding:16px">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:440px">
+      <div style="background:#003E99;color:#fff;padding:14px 16px;
+        border-radius:14px 14px 0 0;display:flex;align-items:center;gap:10px">
+        <span id="envFormTitulo" style="font-family:'Barlow Condensed',sans-serif;
+          font-weight:700;text-transform:uppercase;font-size:1rem;flex:1">&#x1F4E6; Novo Envase</span>
+        <button onclick="$('modalEnvase').hidden=true"
+          style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Produto *</label>
+          <input type="text" id="envProduto" placeholder="Ex.: Pilsen Lata 350ml"
+            style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Lote</label>
+          <input type="text" id="envLote" placeholder="Ex.: LOT37/26TQ03VAL01/27"
+            style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Tanque de origem</label>
+          <input type="text" id="envTanque" placeholder="Ex.: TQ-03"
+            style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Formato</label>
+            <select id="envFormato" style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.85rem">
+              <option value="">N&#xe3;o definido</option>
+              <option>Lata 350ml</option>
+              <option>Lata 473ml</option>
+              <option>Garrafa 500ml</option>
+              <option>Garrafa 600ml</option>
+              <option>PET 500ml</option>
+              <option>PET 1L</option>
+              <option>PET 2L</option>
+              <option>Barril 30L</option>
+              <option>Barril 50L</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Qtd prevista</label>
+            <input type="text" id="envQtd" placeholder="Ex.: 2.000 un"
+              style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Dia previsto</label>
+          <select id="envDia" style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+            <option value="">N&#xe3;o definido</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Observa&#xe7;&#xe3;o</label>
+          <input type="text" id="envObs" placeholder="Ex.: sleeve novo, linha 2&hellip;"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button onclick="$('modalEnvase').hidden=true"
+            style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
+          <button id="btnEnvSalvar"
+            style="padding:9px 18px;border:none;border-radius:8px;background:#003E99;color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Salvar</button>
         </div>
       </div>
     </div>
@@ -1479,7 +1482,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.9.6";
+var VERSAO = "1.9.7";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2935,120 +2938,140 @@ function renderProg(itens, semana, seg){
   }).join("");
 }
 
-var _progTipo = "brassagem";   // fonte de verdade do tipo — não depende do hidden
+var _brasseditando = null;
+var _enveditando = null;
 
-function abrirModalProg(tipo, editando){
-  _progTipo = tipo || "brassagem";
-  _progEditando = editando || null;
-  var isBrassagem = _progTipo === "brassagem";
-
-  $("progFormTitulo").textContent = _progEditando
-    ? (isBrassagem ? "Editar brassagem" : "Editar envase")
-    : (isBrassagem ? "Nova brassagem"   : "Novo envase");
-
-  // cor e tipo do header do modal
-  $("progModalHeader").style.background = isBrassagem ? "var(--verde)" : "#003E99";
-  $("progModalHeader").dataset.tipo = _progTipo;
-
-  // campos exclusivos
-  $("campoBrassagem").hidden = !isBrassagem;
-  $("campoEnvase").hidden    = isBrassagem;
-
-  // limpar campos se não estiver editando
-  if (!editando){
-    $("progEstilo").value=""; $("progTanque").value="";
-    $("progProduto").value=""; $("progTanqueOrigem").value="";
-    $("progFormato").value=""; $("progQtd").value="";
-    $("progObs").value="";
-  }
-
-  // atualizar o select de dia com as datas reais — DEPOIS de limpar os campos
-  // e restaurar o valor editado depois de preencher as opções
-  var diaAtual = editando ? $("progDia").value : "";
-  var nomes = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
-  var opcs = "<option value=''>Não definido</option>";
+function preencherDias(selectId){
+  var nomes = ["Segunda","Ter\u00e7a","Quarta","Quinta","Sexta","S\u00e1bado"];
+  var opcs = "<option value=''>N\u00e3o definido</option>";
   nomes.forEach(function(nome, i){
     var d = new Date(segAtual); d.setDate(d.getDate()+i);
     var dt = ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2);
-    opcs += "<option value='"+nome+"'>"+nome+" — "+dt+"</option>";
+    opcs += "<option value='"+nome+"'>"+nome+" \u2014 "+dt+"</option>";
   });
-  $("progDia").innerHTML = opcs;
-  if (diaAtual) $("progDia").value = diaAtual;
-  else $("progDia").value = "";
-
-  $("modalProg").hidden=false;
-  setTimeout(function(){
-    (isBrassagem ? $("progEstilo") : $("progProduto")).focus();
-  }, 80);
+  $(selectId).innerHTML = opcs;
 }
 
+// ===== BRASSAGEM =====
 $("btnAddProg").addEventListener("click", function(){
-  abrirModalProg("brassagem");
-});
-$("btnAddEnvase").addEventListener("click", function(){
-  abrirModalProg("envase");
+  _brasseditando = null;
+  $("brassFormTitulo").textContent = "\uD83C\uDF7A Nova Brassagem";
+  $("brassEstilo").value = "";
+  $("brassTanque").value = "";
+  $("brassObs").value = "";
+  preencherDias("brassDia");
+  $("brassDia").value = "";
+  $("modalBrassagem").hidden = false;
+  setTimeout(function(){ $("brassEstilo").focus(); }, 80);
 });
 
+$("btnBrassSalvar").addEventListener("click", async function(){
+  var estilo = $("brassEstilo").value.trim();
+  if (!estilo){ toast("Informe o estilo.", "erro"); return; }
+  var seg = chaveSemana(segAtual);
+  try{
+    await api("/api/prog", {method:"POST", body:{
+      acao: _brasseditando ? "editar" : "criar",
+      id:   _brasseditando ? _brasseditando.id : undefined,
+      semana: seg,
+      tipo: "brassagem",
+      estilo: estilo,
+      tanque: $("brassTanque").value.trim(),
+      dia:    $("brassDia").value,
+      obs:    $("brassObs").value.trim()
+    }});
+    $("modalBrassagem").hidden = true;
+    _brasseditando = null;
+    carregarProg();
+    toast("Brassagem salva.");
+  }catch(e){ toast(e.message, "erro"); }
+});
+
+// ===== ENVASE =====
+$("btnAddEnvase").addEventListener("click", function(){
+  _enveditando = null;
+  $("envFormTitulo").textContent = "\uD83D\uDCE6 Novo Envase";
+  $("envProduto").value = "";
+  $("envLote").value = "";
+  $("envTanque").value = "";
+  $("envFormato").value = "";
+  $("envQtd").value = "";
+  $("envObs").value = "";
+  preencherDias("envDia");
+  $("envDia").value = "";
+  $("modalEnvase").hidden = false;
+  setTimeout(function(){ $("envProduto").focus(); }, 80);
+});
+
+$("btnEnvSalvar").addEventListener("click", async function(){
+  var produto = $("envProduto").value.trim();
+  if (!produto){ toast("Informe o produto.", "erro"); return; }
+  var seg = chaveSemana(segAtual);
+  try{
+    await api("/api/prog", {method:"POST", body:{
+      acao:     _enveditando ? "editar" : "criar",
+      id:       _enveditando ? _enveditando.id : undefined,
+      semana:   seg,
+      tipo:     "envase",
+      produto:  produto,
+      lote:     $("envLote").value.trim(),
+      tanqueOrigem: $("envTanque").value.trim(),
+      formato:  $("envFormato").value,
+      qtd:      $("envQtd").value.trim(),
+      dia:      $("envDia").value,
+      obs:      $("envObs").value.trim()
+    }});
+    $("modalEnvase").hidden = true;
+    _enveditando = null;
+    carregarProg();
+    toast("Envase salvo.");
+  }catch(e){ toast(e.message, "erro"); }
+});
+
+// Editar e remover (delegado ao progLista)
 $("progLista").addEventListener("click", async function(ev){
   var b = ev.target.closest("button");
   if (!b) return;
+
   if (b.dataset.progEdit){
-    var semana=b.dataset.progSemana;
-    var r=await api("/api/prog?semana="+semana);
-    var it=r.itens.find(function(x){return x.id===b.dataset.progEdit;});
-    if(!it) return;
-    var tipo = it.tipo || "brassagem";
-    $("progProduto").value = it.produto||""; $("progTanqueOrigem").value = it.tanqueOrigem||"";
-    $("progFormato").value = it.formato||""; $("progQtd").value = it.qtd||"";
-    $("progEstilo").value = it.estilo||""; $("progTanque").value = it.tanque||"";
-    $("progDia").value = it.dia||""; $("progObs").value = it.obs||"";
-    abrirModalProg(tipo, {id:it.id,semana});
+    var semana = b.dataset.progSemana;
+    var r = await api("/api/prog?semana="+semana);
+    var it = (r.itens||[]).find(function(x){ return x.id === b.dataset.progEdit; });
+    if (!it) return;
+
+    if (it.tipo === "envase"){
+      _enveditando = {id: it.id, semana};
+      $("envFormTitulo").textContent = "\uD83D\uDCE6 Editar Envase";
+      $("envProduto").value = it.produto||"";
+      $("envLote").value    = it.lote||"";
+      $("envTanque").value  = it.tanqueOrigem||"";
+      $("envFormato").value = it.formato||"";
+      $("envQtd").value     = it.qtd||"";
+      $("envObs").value     = it.obs||"";
+      preencherDias("envDia");
+      $("envDia").value     = it.dia||"";
+      $("modalEnvase").hidden = false;
+    } else {
+      _brasseditando = {id: it.id, semana};
+      $("brassFormTitulo").textContent = "\uD83C\uDF7A Editar Brassagem";
+      $("brassEstilo").value = it.estilo||"";
+      $("brassTanque").value = it.tanque||"";
+      $("brassObs").value    = it.obs||"";
+      preencherDias("brassDia");
+      $("brassDia").value    = it.dia||"";
+      $("modalBrassagem").hidden = false;
+    }
   }
+
   if (b.dataset.progDel){
-    if(!confirm("Remover este item da programação?")) return;
-    await api("/api/prog",{method:"POST",body:{
-      acao:"remover",semana:b.dataset.progSemana,id:b.dataset.progDel
+    if (!confirm("Remover este item da programa\u00e7\u00e3o?")) return;
+    await api("/api/prog", {method:"POST", body:{
+      acao:"remover", semana:b.dataset.progSemana, id:b.dataset.progDel
     }});
     carregarProg();
   }
 });
 
-$("btnProgSalvar").addEventListener("click", async function(){
-  // _progTipo é definido em abrirModalProg e nunca deve ser sobrescrito
-  // Verificação de segurança: se o header estiver azul, é envase
-  // O campo visível na tela é a fonte de verdade absoluta.
-  // campoEnvase.hidden=false significa que o usuário vê e preencheu campos de envase.
-  var tipoFinal = $("campoEnvase").hidden === false ? "envase" : "brassagem";
-  var seg=chaveSemana(segAtual);
-  var corpo={
-    acao:_progEditando?"editar":"criar",
-    semana:seg,
-    tipo: tipoFinal,
-    estilo: $("progEstilo").value.trim(),
-    tanque: $("progTanque").value.trim(),
-    produto: $("progProduto").value.trim(),
-    tanqueOrigem: $("progTanqueOrigem").value.trim(),
-    formato: $("progFormato").value,
-    qtd: $("progQtd").value.trim(),
-    dia: $("progDia").value,
-    obs: $("progObs").value.trim()
-  };
-  if(_progEditando) corpo.id=_progEditando.id;
-  var isBrassagem = tipoFinal === "brassagem";
-  var principal = isBrassagem ? corpo.estilo : corpo.produto;
-  if(!principal){ toast(isBrassagem ? "Informe o estilo." : "Informe o produto.", "erro"); return; }
-  try{
-    await api("/api/prog",{method:"POST",body:corpo});
-    $("modalProg").hidden=true;
-    carregarProg();
-    toast("Programação salva.");
-  }catch(e){toast(e.message,"erro");}
-});
-function fecharModalProg(){
-  $("modalProg").hidden = true;
-}
-$("btnProgCancelar").addEventListener("click", fecharModalProg);
-// NÃO fechamos ao clicar no fundo — em mobile o touch pode disparar ao tocar dentro
 
 // Handler do botão "Lançar resultado" / "Editar resultado"
 var _resItem = null;
