@@ -250,6 +250,18 @@
   }
   .btn-add-dem:hover{background:var(--verde-claro)}
 
+  /* ---- resultado de produção ---- */
+  .prog-resultado{
+    margin-top:10px;background:var(--verde-c);border:1px solid var(--verde);
+    border-radius:8px;padding:10px 12px;
+  }
+  .pr-titulo{font-size:.75rem;font-weight:700;color:var(--verde);margin-bottom:7px}
+  .pr-grid{display:grid;grid-template-columns:max-content 1fr;gap:3px 12px;
+    font-size:.79rem;align-items:baseline}
+  .pr-label{color:var(--muted);white-space:nowrap}
+  .pr-val{font-weight:600;color:var(--ink)}
+  .pr-obs{margin-top:7px;font-size:.78rem;color:var(--muted);font-style:italic}
+
   /* ---- programação de produção ---- */
   .prog-item{
     display:flex;align-items:flex-start;justify-content:space-between;
@@ -1144,6 +1156,128 @@
     </div>
   </div>
 
+  <!-- Modal de resultado de produção -->
+  <div id="modalRes" hidden style="
+    position:fixed;inset:0;background:rgba(0,0,0,.6);
+    display:flex;align-items:center;justify-content:center;z-index:997;
+    padding:16px;overflow-y:auto">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;
+      max-height:90vh;display:flex;flex-direction:column">
+      <div id="resTitulo" style="background:var(--dourado);color:#3A2D00;padding:14px 16px;
+        border-radius:14px 14px 0 0;font-family:'Barlow Condensed',sans-serif;
+        font-weight:700;text-transform:uppercase;font-size:1rem;flex-shrink:0">
+        Resultado
+      </div>
+      <div style="padding:16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:12px">
+
+        <!-- BRASSAGEM -->
+        <div id="campoResBrassagem">
+          <div style="font-size:.78rem;font-weight:700;color:var(--verde);
+            text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+            📊 Dados da brassagem</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
+                OG (densidade original)</label>
+              <input type="text" id="resOg" placeholder="Ex.: 1.048"
+                style="width:100%;padding:9px;border:1.5px solid var(--linha);
+                border-radius:8px;font-size:.9rem">
+            </div>
+            <div>
+              <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
+                Volume brassado (L)</label>
+              <input type="text" id="resVolume" placeholder="Ex.: 1200"
+                style="width:100%;padding:9px;border:1.5px solid var(--linha);
+                border-radius:8px;font-size:.9rem">
+            </div>
+          </div>
+        </div>
+
+        <!-- ENVASE -->
+        <div id="campoResEnvase" hidden>
+          <div style="font-size:.78rem;font-weight:700;color:#003E99;
+            text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+            📦 Volume do tanque</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
+                Litros início</label>
+              <input type="number" id="resLitrosIni" placeholder="Ex.: 3150"
+                style="width:100%;padding:9px;border:1.5px solid var(--linha);
+                border-radius:8px;font-size:.9rem">
+            </div>
+            <div>
+              <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
+                Litros fim</label>
+              <input type="number" id="resLitrosFim" placeholder="Ex.: 0"
+                style="width:100%;padding:9px;border:1.5px solid var(--linha);
+                border-radius:8px;font-size:.9rem">
+            </div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;
+            cursor:pointer;margin-bottom:14px">
+            <input type="checkbox" id="resTanqFinalizado">
+            Tanque finalizado (zerado)
+          </label>
+
+          <div style="font-size:.78rem;font-weight:700;color:#003E99;
+            text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+            📊 Quantidade e perdas</div>
+          <div style="margin-bottom:10px">
+            <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
+              Quantidade final envasada (un) *</label>
+            <input type="number" id="resQtdEnv" placeholder="Ex.: 1497"
+              style="width:100%;padding:9px;border:1.5px solid #B3C8F5;
+              border-radius:8px;font-size:.9rem">
+          </div>
+          <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">
+            O total já inclui 1 un por litro envasado. Informe só as perdas adicionais:</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div>
+              <label style="font-size:.75rem;font-weight:600;display:block;margin-bottom:3px">
+                Sleeve perdidos</label>
+              <input type="number" id="resSleeve" placeholder="0"
+                style="width:100%;padding:8px;border:1.5px solid var(--linha);
+                border-radius:7px;font-size:.88rem">
+            </div>
+            <div>
+              <label style="font-size:.75rem;font-weight:600;display:block;margin-bottom:3px">
+                PET perdidos</label>
+              <input type="number" id="resPet" placeholder="0"
+                style="width:100%;padding:8px;border:1.5px solid var(--linha);
+                border-radius:7px;font-size:.88rem">
+            </div>
+            <div>
+              <label style="font-size:.75rem;font-weight:600;display:block;margin-bottom:3px">
+                Tampas perdidas</label>
+              <input type="number" id="resTampas" placeholder="0"
+                style="width:100%;padding:8px;border:1.5px solid var(--linha);
+                border-radius:7px;font-size:.88rem">
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMPO COMUM -->
+        <div>
+          <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
+            Observações</label>
+          <textarea id="resObs" rows="2" placeholder="Ex.: sleeve com defeito lote X, tanque TQ03 finalizado…"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;
+            font-size:.88rem;font-family:'Barlow',sans-serif;resize:vertical"></textarea>
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end;flex-shrink:0">
+          <button id="btnResCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);
+            border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">
+            Cancelar</button>
+          <button id="btnResSalvar" style="padding:9px 18px;border:none;border-radius:8px;
+            background:var(--dourado);color:#3A2D00;cursor:pointer;font-weight:700;font-size:.88rem;
+            font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de programação de produção -->
   <div id="modalProg" hidden style="
     position:fixed;inset:0;background:rgba(0,0,0,.55);
@@ -1341,7 +1475,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.9.1";
+var VERSAO = "1.9.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2688,6 +2822,44 @@ async function carregarProg(){
   }catch(e){ $("progLista").innerHTML="<div class='vazio'>"+esc(e.message)+"</div>"; }
 }
 
+function fmtNum(n){
+  if(n===undefined||n===null||n==="") return "";
+  return Number(n).toLocaleString("pt-BR",{maximumFractionDigits:1});
+}
+
+function renderResultadoBrassagem(r){
+  if(!r) return "";
+  return "<div class='prog-resultado'>"+
+    "<div class='pr-titulo'>✅ Resultado lançado por @"+esc(r.lancadoPor)+"</div>"+
+    "<div class='pr-grid'>"+
+      (r.og     ?"<span class='pr-label'>OG</span><span class='pr-val'>"+esc(r.og)+"</span>":"" )+
+      (r.volume ?"<span class='pr-label'>Volume</span><span class='pr-val'>"+esc(r.volume)+" L</span>":"" )+
+    "</div>"+
+    (r.obsReal?"<div class='pr-obs'>"+esc(r.obsReal)+"</div>":"")+
+  "</div>";
+}
+
+function renderResultadoEnvase(r){
+  if(!r) return "";
+  return "<div class='prog-resultado'>"+
+    "<div class='pr-titulo'>✅ Resultado lançado por @"+esc(r.lancadoPor)+"</div>"+
+    "<div class='pr-grid'>"+
+      "<span class='pr-label'>Litros início</span><span class='pr-val'>"+fmtNum(r.litrosInicio)+" L</span>"+
+      "<span class='pr-label'>Litros fim</span><span class='pr-val'>"+
+        fmtNum(r.litrosFim)+" L"+(r.tanqueFinalizado?" (finalizado)":"")+"</span>"+
+      "<span class='pr-label'>Litros usados</span><span class='pr-val'>"+fmtNum(r.litrosUsados)+" L</span>"+
+      "<span class='pr-label'>Qtd envasada</span><span class='pr-val'>"+fmtNum(r.qtdEnvasada)+" un</span>"+
+      (r.sleeveTotal?"<span class='pr-label'>Sleeve total</span><span class='pr-val'>"+
+        fmtNum(r.sleeveTotal)+" (+"+fmtNum(r.sleevePerd)+" perdidos)</span>":"")+
+      (r.petTotal?"<span class='pr-label'>PET total</span><span class='pr-val'>"+
+        fmtNum(r.petTotal)+" (+"+fmtNum(r.petPerd)+" perdidos)</span>":"")+
+      (r.tampasTotal?"<span class='pr-label'>Tampas total</span><span class='pr-val'>"+
+        fmtNum(r.tampasTotal)+" (+"+fmtNum(r.tampasPerd)+" perdidas)</span>":"")+
+    "</div>"+
+    (r.obsReal?"<div class='pr-obs'>"+esc(r.obsReal)+"</div>":"")+
+  "</div>";
+}
+
 function renderProg(itens, semana){
   if(!itens || !itens.length){
     $("progLista").innerHTML="<div class='vazio'>Nenhuma atividade programada esta semana.</div>";
@@ -2702,15 +2874,26 @@ function renderProg(itens, semana){
       : "background:var(--verde-c);color:var(--verde);border-color:var(--verde)";
     var tagTxt = isEnvase ? "Envase" : "Brassagem";
 
-    // campos específicos por tipo
     var detalhe = "";
     if (isEnvase){
+      if (it.lote)         detalhe += "<span class='item-desc'>Lote: "+esc(it.lote)+"</span> ";
       if (it.tanqueOrigem) detalhe += "<span class='item-desc'>Tanque: "+esc(it.tanqueOrigem)+"</span> ";
       if (it.formato)      detalhe += "<span class='item-desc'>"+esc(it.formato)+"</span> ";
-      if (it.qtd)          detalhe += "<span class='item-desc'>"+esc(it.qtd)+"</span>";
+      if (it.qtd)          detalhe += "<span class='item-desc'>Prev: "+esc(it.qtd)+"</span>";
     } else {
       if (it.tanque)       detalhe += "<span class='item-desc'>Tanque: "+esc(it.tanque)+"</span>";
     }
+
+    var resultado = isEnvase
+      ? renderResultadoEnvase(it.resultado)
+      : renderResultadoBrassagem(it.resultado);
+
+    var btnResultado = !it.resultado
+      ? "<button class='btn-mini' style='background:var(--dourado);border-color:var(--dourado);"+
+        "color:#3A2D00' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+esc(semana)+"' "+
+        "data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"'>📋 Lançar resultado</button>"
+      : "<button class='btn-mini secundario' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+
+        esc(semana)+"' data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"'>✏ Editar resultado</button>";
 
     return "<div class='prog-item'>"+
       "<div class='prog-main'>"+
@@ -2720,12 +2903,16 @@ function renderProg(itens, semana){
         (detalhe?"<div style='margin-top:4px'>"+detalhe+"</div>":"")+
         (it.obs?"<div class='item-desc'>"+esc(it.obs)+"</div>":"")+
         "<div style='font-size:.73rem;color:var(--muted);margin-top:3px'>por "+esc(it.criadaPor)+"</div>"+
+        resultado+
+        "<div class='btn-linha' style='margin-top:8px'>"+
+        btnResultado+
+        (podeEditar?
+          "<button class='btn-mini secundario' data-prog-edit='"+esc(it.id)+"' data-prog-semana='"+
+          esc(semana)+"'>editar</button>"+
+          "<button class='btn-mini perigo' data-prog-del='"+esc(it.id)+"' data-prog-semana='"+
+          esc(semana)+"'>remover</button>" : "")+
+        "</div>"+
       "</div>"+
-      (podeEditar?
-        "<div class='btn-linha'>"+
-        "<button class='btn-mini secundario' data-prog-edit='"+esc(it.id)+"' data-prog-semana='"+esc(semana)+"'>editar</button>"+
-        "<button class='btn-mini perigo' data-prog-del='"+esc(it.id)+"' data-prog-semana='"+esc(semana)+"'>remover</button>"+
-        "</div>" : "")+
     "</div>";
   }).join("");
 }
@@ -2812,6 +2999,81 @@ $("btnProgSalvar").addEventListener("click", async function(){
 });
 $("btnProgCancelar").addEventListener("click",function(){$("modalProg").hidden=true;});
 $("modalProg").addEventListener("click",function(ev){if(ev.target===this)$("modalProg").hidden=true;});
+
+// Handler do botão "Lançar resultado" / "Editar resultado"
+var _resItem = null;
+$("progLista").addEventListener("click", function(ev){
+  var b = ev.target.closest("button[data-prog-res]");
+  if (!b) return;
+  _resItem = {id:b.dataset.progRes, semana:b.dataset.progSemana, tipo:b.dataset.progTipo};
+  var isEnvase = _resItem.tipo === "envase";
+  $("resTitulo").textContent = isEnvase ? "📦 Resultado do envase" : "🍺 Resultado da brassagem";
+  $("campoResBrassagem").hidden = isEnvase;
+  $("campoResEnvase").hidden = !isEnvase;
+  // limpar
+  ["resOg","resVolume","resLitrosIni","resLitrosFim","resQtdEnv",
+   "resSleeve","resPet","resTampas","resObs"].forEach(function(id){
+    var el=$(id); if(el) el.value="";
+  });
+  $("resTanqFinalizado").checked = false;
+  // preencher se já tem resultado
+  api("/api/prog?semana="+_resItem.semana).then(function(r){
+    var it=(r.itens||[]).find(function(x){return x.id===_resItem.id;});
+    if(!it||!it.resultado) return;
+    var res=it.resultado;
+    if(!isEnvase){
+      if($("resOg"))     $("resOg").value     = res.og||"";
+      if($("resVolume")) $("resVolume").value  = res.volume||"";
+    } else {
+      if($("resLitrosIni")) $("resLitrosIni").value = res.litrosInicio||"";
+      if($("resLitrosFim")) $("resLitrosFim").value = res.litrosFim||"";
+      $("resTanqFinalizado").checked = !!res.tanqueFinalizado;
+      if($("resQtdEnv"))  $("resQtdEnv").value  = res.qtdEnvasada||"";
+      if($("resSleeve"))  $("resSleeve").value   = res.sleevePerd||"";
+      if($("resPet"))     $("resPet").value      = res.petPerd||"";
+      if($("resTampas"))  $("resTampas").value   = res.tampasPerd||"";
+    }
+    if($("resObs")) $("resObs").value = res.obsReal||"";
+  }).catch(function(){});
+  $("modalRes").hidden = false;
+});
+
+$("btnResSalvar").addEventListener("click", async function(){
+  if(!_resItem) return;
+  var isEnvase = _resItem.tipo === "envase";
+  var payload = {
+    acao: "resultado",
+    semana: _resItem.semana,
+    id: _resItem.id,
+    obsReal: $("resObs").value.trim()
+  };
+  if(!isEnvase){
+    payload.og     = $("resOg").value.trim();
+    payload.volume = $("resVolume").value.trim();
+    if(!payload.og && !payload.volume){
+      toast("Informe pelo menos o OG ou o volume.","erro"); return;
+    }
+  } else {
+    payload.litrosInicio    = $("resLitrosIni").value;
+    payload.litrosFim       = $("resLitrosFim").value;
+    payload.tanqueFinalizado= $("resTanqFinalizado").checked?"sim":"nao";
+    payload.qtdEnvasada     = $("resQtdEnv").value;
+    payload.sleevePerd      = $("resSleeve").value;
+    payload.petPerd         = $("resPet").value;
+    payload.tampasPerd      = $("resTampas").value;
+    if(!payload.qtdEnvasada){
+      toast("Informe a quantidade envasada.","erro"); return;
+    }
+  }
+  try{
+    await api("/api/prog",{method:"POST",body:payload});
+    $("modalRes").hidden = true;
+    carregarProg();
+    toast("Resultado salvo.");
+  }catch(e){ toast(e.message,"erro"); }
+});
+$("btnResCancelar").addEventListener("click",function(){$("modalRes").hidden=true;});
+$("modalRes").addEventListener("click",function(ev){if(ev.target===this)$("modalRes").hidden=true;});
 
 /* ==================================================================
    Status dos tanques
