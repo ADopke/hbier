@@ -1283,10 +1283,12 @@
     position:fixed;inset:0;background:rgba(0,0,0,.55);
     display:flex;align-items:center;justify-content:center;z-index:996;padding:16px">
     <div style="background:#fff;border-radius:14px;width:100%;max-width:440px">
-      <div id="progModalHeader" style="background:var(--verde);color:#fff;padding:14px 16px;
-        border-radius:14px 14px 0 0">
+      <div id="progModalHeader" data-tipo="brassagem" style="background:var(--verde);color:#fff;padding:14px 16px;
+        border-radius:14px 14px 0 0;display:flex;align-items:center;gap:10px">
         <span id="progFormTitulo" style="font-family:'Barlow Condensed',sans-serif;
-          font-weight:700;text-transform:uppercase;font-size:1rem">Nova brassagem</span>
+          font-weight:700;text-transform:uppercase;font-size:1rem;flex:1">Nova brassagem</span>
+        <button onclick="fecharModalProg()" style="background:none;border:none;
+          color:rgba(255,255,255,.75);font-size:1.2rem;cursor:pointer;line-height:1">✕</button>
       </div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:11px">
 
@@ -1477,7 +1479,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.9.4";
+var VERSAO = "1.9.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2944,8 +2946,9 @@ function abrirModalProg(tipo, editando){
     ? (isBrassagem ? "Editar brassagem" : "Editar envase")
     : (isBrassagem ? "Nova brassagem"   : "Novo envase");
 
-  // cor do header do modal conforme tipo
+  // cor e tipo do header do modal
   $("progModalHeader").style.background = isBrassagem ? "var(--verde)" : "#003E99";
+  $("progModalHeader").dataset.tipo = _progTipo;
 
   // campos exclusivos
   $("campoBrassagem").hidden = !isBrassagem;
@@ -3011,11 +3014,17 @@ $("progLista").addEventListener("click", async function(ev){
 });
 
 $("btnProgSalvar").addEventListener("click", async function(){
+  // _progTipo é definido em abrirModalProg e nunca deve ser sobrescrito
+  // Verificação de segurança: se o header estiver azul, é envase
+  // Triple-check do tipo: variável JS + data-attribute + cor de fundo
+  var tipoFinal = _progTipo ||
+    $("progModalHeader").dataset.tipo ||
+    ($("campoEnvase").hidden === false ? "envase" : "brassagem");
   var seg=chaveSemana(segAtual);
   var corpo={
     acao:_progEditando?"editar":"criar",
     semana:seg,
-    tipo: _progTipo,
+    tipo: tipoFinal,
     estilo: $("progEstilo").value.trim(),
     tanque: $("progTanque").value.trim(),
     produto: $("progProduto").value.trim(),
@@ -3026,7 +3035,7 @@ $("btnProgSalvar").addEventListener("click", async function(){
     obs: $("progObs").value.trim()
   };
   if(_progEditando) corpo.id=_progEditando.id;
-  var isBrassagem = corpo.tipo === "brassagem";
+  var isBrassagem = tipoFinal === "brassagem";
   var principal = isBrassagem ? corpo.estilo : corpo.produto;
   if(!principal){ toast(isBrassagem ? "Informe o estilo." : "Informe o produto.", "erro"); return; }
   try{
@@ -3036,8 +3045,11 @@ $("btnProgSalvar").addEventListener("click", async function(){
     toast("Programação salva.");
   }catch(e){toast(e.message,"erro");}
 });
-$("btnProgCancelar").addEventListener("click",function(){$("modalProg").hidden=true;});
-$("modalProg").addEventListener("click",function(ev){if(ev.target===this)$("modalProg").hidden=true;});
+function fecharModalProg(){
+  $("modalProg").hidden = true;
+}
+$("btnProgCancelar").addEventListener("click", fecharModalProg);
+// NÃO fechamos ao clicar no fundo — em mobile o touch pode disparar ao tocar dentro
 
 // Handler do botão "Lançar resultado" / "Editar resultado"
 var _resItem = null;
