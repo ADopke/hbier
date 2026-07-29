@@ -1475,7 +1475,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.9.2";
+var VERSAO = "1.9.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2818,7 +2818,7 @@ async function carregarProg(){
   $("progSemana").textContent = fmtDia(segAtual)+" a "+fmtDia(fim);
   try{
     var r = await api("/api/prog?semana="+seg);
-    renderProg(r.itens, seg);
+    renderProg(r.itens, seg, segAtual);
   }catch(e){ $("progLista").innerHTML="<div class='vazio'>"+esc(e.message)+"</div>"; }
 }
 
@@ -2860,7 +2860,21 @@ function renderResultadoEnvase(r){
   "</div>";
 }
 
-function renderProg(itens, semana){
+function renderProg(itens, semana, seg){
+  // mapa dia nome → data (dd/mm) baseado na segunda-feira da semana
+  var mapaDatas = {};
+  if (seg){
+    var nomes = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+    nomes.forEach(function(nome, i){
+      var d = new Date(seg); d.setDate(d.getDate()+i);
+      mapaDatas[nome] = ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2);
+    });
+  }
+  function diaComData(dia){
+    if (!dia) return "";
+    var dt = mapaDatas[dia];
+    return dt ? dia+" "+dt : dia;
+  }
   if(!itens || !itens.length){
     $("progLista").innerHTML="<div class='vazio'>Nenhuma atividade programada esta semana.</div>";
     return;
@@ -2899,7 +2913,7 @@ function renderProg(itens, semana){
       "<div class='prog-main'>"+
         icone+" <span class='prog-estilo'>"+esc(it.estilo||it.produto||"—")+"</span>"+
         "<span class='tag' style='"+tagCor+"'>"+tagTxt+"</span>"+
-        (it.dia?" <span class='tag'>"+esc(it.dia)+"</span>":"")+
+        (it.dia?" <span class='tag'>"+esc(diaComData(it.dia))+"</span>":"")+
         (detalhe?"<div style='margin-top:4px'>"+detalhe+"</div>":"")+
         (it.obs?"<div class='item-desc'>"+esc(it.obs)+"</div>":"")+
         "<div style='font-size:.73rem;color:var(--muted);margin-top:3px'>por "+esc(it.criadaPor)+"</div>"+
@@ -2918,6 +2932,15 @@ function renderProg(itens, semana){
 }
 
 function abrirModalProg(tipo, editando){
+  // atualizar as opções do select com as datas reais da semana atual
+  var nomes = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+  var opcs = "<option value=''>Não definido</option>";
+  nomes.forEach(function(nome, i){
+    var d = new Date(segAtual); d.setDate(d.getDate()+i);
+    var dt = ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2);
+    opcs += "<option value='"+nome+"'>"+nome+" "+dt+"</option>";
+  });
+  $("progDia").innerHTML = opcs;
   _progEditando = editando || null;
   var isBrassagem = tipo === "brassagem";
   $("progFormTitulo").textContent = _progEditando
