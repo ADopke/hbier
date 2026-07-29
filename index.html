@@ -823,6 +823,27 @@
         <ul class="lista" id="listaPessoas"></ul>
       </section>
 
+      <section id="secReset">
+        <div class="sec-head">
+          <span class="sec-title">🗑 Reset de marcações</span>
+          <span class="sec-sub">apaga o histórico de todo mundo</span>
+        </div>
+        <div style="padding:14px">
+          <div style="background:var(--vermelho-claro);border:1.5px solid var(--vermelho);
+            border-radius:8px;padding:10px 14px;font-size:.84rem;line-height:1.6;
+            margin-bottom:12px">
+            <b style="color:var(--vermelho)">⚠️ Ação irreversível.</b>
+            Apaga todas as marcações de todos os usuários e o histórico dos
+            relatórios. <b>Usuários, tarefas e a planilha são preservados.</b>
+          </div>
+          <button class="btn mini perigo" id="btnResetMarcacoes">
+            Apagar todas as marcações
+          </button>
+          <div id="resetResultado" hidden style="margin-top:10px;font-size:.84rem;
+            padding:10px 14px;border-radius:8px"></div>
+        </div>
+      </section>
+
       <section id="secCriarAcesso" hidden>
         <div class="sec-head"><span class="sec-title">➕ Novo acesso</span></div>
         <div class="form-grid">
@@ -983,7 +1004,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.8.3";
+var VERSAO = "1.8.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -3247,6 +3268,48 @@ $("btnDemSalvar").addEventListener("click", function(){
 $("btnDemCancelar").addEventListener("click", fecharModalDemanda);
 $("modalDemanda").addEventListener("click", function(ev){
   if (ev.target === this) fecharModalDemanda();  // clique no fundo fecha
+});
+
+/* ==================================================================
+   Reset de marcações (admin)
+   ================================================================== */
+$("btnResetMarcacoes").addEventListener("click", async function(){
+  var btn = this;
+  var res = $("resetResultado");
+
+  if (!confirm("Tem certeza?\n\nEsta ação vai apagar TODAS as marcações de TODOS os usuários e não pode ser desfeita.\n\nUsuários, tarefas e a planilha são preservados.")) return;
+
+  btn.disabled = true;
+  btn.textContent = "Apagando…";
+  res.hidden = false;
+  res.style.background = "var(--verde-claro)";
+  res.style.border = "1.5px solid var(--linha)";
+  res.textContent = "Processando…";
+
+  try{
+    var r = await api("/api/reset", {
+      method: "POST",
+      body: {confirmacao: "RESETAR TUDO"}
+    });
+    res.style.background = "var(--verde-claro)";
+    res.style.border = "1.5px solid var(--verde)";
+    res.style.color = "var(--verde)";
+    res.innerHTML = "✅ " + r.mensagem +
+      "<br><small>" + r.chaves_apagadas + " chaves apagadas em " +
+      r.usuarios + " usuário(s).</small>";
+
+    // recarrega o estado local para refletir o reset
+    await carregarSemana();
+    renderTudo();
+  }catch(e){
+    res.style.background = "var(--vermelho-claro)";
+    res.style.border = "1.5px solid var(--vermelho)";
+    res.style.color = "var(--vermelho)";
+    res.textContent = "❌ " + e.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Apagar todas as marcações";
 });
 
 /* ---------- partida ---------- */
