@@ -1283,7 +1283,7 @@
     position:fixed;inset:0;background:rgba(0,0,0,.55);
     display:flex;align-items:center;justify-content:center;z-index:996;padding:16px">
     <div style="background:#fff;border-radius:14px;width:100%;max-width:440px">
-      <div style="background:var(--verde);color:#fff;padding:14px 16px;
+      <div id="progModalHeader" style="background:var(--verde);color:#fff;padding:14px 16px;
         border-radius:14px 14px 0 0">
         <span id="progFormTitulo" style="font-family:'Barlow Condensed',sans-serif;
           font-weight:700;text-transform:uppercase;font-size:1rem">Nova brassagem</span>
@@ -1338,9 +1338,11 @@
                 <option>Lata 473ml</option>
                 <option>Garrafa 500ml</option>
                 <option>Garrafa 600ml</option>
+                <option>PET 500ml</option>
+                <option>PET 1L</option>
+                <option>PET 2L</option>
                 <option>Barril 30L</option>
                 <option>Barril 50L</option>
-                <option>PET 2L</option>
               </select>
             </div>
             <div>
@@ -1475,7 +1477,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "1.9.3";
+var VERSAO = "1.9.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2931,36 +2933,50 @@ function renderProg(itens, semana, seg){
   }).join("");
 }
 
+var _progTipo = "brassagem";   // fonte de verdade do tipo — não depende do hidden
+
 function abrirModalProg(tipo, editando){
-  // atualizar as opções do select com as datas reais da semana atual
+  _progTipo = tipo || "brassagem";
+  _progEditando = editando || null;
+  var isBrassagem = _progTipo === "brassagem";
+
+  $("progFormTitulo").textContent = _progEditando
+    ? (isBrassagem ? "Editar brassagem" : "Editar envase")
+    : (isBrassagem ? "Nova brassagem"   : "Novo envase");
+
+  // cor do header do modal conforme tipo
+  $("progModalHeader").style.background = isBrassagem ? "var(--verde)" : "#003E99";
+
+  // campos exclusivos
+  $("campoBrassagem").hidden = !isBrassagem;
+  $("campoEnvase").hidden    = isBrassagem;
+
+  // limpar campos se não estiver editando
+  if (!editando){
+    $("progEstilo").value=""; $("progTanque").value="";
+    $("progProduto").value=""; $("progTanqueOrigem").value="";
+    $("progFormato").value=""; $("progQtd").value="";
+    $("progObs").value="";
+  }
+
+  // atualizar o select de dia com as datas reais — DEPOIS de limpar os campos
+  // e restaurar o valor editado depois de preencher as opções
+  var diaAtual = editando ? $("progDia").value : "";
   var nomes = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
   var opcs = "<option value=''>Não definido</option>";
   nomes.forEach(function(nome, i){
     var d = new Date(segAtual); d.setDate(d.getDate()+i);
     var dt = ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2);
-    opcs += "<option value='"+nome+"'>"+nome+" "+dt+"</option>";
+    opcs += "<option value='"+nome+"'>"+nome+" — "+dt+"</option>";
   });
   $("progDia").innerHTML = opcs;
-  _progEditando = editando || null;
-  var isBrassagem = tipo === "brassagem";
-  $("progFormTitulo").textContent = _progEditando
-    ? (isBrassagem ? "Editar brassagem" : "Editar envase")
-    : (isBrassagem ? "Nova brassagem"   : "Novo envase");
-  $("progTipo").value = tipo;
+  if (diaAtual) $("progDia").value = diaAtual;
+  else $("progDia").value = "";
 
-  // campos exclusivos brassagem
-  $("campoBrassagem").hidden = !isBrassagem;
-  // campos exclusivos envase
-  $("campoEnvase").hidden    = isBrassagem;
-
-  if (!editando){
-    $("progEstilo").value=""; $("progTanque").value="";
-    $("progProduto").value=""; $("progTanqueOrigem").value="";
-    $("progFormato").value=""; $("progQtd").value="";
-    $("progDia").value=""; $("progObs").value="";
-  }
   $("modalProg").hidden=false;
-  (isBrassagem ? $("progEstilo") : $("progProduto")).focus();
+  setTimeout(function(){
+    (isBrassagem ? $("progEstilo") : $("progProduto")).focus();
+  }, 80);
 }
 
 $("btnAddProg").addEventListener("click", function(){
@@ -2999,7 +3015,7 @@ $("btnProgSalvar").addEventListener("click", async function(){
   var corpo={
     acao:_progEditando?"editar":"criar",
     semana:seg,
-    tipo: $("progTipo").value || "brassagem",
+    tipo: _progTipo,
     estilo: $("progEstilo").value.trim(),
     tanque: $("progTanque").value.trim(),
     produto: $("progProduto").value.trim(),
