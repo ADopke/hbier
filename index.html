@@ -1482,7 +1482,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.0.1";
+var VERSAO = "2.0.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -3008,7 +3008,7 @@ $("btnEnvSalvar").addEventListener("click", async function(){
   if (!produto){ toast("Informe o produto.", "erro"); return; }
   var seg = chaveSemana(segAtual);
   try{
-    await api("/api/prog", {method:"POST", body:{
+    var resposta = await api("/api/prog", {method:"POST", body:{
       acao:     _enveditando ? "editar" : "criar",
       id:       _enveditando ? _enveditando.id : undefined,
       semana:   seg,
@@ -3021,10 +3021,11 @@ $("btnEnvSalvar").addEventListener("click", async function(){
       dia:      $("envDia").value,
       obs:      $("envObs").value.trim()
     }});
+    // DEBUG: mostrar o que o servidor confirmou
+    toast("Servidor confirmou tipo: " + (resposta._debug_tipo_salvo || "SEM DEBUG — versão antiga!"), "ok");
     $("modalEnvase").hidden = true;
     _enveditando = null;
     carregarProg();
-    toast("Envase salvo.");
   }catch(e){ toast(e.message, "erro"); }
 });
 

@@ -71,7 +71,7 @@ export default protegido(async function handler(req, res) {
 
     itens.push(item);
     await gravar(chave(semana), itens);
-    return res.json({ ok: true, itens });
+    return res.json({ ok: true, itens, _debug_tipo_recebido: dados.tipo, _debug_tipo_salvo: item.tipo });
   }
 
   /* ---------- editar ---------- */
