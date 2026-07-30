@@ -45,10 +45,6 @@ export default protegido(async function handler(req, res) {
     if (!podeProgramar(sessao.papel))
       return erro(res, 403, "Apenas admin ou gestor podem programar.");
 
-    // LOG TEMPORÁRIO DE DEBUG
-    console.log("[prog criar] dados.tipo recebido:", JSON.stringify(dados.tipo));
-    console.log("[prog criar] body completo:", JSON.stringify(dados));
-
     const item = {
       id: novoId(),
       tipo: dados.tipo === "envase" ? "envase" : "brassagem",
@@ -71,7 +67,7 @@ export default protegido(async function handler(req, res) {
 
     itens.push(item);
     await gravar(chave(semana), itens);
-    return res.json({ ok: true, itens, _debug_tipo_recebido: dados.tipo, _debug_tipo_salvo: item.tipo });
+    return res.json({ ok: true, itens });
   }
 
   /* ---------- editar ---------- */
@@ -155,6 +151,28 @@ export default protegido(async function handler(req, res) {
         em: new Date().toISOString(),
       };
     }
+
+    await gravar(chave(semana), itens);
+    return res.json({ ok: true, item: itens[idx] });
+  }
+
+  /* ---------- check (toggle BeerSales / Beerbo) ---------- */
+  if (dados.acao === "check") {
+    const idx = itens.findIndex((x) => x.id === dados.id);
+    if (idx < 0) return erro(res, 404, "Item não encontrado.");
+
+    const camposPermitidos = ["lancadoBeerSales", "lancadoBeerbo"];
+    if (!camposPermitidos.includes(dados.campo)) {
+      return erro(res, 400, "Campo inválido.");
+    }
+
+    itens[idx].checks = itens[idx].checks || {};
+    // toggle
+    itens[idx].checks[dados.campo] = !itens[idx].checks[dados.campo];
+
+    // registrar quem marcou e quando
+    itens[idx].checks[dados.campo + "_por"] = sessao.login;
+    itens[idx].checks[dados.campo + "_em"]  = new Date().toISOString();
 
     await gravar(chave(semana), itens);
     return res.json({ ok: true, item: itens[idx] });
