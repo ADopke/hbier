@@ -873,9 +873,16 @@
     <!-- ---------- PROGRAMAÇÃO DE PRODUÇÃO ---------- -->
     <div id="painelProg" hidden>
       <section>
-        <div class="sec-head">
-          <span class="sec-title">🗓 Programação da semana</span>
-          <span class="sec-sub" id="progSemana"></span>
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
+          <span class="sec-title">🗓 Programação</span>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+            <button class="btn-hoje-sem" id="progPrevSem">‹</button>
+            <span id="progSemana" style="font-size:.82rem;font-weight:600;
+              color:var(--ink);white-space:nowrap"></span>
+            <button class="btn-hoje-sem" id="progNextSem">›</button>
+            <button class="btn-hoje-sem" id="progVoltarHoje" hidden
+              style="font-size:.72rem;padding:4px 9px">hoje</button>
+          </div>
         </div>
         <div id="progLista" style="padding:14px"></div>
         <div style="padding:0 14px 14px">
@@ -1482,7 +1489,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.0.2";
+var VERSAO = "2.0.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2820,12 +2827,26 @@ var _progEditando = null;
 var DIAS_PROG = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 
 async function carregarProg(){
-  var seg = chaveSemana(segAtual);
-  var fim = new Date(segAtual); fim.setDate(fim.getDate()+6);
-  $("progSemana").textContent = fmtDia(segAtual)+" a "+fmtDia(fim);
+  var seg = chaveSemana(segProg);
+  var fim = new Date(segProg); fim.setDate(fim.getDate()+6);
+
+  // badge indicando qual semana está sendo vista
+  var naAtualProg = chaveSemana(segProg) === chaveSemana(segHoje);
+  var semanas_frente = Math.round((segProg - segundaDe(new Date())) / 604800000);
+  var labelSemana = fmtDia(segProg)+" a "+fmtDia(fim);
+  if (naAtualProg) labelSemana += " (atual)";
+  else if (semanas_frente === 1) labelSemana += " (próxima semana)";
+  else if (semanas_frente > 1) labelSemana += " ("+semanas_frente+"ª semana à frente)";
+  $("progSemana").textContent = labelSemana;
+  $("progVoltarHoje").hidden = naAtualProg;
+
+  // desabilitar botão de avançar se já está no limite
+  $("progNextSem").disabled = semanas_frente >= PROG_MAX_SEMANAS;
+  $("progPrevSem").disabled = naAtualProg;
+
   try{
     var r = await api("/api/prog?semana="+seg);
-    renderProg(r.itens, seg, segAtual);
+    renderProg(r.itens, seg, segProg);
   }catch(e){ $("progLista").innerHTML="<div class='vazio'>"+esc(e.message)+"</div>"; }
 }
 
@@ -2938,6 +2959,28 @@ function renderProg(itens, semana, seg){
   }).join("");
 }
 
+// Semana exibida na aba Programação — independente do checklist
+var segProg = segundaDe(new Date());
+var PROG_MAX_SEMANAS = 4;   // máximo de semanas à frente permitidas
+
+function progNavegar(delta){
+  var nova = new Date(segProg);
+  nova.setDate(nova.getDate() + delta * 7);
+  var limite = segundaDe(new Date());
+  limite.setDate(limite.getDate() + PROG_MAX_SEMANAS * 7);
+  if (nova > limite) { toast("Máximo de "+PROG_MAX_SEMANAS+" semanas à frente.", "erro"); return; }
+  if (nova < segundaDe(new Date())) nova = segundaDe(new Date());
+  segProg = nova;
+  carregarProg();
+}
+
+$("progPrevSem").addEventListener("click", function(){ progNavegar(-1); });
+$("progNextSem").addEventListener("click", function(){ progNavegar(+1); });
+$("progVoltarHoje").addEventListener("click", function(){
+  segProg = segundaDe(new Date());
+  carregarProg();
+});
+
 var _brasseditando = null;
 var _enveditando = null;
 
@@ -2945,7 +2988,7 @@ function preencherDias(selectId){
   var nomes = ["Segunda","Ter\u00e7a","Quarta","Quinta","Sexta","S\u00e1bado"];
   var opcs = "<option value=''>N\u00e3o definido</option>";
   nomes.forEach(function(nome, i){
-    var d = new Date(segAtual); d.setDate(d.getDate()+i);
+    var d = new Date(segProg); d.setDate(d.getDate()+i);
     var dt = ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2);
     opcs += "<option value='"+nome+"'>"+nome+" \u2014 "+dt+"</option>";
   });
@@ -2968,7 +3011,7 @@ $("btnAddProg").addEventListener("click", function(){
 $("btnBrassSalvar").addEventListener("click", async function(){
   var estilo = $("brassEstilo").value.trim();
   if (!estilo){ toast("Informe o estilo.", "erro"); return; }
-  var seg = chaveSemana(segAtual);
+  var seg = chaveSemana(segProg);
   try{
     await api("/api/prog", {method:"POST", body:{
       acao: _brasseditando ? "editar" : "criar",
@@ -3006,7 +3049,7 @@ $("btnAddEnvase").addEventListener("click", function(){
 $("btnEnvSalvar").addEventListener("click", async function(){
   var produto = $("envProduto").value.trim();
   if (!produto){ toast("Informe o produto.", "erro"); return; }
-  var seg = chaveSemana(segAtual);
+  var seg = chaveSemana(segProg);
   try{
     var resposta = await api("/api/prog", {method:"POST", body:{
       acao:     _enveditando ? "editar" : "criar",
