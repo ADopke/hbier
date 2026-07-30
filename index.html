@@ -250,6 +250,16 @@
   }
   .btn-add-dem:hover{background:var(--verde-claro)}
 
+  /* ---- separador de dia na programação ---- */
+  .prog-dia-sep{
+    padding:8px 14px 5px;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.85rem;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--verde);border-top:2px solid var(--verde-claro);
+    margin-top:4px;
+  }
+  .prog-dia-sep:first-child{ border-top:none;margin-top:0; }
+
   /* ---- checks de lançamento (BeerSales / Beerbo) ---- */
   .check-lancamento{
     display:inline-flex;align-items:center;gap:6px;
@@ -893,15 +903,33 @@
     <!-- ---------- PROGRAMAÇÃO DE PRODUÇÃO ---------- -->
     <div id="painelProg" hidden>
       <section>
-        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px;align-items:flex-start">
           <span class="sec-title">🗓 Programação</span>
-          <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
-            <button class="btn-hoje-sem" id="progPrevSem">‹</button>
-            <span id="progSemana" style="font-size:.82rem;font-weight:600;
-              color:var(--ink);white-space:nowrap"></span>
-            <button class="btn-hoje-sem" id="progNextSem">›</button>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-left:auto;align-items:flex-end">
+            <!-- linha 1: ano -->
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="btn-hoje-sem" id="progPrevAno" style="font-size:.7rem;padding:3px 8px">‹‹</button>
+              <span id="progAnoLabel" style="font-size:.78rem;font-weight:700;color:var(--verde);
+                min-width:36px;text-align:center"></span>
+              <button class="btn-hoje-sem" id="progNextAno" style="font-size:.7rem;padding:3px 8px">>></button>
+            </div>
+            <!-- linha 2: mês -->
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="btn-hoje-sem" id="progPrevMes" style="font-size:.8rem;padding:3px 9px">‹</button>
+              <span id="progMesLabel" style="font-size:.8rem;font-weight:600;color:var(--ink);
+                min-width:60px;text-align:center"></span>
+              <button class="btn-hoje-sem" id="progNextMes" style="font-size:.8rem;padding:3px 9px">›</button>
+            </div>
+            <!-- linha 3: semana dentro do mês -->
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="btn-hoje-sem" id="progPrevSem">‹ sem</button>
+              <span id="progSemana" style="font-size:.78rem;font-weight:600;
+                color:var(--muted);white-space:nowrap;min-width:140px;text-align:center"></span>
+              <button class="btn-hoje-sem" id="progNextSem">sem ›</button>
+            </div>
+            <!-- volta para hoje -->
             <button class="btn-hoje-sem" id="progVoltarHoje" hidden
-              style="font-size:.72rem;padding:4px 9px">hoje</button>
+              style="font-size:.72rem;padding:3px 9px;align-self:center">↩ semana atual</button>
           </div>
         </div>
         <div id="progLista" style="padding:14px"></div>
@@ -1509,7 +1537,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.0.4";
+var VERSAO = "2.0.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2852,16 +2880,27 @@ async function carregarProg(){
 
   // badge indicando qual semana está sendo vista
   var naAtualProg = chaveSemana(segProg) === chaveSemana(segHoje);
-  var semanas_frente = Math.round((segProg - segundaDe(new Date())) / 604800000);
-  var labelSemana = fmtDia(segProg)+" a "+fmtDia(fim);
-  if (naAtualProg) labelSemana += " (atual)";
-  else if (semanas_frente === 1) labelSemana += " (próxima semana)";
-  else if (semanas_frente > 1) labelSemana += " ("+semanas_frente+"ª semana à frente)";
+
+  // Label: "3 a 9 ago 2026" ou se cruzar mês "29 jul a 4 ago 2026"
+  function fmtDiaComAno(d){
+    return d.getDate()+" "+MESES[d.getMonth()];
+  }
+  var mesIni = segProg.getMonth(), mesFim = fim.getMonth();
+  var anoIni = segProg.getFullYear(), anoFim = fim.getFullYear();
+  var labelSemana;
+  if (anoIni !== anoFim){
+    labelSemana = fmtDiaComAno(segProg)+" "+anoIni+" a "+fmtDiaComAno(fim)+" "+anoFim;
+  } else if (mesIni !== mesFim){
+    labelSemana = fmtDiaComAno(segProg)+" a "+fmtDiaComAno(fim)+" "+anoFim;
+  } else {
+    labelSemana = segProg.getDate()+" a "+fmtDiaComAno(fim)+" "+anoFim;
+  }
+  if (naAtualProg) labelSemana += " · atual";
   $("progSemana").textContent = labelSemana;
+  $("progAnoLabel").textContent = segProg.getFullYear();
+  $("progMesLabel").textContent = MESES_LONGOS[segProg.getMonth()];
   $("progVoltarHoje").hidden = naAtualProg;
 
-  // desabilitar botão de avançar se já está no limite
-  $("progNextSem").disabled = semanas_frente >= PROG_MAX_SEMANAS;
   $("progPrevSem").disabled = naAtualProg;
 
   try{
@@ -2951,7 +2990,18 @@ function renderProg(itens, semana, seg){
     $("progLista").innerHTML="<div class='vazio'>Nenhuma atividade programada esta semana.</div>";
     return;
   }
-  $("progLista").innerHTML = itens.map(function(it){
+
+  // Ordenar por dia da semana; sem dia fica no fim
+  var ORDEM_DIAS_PROG = {"Segunda":0,"Ter\u00e7a":1,"Quarta":2,"Quinta":3,"Sexta":4,"S\u00e1bado":5};
+  var itensSorted = itens.slice().sort(function(a,b){
+    var da = (ORDEM_DIAS_PROG[a.dia] !== undefined) ? ORDEM_DIAS_PROG[a.dia] : 99;
+    var db = (ORDEM_DIAS_PROG[b.dia] !== undefined) ? ORDEM_DIAS_PROG[b.dia] : 99;
+    return da - db;
+  });
+
+  // Acumular HTML com separadores de dia
+  var htmlTotal = "", diaGrupo = undefined;
+  itensSorted.forEach(function(it){
     var podeEditar = ["admin","gestor"].includes(sessao.papel);
     var isEnvase = it.tipo === "envase";
     var icone = isEnvase ? "📦" : "🍺";
@@ -2981,11 +3031,19 @@ function renderProg(itens, semana, seg){
       : "<button class='btn-mini secundario' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+
         esc(semana)+"' data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"'>✏ Editar resultado</button>";
 
-    return "<div class='prog-item'>"+
+    // separador de dia
+    if (it.dia !== diaGrupo){
+      diaGrupo = it.dia;
+      var dtSep = mapaDatas[diaGrupo] || "";
+      htmlTotal += diaGrupo
+        ? "<div class='prog-dia-sep'>"+esc(diaGrupo)+(dtSep?" — "+dtSep:"")+"</div>"
+        : "<div class='prog-dia-sep' style='color:var(--muted)'>Sem dia definido</div>";
+    }
+
+    htmlTotal += "<div class='prog-item'>"+
       "<div class='prog-main'>"+
         icone+" <span class='prog-estilo'>"+esc(it.estilo||it.produto||"—")+"</span>"+
         "<span class='tag' style='"+tagCor+"'>"+tagTxt+"</span>"+
-        (it.dia?" <span class='tag'>"+esc(diaComData(it.dia))+"</span>":"")+
         (detalhe?"<div style='margin-top:4px'>"+detalhe+"</div>":"")+
         (it.obs?"<div class='item-desc'>"+esc(it.obs)+"</div>":"")+
         "<div style='font-size:.73rem;color:var(--muted);margin-top:3px'>por "+esc(it.criadaPor)+"</div>"+
@@ -3001,26 +3059,52 @@ function renderProg(itens, semana, seg){
         "</div>"+
       "</div>"+
     "</div>";
-  }).join("");
+  });
+  $("progLista").innerHTML = htmlTotal;
 }
 
 // Semana exibida na aba Programação — independente do checklist
 var segProg = segundaDe(new Date());
-var PROG_MAX_SEMANAS = 4;   // máximo de semanas à frente permitidas
-
 function progNavegar(delta){
   var nova = new Date(segProg);
   nova.setDate(nova.getDate() + delta * 7);
-  var limite = segundaDe(new Date());
-  limite.setDate(limite.getDate() + PROG_MAX_SEMANAS * 7);
-  if (nova > limite) { toast("Máximo de "+PROG_MAX_SEMANAS+" semanas à frente.", "erro"); return; }
   if (nova < segundaDe(new Date())) nova = segundaDe(new Date());
   segProg = nova;
   carregarProg();
 }
 
+var MESES_LONGOS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
 $("progPrevSem").addEventListener("click", function(){ progNavegar(-1); });
 $("progNextSem").addEventListener("click", function(){ progNavegar(+1); });
+
+$("progPrevMes").addEventListener("click", function(){
+  var nova = new Date(segProg);
+  nova.setMonth(nova.getMonth()-1);
+  nova = segundaDe(nova);
+  if (nova < segundaDe(new Date())) nova = segundaDe(new Date());
+  segProg = nova; carregarProg();
+});
+$("progNextMes").addEventListener("click", function(){
+  var nova = new Date(segProg);
+  nova.setMonth(nova.getMonth()+1);
+  segProg = segundaDe(nova); carregarProg();
+});
+
+$("progPrevAno").addEventListener("click", function(){
+  var nova = new Date(segProg);
+  nova.setFullYear(nova.getFullYear()-1);
+  nova = segundaDe(nova);
+  if (nova < segundaDe(new Date())) nova = segundaDe(new Date());
+  segProg = nova; carregarProg();
+});
+$("progNextAno").addEventListener("click", function(){
+  var nova = new Date(segProg);
+  nova.setFullYear(nova.getFullYear()+1);
+  segProg = segundaDe(nova); carregarProg();
+});
+
 $("progVoltarHoje").addEventListener("click", function(){
   segProg = segundaDe(new Date());
   carregarProg();
