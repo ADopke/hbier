@@ -45,6 +45,10 @@ export default protegido(async function handler(req, res) {
     if (!podeProgramar(sessao.papel))
       return erro(res, 403, "Apenas admin ou gestor podem programar.");
 
+    // LOG TEMPORÁRIO DE DEBUG
+    console.log("[prog criar] dados.tipo recebido:", JSON.stringify(dados.tipo));
+    console.log("[prog criar] body completo:", JSON.stringify(dados));
+
     const item = {
       id: novoId(),
       tipo: dados.tipo === "envase" ? "envase" : "brassagem",
