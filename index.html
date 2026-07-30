@@ -250,6 +250,26 @@
   }
   .btn-add-dem:hover{background:var(--verde-claro)}
 
+  /* ---- checks de lançamento (BeerSales / Beerbo) ---- */
+  .check-lancamento{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:5px 11px;border-radius:8px;cursor:pointer;
+    font-size:.78rem;font-weight:600;border:1.5px solid var(--linha);
+    background:#fff;color:var(--muted);transition:.12s;
+    font-family:inherit;
+  }
+  .check-lancamento:hover{ border-color:var(--verde);color:var(--verde); }
+  .check-lancamento.marcado{
+    background:var(--verde-claro);border-color:var(--verde);color:var(--verde);
+  }
+  .check-lancamento .cl-icone{
+    width:18px;height:18px;border-radius:5px;border:1.5px solid currentColor;
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:.75rem;flex-shrink:0;
+  }
+  .check-lancamento.marcado .cl-icone{ background:var(--verde);color:#fff;border-color:var(--verde); }
+  .checks-lancamento{ display:flex;gap:8px;flex-wrap:wrap;margin-top:8px; }
+
   /* ---- resultado de produção ---- */
   .prog-resultado{
     margin-top:10px;background:var(--verde-c);border:1px solid var(--verde);
@@ -1489,7 +1509,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.0.3";
+var VERSAO = "2.0.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2888,6 +2908,30 @@ function renderResultadoEnvase(r){
   "</div>";
 }
 
+function renderChecksLancamento(it, semana){
+  var ch = it.checks || {};
+  var isEnvase = it.tipo === "envase";
+
+  function btnCheck(campo, rotulo){
+    var marcado = !!ch[campo];
+    var por = ch[campo+"_por"] ? " @"+ch[campo+"_por"] : "";
+    return "<button class='check-lancamento"+(marcado?" marcado":"")+"'"+
+      " data-prog-check='"+esc(campo)+"'"+
+      " data-prog-check-id='"+esc(it.id)+"'"+
+      " data-prog-check-semana='"+esc(semana)+"'"+
+      " title='"+(marcado?"Marcado por"+esc(por)+" — clique para desmarcar":"Marcar como lançado")+"'>"+
+      "<span class='cl-icone'>"+(marcado?"✓":"")+"</span>"+
+      esc(rotulo)+(marcado&&por?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+"</span>":"")+
+      "</button>";
+  }
+
+  var botoes = "";
+  botoes += btnCheck("lancadoBeerSales", "BeerSales");
+  if (!isEnvase) botoes += btnCheck("lancadoBeerbo", "Beerbo");
+
+  return "<div class='checks-lancamento'>"+botoes+"</div>";
+}
+
 function renderProg(itens, semana, seg){
   // mapa dia nome → data (dd/mm) baseado na segunda-feira da semana
   var mapaDatas = {};
@@ -2946,6 +2990,7 @@ function renderProg(itens, semana, seg){
         (it.obs?"<div class='item-desc'>"+esc(it.obs)+"</div>":"")+
         "<div style='font-size:.73rem;color:var(--muted);margin-top:3px'>por "+esc(it.criadaPor)+"</div>"+
         resultado+
+        renderChecksLancamento(it, semana)+
         "<div class='btn-linha' style='margin-top:8px'>"+
         btnResultado+
         (podeEditar?
@@ -3114,10 +3159,21 @@ $("progLista").addEventListener("click", async function(ev){
     }});
     carregarProg();
   }
+
+  // toggle dos checks de lan\u00e7amento (BeerSales / Beerbo)
+  if (b.dataset.progCheck){
+    await api("/api/prog", {method:"POST", body:{
+      acao: "check",
+      semana: b.dataset.progCheckSemana,
+      id: b.dataset.progCheckId,
+      campo: b.dataset.progCheck
+    }});
+    carregarProg();
+  }
 });
 
 
-// Handler do botão "Lançar resultado" / "Editar resultado"
+// Handler do botão "Lan\u00e7ar resultado" / "Editar resultado"
 var _resItem = null;
 $("progLista").addEventListener("click", function(ev){
   var b = ev.target.closest("button[data-prog-res]");
