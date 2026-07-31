@@ -1284,16 +1284,13 @@
         border-radius:14px 14px 0 0;display:flex;align-items:center;gap:10px;flex-shrink:0">
         <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;
           text-transform:uppercase;font-size:1rem;flex:1">⚙ Sugestões de tarefas</span>
-        <button onclick="$('modalTaAutoConfig').hidden=true"
-          style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">✕</button>
+        <button id="btnTaConfigFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">✕</button>
       </div>
 
       <div style="padding:10px 14px;border-bottom:1px solid var(--linha);background:#FAFAF5;flex-shrink:0">
         <div style="display:flex;gap:8px;margin-bottom:8px">
-          <button id="tabConfigBrass" class="btn mini"
-            style="flex:1" onclick="mostrarConfigTab('brassagem')">🍺 Brassagem</button>
-          <button id="tabConfigEnv" class="btn mini secundario"
-            style="flex:1" onclick="mostrarConfigTab('envase')">📦 Envase</button>
+          <button id="tabConfigBrass" class="btn mini" style="flex:1" data-config-tab="brassagem">🍺 Brassagem</button>
+          <button id="tabConfigEnv" class="btn mini secundario" style="flex:1" data-config-tab="envase">📦 Envase</button>
         </div>
         <div style="display:flex;gap:6px">
           <input type="text" id="novaTaskNome" placeholder="Nome da tarefa sugerida…"
@@ -1307,10 +1304,7 @@
       <div id="configSugestoesLista" style="overflow-y:auto;flex:1"></div>
 
       <div style="padding:12px 14px;border-top:1px solid var(--linha);flex-shrink:0">
-        <button onclick="$('modalTaAutoConfig').hidden=true;renderTaAutoLista()"
-          style="width:100%;padding:10px;border:none;border-radius:8px;
-          background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.9rem;
-          font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Fechar</button>
+        <button id="btnTaConfigSalvar" style="width:100%;padding:10px;border:none;border-radius:8px;background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.9rem;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Fechar</button>
       </div>
     </div>
   </div>
@@ -1641,7 +1635,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.0.6";
+var VERSAO = "2.0.7";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2995,7 +2989,7 @@ function mostrarConfigTab(tipo){
     ? lista.map(function(nome, i){
         return "<div class='config-sugestoes-item'>"+
           "<span style='flex:1'>"+esc(nome)+"</span>"+
-          "<button onclick='removerSugestao("+i+")' style='background:none;border:none;"+
+          "<button data-rem-sug='"+i+"' style='background:none;border:none;"+
           "color:var(--vermelho);cursor:pointer;font-size:1rem;padding:2px 6px'>✕</button>"+
         "</div>";
       }).join("")
@@ -3020,6 +3014,28 @@ $("btnAddTaskSugestao").addEventListener("click", function(){
   $("novaTaskNome").value = "";
   mostrarConfigTab(_taConfigTab);
   toast("Sugestão adicionada.");
+});
+
+// Fechar modal de config
+$("btnTaConfigFechar").addEventListener("click", function(){
+  $("modalTaAutoConfig").hidden = true;
+});
+$("btnTaConfigSalvar").addEventListener("click", function(){
+  $("modalTaAutoConfig").hidden = true;
+  renderTaAutoLista();
+});
+
+// Abas brassagem / envase
+document.addEventListener("click", function(ev){
+  var b = ev.target.closest("[data-config-tab]");
+  if (b) mostrarConfigTab(b.dataset.configTab);
+});
+
+// Remover sugestão via data-rem-sug
+$("configSugestoesLista").addEventListener("click", function(ev){
+  var b = ev.target.closest("[data-rem-sug]");
+  if (!b) return;
+  removerSugestao(parseInt(b.dataset.remSug, 10));
 });
 
 /* ==================================================================
@@ -3313,6 +3329,11 @@ function renderProg(itens, semana, seg){
         renderChecksLancamento(it, semana)+
         "<div class='btn-linha' style='margin-top:8px'>"+
         btnResultado+
+        "<button class='btn-mini' style='background:#6B00C2;border-color:#6B00C2;color:#fff'"+
+        " data-prog-tasks='"+esc(it.id)+"'"+
+        " data-prog-tasks-tipo='"+(isEnvase?"envase":"brassagem")+"'"+
+        " data-prog-tasks-titulo='"+esc(it.estilo||it.produto||"")+"'"+
+        " data-prog-tasks-dia='"+esc(it.dia||"")+"'>＋ Tarefas</button>"+
         (podeEditar?
           "<button class='btn-mini secundario' data-prog-edit='"+esc(it.id)+"' data-prog-semana='"+
           esc(semana)+"'>editar</button>"+
@@ -3528,6 +3549,24 @@ $("progLista").addEventListener("click", async function(ev){
       acao:"remover", semana:b.dataset.progSemana, id:b.dataset.progDel
     }});
     carregarProg();
+  }
+
+  // botão ＋ Tarefas — abre modal de tarefas auto para item já existente
+  if (b.dataset.progTasks){
+    var dia = b.dataset.progTasksDia || "";
+    var dataISO = "";
+    if (dia){
+      var DIAS_T = {"Segunda":0,"Ter\u00e7a":1,"Quarta":2,"Quinta":3,"Sexta":4,"S\u00e1bado":5};
+      var dT = new Date(segProg); dT.setDate(dT.getDate()+(DIAS_T[dia]||0));
+      dataISO = dT.getFullYear()+"-"+("0"+(dT.getMonth()+1)).slice(-2)+"-"+("0"+dT.getDate()).slice(-2);
+    }
+    abrirTarefasAuto({
+      tipo:    b.dataset.progTasksTipo,
+      titulo:  b.dataset.progTasksTitulo,
+      dia:     dia,
+      dataISO: dataISO
+    });
+    return;
   }
 
   // toggle dos checks de lan\u00e7amento (BeerSales / Beerbo)
