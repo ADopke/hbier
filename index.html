@@ -250,6 +250,29 @@
   }
   .btn-add-dem:hover{background:var(--verde-claro)}
 
+  /* ---- modal de tarefas automáticas ---- */
+  .tarefas-auto-item{
+    display:flex;align-items:flex-start;gap:10px;
+    padding:10px 14px;border-bottom:1px solid var(--linha);
+  }
+  .tarefas-auto-item:last-child{ border-bottom:none; }
+  .tarefas-auto-check{
+    width:20px;height:20px;border-radius:5px;border:1.5px solid var(--linha);
+    flex-shrink:0;margin-top:2px;cursor:pointer;accent-color:var(--verde);
+  }
+  .tarefas-auto-info{ flex:1; }
+  .tarefas-auto-nome{ font-weight:600;font-size:.88rem;margin-bottom:6px; }
+  .tarefas-auto-sel{
+    width:100%;padding:6px 8px;border:1.5px solid var(--linha);border-radius:7px;
+    font-size:.82rem;font-family:inherit;
+  }
+  .tarefas-auto-sel:disabled{ opacity:.4; }
+  .config-sugestoes-item{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 14px;border-bottom:1px solid var(--linha);font-size:.85rem;
+  }
+  .config-sugestoes-item:last-child{ border-bottom:none; }
+
   /* ---- separador de dia na programação ---- */
   .prog-dia-sep{
     padding:8px 14px 5px;
@@ -1211,6 +1234,87 @@
     </div>
   </div>
 
+  <!-- Modal: tarefas automáticas ao lançar brassagem/envase -->
+  <div id="modalTarefasAuto" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.6);
+    display:flex;align-items:center;justify-content:center;z-index:998;padding:16px;overflow-y:auto">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:500px;
+      max-height:90vh;display:flex;flex-direction:column">
+      <div id="taAutoHeader" style="background:var(--verde);color:#fff;padding:14px 16px;
+        border-radius:14px 14px 0 0;flex-shrink:0">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;
+          text-transform:uppercase;font-size:1rem" id="taAutoTitulo">Criar tarefas automáticas</div>
+        <div style="font-size:.78rem;opacity:.8;margin-top:2px" id="taAutoSub"></div>
+      </div>
+
+      <div style="padding:12px 14px;border-bottom:1px solid var(--linha);
+        background:#FAFAF5;flex-shrink:0">
+        <div style="font-size:.78rem;color:var(--muted)">
+          Selecione as tarefas a criar e o operador responsável por cada uma.
+          O dia será o mesmo da brassagem/envase.
+        </div>
+      </div>
+
+      <div id="taAutoLista" style="overflow-y:auto;flex:1"></div>
+
+      <div style="padding:12px 14px;border-top:1px solid var(--linha);
+        display:flex;gap:8px;justify-content:space-between;flex-shrink:0;
+        flex-wrap:wrap;align-items:center">
+        <button id="btnTaAutoConfig" style="background:none;border:none;
+          color:var(--muted);font-size:.8rem;cursor:pointer;text-decoration:underline;
+          font-family:inherit">⚙ Configurar sugestões</button>
+        <div style="display:flex;gap:8px">
+          <button id="btnTaAutoPular" style="padding:9px 18px;border:1.5px solid var(--linha);
+            border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">
+            Pular</button>
+          <button id="btnTaAutoCriar" style="padding:9px 18px;border:none;border-radius:8px;
+            background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;
+            font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">
+            Criar tarefas</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: configurar sugestões de tarefas automáticas -->
+  <div id="modalTaAutoConfig" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.6);
+    display:flex;align-items:center;justify-content:center;z-index:999;padding:16px;overflow-y:auto">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;
+      max-height:90vh;display:flex;flex-direction:column">
+      <div style="background:var(--verde);color:#fff;padding:14px 16px;
+        border-radius:14px 14px 0 0;display:flex;align-items:center;gap:10px;flex-shrink:0">
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;
+          text-transform:uppercase;font-size:1rem;flex:1">⚙ Sugestões de tarefas</span>
+        <button onclick="$('modalTaAutoConfig').hidden=true"
+          style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">✕</button>
+      </div>
+
+      <div style="padding:10px 14px;border-bottom:1px solid var(--linha);background:#FAFAF5;flex-shrink:0">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button id="tabConfigBrass" class="btn mini"
+            style="flex:1" onclick="mostrarConfigTab('brassagem')">🍺 Brassagem</button>
+          <button id="tabConfigEnv" class="btn mini secundario"
+            style="flex:1" onclick="mostrarConfigTab('envase')">📦 Envase</button>
+        </div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="novaTaskNome" placeholder="Nome da tarefa sugerida…"
+            style="flex:1;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.85rem">
+          <button id="btnAddTaskSugestao" class="btn mini" style="white-space:nowrap">+ Adicionar</button>
+        </div>
+      </div>
+
+      <div id="configSugestoesTipo" style="font-size:.72rem;font-weight:700;color:var(--muted);
+        text-transform:uppercase;letter-spacing:.07em;padding:8px 14px 4px;flex-shrink:0"></div>
+      <div id="configSugestoesLista" style="overflow-y:auto;flex:1"></div>
+
+      <div style="padding:12px 14px;border-top:1px solid var(--linha);flex-shrink:0">
+        <button onclick="$('modalTaAutoConfig').hidden=true;renderTaAutoLista()"
+          style="width:100%;padding:10px;border:none;border-radius:8px;
+          background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.9rem;
+          font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de resultado de produção -->
   <div id="modalRes" hidden style="
     position:fixed;inset:0;background:rgba(0,0,0,.6);
@@ -1537,7 +1641,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.0.5";
+var VERSAO = "2.0.6";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2761,6 +2865,164 @@ $("btnAtualizarBase").addEventListener("click", function(){
 });
 
 /* ==================================================================
+   Tarefas automáticas ao lançar brassagem / envase
+   ================================================================== */
+
+// Sugestões padrão — salvas no localStorage para persistir
+var TA_KEY = "hbier-ta-sugestoes";
+var TA_DEFAULT = {
+  brassagem: [
+    "Lançar produção no Beerbo",
+    "Medir OG da brassagem",
+    "Solicitar medição de cloro — brassagem",
+    "Lançar no BeerSales"
+  ],
+  envase: [
+    "Carbonatação pré-envase",
+    "Verificar ink jet Markem Imaje",
+    "Lançar envase no Beerbo",
+    "Lançar envase no BeerSales"
+  ]
+};
+var _taConfigTab = "brassagem";
+var _taCtx = null;   // {tipo, titulo, dia} — contexto da prog que disparou
+
+function taCarregarSugestoes(){
+  try{
+    var s = localStorage.getItem(TA_KEY);
+    return s ? JSON.parse(s) : JSON.parse(JSON.stringify(TA_DEFAULT));
+  }catch(e){ return JSON.parse(JSON.stringify(TA_DEFAULT)); }
+}
+function taSalvarSugestoes(obj){
+  try{ localStorage.setItem(TA_KEY, JSON.stringify(obj)); }catch(e){}
+}
+
+// Abre o modal de tarefas automáticas após salvar uma brassagem/envase
+function abrirTarefasAuto(ctx){
+  // ctx = {tipo:"brassagem"|"envase", titulo:"Helles"|"Pilsen Lata", dia:"Quinta"}
+  _taCtx = ctx;
+  var isBrass = ctx.tipo === "brassagem";
+  $("taAutoTitulo").textContent = "Criar tarefas — "+(isBrass?"🍺 Brassagem":"📦 Envase");
+  $("taAutoSub").textContent = ctx.titulo + (ctx.dia ? " · "+ctx.dia : "");
+  $("taAutoHeader").style.background = isBrass ? "var(--verde)" : "#003E99";
+  renderTaAutoLista();
+  $("modalTarefasAuto").hidden = false;
+}
+
+function renderTaAutoLista(){
+  if (!_taCtx) return;
+  var sugestoes = taCarregarSugestoes()[_taCtx.tipo] || [];
+  var membros = equipe.length
+    ? equipe.map(function(u){ return "<option value='"+esc(u.login)+"'>"+esc(u.nome)+"</option>"; }).join("")
+    : "<option value=''>— sem equipe carregada —</option>";
+  membros = "<option value=''>— escolher operador —</option>" + membros;
+
+  if (!sugestoes.length){
+    $("taAutoLista").innerHTML =
+      "<div class='vazio' style='padding:24px'>Nenhuma sugestão configurada. "+
+      "Clique em <b>⚙ Configurar sugestões</b> para adicionar.</div>";
+    return;
+  }
+
+  $("taAutoLista").innerHTML = sugestoes.map(function(nome, i){
+    return "<div class='tarefas-auto-item'>"+
+      "<input type='checkbox' class='tarefas-auto-check' id='tac"+i+"' checked>"+
+      "<div class='tarefas-auto-info'>"+
+        "<div class='tarefas-auto-nome'><label for='tac"+i+"'>"+esc(nome)+"</label></div>"+
+        "<select class='tarefas-auto-sel' id='tasel"+i+"'>"+membros+"</select>"+
+      "</div>"+
+    "</div>";
+  }).join("");
+
+  // pré-selecionar o dono atual se só houver um membro ou se o contexto indicar
+  // (deixar em branco para o usuário escolher explicitamente)
+}
+
+$("btnTaAutoPular").addEventListener("click", function(){
+  $("modalTarefasAuto").hidden = true;
+  toast("Programação salva.");
+});
+
+$("btnTaAutoCriar").addEventListener("click", async function(){
+  if (!_taCtx) return;
+  var sugestoes = taCarregarSugestoes()[_taCtx.tipo] || [];
+  var criadas = 0, erros = 0;
+
+  for (var i = 0; i < sugestoes.length; i++){
+    var chk = document.getElementById("tac"+i);
+    var sel = document.getElementById("tasel"+i);
+    if (!chk || !chk.checked) continue;
+    var para = sel ? sel.value : "";
+    if (!para){ toast("Escolha o operador para: "+sugestoes[i], "erro"); return; }
+
+    // Determinar a frequência: "demanda" para criar como tarefa pontual
+    try{
+      await api("/api/tasks", {method:"POST", body:{
+        acao: "criar",
+        para: para,
+        nome: sugestoes[i] + (_taCtx.titulo ? " — "+_taCtx.titulo : ""),
+        desc: _taCtx.dia ? "Previsto: "+_taCtx.dia : "",
+        freq: "demanda",
+        data: _taCtx.dataISO || "",
+        lembrete: "",
+        critica: false,
+        prioridade: false
+      }});
+      criadas++;
+    }catch(e){ erros++; }
+  }
+
+  $("modalTarefasAuto").hidden = true;
+  if (criadas)  toast(criadas+" tarefa(s) criada(s) com sucesso.", "ok");
+  if (erros)    toast(erros+" tarefa(s) falharam.", "erro");
+  carregarProg();
+});
+
+$("btnTaAutoConfig").addEventListener("click", function(){
+  mostrarConfigTab(_taCtx ? _taCtx.tipo : "brassagem");
+  $("modalTaAutoConfig").hidden = false;
+});
+
+// ===== Config de sugestões =====
+function mostrarConfigTab(tipo){
+  _taConfigTab = tipo;
+  $("tabConfigBrass").className = "btn mini"+(tipo==="brassagem"?"":" secundario");
+  $("tabConfigEnv").className   = "btn mini"+(tipo==="envase"?"":" secundario");
+  $("configSugestoesTipo").textContent = tipo === "brassagem" ? "🍺 Brassagem" : "📦 Envase";
+  var sugs = taCarregarSugestoes();
+  var lista = sugs[tipo] || [];
+  $("configSugestoesLista").innerHTML = lista.length
+    ? lista.map(function(nome, i){
+        return "<div class='config-sugestoes-item'>"+
+          "<span style='flex:1'>"+esc(nome)+"</span>"+
+          "<button onclick='removerSugestao("+i+")' style='background:none;border:none;"+
+          "color:var(--vermelho);cursor:pointer;font-size:1rem;padding:2px 6px'>✕</button>"+
+        "</div>";
+      }).join("")
+    : "<div class='vazio' style='padding:20px'>Nenhuma sugestão. Adicione acima.</div>";
+}
+
+function removerSugestao(idx){
+  var sugs = taCarregarSugestoes();
+  sugs[_taConfigTab].splice(idx, 1);
+  taSalvarSugestoes(sugs);
+  mostrarConfigTab(_taConfigTab);
+}
+
+$("btnAddTaskSugestao").addEventListener("click", function(){
+  var nome = $("novaTaskNome").value.trim();
+  if (!nome){ toast("Digite o nome da tarefa.", "erro"); return; }
+  var sugs = taCarregarSugestoes();
+  if (!sugs[_taConfigTab]) sugs[_taConfigTab] = [];
+  if (sugs[_taConfigTab].includes(nome)){ toast("Já existe.", "erro"); return; }
+  sugs[_taConfigTab].push(nome);
+  taSalvarSugestoes(sugs);
+  $("novaTaskNome").value = "";
+  mostrarConfigTab(_taConfigTab);
+  toast("Sugestão adicionada.");
+});
+
+/* ==================================================================
    Manutenções por equipamento
    ================================================================== */
 var _manutEditando = null;
@@ -3142,6 +3404,7 @@ $("btnBrassSalvar").addEventListener("click", async function(){
   if (!estilo){ toast("Informe o estilo.", "erro"); return; }
   var seg = chaveSemana(segProg);
   try{
+    var diaBrass = $("brassDia").value;
     await api("/api/prog", {method:"POST", body:{
       acao: _brasseditando ? "editar" : "criar",
       id:   _brasseditando ? _brasseditando.id : undefined,
@@ -3149,13 +3412,25 @@ $("btnBrassSalvar").addEventListener("click", async function(){
       tipo: "brassagem",
       estilo: estilo,
       tanque: $("brassTanque").value.trim(),
-      dia:    $("brassDia").value,
+      dia:    diaBrass,
       obs:    $("brassObs").value.trim()
     }});
     $("modalBrassagem").hidden = true;
+    var eraEdicao = !!_brasseditando;
     _brasseditando = null;
     carregarProg();
-    toast("Brassagem salva.");
+    // Só abre tarefas auto ao criar (não ao editar)
+    if (!eraEdicao){
+      var dataISO = "";
+      if (diaBrass){
+        var DIAS_ISO = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
+        var d = new Date(segProg); d.setDate(d.getDate()+(DIAS_ISO[diaBrass]||0));
+        dataISO = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
+      }
+      abrirTarefasAuto({tipo:"brassagem", titulo:estilo, dia:diaBrass, dataISO:dataISO});
+    } else {
+      toast("Brassagem atualizada.");
+    }
   }catch(e){ toast(e.message, "erro"); }
 });
 
@@ -3180,7 +3455,8 @@ $("btnEnvSalvar").addEventListener("click", async function(){
   if (!produto){ toast("Informe o produto.", "erro"); return; }
   var seg = chaveSemana(segProg);
   try{
-    var resposta = await api("/api/prog", {method:"POST", body:{
+    var diaEnv = $("envDia").value;
+    await api("/api/prog", {method:"POST", body:{
       acao:     _enveditando ? "editar" : "criar",
       id:       _enveditando ? _enveditando.id : undefined,
       semana:   seg,
@@ -3190,14 +3466,24 @@ $("btnEnvSalvar").addEventListener("click", async function(){
       tanqueOrigem: $("envTanque").value.trim(),
       formato:  $("envFormato").value,
       qtd:      $("envQtd").value.trim(),
-      dia:      $("envDia").value,
+      dia:      diaEnv,
       obs:      $("envObs").value.trim()
     }});
-    // DEBUG: mostrar o que o servidor confirmou
-    toast("Servidor confirmou tipo: " + (resposta._debug_tipo_salvo || "SEM DEBUG — versão antiga!"), "ok");
     $("modalEnvase").hidden = true;
+    var eraEdicaoEnv = !!_enveditando;
     _enveditando = null;
     carregarProg();
+    if (!eraEdicaoEnv){
+      var dataISOEnv = "";
+      if (diaEnv){
+        var DIAS_ISO2 = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
+        var d2 = new Date(segProg); d2.setDate(d2.getDate()+(DIAS_ISO2[diaEnv]||0));
+        dataISOEnv = d2.getFullYear()+"-"+("0"+(d2.getMonth()+1)).slice(-2)+"-"+("0"+d2.getDate()).slice(-2);
+      }
+      abrirTarefasAuto({tipo:"envase", titulo:produto, dia:diaEnv, dataISO:dataISOEnv});
+    } else {
+      toast("Envase atualizado.");
+    }
   }catch(e){ toast(e.message, "erro"); }
 });
 
