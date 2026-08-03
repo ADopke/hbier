@@ -51,12 +51,18 @@ export default protegido(async function handler(req, res) {
           });
         }
       }
-      // buscar registros de barril para cada item
+      // buscar registros de barril:
+      // 1. vinculados a itens específicos
+      // 2. independentes (chave "barril-{semana}" — envase barril pelo botão principal)
       const barreis = {};
       for (const it of itens) {
         const regs = (await ler(`barril:${semana}:${it.id}`)) || [];
         if (regs.length) barreis[it.id] = regs;
       }
+      const chaveBarrilIndep = `barril-${semana}`;
+      const regsIndep = (await ler(`barril:${semana}:${chaveBarrilIndep}`)) || [];
+      if (regsIndep.length) barreis[chaveBarrilIndep] = regsIndep;
+
       return res.json({ ok: true, semana, itens, tarefasVinculadas: porProgId, barreis });
     }
 
