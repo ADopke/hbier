@@ -1783,7 +1783,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.1.3";
+var VERSAO = "2.1.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -3450,8 +3450,6 @@ async function carregarProg(){
   $("progMesLabel").textContent = MESES_LONGOS[segProg.getMonth()];
   $("progVoltarHoje").hidden = naAtualProg;
 
-  $("progPrevSem").disabled = naAtualProg;
-
   try{
     var r = await api("/api/prog?semana="+seg+"&tarefas=1");
     renderProg(r.itens, seg, segProg, r.tarefasVinculadas||{}, r.barreis||{});
@@ -3747,7 +3745,6 @@ var segProg = segundaDe(new Date());
 function progNavegar(delta){
   var nova = new Date(segProg);
   nova.setDate(nova.getDate() + delta * 7);
-  if (nova < segundaDe(new Date())) nova = segundaDe(new Date());
   segProg = nova;
   carregarProg();
 }
@@ -3761,9 +3758,7 @@ $("progNextSem").addEventListener("click", function(){ progNavegar(+1); });
 $("progPrevMes").addEventListener("click", function(){
   var nova = new Date(segProg);
   nova.setMonth(nova.getMonth()-1);
-  nova = segundaDe(nova);
-  if (nova < segundaDe(new Date())) nova = segundaDe(new Date());
-  segProg = nova; carregarProg();
+  segProg = segundaDe(nova); carregarProg();
 });
 $("progNextMes").addEventListener("click", function(){
   var nova = new Date(segProg);
@@ -3774,9 +3769,7 @@ $("progNextMes").addEventListener("click", function(){
 $("progPrevAno").addEventListener("click", function(){
   var nova = new Date(segProg);
   nova.setFullYear(nova.getFullYear()-1);
-  nova = segundaDe(nova);
-  if (nova < segundaDe(new Date())) nova = segundaDe(new Date());
-  segProg = nova; carregarProg();
+  segProg = segundaDe(nova); carregarProg();
 });
 $("progNextAno").addEventListener("click", function(){
   var nova = new Date(segProg);
