@@ -51,7 +51,13 @@ export default protegido(async function handler(req, res) {
           });
         }
       }
-      return res.json({ ok: true, semana, itens, tarefasVinculadas: porProgId });
+      // buscar registros de barril para cada item
+      const barreis = {};
+      for (const it of itens) {
+        const regs = (await ler(`barril:${semana}:${it.id}`)) || [];
+        if (regs.length) barreis[it.id] = regs;
+      }
+      return res.json({ ok: true, semana, itens, tarefasVinculadas: porProgId, barreis });
     }
 
     return res.json({ ok: true, semana, itens });
@@ -200,6 +206,36 @@ export default protegido(async function handler(req, res) {
 
     await gravar(chave(semana), itens);
     return res.json({ ok: true, item: itens[idx] });
+  }
+
+  /* ---------- barril (envase de barril) ---------- */
+  if (dados.acao === "barril") {
+    const progId = (dados.progId || "").trim();
+    if (!progId) return erro(res, 400, "progId obrigatório.");
+
+    const registros = (await ler(`barril:${semana}:${progId}`)) || [];
+    registros.push({
+      id: novoId(),
+      tanque: (dados.tanque || "").trim(),
+      linhas: Array.isArray(dados.linhas) ? dados.linhas : [],
+      total: Number(dados.total) || 0,
+      lancadoPor: sessao.login,
+      em: new Date().toISOString(),
+    });
+    await gravar(`barril:${semana}:${progId}`, registros);
+    return res.json({ ok: true, registros });
+  }
+
+  /* ---------- barril_del (remover registro de barril) ---------- */
+  if (dados.acao === "barril_del") {
+    const progId = (dados.progId || "").trim();
+    if (!progId) return erro(res, 400, "progId obrigatório.");
+    if (!podeProgramar(sessao.papel))
+      return erro(res, 403, "Apenas admin ou gestor podem remover.");
+    const registros = (await ler(`barril:${semana}:${progId}`)) || [];
+    const filtrado = registros.filter((r) => r.id !== dados.id);
+    await gravar(`barril:${semana}:${progId}`, filtrado);
+    return res.json({ ok: true, registros: filtrado });
   }
 
   return erro(res, 400, "Ação desconhecida.");
