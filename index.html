@@ -1306,10 +1306,27 @@
         <div style="flex:1">
           <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;
             text-transform:uppercase;font-size:1rem">🛢 Envase de Barril</div>
-          <div id="barrilSub" style="font-size:.78rem;opacity:.8;margin-top:2px"></div>
+          <div id="barrilSemanaLabel" style="font-size:.78rem;opacity:.85;margin-top:3px;
+            display:flex;align-items:center;gap:8px">
+            <span id="barrilSemanaTexto"></span>
+            <button id="btnBarrilTrocarSemana" style="background:rgba(255,255,255,.2);
+              border:none;color:#fff;border-radius:5px;padding:1px 8px;font-size:.72rem;
+              cursor:pointer;font-family:inherit">trocar semana</button>
+          </div>
         </div>
         <button id="btnBarrilFechar" style="background:none;border:none;
           color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">✕</button>
+      </div>
+      <!-- seletor de semana do barril (oculto por padrão) -->
+      <div id="barrilSemanaSelector" hidden style="background:#5C3300;padding:10px 16px;
+        display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span style="color:rgba(255,255,255,.8);font-size:.82rem">Semana:</span>
+        <button id="barrilSemPrev" style="background:none;border:1px solid rgba(255,255,255,.4);
+          color:#fff;border-radius:5px;padding:3px 10px;cursor:pointer">‹</button>
+        <span id="barrilSemLabel" style="color:#fff;font-size:.82rem;font-weight:600;
+          min-width:160px;text-align:center"></span>
+        <button id="barrilSemNext" style="background:none;border:1px solid rgba(255,255,255,.4);
+          color:#fff;border-radius:5px;padding:3px 10px;cursor:pointer">›</button>
       </div>
 
       <!-- campos de cabeçalho: produto, dia, lote, tanque -->
@@ -1788,7 +1805,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.1.5";
+var VERSAO = "2.1.6";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -3022,18 +3039,59 @@ var BARRIL_FORMATOS = [
 ];
 var _barrilCtx = null;   // {progId, titulo, tanque}
 
+var _barrilSegProg = null;   // semana selecionada no modal de barril
+
+function fmtSemanaBarril(seg){
+  var fim = new Date(seg); fim.setDate(fim.getDate()+6);
+  var MESES_C = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+  return seg.getDate()+" "+MESES_C[seg.getMonth()]+" a "+
+         fim.getDate()+" "+MESES_C[fim.getMonth()]+" "+fim.getFullYear();
+}
+
+function atualizarBarrilSemana(){
+  $("barrilSemanaTexto").textContent = fmtSemanaBarril(_barrilSegProg);
+  $("barrilSemLabel").textContent    = fmtSemanaBarril(_barrilSegProg);
+  // atualizar o select de dias com as datas da semana escolhida
+  var nomes = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+  var valorAtual = $("barrilDia").value;
+  var opcs = "<option value=''>Não definido</option>";
+  nomes.forEach(function(nome, i){
+    var d = new Date(_barrilSegProg); d.setDate(d.getDate()+i);
+    var dt = ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2);
+    opcs += "<option value='"+nome+"'>"+nome+" — "+dt+"</option>";
+  });
+  $("barrilDia").innerHTML = opcs;
+  $("barrilDia").value = valorAtual;
+}
+
 function abrirModalBarril(){
   _barrilCtx = {};
-  $("barrilSub").textContent = "";
+  // sempre começa na semana ATUAL — não na semana que o usuário está navegando
+  _barrilSegProg = segundaDe(new Date());
   $("barrilProduto").value = "";
   $("barrilTanque").value = "";
   $("barrilLote").value = "";
-  preencherDias("barrilDia");
+  $("barrilSemanaSelector").hidden = true;
+  atualizarBarrilSemana();
   $("barrilDia").value = "";
   renderBarrilLinhas();
   $("modalBarril").hidden = false;
   setTimeout(function(){ $("barrilProduto").focus(); }, 80);
 }
+
+$("btnBarrilTrocarSemana").addEventListener("click", function(){
+  $("barrilSemanaSelector").hidden = !$("barrilSemanaSelector").hidden;
+});
+$("barrilSemPrev").addEventListener("click", function(){
+  _barrilSegProg = new Date(_barrilSegProg);
+  _barrilSegProg.setDate(_barrilSegProg.getDate()-7);
+  atualizarBarrilSemana();
+});
+$("barrilSemNext").addEventListener("click", function(){
+  _barrilSegProg = new Date(_barrilSegProg);
+  _barrilSegProg.setDate(_barrilSegProg.getDate()+7);
+  atualizarBarrilSemana();
+});
 
 function renderBarrilLinhas(){
   $("barrilLinhas").innerHTML = BARRIL_FORMATOS.map(function(f, i){
@@ -3101,13 +3159,14 @@ $("btnBarrilSalvar").addEventListener("click", async function(){
   var tanque = $("barrilTanque").value.trim();
   var lote   = $("barrilLote").value.trim();
   var dia    = $("barrilDia").value;
-  var seg    = chaveSemana(segProg);
+  // usar a semana selecionada no modal (não a semana que o usuário está navegando)
+  var seg    = chaveSemana(_barrilSegProg || segProg);
 
   // calcular dataISO a partir do dia
   var dataISO = "";
   if (dia){
     var DIAS_B = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
-    var dB = new Date(segProg); dB.setDate(dB.getDate()+(DIAS_B[dia]||0));
+    var dB = new Date(_barrilSegProg || segProg); dB.setDate(dB.getDate()+(DIAS_B[dia]||0));
     dataISO = dB.getFullYear()+"-"+("0"+(dB.getMonth()+1)).slice(-2)+"-"+("0"+dB.getDate()).slice(-2);
   }
 
@@ -3977,10 +4036,13 @@ $("progLista").addEventListener("click", async function(ev){
       if (!reg){ toast("Registro não encontrado.","erro"); return; }
       // preencher o modal com os dados existentes
       _barrilCtx = {editandoId: reg.id, semana: semEditar};
+      // ao editar, travar a semana do registro original
+      _barrilSegProg = segundaDe(new Date(semEditar+"T00:00:00"));
+      $('barrilSemanaSelector').hidden = true;
+      atualizarBarrilSemana();
       $("barrilProduto").value = reg.produto||"";
       $("barrilTanque").value  = reg.tanque||"";
       $("barrilLote").value    = reg.lote||"";
-      preencherDias("barrilDia");
       $("barrilDia").value = reg.dia||"";
       // preencher quantidades
       renderBarrilLinhas();
