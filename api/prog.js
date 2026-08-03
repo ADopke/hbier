@@ -236,6 +236,27 @@ export default protegido(async function handler(req, res) {
     return res.json({ ok: true, registros });
   }
 
+  /* ---------- barril_check (toggle BeerSales no barril) ---------- */
+  if (dados.acao === "barril_check") {
+    const progId = (dados.progId || "").trim();
+    const id     = (dados.id    || "").trim();
+    const campo  = (dados.campo || "").trim();
+    if (!progId || !id) return erro(res, 400, "progId e id obrigatórios.");
+    if (campo !== "lancadoBeerSales") return erro(res, 400, "Campo inválido.");
+
+    const registros = (await ler(`barril:${semana}:${progId}`)) || [];
+    const idx = registros.findIndex((r) => r.id === id);
+    if (idx < 0) return erro(res, 404, "Registro não encontrado.");
+
+    registros[idx].checks = registros[idx].checks || {};
+    registros[idx].checks[campo] = !registros[idx].checks[campo];
+    registros[idx].checks[campo + "_por"] = sessao.login;
+    registros[idx].checks[campo + "_em"]  = new Date().toISOString();
+
+    await gravar(`barril:${semana}:${progId}`, registros);
+    return res.json({ ok: true, item: registros[idx] });
+  }
+
   /* ---------- barril_del (remover registro de barril) ---------- */
   if (dados.acao === "barril_del") {
     const progId = (dados.progId || "").trim();
