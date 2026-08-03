@@ -283,6 +283,23 @@
   }
   .prog-dia-sep:first-child{ border-top:none;margin-top:0; }
 
+  /* ---- tarefas vinculadas na programação ---- */
+  .prog-tarefas-vinc{
+    margin-top:8px;background:var(--cinza);border-radius:8px;
+    padding:8px 10px;display:flex;flex-direction:column;gap:5px;
+  }
+  .ptv-operador{
+    display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap;
+    font-size:.78rem;line-height:1.4;
+  }
+  .ptv-nome{
+    font-weight:700;color:var(--verde);white-space:nowrap;flex-shrink:0;
+  }
+  .ptv-task{
+    background:#fff;border:1px solid var(--linha);border-radius:5px;
+    padding:1px 7px;color:var(--ink);
+  }
+
   /* ---- checks de lançamento (BeerSales / Beerbo) ---- */
   .check-lancamento{
     display:inline-flex;align-items:center;gap:6px;
@@ -1635,7 +1652,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.0.7";
+var VERSAO = "2.0.8";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2960,7 +2977,8 @@ $("btnTaAutoCriar").addEventListener("click", async function(){
         data: _taCtx.dataISO || "",
         lembrete: "",
         critica: false,
-        prioridade: false
+        prioridade: false,
+        progId: _taCtx.progId || ""
       }});
       criadas++;
     }catch(e){ erros++; }
@@ -3182,8 +3200,8 @@ async function carregarProg(){
   $("progPrevSem").disabled = naAtualProg;
 
   try{
-    var r = await api("/api/prog?semana="+seg);
-    renderProg(r.itens, seg, segProg);
+    var r = await api("/api/prog?semana="+seg+"&tarefas=1");
+    renderProg(r.itens, seg, segProg, r.tarefasVinculadas||{});
   }catch(e){ $("progLista").innerHTML="<div class='vazio'>"+esc(e.message)+"</div>"; }
 }
 
@@ -3249,7 +3267,31 @@ function renderChecksLancamento(it, semana){
   return "<div class='checks-lancamento'>"+botoes+"</div>";
 }
 
-function renderProg(itens, semana, seg){
+function renderProgItem_tarefas(it, tarefasVinculadas){
+  var lista = tarefasVinculadas[it.id];
+  if (!lista || !lista.length) return "";
+  // agrupar por login
+  var porLogin = {};
+  lista.forEach(function(t){
+    if (!porLogin[t.login]) porLogin[t.login] = [];
+    porLogin[t.login].push(t.taskNome);
+  });
+  var html = "<div class='prog-tarefas-vinc'>";
+  Object.keys(porLogin).forEach(function(login){
+    var mem = equipe.find(function(u){ return u.login===login; });
+    var nomeOp = mem ? mem.nome : login;
+    html += "<div class='ptv-operador'>"+
+      "<span class='ptv-nome'>@"+esc(nomeOp)+"</span>"+
+      porLogin[login].map(function(tn){
+        return "<span class='ptv-task'>"+esc(tn)+"</span>";
+      }).join("")+
+    "</div>";
+  });
+  return html+"</div>";
+}
+
+function renderProg(itens, semana, seg, tarefasVinculadas){
+  tarefasVinculadas = tarefasVinculadas || {};
   // mapa dia nome → data (dd/mm) baseado na segunda-feira da semana
   var mapaDatas = {};
   if (seg){
@@ -3326,6 +3368,7 @@ function renderProg(itens, semana, seg){
         (it.obs?"<div class='item-desc'>"+esc(it.obs)+"</div>":"")+
         "<div style='font-size:.73rem;color:var(--muted);margin-top:3px'>por "+esc(it.criadaPor)+"</div>"+
         resultado+
+        renderProgItem_tarefas(it, tarefasVinculadas)+
         renderChecksLancamento(it, semana)+
         "<div class='btn-linha' style='margin-top:8px'>"+
         btnResultado+
@@ -3426,7 +3469,7 @@ $("btnBrassSalvar").addEventListener("click", async function(){
   var seg = chaveSemana(segProg);
   try{
     var diaBrass = $("brassDia").value;
-    await api("/api/prog", {method:"POST", body:{
+    var rBrass = await api("/api/prog", {method:"POST", body:{
       acao: _brasseditando ? "editar" : "criar",
       id:   _brasseditando ? _brasseditando.id : undefined,
       semana: seg,
@@ -3448,7 +3491,8 @@ $("btnBrassSalvar").addEventListener("click", async function(){
         var d = new Date(segProg); d.setDate(d.getDate()+(DIAS_ISO[diaBrass]||0));
         dataISO = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
       }
-      abrirTarefasAuto({tipo:"brassagem", titulo:estilo, dia:diaBrass, dataISO:dataISO});
+      var progIdBrass = rBrass&&rBrass.itens ? rBrass.itens[rBrass.itens.length-1].id : "";
+      abrirTarefasAuto({tipo:"brassagem", titulo:estilo, dia:diaBrass, dataISO:dataISO, progId:progIdBrass});
     } else {
       toast("Brassagem atualizada.");
     }
@@ -3477,7 +3521,7 @@ $("btnEnvSalvar").addEventListener("click", async function(){
   var seg = chaveSemana(segProg);
   try{
     var diaEnv = $("envDia").value;
-    await api("/api/prog", {method:"POST", body:{
+    var rEnv = await api("/api/prog", {method:"POST", body:{
       acao:     _enveditando ? "editar" : "criar",
       id:       _enveditando ? _enveditando.id : undefined,
       semana:   seg,
@@ -3501,7 +3545,8 @@ $("btnEnvSalvar").addEventListener("click", async function(){
         var d2 = new Date(segProg); d2.setDate(d2.getDate()+(DIAS_ISO2[diaEnv]||0));
         dataISOEnv = d2.getFullYear()+"-"+("0"+(d2.getMonth()+1)).slice(-2)+"-"+("0"+d2.getDate()).slice(-2);
       }
-      abrirTarefasAuto({tipo:"envase", titulo:produto, dia:diaEnv, dataISO:dataISOEnv});
+      var progIdEnv = rEnv&&rEnv.itens ? rEnv.itens[rEnv.itens.length-1].id : "";
+      abrirTarefasAuto({tipo:"envase", titulo:produto, dia:diaEnv, dataISO:dataISOEnv, progId:progIdEnv});
     } else {
       toast("Envase atualizado.");
     }
@@ -3564,7 +3609,8 @@ $("progLista").addEventListener("click", async function(ev){
       tipo:    b.dataset.progTasksTipo,
       titulo:  b.dataset.progTasksTitulo,
       dia:     dia,
-      dataISO: dataISO
+      dataISO: dataISO,
+      progId:  b.dataset.progTasks
     });
     return;
   }
