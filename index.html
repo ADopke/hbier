@@ -404,6 +404,67 @@
     font-size:1.1rem;cursor:pointer;padding:4px;line-height:1;
   }
 
+  /* ---- aba metas ---- */
+  .meta-card{
+    background:#fff;border:1px solid var(--linha);border-radius:12px;overflow:hidden;
+  }
+  .meta-card-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;color:#fff;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.95rem;text-transform:uppercase;letter-spacing:.04em;
+  }
+  .meta-edit-btn{
+    background:rgba(255,255,255,.2);border:none;color:#fff;
+    border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer;
+    font-family:inherit;
+  }
+  .meta-edit-btn:hover{ background:rgba(255,255,255,.35); }
+  .meta-card-body{ padding:14px; }
+  .meta-form{ margin-bottom:14px; }
+  .meta-barra-wrap{
+    margin-bottom:10px;
+  }
+  .meta-barra-numeros{
+    display:flex;justify-content:space-between;
+    font-size:.82rem;margin-bottom:5px;
+  }
+  .meta-barra-realizado{ font-weight:700;color:var(--ink); }
+  .meta-barra-meta{ color:var(--muted); }
+  .meta-barra-bg{
+    height:12px;background:var(--cinza);border-radius:99px;overflow:hidden;
+  }
+  .meta-barra-fill{
+    height:100%;border-radius:99px;transition:.4s;
+    background:var(--verde);
+  }
+  .meta-barra-fill.atingida{ background:#C99700; }
+  .meta-barra-fill.acima{ background:#025F1D; }
+  .meta-pct{
+    font-size:.78rem;color:var(--muted);margin-top:4px;
+  }
+  .meta-formatos{
+    margin-top:10px;display:flex;flex-direction:column;gap:6px;
+  }
+  .meta-formato-linha{
+    display:grid;grid-template-columns:1fr auto auto;gap:8px;
+    align-items:center;font-size:.8rem;
+  }
+  .meta-formato-nome{ color:var(--muted); }
+  .meta-formato-realizado{ font-weight:700;text-align:right; }
+  .meta-formato-meta{ color:var(--muted);text-align:right;font-size:.75rem; }
+  .meta-semana-linha{
+    display:flex;align-items:center;gap:8px;padding:8px 10px;
+    background:#fff;border:1px solid var(--linha);border-radius:8px;
+    font-size:.82rem;
+  }
+  .meta-semana-label{ font-weight:600;flex-shrink:0;min-width:80px; }
+  .meta-semana-vals{ flex:1;color:var(--muted); }
+  .meta-semana-barra{
+    width:80px;height:6px;background:var(--cinza);border-radius:99px;overflow:hidden;flex-shrink:0;
+  }
+  .meta-semana-fill{ height:100%;background:var(--verde);border-radius:99px; }
+
   /* ---- visão ampliada por operador ---- */
   .detalhe-op{
     margin-top:10px;border:1px solid var(--linha);border-radius:8px;
@@ -746,6 +807,7 @@
         <button data-aba="checklist">Semana</button>
         <button data-aba="tarefas">Minhas tarefas</button>
         <button data-aba="prog">Programação</button>
+        <button data-aba="metas">🎯 Metas</button>
         <button data-aba="manut">Manutenções</button>
         <button data-aba="tanques">🍺 Tanques</button>
         <button data-aba="base">Banco de dados</button>
@@ -1021,6 +1083,124 @@
             <button class="btn mini" id="btnAddBarril"
               style="background:#7A4500;border-color:#7A4500;color:#fff">🛢 Barril</button>
           </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ---------- ABA METAS ---------- -->
+    <div id="painelMetas" hidden>
+      <section>
+        <!-- Navegação mês/ano -->
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
+          <span class="sec-title">🎯 Metas de Produção</span>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-left:auto;align-items:flex-end">
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="btn-hoje-sem" id="metaPrevAno" style="font-size:.7rem;padding:3px 8px">‹‹</button>
+              <span id="metaAnoLabel" style="font-size:.78rem;font-weight:700;color:var(--verde);min-width:36px;text-align:center"></span>
+              <button class="btn-hoje-sem" id="metaNextAno" style="font-size:.7rem;padding:3px 8px">>></button>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="btn-hoje-sem" id="metaPrevMes">‹</button>
+              <span id="metaMesLabel" style="font-size:.82rem;font-weight:600;color:var(--ink);min-width:70px;text-align:center"></span>
+              <button class="btn-hoje-sem" id="metaNextMes">›</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cards de meta -->
+        <div style="padding:14px;display:flex;flex-direction:column;gap:14px">
+
+          <!-- BRASSAGEM -->
+          <div class="meta-card">
+            <div class="meta-card-header" style="background:var(--verde)">
+              <span>🍺 Brassagem</span>
+              <button class="meta-edit-btn" id="btnEditarMetaBrass">✏ definir meta</button>
+            </div>
+            <div class="meta-card-body">
+              <div class="meta-form" id="metaFormBrass" hidden>
+                <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">
+                  Meta de produção (litros)</label>
+                <div style="display:flex;gap:8px">
+                  <input type="number" id="metaValorBrass" placeholder="Ex.: 80000"
+                    style="flex:1;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+                  <button class="btn mini" id="btnSalvarMetaBrass">Salvar</button>
+                  <button class="btn mini secundario" id="btnCancelarMetaBrass">×</button>
+                </div>
+              </div>
+              <div id="metaBarraBrass"></div>
+            </div>
+          </div>
+
+          <!-- ENVASE -->
+          <div class="meta-card">
+            <div class="meta-card-header" style="background:#003E99">
+              <span>📦 Envase</span>
+              <button class="meta-edit-btn" id="btnEditarMetaEnv">✏ definir meta</button>
+            </div>
+            <div class="meta-card-body">
+              <div class="meta-form" id="metaFormEnv" hidden>
+                <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">
+                  Meta total de envase (unidades)</label>
+                <div style="display:flex;gap:8px;margin-bottom:10px">
+                  <input type="number" id="metaValorEnvTotal" placeholder="Ex.: 85000 un"
+                    style="flex:1;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+                </div>
+                <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:6px">
+                  Por formato (opcional)</label>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+                  <div>
+                    <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">PET 500ml (un)</label>
+                    <input type="number" id="metaEnv500" placeholder="0"
+                      style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.88rem">
+                  </div>
+                  <div>
+                    <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">PET 1L (un)</label>
+                    <input type="number" id="metaEnv1L" placeholder="0"
+                      style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.88rem">
+                  </div>
+                  <div>
+                    <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">PET 2L (un)</label>
+                    <input type="number" id="metaEnv2L" placeholder="0"
+                      style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.88rem">
+                  </div>
+                  <div>
+                    <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Lata 350ml (un)</label>
+                    <input type="number" id="metaEnvLata350" placeholder="0"
+                      style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.88rem">
+                  </div>
+                  <div>
+                    <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Lata 473ml (un)</label>
+                    <input type="number" id="metaEnvLata473" placeholder="0"
+                      style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.88rem">
+                  </div>
+                  <div>
+                    <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Garrafa 500ml (un)</label>
+                    <input type="number" id="metaEnvGar500" placeholder="0"
+                      style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.88rem">
+                  </div>
+                  <div>
+                    <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Garrafa 600ml (un)</label>
+                    <input type="number" id="metaEnvGar600" placeholder="0"
+                      style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.88rem">
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                  <button class="btn mini" id="btnSalvarMetaEnv">Salvar</button>
+                  <button class="btn mini secundario" id="btnCancelarMetaEnv">Cancelar</button>
+                </div>
+              </div>
+              <div id="metaBarraEnv"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Detalhe das semanas -->
+        <div style="padding:0 14px 14px">
+          <div style="font-size:.78rem;font-weight:700;color:var(--muted);
+            text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">
+            Semanas do mês</div>
+          <div id="metaSemanas" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
       </section>
     </div>
@@ -1805,7 +1985,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.1.6";
+var VERSAO = "2.2.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2597,12 +2777,14 @@ document.querySelectorAll(".abas button").forEach(function(b){
     $("painelEquipe").hidden    = b.dataset.aba !== "equipe";
     $("painelBase").hidden      = b.dataset.aba !== "base";
     $("painelRelatorios").hidden = b.dataset.aba !== "relatorios";
+    $("painelMetas").hidden      = b.dataset.aba !== "metas";
     if (b.dataset.aba === "base" && !baseCarregada) carregarBase();
     if (b.dataset.aba === "tanques") carregarTanques();
     if (b.dataset.aba === "prog") carregarProg();
     if (b.dataset.aba === "manut") carregarEquipamentos();
     if (b.dataset.aba === "relatorios" && !relCarregado) carregarRelatorio();
     if (b.dataset.aba === "equipe" && !acompCarregado) carregarAcompanhamento();
+    if (b.dataset.aba === "metas") carregarMetas();
   });
 });
 
@@ -4205,6 +4387,263 @@ $("btnResRemover").addEventListener("click", async function(){
 
 $("btnResCancelar").addEventListener("click",function(){$("modalRes").hidden=true;});
 $("modalRes").addEventListener("click",function(ev){if(ev.target===this)$("modalRes").hidden=true;});
+
+/* ==================================================================
+   ABA METAS
+   ================================================================== */
+
+var MESES_METAS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+var MESES_CURTO = ["jan","fev","mar","abr","mai","jun",
+  "jul","ago","set","out","nov","dez"];
+
+var metaMesAtual  = new Date().getMonth();
+var metaAnoAtual  = new Date().getFullYear();
+
+// Mapa de litros por formato para calcular litros de envase
+var LITROS_FORMATO = {
+  "PET 500ml": 0.5, "PET 1L": 1, "PET 2L": 2,
+  "Lata 350ml": 0.35, "Lata 473ml": 0.473,
+  "Garrafa 500ml": 0.5, "Garrafa 600ml": 0.6,
+  "Barril 30L": 30, "Barril 50L": 50
+};
+
+// Metas salvas no localStorage por "AAAA-MM"
+function metaChave(ano, mes){ return "hbier-meta-"+ano+"-"+String(mes+1).padStart(2,"0"); }
+function metaLer(ano, mes){
+  try{ var v=localStorage.getItem(metaChave(ano,mes)); return v?JSON.parse(v):null; }
+  catch(e){ return null; }
+}
+function metaSalvar(ano, mes, obj){
+  try{ localStorage.setItem(metaChave(ano,mes), JSON.stringify(obj)); }catch(e){}
+}
+
+function atualizarLabelsMetaMes(){
+  $("metaAnoLabel").textContent  = metaAnoAtual;
+  $("metaMesLabel").textContent  = MESES_METAS[metaMesAtual];
+}
+
+function semanasDoMes(ano, mes){
+  // Retorna array de segundas-feiras cujo mês seja mes/ano
+  var semanas = [];
+  // começar na primeira segunda de ou antes do mês
+  var d = new Date(ano, mes, 1);
+  // recuar para a segunda anterior
+  var dow = d.getDay(); // 0=dom, 1=seg...
+  d.setDate(d.getDate() - ((dow + 6) % 7));
+  // avançar semana a semana até passar do mês
+  while(true){
+    var fim = new Date(d); fim.setDate(fim.getDate()+6);
+    // incluir se a segunda ou o domingo cair no mês
+    if (d.getMonth() === mes || fim.getMonth() === mes){
+      semanas.push(new Date(d));
+    }
+    d.setDate(d.getDate()+7);
+    if (d.getMonth() > mes && d.getFullYear() >= ano) break;
+    if (d.getFullYear() > ano) break;
+  }
+  return semanas;
+}
+
+function chaveSemanaData(d){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+async function carregarMetas(){
+  atualizarLabelsMetaMes();
+  var semanas = semanasDoMes(metaAnoAtual, metaMesAtual);
+  var meta = metaLer(metaAnoAtual, metaMesAtual) || {};
+
+  // Carregar programação de todas as semanas do mês em paralelo
+  var resultados = await Promise.all(semanas.map(function(seg){
+    return api("/api/prog?semana="+chaveSemanaData(seg)).catch(function(){ return {itens:[]}; });
+  }));
+
+  // Somar realizados
+  var volumeBrassado = 0;    // litros (do resultado)
+  var qtdEnvasada    = 0;    // unidades (do resultado)
+  var litrosEnvasados= 0;    // litros (calculado por formato)
+  var porFormato     = {};   // formato → {qtd, litros}
+  var detalhesSemanas= [];
+
+  semanas.forEach(function(seg, i){
+    var r = resultados[i];
+    var itens = r.itens || [];
+    var semVol = 0, semQtd = 0;
+
+    itens.forEach(function(it){
+      if (!it.resultado) return;
+      if (it.tipo === "brassagem"){
+        var v = parseFloat((it.resultado.volume||"").replace(",",".")) || 0;
+        volumeBrassado += v;
+        semVol += v;
+      } else if (it.tipo === "envase"){
+        var q = parseFloat(it.resultado.qtdEnvasada||0) || 0;
+        qtdEnvasada += q;
+        semQtd += q;
+        // acumular por formato
+        var fmt = it.formato || "";
+        if (fmt){
+          if (!porFormato[fmt]) porFormato[fmt] = {qtd:0, litros:0};
+          porFormato[fmt].qtd += q;
+          var lf = (LITROS_FORMATO[fmt]||0) * q;
+          porFormato[fmt].litros += lf;
+          litrosEnvasados += lf;
+        }
+      }
+    });
+
+    var fim = new Date(seg); fim.setDate(fim.getDate()+6);
+    var label = seg.getDate()+" "+MESES_CURTO[seg.getMonth()]+" – "+
+                fim.getDate()+" "+MESES_CURTO[fim.getMonth()];
+    detalhesSemanas.push({label:label, vol:semVol, qtd:semQtd,
+      pctBrass: meta.brass ? Math.min(100, Math.round(semVol/meta.brass*100)) : null,
+      pctEnv:   meta.envTotal ? Math.min(100, Math.round(semQtd/meta.envTotal*100)) : null
+    });
+  });
+
+  renderMetaBrassagem(meta, volumeBrassado);
+  renderMetaEnvase(meta, qtdEnvasada, litrosEnvasados, porFormato);
+  renderMetaSemanas(detalhesSemanas, meta);
+  renderMetaFormularios(meta);
+}
+
+function renderBarra(realizado, metaVal, unidade){
+  if (!metaVal) return "<div style='color:var(--muted);font-size:.82rem;padding:4px 0'>Meta não definida — clique em ✏ definir meta</div>";
+  var pct = Math.round(realizado/metaVal*100);
+  var classe = pct >= 100 ? "acima" : (pct >= 80 ? "atingida" : "");
+  return "<div class='meta-barra-wrap'>"+
+    "<div class='meta-barra-numeros'>"+
+      "<span class='meta-barra-realizado'>"+fmtNum(realizado)+" "+unidade+"</span>"+
+      "<span class='meta-barra-meta'>meta: "+fmtNum(metaVal)+" "+unidade+"</span>"+
+    "</div>"+
+    "<div class='meta-barra-bg'>"+
+      "<div class='meta-barra-fill "+classe+"' style='width:"+Math.min(100,pct)+"%'></div>"+
+    "</div>"+
+    "<div class='meta-pct'>"+pct+"% atingido"+(pct>=100?" 🎉":"")+"</div>"+
+  "</div>";
+}
+
+function renderMetaBrassagem(meta, volumeBrassado){
+  $("metaBarraBrass").innerHTML = renderBarra(volumeBrassado, meta.brass, "L");
+}
+
+function renderMetaEnvase(meta, qtdEnvasada, litrosEnvasados, porFormato){
+  var html = renderBarra(qtdEnvasada, meta.envTotal, "un");
+
+  // detalhes por formato
+  var formatos = Object.keys(porFormato);
+  if (formatos.length || (meta.formatos && Object.keys(meta.formatos).length)){
+    html += "<div class='meta-formatos'>";
+    var todosFormatos = new Set(formatos.concat(Object.keys(meta.formatos||{})));
+    todosFormatos.forEach(function(fmt){
+      var real = (porFormato[fmt]||{}).qtd || 0;
+      var metaFmt = (meta.formatos||{})[fmt] || 0;
+      var pct = metaFmt ? Math.min(100, Math.round(real/metaFmt*100)) : null;
+      html += "<div class='meta-formato-linha'>"+
+        "<span class='meta-formato-nome'>"+esc(fmt)+"</span>"+
+        "<span class='meta-formato-realizado'>"+fmtNum(real)+" un</span>"+
+        "<span class='meta-formato-meta'>"+(metaFmt?"meta: "+fmtNum(metaFmt)+" un"+(pct!==null?" ("+pct+"%)":""):"—")+"</span>"+
+      "</div>";
+    });
+    html += "</div>";
+  }
+
+  // litros totais envasados
+  if (litrosEnvasados > 0){
+    html += "<div style='margin-top:8px;font-size:.8rem;color:var(--muted)'>"+
+      "Volume total envasado: <b style='color:var(--ink)'>"+fmtNum(litrosEnvasados)+" L</b></div>";
+  }
+
+  $("metaBarraEnv").innerHTML = html;
+}
+
+function renderMetaSemanas(semanas, meta){
+  $("metaSemanas").innerHTML = semanas.map(function(s){
+    return "<div class='meta-semana-linha'>"+
+      "<span class='meta-semana-label'>"+esc(s.label)+"</span>"+
+      "<span class='meta-semana-vals'>"+
+        (s.vol?"🍺 "+fmtNum(s.vol)+" L":"")+
+        (s.vol&&s.qtd?" · ":"")+
+        (s.qtd?"📦 "+fmtNum(s.qtd)+" un":"")+
+        (!s.vol&&!s.qtd?"<span style='color:var(--muted)'>sem lançamento</span>":"")+
+      "</span>"+
+      (meta.brass&&s.vol?
+        "<div class='meta-semana-barra'>"+
+          "<div class='meta-semana-fill' style='width:"+Math.min(100,s.pctBrass)+"%'></div>"+
+        "</div>":"<div class='meta-semana-barra'></div>")+
+    "</div>";
+  }).join("");
+}
+
+function renderMetaFormularios(meta){
+  // preencher campos do formulário de brassagem
+  $("metaValorBrass").value = meta.brass || "";
+  // preencher campos de envase
+  $("metaValorEnvTotal").value = meta.envTotal || "";
+  var campos = {
+    "PET 500ml": "metaEnv500", "PET 1L": "metaEnv1L", "PET 2L": "metaEnv2L",
+    "Lata 350ml": "metaEnvLata350", "Lata 473ml": "metaEnvLata473",
+    "Garrafa 500ml": "metaEnvGar500", "Garrafa 600ml": "metaEnvGar600"
+  };
+  Object.keys(campos).forEach(function(fmt){
+    var el = $(campos[fmt]);
+    if (el) el.value = (meta.formatos&&meta.formatos[fmt]) || "";
+  });
+}
+
+// Navegação
+$("metaPrevAno").addEventListener("click", function(){ metaAnoAtual--; carregarMetas(); });
+$("metaNextAno").addEventListener("click", function(){ metaAnoAtual++; carregarMetas(); });
+$("metaPrevMes").addEventListener("click", function(){
+  metaMesAtual--; if(metaMesAtual<0){metaMesAtual=11;metaAnoAtual--;}
+  carregarMetas();
+});
+$("metaNextMes").addEventListener("click", function(){
+  metaMesAtual++; if(metaMesAtual>11){metaMesAtual=0;metaAnoAtual++;}
+  carregarMetas();
+});
+
+// Formulário brassagem
+$("btnEditarMetaBrass").addEventListener("click", function(){
+  $("metaFormBrass").hidden = !$("metaFormBrass").hidden;
+  if(!$("metaFormBrass").hidden) $("metaValorBrass").focus();
+});
+$("btnCancelarMetaBrass").addEventListener("click", function(){ $("metaFormBrass").hidden=true; });
+$("btnSalvarMetaBrass").addEventListener("click", function(){
+  var meta = metaLer(metaAnoAtual,metaMesAtual)||{};
+  var v = parseFloat($("metaValorBrass").value)||0;
+  meta.brass = v || undefined;
+  metaSalvar(metaAnoAtual,metaMesAtual,meta);
+  $("metaFormBrass").hidden=true;
+  carregarMetas();
+  toast("Meta de brassagem salva.");
+});
+
+// Formulário envase
+$("btnEditarMetaEnv").addEventListener("click", function(){
+  $("metaFormEnv").hidden = !$("metaFormEnv").hidden;
+  if(!$("metaFormEnv").hidden) $("metaValorEnvTotal").focus();
+});
+$("btnCancelarMetaEnv").addEventListener("click", function(){ $("metaFormEnv").hidden=true; });
+$("btnSalvarMetaEnv").addEventListener("click", function(){
+  var meta = metaLer(metaAnoAtual,metaMesAtual)||{};
+  meta.envTotal = parseFloat($("metaValorEnvTotal").value)||undefined;
+  var campos = {
+    "PET 500ml":"metaEnv500","PET 1L":"metaEnv1L","PET 2L":"metaEnv2L",
+    "Lata 350ml":"metaEnvLata350","Lata 473ml":"metaEnvLata473",
+    "Garrafa 500ml":"metaEnvGar500","Garrafa 600ml":"metaEnvGar600"
+  };
+  meta.formatos = {};
+  Object.keys(campos).forEach(function(fmt){
+    var v = parseFloat($(campos[fmt]).value)||0;
+    if(v) meta.formatos[fmt] = v;
+  });
+  metaSalvar(metaAnoAtual,metaMesAtual,meta);
+  $("metaFormEnv").hidden=true;
+  carregarMetas();
+  toast("Meta de envase salva.");
+});
 
 /* ==================================================================
    Status dos tanques
