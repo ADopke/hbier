@@ -66,6 +66,7 @@ export default protegido(async function handler(req, res) {
         pop: (dados.pop || "").trim(),
         critica: Boolean(dados.critica),
         prioridade: Boolean(dados.prioridade),
+        progId: (dados.progId || "").trim(),   // vínculo com item de programação
         origem:
           ["admin","gestor"].includes(sessao.papel) && destino !== sessao.login
             ? sessao.papel

@@ -30,6 +30,30 @@ export default protegido(async function handler(req, res) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(semana))
       return erro(res, 400, "Semana inválida (AAAA-MM-DD).");
     const itens = (await ler(chave(semana))) || [];
+
+    // ?tarefas=1 — devolve também as tarefas vinculadas a cada item,
+    // agrupadas por progId, buscando em todos os membros da equipe
+    if (req.query.tarefas === "1") {
+      const userlist = (await ler("userlist")) || [];
+      const porProgId = {};   // { [progId]: [{login, nome, taskNome, taskId}] }
+
+      for (const u of userlist) {
+        const tasks = (await ler(`tasks:${u}`)) || [];
+        for (const t of tasks) {
+          if (!t.progId) continue;
+          if (!porProgId[t.progId]) porProgId[t.progId] = [];
+          porProgId[t.progId].push({
+            login: u,
+            taskId: t.id,
+            taskNome: t.nome,
+            freq: t.freq,
+            data: t.data || "",
+          });
+        }
+      }
+      return res.json({ ok: true, semana, itens, tarefasVinculadas: porProgId });
+    }
+
     return res.json({ ok: true, semana, itens });
   }
 
