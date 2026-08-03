@@ -1567,13 +1567,18 @@
             font-size:.88rem;font-family:'Barlow',sans-serif;resize:vertical"></textarea>
         </div>
 
-        <div style="display:flex;gap:8px;justify-content:flex-end;flex-shrink:0">
-          <button id="btnResCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);
-            border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">
-            Cancelar</button>
-          <button id="btnResSalvar" style="padding:9px 18px;border:none;border-radius:8px;
-            background:var(--dourado);color:#3A2D00;cursor:pointer;font-weight:700;font-size:.88rem;
-            font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Salvar</button>
+        <div style="display:flex;gap:8px;justify-content:space-between;flex-shrink:0;flex-wrap:wrap">
+          <button id="btnResRemover" style="padding:9px 14px;border:1.5px solid var(--vermelho);
+            border-radius:8px;background:#fff;color:var(--vermelho);cursor:pointer;
+            font-weight:600;font-size:.85rem">🗑 Remover resultado</button>
+          <div style="display:flex;gap:8px">
+            <button id="btnResCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);
+              border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">
+              Cancelar</button>
+            <button id="btnResSalvar" style="padding:9px 18px;border:none;border-radius:8px;
+              background:var(--dourado);color:#3A2D00;cursor:pointer;font-weight:700;font-size:.88rem;
+              font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Salvar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1783,7 +1788,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.1.4";
+var VERSAO = "2.1.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4060,6 +4065,7 @@ $("progLista").addEventListener("click", function(ev){
   $("resTitulo").textContent = isEnvase ? "📦 Resultado do envase" : "🍺 Resultado da brassagem";
   $("campoResBrassagem").hidden = isEnvase;
   $("campoResEnvase").hidden = !isEnvase;
+  $("btnResRemover").hidden = true;  // mostrado abaixo se já tem resultado
   // limpar
   ["resOg","resVolume","resLitrosIni","resLitrosFim","resQtdEnv",
    "resSleeve","resPet","resTampas","resObs"].forEach(function(id){
@@ -4071,6 +4077,7 @@ $("progLista").addEventListener("click", function(ev){
     var it=(r.itens||[]).find(function(x){return x.id===_resItem.id;});
     if(!it||!it.resultado) return;
     var res=it.resultado;
+    $("btnResRemover").hidden = false;  // tem resultado — pode remover
     if(!isEnvase){
       if($("resOg"))     $("resOg").value     = res.og||"";
       if($("resVolume")) $("resVolume").value  = res.volume||"";
@@ -4100,9 +4107,7 @@ $("btnResSalvar").addEventListener("click", async function(){
   if(!isEnvase){
     payload.og     = $("resOg").value.trim();
     payload.volume = $("resVolume").value.trim();
-    if(!payload.og && !payload.volume){
-      toast("Informe pelo menos o OG ou o volume.","erro"); return;
-    }
+    // sem validação obrigatória — permite salvar vazio ou remover campos
   } else {
     payload.litrosInicio    = $("resLitrosIni").value;
     payload.litrosFim       = $("resLitrosFim").value;
@@ -4111,9 +4116,7 @@ $("btnResSalvar").addEventListener("click", async function(){
     payload.sleevePerd      = $("resSleeve").value;
     payload.petPerd         = $("resPet").value;
     payload.tampasPerd      = $("resTampas").value;
-    if(!payload.qtdEnvasada){
-      toast("Informe a quantidade envasada.","erro"); return;
-    }
+    // sem validação obrigatória
   }
   try{
     await api("/api/prog",{method:"POST",body:payload});
@@ -4122,6 +4125,22 @@ $("btnResSalvar").addEventListener("click", async function(){
     toast("Resultado salvo.");
   }catch(e){ toast(e.message,"erro"); }
 });
+
+$("btnResRemover").addEventListener("click", async function(){
+  if(!_resItem) return;
+  if(!confirm("Remover o resultado deste item? Os dados lançados serão apagados.")) return;
+  try{
+    await api("/api/prog",{method:"POST",body:{
+      acao: "resultado_del",
+      semana: _resItem.semana,
+      id: _resItem.id
+    }});
+    $("modalRes").hidden = true;
+    carregarProg();
+    toast("Resultado removido.");
+  }catch(e){ toast(e.message,"erro"); }
+});
+
 $("btnResCancelar").addEventListener("click",function(){$("modalRes").hidden=true;});
 $("modalRes").addEventListener("click",function(ev){if(ev.target===this)$("modalRes").hidden=true;});
 
