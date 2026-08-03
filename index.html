@@ -1013,21 +1013,6 @@
               style="font-size:.72rem;padding:3px 9px;align-self:center">↩ semana atual</button>
           </div>
         </div>
-        <!-- seção de barreis da semana -->
-        <div id="progBarreisSemana" hidden style="margin:10px 14px 0;
-          background:#FFF6EE;border:1px solid #D4905A;border-radius:10px;
-          overflow:hidden">
-          <div style="background:#7A4500;color:#fff;padding:8px 12px;
-            font-family:'Barlow Condensed',sans-serif;font-weight:700;
-            font-size:.9rem;text-transform:uppercase;letter-spacing:.05em;
-            display:flex;align-items:center;justify-content:space-between">
-            <span>🛢 Envases de Barril da Semana</span>
-            <span id="barrilTotalSemana" style="font-size:.82rem;font-weight:400;
-              opacity:.85"></span>
-          </div>
-          <div id="progBarreisList" style="padding:8px 12px"></div>
-        </div>
-
         <div id="progLista" style="padding:14px"></div>
         <div style="padding:0 14px 14px">
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1798,7 +1783,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.1.1";
+var VERSAO = "2.1.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -3469,7 +3454,6 @@ async function carregarProg(){
 
   try{
     var r = await api("/api/prog?semana="+seg+"&tarefas=1");
-    renderBarrisSemana(r.barreis||{}, seg);
     renderProg(r.itens, seg, segProg, r.tarefasVinculadas||{}, r.barreis||{});
   }catch(e){ $("progLista").innerHTML="<div class='vazio'>"+esc(e.message)+"</div>"; }
 }
@@ -3563,42 +3547,6 @@ function renderProgItem_tarefas(it, tarefasVinculadas){
   return html+"</div>";
 }
 
-function renderBarrisSemana(barreis, seg){
-  // A chave dos barreis independentes é "barril-{semana}"
-  var chave = "barril-"+seg;
-  var regs = barreis[chave] || [];
-  var secao = $("progBarreisSemana");
-  var lista  = $("progBarreisList");
-
-  if (!regs.length){ secao.hidden = true; return; }
-  secao.hidden = false;
-
-  var totalGeral = regs.reduce(function(acc,r){ return acc+(r.total||0); },0);
-  $("barrilTotalSemana").textContent = "Total: "+fmtNum(totalGeral)+" L";
-
-  lista.innerHTML = regs.map(function(r){
-    var podeRem = ["admin","gestor"].includes(sessao.papel);
-    var linhasHtml = (r.linhas||[]).map(function(l){
-      return "<span class='barril-chip'>"+esc(l.formato)+" × "+l.qtd+
-        " = <b>"+fmtNum(l.subtotal)+" L</b></span>";
-    }).join("");
-    return "<div class='barril-reg-sem'>"+
-      "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap'>"+
-        (r.produto?"<span style='font-weight:700;color:#7A4500'>"+esc(r.produto)+"</span>":"") +
-        (r.dia?"<span class='tag'>"+esc(r.dia)+"</span>":"") +
-        (r.lote?"<span style='font-size:.75rem;color:var(--muted)'>Lote: "+esc(r.lote)+"</span>":"") +
-        (r.tanque?"<span style='font-size:.75rem;color:var(--muted)'>"+esc(r.tanque)+"</span>":"") +
-      "</div>"+
-      "<div style='margin-top:5px;display:flex;flex-wrap:wrap;gap:5px;align-items:center'>"+
-        linhasHtml+
-        "<span class='barril-total-chip'>= "+fmtNum(r.total)+" L</span>"+
-        (podeRem?"<button class='ptv-del' style='margin-left:auto'"+
-          " data-barril-del='"+esc(r.id)+"'"+
-          " data-barril-prog='"+esc(chave)+"' title='Remover'>×</button>":"")+
-      "</div>"+
-    "</div>";
-  }).join("<hr style='border:none;border-top:1px solid #EDD5BE;margin:6px 0'>");
-}
 
 function renderBarrilItem(it, barreis){
   var regs = barreis[it.id];
@@ -3643,23 +3591,70 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
     var dt = mapaDatas[dia];
     return dt ? dia+" "+dt : dia;
   }
-  if(!itens || !itens.length){
-    $("progLista").innerHTML="<div class='vazio'>Nenhuma atividade programada esta semana.</div>";
-    return;
-  }
+  // Montar lista unificada: itens de prog + barreis independentes
+  var ORDEM_DIAS_PROG = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
+  var chaveBarrilIndep = "barril-"+semana;
+  var regsBarril = (barreis && barreis[chaveBarrilIndep]) ? barreis[chaveBarrilIndep] : [];
 
-  // Ordenar por dia da semana; sem dia fica no fim
-  var ORDEM_DIAS_PROG = {"Segunda":0,"Ter\u00e7a":1,"Quarta":2,"Quinta":3,"Sexta":4,"S\u00e1bado":5};
-  var itensSorted = itens.slice().sort(function(a,b){
+  // pseudo-itens de barril com _tipo:"barril"
+  var itensBarril = regsBarril.map(function(r){
+    return {id:r.id, _tipo:"barril", dia:r.dia||"", produto:r.produto, lote:r.lote,
+            tanque:r.tanque, linhas:r.linhas, total:r.total, lancadoPor:r.lancadoPor, em:r.em};
+  });
+
+  var tudo = itens.map(function(it){ return it; }).concat(itensBarril);
+  tudo.sort(function(a,b){
     var da = (ORDEM_DIAS_PROG[a.dia] !== undefined) ? ORDEM_DIAS_PROG[a.dia] : 99;
     var db = (ORDEM_DIAS_PROG[b.dia] !== undefined) ? ORDEM_DIAS_PROG[b.dia] : 99;
     return da - db;
   });
 
+  if(!tudo.length){
+    $("progLista").innerHTML="<div class='vazio'>Nenhuma atividade programada esta semana.</div>";
+    return;
+  }
+
   // Acumular HTML com separadores de dia
   var htmlTotal = "", diaGrupo = undefined;
-  itensSorted.forEach(function(it){
+  tudo.forEach(function(it){
     var podeEditar = ["admin","gestor"].includes(sessao.papel);
+
+    // ===== BARRIL: renderizar como card próprio =====
+    if (it._tipo === "barril"){
+      if (it.dia !== diaGrupo){
+        diaGrupo = it.dia;
+        var dtSepB = mapaDatas[diaGrupo] || "";
+        htmlTotal += diaGrupo
+          ? "<div class='prog-dia-sep'>"+esc(diaGrupo)+(dtSepB?" — "+dtSepB:"")+"</div>"
+          : "<div class='prog-dia-sep' style='color:var(--muted)'>Sem dia definido</div>";
+      }
+      var linhasBarrilHtml = (it.linhas||[]).map(function(l){
+        return "<span class='barril-chip'>"+esc(l.formato)+" × "+l.qtd+" = <b>"+fmtNum(l.subtotal)+" L</b></span>";
+      }).join("");
+      htmlTotal += "<div class='prog-item' style='border-left:3px solid #7A4500'>"+
+        "<div class='prog-main'>"+
+          "🛢 <span class='prog-estilo'>"+esc(it.produto||"Barril")+"</span>"+
+          "<span class='tag' style='background:#FFF0E0;color:#7A4500;border-color:#D4905A'>Barril</span>"+
+          (it.dia?"<span class='tag'>"+esc(it.dia)+"</span>":"")+
+          "<div style='margin-top:4px'>"+
+            (it.lote?"<span class='item-desc'>Lote: "+esc(it.lote)+"</span> ":"")+
+            (it.tanque?"<span class='item-desc'>"+esc(it.tanque)+"</span>":"")+
+          "</div>"+
+          "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center'>"+
+            linhasBarrilHtml+
+            "<span class='barril-total-chip'>=\u00a0"+fmtNum(it.total)+" L</span>"+
+          "</div>"+
+          "<div style='font-size:.73rem;color:var(--muted);margin-top:4px'>por "+esc(it.lancadoPor)+"</div>"+
+          (podeEditar?
+            "<div class='btn-linha' style='margin-top:8px'>"+
+            "<button class='btn-mini secundario' data-barril-editar='"+esc(it.id)+"' data-barril-semana='"+esc(semana)+"'>editar</button>"+
+            "<button class='btn-mini perigo' data-barril-del='"+esc(it.id)+"' data-barril-prog='"+esc(chaveBarrilIndep)+"'>remover</button>"+
+            "</div>":"")+
+        "</div>"+
+      "</div>";
+      return;  // próximo item
+    }
+
     var isEnvase = it.tipo === "envase";
     var icone = isEnvase ? "📦" : "🍺";
     var tagCor = isEnvase
@@ -3951,6 +3946,38 @@ $("progLista").addEventListener("click", async function(ev){
       dataISO: dataISO,
       progId:  b.dataset.progTasks
     });
+    return;
+  }
+
+  // editar registro de barril
+  if (b.dataset.barrilEditar){
+    var semEditar = b.dataset.barrilSemana;
+    var chaveEditar = "barril-"+semEditar;
+    // buscar o registro pelo id
+    api("/api/prog?semana="+semEditar+"&tarefas=1").then(function(r){
+      var regs = (r.barreis && r.barreis[chaveEditar]) ? r.barreis[chaveEditar] : [];
+      var reg = regs.find(function(x){ return x.id === b.dataset.barrilEditar; });
+      if (!reg){ toast("Registro não encontrado.","erro"); return; }
+      // preencher o modal com os dados existentes
+      _barrilCtx = {editandoId: reg.id, semana: semEditar};
+      $("barrilProduto").value = reg.produto||"";
+      $("barrilTanque").value  = reg.tanque||"";
+      $("barrilLote").value    = reg.lote||"";
+      preencherDias("barrilDia");
+      $("barrilDia").value = reg.dia||"";
+      // preencher quantidades
+      renderBarrilLinhas();
+      var FORMATOS_MAP = {"15 L":0,"20 L":1,"30 L":2,"50 L":3};
+      (reg.linhas||[]).forEach(function(l){
+        var idx = FORMATOS_MAP[l.formato];
+        if (idx !== undefined){
+          var el = document.getElementById("barrilQtd"+idx);
+          if (el) el.value = l.qtd;
+        }
+      });
+      calcBarril();
+      $("modalBarril").hidden = false;
+    }).catch(function(e){ toast(e.message,"erro"); });
     return;
   }
 
