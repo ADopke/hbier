@@ -216,7 +216,11 @@ export default protegido(async function handler(req, res) {
     const registros = (await ler(`barril:${semana}:${progId}`)) || [];
     registros.push({
       id: novoId(),
-      tanque: (dados.tanque || "").trim(),
+      produto: (dados.produto || "").trim(),
+      tanque:  (dados.tanque  || "").trim(),
+      lote:    (dados.lote    || "").trim(),
+      dia:     (dados.dia     || "").trim(),
+      dataISO: (dados.dataISO || "").trim(),
       linhas: Array.isArray(dados.linhas) ? dados.linhas : [],
       total: Number(dados.total) || 0,
       lancadoPor: sessao.login,
