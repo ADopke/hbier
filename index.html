@@ -286,18 +286,49 @@
   /* ---- tarefas vinculadas na programação ---- */
   .prog-tarefas-vinc{
     margin-top:8px;background:var(--cinza);border-radius:8px;
-    padding:8px 10px;display:flex;flex-direction:column;gap:5px;
+    padding:8px 10px;display:flex;flex-direction:column;gap:6px;
+  }
+  .ptv-titulo{
+    font-size:.7rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:.07em;color:var(--muted);margin-bottom:2px;
   }
   .ptv-operador{
     display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap;
     font-size:.78rem;line-height:1.4;
   }
   .ptv-nome{
-    font-weight:700;color:var(--verde);white-space:nowrap;flex-shrink:0;
+    font-weight:700;color:var(--verde);white-space:nowrap;
+    flex-shrink:0;margin-top:3px;
   }
+  .ptv-tasks{ display:flex;flex-wrap:wrap;gap:4px; }
   .ptv-task{
+    display:inline-flex;align-items:center;gap:3px;
     background:#fff;border:1px solid var(--linha);border-radius:5px;
-    padding:1px 7px;color:var(--ink);
+    padding:2px 4px 2px 7px;color:var(--ink);
+  }
+  .ptv-del{
+    background:none;border:none;color:var(--muted);cursor:pointer;
+    font-size:.85rem;line-height:1;padding:0 2px;
+    transition:.1s;
+  }
+  .ptv-del:hover{ color:var(--vermelho); }
+
+  /* ---- registros de barril ---- */
+  .prog-barreis{
+    margin-top:8px;background:#FFF6EE;border:1px solid #D4905A;
+    border-radius:8px;padding:8px 10px;
+  }
+  .barril-reg{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    font-size:.8rem;padding:4px 0;border-bottom:1px solid #EDD5BE;
+  }
+  .barril-reg:last-of-type{ border-bottom:none; }
+  .barril-tanque{
+    font-weight:700;color:#7A4500;white-space:nowrap;flex-shrink:0;
+  }
+  .barril-linhas{ flex:1;color:var(--ink); }
+  .barril-total{
+    font-weight:700;color:#7A4500;white-space:nowrap;
   }
 
   /* ---- checks de lançamento (BeerSales / Beerbo) ---- */
@@ -1251,6 +1282,67 @@
     </div>
   </div>
 
+  <!-- Modal: envase de barril -->
+  <div id="modalBarril" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.6);
+    display:flex;align-items:center;justify-content:center;z-index:998;padding:16px;overflow-y:auto">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;
+      max-height:92vh;display:flex;flex-direction:column">
+
+      <!-- header -->
+      <div style="background:#7A4500;color:#fff;padding:14px 16px;
+        border-radius:14px 14px 0 0;flex-shrink:0;display:flex;align-items:center;gap:10px">
+        <div style="flex:1">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;
+            text-transform:uppercase;font-size:1rem">🛢 Envase de Barril</div>
+          <div id="barrilSub" style="font-size:.78rem;opacity:.8;margin-top:2px"></div>
+        </div>
+        <button id="btnBarrilFechar" style="background:none;border:none;
+          color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">✕</button>
+      </div>
+
+      <!-- tanque de origem -->
+      <div style="padding:14px 16px;border-bottom:1px solid var(--linha);flex-shrink:0">
+        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:5px">
+          Tanque de origem</label>
+        <input type="text" id="barrilTanque" placeholder="Ex.: TQ-03"
+          style="width:100%;padding:9px;border:1.5px solid var(--linha);
+          border-radius:8px;font-size:.9rem">
+      </div>
+
+      <!-- linhas de barril -->
+      <div style="padding:14px 16px;flex:1;overflow-y:auto">
+        <div style="font-size:.8rem;font-weight:600;color:var(--muted);
+          margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">
+          Quantidade por formato</div>
+
+        <div style="display:grid;grid-template-columns:auto 1fr auto auto;
+          gap:8px;align-items:center;margin-bottom:8px;
+          font-size:.75rem;font-weight:700;color:var(--muted);
+          text-transform:uppercase;letter-spacing:.05em">
+          <span>Formato</span><span></span><span>Qtd</span><span>Total</span>
+        </div>
+
+        <div id="barrilLinhas" style="display:flex;flex-direction:column;gap:8px"></div>
+
+        <!-- resultado -->
+        <div id="barrilTotais" style="margin-top:14px;background:var(--cinza);
+          border-radius:8px;padding:10px 12px"></div>
+      </div>
+
+      <!-- rodapé -->
+      <div style="padding:12px 16px;border-top:1px solid var(--linha);
+        display:flex;gap:8px;justify-content:flex-end;flex-shrink:0">
+        <button id="btnBarrilCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);
+          border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">
+          Cancelar</button>
+        <button id="btnBarrilSalvar" style="padding:9px 18px;border:none;border-radius:8px;
+          background:#7A4500;color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;
+          font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">
+          Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: tarefas automáticas ao lançar brassagem/envase -->
   <div id="modalTarefasAuto" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.6);
     display:flex;align-items:center;justify-content:center;z-index:998;padding:16px;overflow-y:auto">
@@ -1652,7 +1744,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.0.8";
+var VERSAO = "2.0.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2876,6 +2968,107 @@ $("btnAtualizarBase").addEventListener("click", function(){
 });
 
 /* ==================================================================
+   Envase de barril
+   ================================================================== */
+var BARRIL_FORMATOS = [
+  {label:"15 L", litros:15},
+  {label:"20 L", litros:20},
+  {label:"30 L", litros:30},
+  {label:"50 L", litros:50}
+];
+var _barrilCtx = null;   // {progId, titulo, tanque}
+
+function abrirModalBarril(ctx){
+  _barrilCtx = ctx;
+  $("barrilSub").textContent = ctx.titulo || "";
+  $("barrilTanque").value = ctx.tanque || "";
+  renderBarrilLinhas();
+  $("modalBarril").hidden = false;
+  $("barrilTanque").focus();
+}
+
+function renderBarrilLinhas(){
+  $("barrilLinhas").innerHTML = BARRIL_FORMATOS.map(function(f, i){
+    return "<div style='display:grid;grid-template-columns:80px 1fr 80px 90px;"+
+      "gap:8px;align-items:center'>"+
+      "<span style='font-weight:700;font-size:.88rem'>"+esc(f.label)+"</span>"+
+      "<span></span>"+
+      "<input type='number' id='barrilQtd"+i+"' min='0' value='0'"+
+        " style='width:100%;padding:8px;border:1.5px solid var(--linha);"+
+        "border-radius:7px;font-size:.9rem;text-align:center'"+
+        " oninput='calcBarril()'>"+
+      "<span id='barrilSub"+i+"' style='font-size:.82rem;color:var(--muted);"+
+        "text-align:right'>0 L</span>"+
+    "</div>";
+  }).join("");
+  calcBarril();
+}
+
+function calcBarril(){
+  var total = 0;
+  var linhas = [];
+  BARRIL_FORMATOS.forEach(function(f, i){
+    var el = document.getElementById("barrilQtd"+i);
+    var qtd = el ? (parseInt(el.value)||0) : 0;
+    var sub = qtd * f.litros;
+    total += sub;
+    var subEl = document.getElementById("barrilSub"+i);
+    if (subEl) subEl.textContent = qtd > 0 ? fmtNum(sub)+" L" : "—";
+    if (qtd > 0) linhas.push({formato:f.label, litros:f.litros, qtd:qtd, subtotal:sub});
+  });
+
+  // resumo
+  var html = "";
+  if (linhas.length){
+    html = linhas.map(function(l){
+      return "<div style='font-size:.82rem;display:flex;justify-content:space-between;"+
+        "padding:2px 0'>"+
+        "<span>"+esc(l.formato)+" × "+l.qtd+"</span>"+
+        "<span style='font-weight:600'>"+fmtNum(l.subtotal)+" L</span>"+
+      "</div>";
+    }).join("") +
+    "<div style='border-top:1.5px solid var(--verde);margin-top:6px;padding-top:6px;"+
+      "display:flex;justify-content:space-between;font-weight:700;font-size:.9rem'>"+
+      "<span>Total envasado</span>"+
+      "<span style='color:var(--verde)'>"+fmtNum(total)+" L</span>"+
+    "</div>";
+  } else {
+    html = "<div style='color:var(--muted);font-size:.82rem'>Informe as quantidades acima.</div>";
+  }
+  $("barrilTotais").innerHTML = html;
+  return {linhas:linhas, total:total};
+}
+
+$("btnBarrilFechar").addEventListener("click", function(){$("modalBarril").hidden=true;});
+$("btnBarrilCancelar").addEventListener("click", function(){$("modalBarril").hidden=true;});
+
+$("btnBarrilSalvar").addEventListener("click", async function(){
+  if (!_barrilCtx) return;
+  var resumo = calcBarril();
+  if (!resumo.linhas.length){ toast("Informe pelo menos uma quantidade.","erro"); return; }
+  var tanque = $("barrilTanque").value.trim();
+
+  // Salvar o registro de envase barril no item de programação via api/prog
+  try{
+    await api("/api/prog", {method:"POST", body:{
+      acao: "barril",
+      semana: chaveSemana(segProg),
+      progId: _barrilCtx.progId,
+      tanque: tanque,
+      linhas: resumo.linhas,
+      total: resumo.total,
+      lancadoPor: sessao.login
+    }});
+    $("modalBarril").hidden = true;
+    carregarProg();
+    toast("Envase barril registrado — "+fmtNum(resumo.total)+" L.", "ok");
+  }catch(e){ toast(e.message,"erro"); }
+});
+
+// Handler do botão 🛢 Barril na lista de programação
+// (adicionado no listener geral do progLista)
+
+/* ==================================================================
    Tarefas automáticas ao lançar brassagem / envase
    ================================================================== */
 
@@ -3201,7 +3394,7 @@ async function carregarProg(){
 
   try{
     var r = await api("/api/prog?semana="+seg+"&tarefas=1");
-    renderProg(r.itens, seg, segProg, r.tarefasVinculadas||{});
+    renderProg(r.itens, seg, segProg, r.tarefasVinculadas||{}, r.barreis||{});
   }catch(e){ $("progLista").innerHTML="<div class='vazio'>"+esc(e.message)+"</div>"; }
 }
 
@@ -3274,24 +3467,55 @@ function renderProgItem_tarefas(it, tarefasVinculadas){
   var porLogin = {};
   lista.forEach(function(t){
     if (!porLogin[t.login]) porLogin[t.login] = [];
-    porLogin[t.login].push(t.taskNome);
+    porLogin[t.login].push({nome:t.taskNome, id:t.taskId, login:t.login});
   });
-  var html = "<div class='prog-tarefas-vinc'>";
+  var html = "<div class='prog-tarefas-vinc'><div class='ptv-titulo'>📋 Tarefas criadas</div>";
   Object.keys(porLogin).forEach(function(login){
     var mem = equipe.find(function(u){ return u.login===login; });
     var nomeOp = mem ? mem.nome : login;
     html += "<div class='ptv-operador'>"+
       "<span class='ptv-nome'>@"+esc(nomeOp)+"</span>"+
-      porLogin[login].map(function(tn){
-        return "<span class='ptv-task'>"+esc(tn)+"</span>";
+      "<div class='ptv-tasks'>"+
+      porLogin[login].map(function(t){
+        return "<span class='ptv-task'>"+esc(t.nome)+
+          "<button class='ptv-del' data-del-task='"+esc(t.id)+"' "+
+          "data-del-login='"+esc(t.login)+"' title='Remover tarefa'>×</button></span>";
       }).join("")+
+      "</div>"+
     "</div>";
   });
   return html+"</div>";
 }
 
-function renderProg(itens, semana, seg, tarefasVinculadas){
+function renderBarrilItem(it, barreis){
+  var regs = barreis[it.id];
+  if (!regs || !regs.length) return "";
+  var html = "<div class='prog-barreis'><div class='ptv-titulo'>🛢 Envases barril</div>";
+  regs.forEach(function(r){
+    var linhasHtml = (r.linhas||[]).map(function(l){
+      return esc(l.formato)+" × "+l.qtd+" = "+fmtNum(l.subtotal)+" L";
+    }).join(" | ");
+    html += "<div class='barril-reg'>"+
+      (r.tanque?"<span class='barril-tanque'>"+esc(r.tanque)+"</span>":"") +
+      "<span class='barril-linhas'>"+linhasHtml+"</span>"+
+      "<span class='barril-total'>"+fmtNum(r.total)+" L</span>"+
+      "<button class='ptv-del' data-barril-del='"+esc(r.id)+"'"+
+        " data-barril-prog='"+esc(it.id)+"' title='Remover'>×</button>"+
+    "</div>";
+  });
+  // total geral
+  var totalGeral = regs.reduce(function(acc,r){ return acc+(r.total||0); }, 0);
+  if (regs.length > 1){
+    html += "<div style='padding:4px 10px;font-size:.8rem;font-weight:700;"+
+      "color:var(--verde);border-top:1px solid var(--linha);margin-top:4px'>"+
+      "Total: "+fmtNum(totalGeral)+" L</div>";
+  }
+  return html+"</div>";
+}
+
+function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
   tarefasVinculadas = tarefasVinculadas || {};
+  barreis = barreis || {};
   // mapa dia nome → data (dd/mm) baseado na segunda-feira da semana
   var mapaDatas = {};
   if (seg){
@@ -3368,6 +3592,7 @@ function renderProg(itens, semana, seg, tarefasVinculadas){
         (it.obs?"<div class='item-desc'>"+esc(it.obs)+"</div>":"")+
         "<div style='font-size:.73rem;color:var(--muted);margin-top:3px'>por "+esc(it.criadaPor)+"</div>"+
         resultado+
+        renderBarrilItem(it, barreis)+
         renderProgItem_tarefas(it, tarefasVinculadas)+
         renderChecksLancamento(it, semana)+
         "<div class='btn-linha' style='margin-top:8px'>"+
@@ -3377,6 +3602,10 @@ function renderProg(itens, semana, seg, tarefasVinculadas){
         " data-prog-tasks-tipo='"+(isEnvase?"envase":"brassagem")+"'"+
         " data-prog-tasks-titulo='"+esc(it.estilo||it.produto||"")+"'"+
         " data-prog-tasks-dia='"+esc(it.dia||"")+"'>＋ Tarefas</button>"+
+        "<button class='btn-mini' style='background:#7A4500;border-color:#7A4500;color:#fff'"+
+        " data-prog-barril='"+esc(it.id)+"'"+
+        " data-prog-barril-titulo='"+esc(it.estilo||it.produto||"")+"'"+
+        " data-prog-barril-tanque='"+esc(it.tanque||it.tanqueOrigem||"")+"'>🛢 Barril</button>"+
         (podeEditar?
           "<button class='btn-mini secundario' data-prog-edit='"+esc(it.id)+"' data-prog-semana='"+
           esc(semana)+"'>editar</button>"+
@@ -3612,6 +3841,47 @@ $("progLista").addEventListener("click", async function(ev){
       dataISO: dataISO,
       progId:  b.dataset.progTasks
     });
+    return;
+  }
+
+  // botão 🛢 Barril
+  if (b.dataset.progBarril){
+    abrirModalBarril({
+      progId: b.dataset.progBarril,
+      titulo: b.dataset.progBarrilTitulo,
+      tanque: b.dataset.progBarrilTanque
+    });
+    return;
+  }
+
+  // deletar registro de barril
+  if (b.dataset.barrilDel){
+    if (!confirm("Remover este registro de envase barril?")) return;
+    try{
+      await api("/api/prog", {method:"POST", body:{
+        acao: "barril_del",
+        semana: chaveSemana(segProg),
+        progId: b.dataset.barrilProg,
+        id: b.dataset.barrilDel
+      }});
+      carregarProg();
+      toast("Registro removido.");
+    }catch(e){ toast(e.message,"erro"); }
+    return;
+  }
+
+  // deletar tarefa vinculada
+  if (b.dataset.delTask){
+    if (!confirm("Remover esta tarefa do checklist do operador?")) return;
+    try{
+      await api("/api/tasks", {method:"POST", body:{
+        acao: "excluir",
+        id: b.dataset.delTask,
+        usuario: b.dataset.delLogin
+      }});
+      carregarProg();
+      toast("Tarefa removida.");
+    }catch(e){ toast(e.message,"erro"); }
     return;
   }
 
