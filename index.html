@@ -870,6 +870,17 @@
         <div class="grade-wrap"><table id="tabelaDiaria"></table></div>
       </section>
 
+      <!-- Tarefas de produção — logo após as diárias -->
+      <section id="secProducao" hidden style="border-left:4px solid var(--verde);
+        margin-left:0;background:linear-gradient(to right,#E9F3EB 0%,transparent 40%);">
+        <div class="sec-head" style="background:var(--verde);color:#fff;border-radius:0;
+          margin:0;padding:10px 16px;">
+          <span class="sec-title" style="color:#fff;font-size:.95rem">🏭 Produção</span>
+          <span class="sec-sub" style="color:rgba(255,255,255,.75)">tarefas vinculadas à programação</span>
+        </div>
+        <ul class="lista" id="listaProducao" style="padding:4px 0"></ul>
+      </section>
+
       <section id="secSemanais" hidden>
         <div class="sec-head"><span class="sec-title">📆 Tarefas semanais</span>
           <span class="sec-sub">1x por semana</span></div>
@@ -880,13 +891,6 @@
         <div class="sec-head"><span class="sec-title">🔁 Quinzenais</span>
           <span class="sec-sub">ciclo de 14 dias</span></div>
         <ul class="lista" id="listaQuinzenais"></ul>
-      </section>
-
-      <!-- Tarefas de produção vinculadas à programação -->
-      <section id="secProducao" hidden>
-        <div class="sec-head"><span class="sec-title">🏭 Produção</span>
-          <span class="sec-sub">tarefas vinculadas à programação</span></div>
-        <ul class="lista" id="listaProducao"></ul>
       </section>
 
       <section id="secDemanda" hidden>
@@ -1996,7 +2000,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.2.8";
+var VERSAO = "2.2.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
