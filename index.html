@@ -1823,11 +1823,18 @@
           <input type="text" id="brassTanque" placeholder="Ex.: TQ-03"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
         </div>
-        <div>
-          <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Dia previsto</label>
-          <select id="brassDia" style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
-            <option value="">N&#xe3;o definido</option>
-          </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Dia previsto</label>
+            <select id="brassDia" style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+              <option value="">N&#xe3;o definido</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Volume previsto (L)</label>
+            <input type="number" id="brassVolPrev" placeholder="Ex.: 2000"
+              style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+          </div>
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Observa&#xe7;&#xe3;o</label>
@@ -2000,7 +2007,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.2.9";
+var VERSAO = "2.3.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -3529,10 +3536,21 @@ $("btnBarrilSalvar").addEventListener("click", async function(){
   }
 
   try{
+    // Se estiver editando: deletar o registro antigo primeiro (evita duplicação)
+    if (_barrilCtx && _barrilCtx.editandoId){
+      var semAntiga = _barrilCtx.semana || seg;
+      await api("/api/prog", {method:"POST", body:{
+        acao:   "barril_del",
+        semana: semAntiga,
+        progId: "barril-"+semAntiga,
+        id:     _barrilCtx.editandoId
+      }});
+    }
+
     await api("/api/prog", {method:"POST", body:{
       acao:    "barril",
       semana:  seg,
-      progId:  "barril-"+seg,   // chave independente por semana
+      progId:  "barril-"+seg,
       produto: produto,
       tanque:  tanque,
       lote:    lote,
@@ -3542,8 +3560,10 @@ $("btnBarrilSalvar").addEventListener("click", async function(){
       total:   resumo.total
     }});
     $("modalBarril").hidden = true;
+    _barrilCtx = {};
     carregarProg();
-    toast("Barril registrado — "+fmtNum(resumo.total)+" L total.", "ok");
+    var msg = (_barrilCtx && _barrilCtx.editandoId) ? "Barril atualizado." : "Barril registrado — "+fmtNum(resumo.total)+" L total.";
+    toast("Barril salvo — "+fmtNum(resumo.total)+" L total.", "ok");
   }catch(e){ toast(e.message,"erro"); }
 });
 
@@ -4225,6 +4245,7 @@ $("btnAddProg").addEventListener("click", function(){
   $("brassEstilo").value = "";
   $("brassTanque").value = "";
   $("brassObs").value = "";
+  $("brassVolPrev").value = "";
   preencherDias("brassDia");
   $("brassDia").value = "";
   $("modalBrassagem").hidden = false;
@@ -4243,9 +4264,10 @@ $("btnBrassSalvar").addEventListener("click", async function(){
       semana: seg,
       tipo: "brassagem",
       estilo: estilo,
-      tanque: $("brassTanque").value.trim(),
-      dia:    diaBrass,
-      obs:    $("brassObs").value.trim()
+      tanque:    $("brassTanque").value.trim(),
+      volPrev:   $("brassVolPrev").value.trim(),
+      dia:       diaBrass,
+      obs:       $("brassObs").value.trim()
     }});
     $("modalBrassagem").hidden = true;
     var eraEdicao = !!_brasseditando;
@@ -4347,9 +4369,10 @@ $("progLista").addEventListener("click", async function(ev){
     } else {
       _brasseditando = {id: it.id, semana};
       $("brassFormTitulo").textContent = "\uD83C\uDF7A Editar Brassagem";
-      $("brassEstilo").value = it.estilo||"";
-      $("brassTanque").value = it.tanque||"";
-      $("brassObs").value    = it.obs||"";
+      $("brassEstilo").value   = it.estilo||"";
+      $("brassTanque").value   = it.tanque||"";
+      $("brassVolPrev").value  = it.volPrev||"";
+      $("brassObs").value      = it.obs||"";
       preencherDias("brassDia");
       $("brassDia").value    = it.dia||"";
       $("modalBrassagem").hidden = false;
@@ -4657,10 +4680,9 @@ async function carregarMetas(){
     var r = resultados[i];
     var itens = r.itens || [];
     var semVol = 0, semQtd = 0;
+    var semTemPrevisto = false;
 
     itens.forEach(function(it){
-      if (!it.resultado) return;
-
       // Verificar se o item pertence ao mês/ano da meta
       // Usar dataISO do item se disponível, senão calcular pela semana + dia
       var dataItem = null;
@@ -4702,6 +4724,7 @@ async function carregarMetas(){
       }
     });
 
+    if (semTemPrevisto) totalTemPrevisto = true;
     var fim = new Date(seg); fim.setDate(fim.getDate()+6);
     var label = seg.getDate()+" "+MESES_CURTO[seg.getMonth()]+" – "+
                 fim.getDate()+" "+MESES_CURTO[fim.getMonth()];
@@ -4711,8 +4734,8 @@ async function carregarMetas(){
     });
   });
 
-  renderMetaBrassagem(meta, volumeBrassado);
-  renderMetaEnvase(meta, qtdEnvasada, litrosEnvasados, porFormato);
+  renderMetaBrassagem(meta, volumeBrassado, totalTemPrevisto);
+  renderMetaEnvase(meta, qtdEnvasada, litrosEnvasados, porFormato, totalTemPrevisto);
   renderMetaSemanas(detalhesSemanas, meta);
   renderMetaFormularios(meta);
 }
