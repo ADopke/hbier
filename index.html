@@ -275,13 +275,21 @@
 
   /* ---- separador de dia na programação ---- */
   .prog-dia-sep{
-    padding:8px 14px 5px;
-    font-family:'Barlow Condensed',sans-serif;font-weight:700;
-    font-size:.85rem;letter-spacing:.07em;text-transform:uppercase;
-    color:var(--verde);border-top:2px solid var(--verde-claro);
-    margin-top:4px;
+    padding:10px 14px 8px;
+    font-family:'Barlow Condensed',sans-serif;font-weight:800;
+    font-size:1.1rem;letter-spacing:.08em;text-transform:uppercase;
+    color:#fff;
+    background:var(--verde);
+    border-radius:0;
+    margin-top:10px;
+    display:flex;align-items:center;gap:10px;
   }
-  .prog-dia-sep:first-child{ border-top:none;margin-top:0; }
+  .prog-dia-sep::before{
+    content:'';display:inline-block;
+    width:4px;height:1.1rem;background:rgba(255,255,255,.5);border-radius:2px;
+    flex-shrink:0;
+  }
+  .prog-dia-sep:first-child{ margin-top:0; }
 
   /* ---- tarefas vinculadas na programação ---- */
   .prog-tarefas-vinc{
@@ -1965,7 +1973,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.2.1";
+var VERSAO = "2.2.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
