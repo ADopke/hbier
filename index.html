@@ -1973,7 +1973,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.2.3";
+var VERSAO = "2.2.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4422,23 +4422,24 @@ function atualizarLabelsMetaMes(){
 }
 
 function semanasDoMes(ano, mes){
-  // Retorna array de segundas-feiras cujo mês seja mes/ano
+  // Retorna todas as semanas (segundas-feiras) que têm ALGUM dia dentro do mês.
+  // Usamos isso só para saber quais semanas buscar na API.
+  // A filtragem real por mês é feita pelo dataISO de cada item.
   var semanas = [];
-  // começar na primeira segunda de ou antes do mês
   var d = new Date(ano, mes, 1);
-  // recuar para a segunda anterior
-  var dow = d.getDay(); // 0=dom, 1=seg...
+  // ir para a segunda-feira da semana do dia 1
+  var dow = d.getDay(); // 0=dom...
   d.setDate(d.getDate() - ((dow + 6) % 7));
-  // avançar semana a semana até passar do mês
+  // avançar até cobrir o mês inteiro
   while(true){
     var fim = new Date(d); fim.setDate(fim.getDate()+6);
-    // incluir se a segunda ou o domingo cair no mês
+    // incluir se qualquer dia da semana cair no mês
     if (d.getMonth() === mes || fim.getMonth() === mes){
       semanas.push(new Date(d));
     }
     d.setDate(d.getDate()+7);
-    if (d.getMonth() > mes && d.getFullYear() >= ano) break;
     if (d.getFullYear() > ano) break;
+    if (d.getFullYear() === ano && d.getMonth() > mes) break;
   }
   return semanas;
 }
@@ -4471,6 +4472,28 @@ async function carregarMetas(){
 
     itens.forEach(function(it){
       if (!it.resultado) return;
+
+      // Verificar se o item pertence ao mês/ano da meta
+      // Usar dataISO do item se disponível, senão calcular pela semana + dia
+      var dataItem = null;
+      if (it.dataISO) {
+        dataItem = new Date(it.dataISO + "T00:00:00");
+      } else if (it.dia) {
+        var DIAS_OFF = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
+        var off = DIAS_OFF[it.dia];
+        if (off !== undefined) {
+          dataItem = new Date(seg); dataItem.setDate(seg.getDate() + off);
+        }
+      } else {
+        // sem data definida — usar a segunda-feira da semana como referência
+        dataItem = new Date(seg);
+      }
+
+      // só conta se a data do item cair no mês/ano selecionado
+      if (dataItem && (dataItem.getMonth() !== metaMesAtual || dataItem.getFullYear() !== metaAnoAtual)) {
+        return; // item de outro mês — pular
+      }
+
       if (it.tipo === "brassagem"){
         var v = parseFloat((it.resultado.volume||"").replace(",",".")) || 0;
         volumeBrassado += v;
