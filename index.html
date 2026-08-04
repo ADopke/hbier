@@ -1973,7 +1973,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.2.2";
+var VERSAO = "2.2.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4397,13 +4397,23 @@ var LITROS_FORMATO = {
 };
 
 // Metas salvas no localStorage por "AAAA-MM"
-function metaChave(ano, mes){ return "hbier-meta-"+ano+"-"+String(mes+1).padStart(2,"0"); }
-function metaLer(ano, mes){
-  try{ var v=localStorage.getItem(metaChave(ano,mes)); return v?JSON.parse(v):null; }
-  catch(e){ return null; }
+// Metas salvas no servidor (Redis) — visíveis em todos os dispositivos
+async function metaLer(ano, mes){
+  // mes interno é 0-11, API usa 1-12
+  try{
+    var r = await api("/api/metas?ano="+ano+"&mes="+(mes+1));
+    return r.meta && Object.keys(r.meta).length ? r.meta : null;
+  }catch(e){ return null; }
 }
-function metaSalvar(ano, mes, obj){
-  try{ localStorage.setItem(metaChave(ano,mes), JSON.stringify(obj)); }catch(e){}
+async function metaSalvar(ano, mes, obj){
+  // mes interno é 0-11, API usa 1-12
+  await api("/api/metas", {method:"POST", body:{
+    ano: ano,
+    mes: mes+1,
+    brass:    obj.brass    || null,
+    envTotal: obj.envTotal || null,
+    formatos: obj.formatos || {}
+  }});
 }
 
 function atualizarLabelsMetaMes(){
@@ -4440,7 +4450,7 @@ function chaveSemanaData(d){
 async function carregarMetas(){
   atualizarLabelsMetaMes();
   var semanas = semanasDoMes(metaAnoAtual, metaMesAtual);
-  var meta = metaLer(metaAnoAtual, metaMesAtual) || {};
+  var meta = (await metaLer(metaAnoAtual, metaMesAtual)) || {};
 
   // Carregar programação de todas as semanas do mês em paralelo
   var resultados = await Promise.all(semanas.map(function(seg){
@@ -4599,14 +4609,16 @@ $("btnEditarMetaBrass").addEventListener("click", function(){
   if(!$("metaFormBrass").hidden) $("metaValorBrass").focus();
 });
 $("btnCancelarMetaBrass").addEventListener("click", function(){ $("metaFormBrass").hidden=true; });
-$("btnSalvarMetaBrass").addEventListener("click", function(){
-  var meta = metaLer(metaAnoAtual,metaMesAtual)||{};
+$("btnSalvarMetaBrass").addEventListener("click", async function(){
+  var meta = (await metaLer(metaAnoAtual,metaMesAtual))||{};
   var v = parseFloat($("metaValorBrass").value)||0;
   meta.brass = v || undefined;
-  metaSalvar(metaAnoAtual,metaMesAtual,meta);
-  $("metaFormBrass").hidden=true;
-  carregarMetas();
-  toast("Meta de brassagem salva.");
+  try{
+    await metaSalvar(metaAnoAtual,metaMesAtual,meta);
+    $("metaFormBrass").hidden=true;
+    carregarMetas();
+    toast("Meta de brassagem salva.");
+  }catch(e){ toast(e.message,"erro"); }
 });
 
 // Formulário envase
@@ -4615,8 +4627,8 @@ $("btnEditarMetaEnv").addEventListener("click", function(){
   if(!$("metaFormEnv").hidden) $("metaValorEnvTotal").focus();
 });
 $("btnCancelarMetaEnv").addEventListener("click", function(){ $("metaFormEnv").hidden=true; });
-$("btnSalvarMetaEnv").addEventListener("click", function(){
-  var meta = metaLer(metaAnoAtual,metaMesAtual)||{};
+$("btnSalvarMetaEnv").addEventListener("click", async function(){
+  var meta = (await metaLer(metaAnoAtual,metaMesAtual))||{};
   meta.envTotal = parseFloat($("metaValorEnvTotal").value)||undefined;
   var campos = {
     "Garrafa 355ml":"metaEnvGar355",
@@ -4629,10 +4641,12 @@ $("btnSalvarMetaEnv").addEventListener("click", function(){
     var v = parseFloat($(campos[fmt]).value)||0;
     if(v) meta.formatos[fmt] = v;
   });
-  metaSalvar(metaAnoAtual,metaMesAtual,meta);
-  $("metaFormEnv").hidden=true;
-  carregarMetas();
-  toast("Meta de envase salva.");
+  try{
+    await metaSalvar(metaAnoAtual,metaMesAtual,meta);
+    $("metaFormEnv").hidden=true;
+    carregarMetas();
+    toast("Meta de envase salva.");
+  }catch(e){ toast(e.message,"erro"); }
 });
 
 /* ==================================================================
