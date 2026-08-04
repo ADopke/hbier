@@ -53,9 +53,10 @@ export default protegido(async function handler(req, res) {
       }
     }
 
-    // limpar campos undefined
-    if (!meta.brass)    delete meta.brass;
-    if (!meta.envTotal) delete meta.envTotal;
+    // manter campos null (significa "sem meta definida")
+    // só apagar se explicitamente null/0 para limpar
+    if (meta.brass    === null || meta.brass    === 0) delete meta.brass;
+    if (meta.envTotal === null || meta.envTotal === 0) delete meta.envTotal;
 
     await gravar(chave(ano, mes), meta);
     return res.json({ ok: true, meta });
