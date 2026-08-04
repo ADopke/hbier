@@ -1996,7 +1996,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.2.6";
+var VERSAO = "2.2.7";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2610,6 +2610,12 @@ function renderProducao(){
             esc(t.nome) + " " + tagProg + "</div>" +
           "<div class='carimbo'>" + carimbo + "</div>" +
         "</div>" +
+        "<div class='btn-linha' style='flex-direction:column;align-items:flex-end;gap:4px'>" +
+          "<button class='btn-mini secundario' data-prod-desmarcar='" + esc(t.id) + "'" +
+            " title='Desfazer conclusão'>↩ desmarcar</button>" +
+          "<button class='btn-mini secundario' data-prod-editar='" + esc(t.id) + "'" +
+            " title='Editar tarefa'>✏ editar</button>" +
+        "</div>" +
       "</li>";
     }
 
@@ -2642,16 +2648,45 @@ function renderProducao(){
   $("listaProducao").innerHTML = html;
 }
 
-// Handler do toggle de concluídas
+// Handlers das tarefas de produção concluídas
 $("listaProducao").addEventListener("click", function(ev){
-  var b = ev.target.closest("[data-toggle-conc]");
-  if (!b) return;
-  var el = document.getElementById("prodConcLista");
-  if (!el) return;
-  el.hidden = !el.hidden;
-  b.textContent = el.hidden
-    ? "► " + b.textContent.replace(/[►▼]\s*/,"")
-    : "▼ " + b.textContent.replace(/[►▼]\s*/,"");
+  // toggle recolher/expandir
+  var btnToggle = ev.target.closest("[data-toggle-conc]");
+  if (btnToggle){
+    var el = document.getElementById("prodConcLista");
+    if (!el) return;
+    el.hidden = !el.hidden;
+    btnToggle.textContent = el.hidden
+      ? "► " + btnToggle.textContent.replace(/[►▼]\s*/,"")
+      : "▼ " + btnToggle.textContent.replace(/[►▼]\s*/,"");
+    return;
+  }
+
+  // desmarcar — volta para pendente
+  var btnDesm = ev.target.closest("[data-prod-desmarcar]");
+  if (btnDesm){
+    var tid = btnDesm.dataset.prodDesmarcar;
+    if (estado.p) delete estado.p[tid];
+    salvar();
+    renderProducao();
+    toast("Tarefa desmarcada.");
+    return;
+  }
+
+  // editar — abre o formulário de edição da tarefa
+  var btnEdit = ev.target.closest("[data-prod-editar]");
+  if (btnEdit){
+    var tid = btnEdit.dataset.prodEditar;
+    var t = tarefas.find(function(x){ return x.id === tid; });
+    if (!t) return;
+    // reutilizar o formulário de edição existente no app
+    preencherForm(t);
+    // rolar até o formulário
+    var formEl = $("tfNome");
+    if (formEl) formEl.scrollIntoView({behavior:"smooth", block:"center"});
+    toast("Edite os campos acima e salve.");
+    return;
+  }
 });
 
 // Handler dos checkboxes de produção (delegado ao checklist)
