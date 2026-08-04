@@ -291,6 +291,22 @@
   }
   .prog-dia-sep:first-child{ margin-top:0; }
 
+  /* ---- tarefas de produção ---- */
+  .prod-feita{ opacity:.75; }
+  .prod-check-feito{
+    width:22px;height:22px;border-radius:6px;background:var(--verde);
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:.85rem;flex-shrink:0;
+  }
+  .prod-sep-conc{
+    list-style:none;padding:6px 14px 2px;border:none;
+  }
+  .prod-toggle-conc{
+    background:none;border:none;color:var(--muted);font-size:.78rem;
+    cursor:pointer;font-family:inherit;padding:0;
+  }
+  .prod-toggle-conc:hover{ color:var(--ink); }
+
   /* ---- tarefas vinculadas na programação ---- */
   .prog-tarefas-vinc{
     margin-top:8px;background:var(--cinza);border-radius:8px;
@@ -1980,7 +1996,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.2.5";
+var VERSAO = "2.2.6";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2564,28 +2580,79 @@ function renderProducao(){
   $("secProducao").hidden = lista.length === 0;
   if (!lista.length) return;
 
-  var html = "";
+  var pendentes = [];
+  var concluidas = [];
+
   lista.forEach(function(t){
     var feita = !!(estado.p && estado.p[t.id]);
-    if (feita) return; // já concluída esta semana — não mostra
+    if (feita) concluidas.push(t);
+    else pendentes.push(t);
+  });
 
+  function itemProd(t, feita){
     var pri = t.prioridade ? "<span class='ponto-pri'></span>" : "";
-    // tag de progId para identificar a brassagem/envase de origem
     var tagProg = t.progId
       ? "<span class='tag' style='font-size:.68rem;background:#F3EBFF;color:#6B00C2;border-color:#C4A0E8'>🏭 prog</span>"
       : "";
 
-    html += "<li class='item'>" +
+    if (feita){
+      // mostrar como concluída com carimbo de data/hora
+      var iso = estado.p[t.id];
+      var dt = iso ? new Date(iso) : null;
+      var carimbo = dt
+        ? ("✓ concluída em " + ("0"+dt.getDate()).slice(-2)+"/"+("0"+(dt.getMonth()+1)).slice(-2) +
+           " às " + ("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2))
+        : "✓ concluída";
+      return "<li class='item prod-feita'>" +
+        "<span class='prod-check-feito'>✓</span>" +
+        "<div class='item-info'>" +
+          "<div class='item-nome' style='text-decoration:line-through;color:var(--muted)'>" +
+            esc(t.nome) + " " + tagProg + "</div>" +
+          "<div class='carimbo'>" + carimbo + "</div>" +
+        "</div>" +
+      "</li>";
+    }
+
+    return "<li class='item'>" +
       "<input type='checkbox' class='check-prod' data-prod='" + esc(t.id) + "'>" +
       "<div class='item-info'>" +
         "<div class='item-nome'>" + pri + esc(t.nome) + " " + tagProg + "</div>" +
         (t.desc ? "<div class='item-desc'>" + esc(t.desc) + "</div>" : "") +
       "</div>" +
     "</li>";
-  });
+  }
 
-  $("listaProducao").innerHTML = html || "<div class='vazio'>Todas concluídas!</div>";
+  var html = pendentes.map(function(t){ return itemProd(t, false); }).join("");
+
+  // Concluídas: mostrar em seção recolhível abaixo das pendentes
+  if (concluidas.length){
+    html += "<li class='prod-sep-conc'>" +
+      "<button class='prod-toggle-conc' data-toggle-conc='1'>" +
+      "▼ " + concluidas.length + " concluída(s)</button>" +
+    "</li>" +
+    "<div id='prodConcLista'>" +
+      concluidas.map(function(t){ return itemProd(t, true); }).join("") +
+    "</div>";
+  }
+
+  if (!pendentes.length && !concluidas.length){
+    html = "<div class='vazio'>Nenhuma tarefa de produção.</div>";
+  }
+
+  $("listaProducao").innerHTML = html;
 }
+
+// Handler do toggle de concluídas
+$("listaProducao").addEventListener("click", function(ev){
+  var b = ev.target.closest("[data-toggle-conc]");
+  if (!b) return;
+  var el = document.getElementById("prodConcLista");
+  if (!el) return;
+  el.hidden = !el.hidden;
+  b.textContent = el.hidden
+    ? "► " + b.textContent.replace(/[►▼]\s*/,"")
+    : "▼ " + b.textContent.replace(/[►▼]\s*/,"");
+});
 
 // Handler dos checkboxes de produção (delegado ao checklist)
 $("listaProducao").addEventListener("change", function(ev){
