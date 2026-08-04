@@ -2007,7 +2007,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.3.0";
+var VERSAO = "2.3.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4618,12 +4618,25 @@ async function metaLer(ano, mes){
 }
 async function metaSalvar(ano, mes, obj){
   // mes interno é 0-11, API usa 1-12
+  // Primeiro ler o que já está salvo, mesclar e salvar o conjunto completo
+  var atual = null;
+  try{
+    var r = await api("/api/metas?ano="+ano+"&mes="+(mes+1));
+    atual = (r.meta && Object.keys(r.meta).length) ? r.meta : {};
+  }catch(e){ atual = {}; }
+
+  // Mesclar: obj substitui os campos que ele traz; mantém o resto
+  var merged = Object.assign({}, atual);
+  if (obj.brass    !== undefined) merged.brass    = obj.brass    || null;
+  if (obj.envTotal !== undefined) merged.envTotal = obj.envTotal || null;
+  if (obj.formatos !== undefined) merged.formatos = obj.formatos || {};
+
   await api("/api/metas", {method:"POST", body:{
-    ano: ano,
-    mes: mes+1,
-    brass:    obj.brass    || null,
-    envTotal: obj.envTotal || null,
-    formatos: obj.formatos || {}
+    ano:      ano,
+    mes:      mes+1,
+    brass:    merged.brass    || null,
+    envTotal: merged.envTotal || null,
+    formatos: merged.formatos || {}
   }});
 }
 
@@ -4844,9 +4857,8 @@ $("btnEditarMetaBrass").addEventListener("click", function(){
 });
 $("btnCancelarMetaBrass").addEventListener("click", function(){ $("metaFormBrass").hidden=true; });
 $("btnSalvarMetaBrass").addEventListener("click", async function(){
-  var meta = (await metaLer(metaAnoAtual,metaMesAtual))||{};
   var v = parseFloat($("metaValorBrass").value)||0;
-  meta.brass = v || undefined;
+  var meta = { brass: v || null };   // só envia o campo brass
   try{
     await metaSalvar(metaAnoAtual,metaMesAtual,meta);
     $("metaFormBrass").hidden=true;
@@ -4862,19 +4874,19 @@ $("btnEditarMetaEnv").addEventListener("click", function(){
 });
 $("btnCancelarMetaEnv").addEventListener("click", function(){ $("metaFormEnv").hidden=true; });
 $("btnSalvarMetaEnv").addEventListener("click", async function(){
-  var meta = (await metaLer(metaAnoAtual,metaMesAtual))||{};
-  meta.envTotal = parseFloat($("metaValorEnvTotal").value)||undefined;
+  var metaEnvTotal = parseFloat($("metaValorEnvTotal").value)||null;
   var campos = {
     "Garrafa 355ml":"metaEnvGar355",
     "PET 500ml":"metaEnv500",
     "PET 1L":"metaEnv1L",
     "PET 2L":"metaEnv2L"
   };
-  meta.formatos = {};
+  var fmts = {};
   Object.keys(campos).forEach(function(fmt){
     var v = parseFloat($(campos[fmt]).value)||0;
-    if(v) meta.formatos[fmt] = v;
+    if(v) fmts[fmt] = v;
   });
+  var meta = { envTotal: metaEnvTotal, formatos: fmts };  // só envia estes campos
   try{
     await metaSalvar(metaAnoAtual,metaMesAtual,meta);
     $("metaFormEnv").hidden=true;
