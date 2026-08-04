@@ -866,6 +866,13 @@
         <ul class="lista" id="listaQuinzenais"></ul>
       </section>
 
+      <!-- Tarefas de produção vinculadas à programação -->
+      <section id="secProducao" hidden>
+        <div class="sec-head"><span class="sec-title">🏭 Produção</span>
+          <span class="sec-sub">tarefas vinculadas à programação</span></div>
+        <ul class="lista" id="listaProducao"></ul>
+      </section>
+
       <section id="secDemanda" hidden>
         <div class="sec-head"><span class="sec-title">🔧 Conforme demanda</span>
           <span class="sec-sub">registre cada ocorrência</span></div>
@@ -1973,7 +1980,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.2.4";
+var VERSAO = "2.2.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2001,7 +2008,7 @@ var DIAS = ["seg","ter","qua","qui","sex"];
 var NOMES = {seg:"Seg",ter:"Ter",qua:"Qua",qui:"Qui",sex:"Sex",sab:"Sáb"};
 var MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 
-function vazio(){ return {d:{},w:{},c:{},l:{},v:{},m:{},h:{},r:{},o:{}}; }
+function vazio(){ return {d:{},w:{},c:{},l:{},v:{},m:{},h:{},r:{},o:{},p:{}}; }
 
 /* Observações nas marcações — qualquer tipo de tarefa */
 function chaveObs(tid, dia){
@@ -2205,7 +2212,7 @@ async function abrirApp(){
     return t.vinculo || t.pop || t.paramCodigo;
   })){
     carregarBase().then(function(){
-      renderSemanais(); renderQuinzenais(); renderDemanda();
+      renderSemanais(); renderQuinzenais(); renderProducao(); renderDemanda();
     });
   }
   if (sessao.papel === "admin") await carregarEquipe();
@@ -2392,6 +2399,7 @@ function renderTudo(){
   renderDiarias();
   renderSemanais();
   renderQuinzenais();
+  renderProducao();
   renderDemanda();
   renderLembretes();
   renderProgresso();
@@ -2550,6 +2558,56 @@ function renderQuinzenais(){
   });
   $("listaQuinzenais").innerHTML = html;
 }
+
+function renderProducao(){
+  var lista = porFreq("producao");
+  $("secProducao").hidden = lista.length === 0;
+  if (!lista.length) return;
+
+  var html = "";
+  lista.forEach(function(t){
+    var feita = !!(estado.p && estado.p[t.id]);
+    if (feita) return; // já concluída esta semana — não mostra
+
+    var pri = t.prioridade ? "<span class='ponto-pri'></span>" : "";
+    // tag de progId para identificar a brassagem/envase de origem
+    var tagProg = t.progId
+      ? "<span class='tag' style='font-size:.68rem;background:#F3EBFF;color:#6B00C2;border-color:#C4A0E8'>🏭 prog</span>"
+      : "";
+
+    html += "<li class='item'>" +
+      "<input type='checkbox' class='check-prod' data-prod='" + esc(t.id) + "'>" +
+      "<div class='item-info'>" +
+        "<div class='item-nome'>" + pri + esc(t.nome) + " " + tagProg + "</div>" +
+        (t.desc ? "<div class='item-desc'>" + esc(t.desc) + "</div>" : "") +
+      "</div>" +
+    "</li>";
+  });
+
+  $("listaProducao").innerHTML = html || "<div class='vazio'>Todas concluídas!</div>";
+}
+
+// Handler dos checkboxes de produção (delegado ao checklist)
+$("listaProducao").addEventListener("change", function(ev){
+  var cb = ev.target.closest(".check-prod");
+  if (!cb) return;
+  var tid = cb.dataset.prod;
+  if (cb.checked){
+    estado.p = estado.p || {};
+    estado.p[tid] = new Date().toISOString();
+    salvar();
+    // animar e remover o item da lista
+    var li = cb.closest("li");
+    if (li){ li.style.opacity="0"; li.style.transition=".3s"; }
+    setTimeout(function(){
+      renderProducao();
+      // verificar se a seção ficou vazia
+      $("secProducao").hidden = !$("listaProducao").innerHTML ||
+        $("listaProducao").innerHTML.indexOf("item") < 0;
+    }, 300);
+    toast("Tarefa de produção concluída.");
+  }
+});
 
 function renderDemanda(){
   var lista = porFreq("demanda");
@@ -3460,7 +3518,7 @@ $("btnTaAutoCriar").addEventListener("click", async function(){
         para: para,
         nome: sugestoes[i] + (_taCtx.titulo ? " — "+_taCtx.titulo : ""),
         desc: _taCtx.dia ? "Previsto: "+_taCtx.dia : "",
-        freq: "demanda",
+        freq: "producao",
         data: _taCtx.dataISO || "",
         lembrete: "",
         critica: false,
@@ -5089,6 +5147,7 @@ var MAPA_FREQ = {
   "semanal":"semanal",
   "quinzenal":"quinzenal",
   "conforme demanda":"demanda", "demanda":"demanda",
+  "producao":"producao",
   "lembrete":"lembrete", "lembrete programado":"lembrete"
 };
 var MAPA_DIA = {
