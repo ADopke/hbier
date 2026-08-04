@@ -1996,7 +1996,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.2.7";
+var VERSAO = "2.2.8";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2673,18 +2673,42 @@ $("listaProducao").addEventListener("click", function(ev){
     return;
   }
 
-  // editar — abre o formulário de edição da tarefa
+  // editar — preenche o formulário da aba Minhas Tarefas e navega até ele
   var btnEdit = ev.target.closest("[data-prod-editar]");
   if (btnEdit){
     var tid = btnEdit.dataset.prodEditar;
     var t = tarefas.find(function(x){ return x.id === tid; });
-    if (!t) return;
-    // reutilizar o formulário de edição existente no app
-    preencherForm(t);
-    // rolar até o formulário
-    var formEl = $("tfNome");
-    if (formEl) formEl.scrollIntoView({behavior:"smooth", block:"center"});
-    toast("Edite os campos acima e salve.");
+    if (!t){ toast("Tarefa não encontrada.", "erro"); return; }
+
+    // Navegar para a aba Minhas Tarefas
+    var abaBtn = document.querySelector(".abas button[data-aba='tarefas']");
+    if (abaBtn) abaBtn.click();
+
+    // Preencher o formulário (mesmo código do botão editar normal)
+    editando = t.id;
+    $("tfNome").value       = t.nome;
+    $("tfDesc").value       = t.desc || "";
+    $("tfFreq").value       = t.freq;
+    $("tfDia").value        = t.dia  || "";
+    $("tfData").value       = t.data || "";
+    $("tfLembrete").value   = t.lembrete || "";
+    $("tfFreq").dispatchEvent(new Event("change"));
+    $("tfVinculo").value    = t.vinculo || "";
+    $("tfVinculo").dispatchEvent(new Event("change"));
+    if (t.vinculoCampo) $("tfVinculoCampo").value = t.vinculoCampo;
+    $("tfMedicao").checked  = !!t.medicao;
+    $("tfMedicao").dispatchEvent(new Event("change"));
+    $("tfUnidade").value    = t.unidade      || "";
+    $("tfParam").value      = t.paramCodigo  || "";
+    $("tfPop").value        = t.pop          || "";
+    $("tfCritica").value    = t.critica    ? "1" : "";
+    $("tfPrioridade").value = t.prioridade ? "1" : "";
+    $("tituloForm").textContent       = "✏️ Editando tarefa";
+    $("btnSalvarTarefa").textContent  = "Salvar alterações";
+    $("btnCancelarEdicao").hidden     = false;
+    $("campoPara").hidden             = true;
+    window.scrollTo({top: 0, behavior: "smooth"});
+    toast("Tarefa aberta para edição — altere e salve.");
     return;
   }
 });
