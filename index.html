@@ -2007,7 +2007,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.3.4";
+var VERSAO = "2.3.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4631,16 +4631,13 @@ async function metaSalvar(ano, mes, obj){
   if (obj.envTotal !== undefined) merged.envTotal = obj.envTotal || null;
   if (obj.formatos !== undefined) merged.formatos = obj.formatos || {};
 
-  var resposta = await api("/api/metas", {method:"POST", body:{
+  await api("/api/metas", {method:"POST", body:{
     ano:      ano,
     mes:      mes+1,
     brass:    merged.brass    || null,
     envTotal: merged.envTotal || null,
     formatos: merged.formatos || {}
   }});
-  // DEBUG temporário — remover após confirmar
-  console.log("[metas] salvo:", JSON.stringify(resposta));
-  toast("Salvo: brass="+(merged.brass||"—")+" env="+(merged.envTotal||"—"), "ok");
 }
 
 function atualizarLabelsMetaMes(){
@@ -4679,9 +4676,6 @@ async function carregarMetas(){
   atualizarLabelsMetaMes();
   var semanas = semanasDoMes(metaAnoAtual, metaMesAtual);
   var meta = (await metaLer(metaAnoAtual, metaMesAtual)) || {};
-  // DEBUG
-  toast("Carregado: brass="+(meta.brass||"—")+" env="+(meta.envTotal||"—"), "ok");
-
   // Carregar programação de todas as semanas do mês em paralelo
   var resultados = await Promise.all(semanas.map(function(seg){
     return api("/api/prog?semana="+chaveSemanaData(seg)).catch(function(){ return {itens:[]}; });
@@ -4723,16 +4717,29 @@ async function carregarMetas(){
       }
 
       if (it.tipo === "brassagem"){
-        var v = parseFloat((it.resultado.volume||"").replace(",",".")) || 0;
+        // Resultado real tem prioridade; se não há resultado usa o volume previsto
+        var v = 0;
+        if (it.resultado && it.resultado.volume){
+          v = parseFloat((it.resultado.volume+"").replace(",",".")) || 0;
+        } else if (it.volPrev){
+          v = parseFloat((it.volPrev+"").replace(",",".")) || 0;
+          if (v) semTemPrevisto = true;
+        }
         volumeBrassado += v;
         semVol += v;
       } else if (it.tipo === "envase"){
-        var q = parseFloat(it.resultado.qtdEnvasada||0) || 0;
+        var q = 0;
+        if (it.resultado && it.resultado.qtdEnvasada){
+          q = parseFloat(it.resultado.qtdEnvasada||0) || 0;
+        } else if (it.qtd){
+          q = parseFloat((it.qtd+"").replace(",",".")) || 0;
+          if (q) semTemPrevisto = true;
+        }
         qtdEnvasada += q;
         semQtd += q;
         // acumular por formato
         var fmt = it.formato || "";
-        if (fmt){
+        if (fmt && q){
           if (!porFormato[fmt]) porFormato[fmt] = {qtd:0, litros:0};
           porFormato[fmt].qtd += q;
           var lf = (LITROS_FORMATO[fmt]||0) * q;
@@ -4779,10 +4786,7 @@ function renderBarra(realizado, metaVal, unidade, temPrevisto){
 }
 
 function renderMetaBrassagem(meta, volumeBrassado, temPrevisto){
-  var _html = renderBarra(volumeBrassado, meta.brass, "L", temPrevisto);
-  var _el = $("metaBarraBrass");
-  toast("brass="+meta.brass+" el="+(_el?"ok":"NULL")+" vol="+volumeBrassado, "ok");
-  if (_el) _el.innerHTML = _html;
+  $("metaBarraBrass").innerHTML = renderBarra(volumeBrassado, meta.brass, "L", temPrevisto);
 }
 
 function renderMetaEnvase(meta, qtdEnvasada, litrosEnvasados, porFormato, temPrevisto){
