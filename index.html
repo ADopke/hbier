@@ -2007,7 +2007,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.3.1";
+var VERSAO = "2.3.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4631,13 +4631,16 @@ async function metaSalvar(ano, mes, obj){
   if (obj.envTotal !== undefined) merged.envTotal = obj.envTotal || null;
   if (obj.formatos !== undefined) merged.formatos = obj.formatos || {};
 
-  await api("/api/metas", {method:"POST", body:{
+  var resposta = await api("/api/metas", {method:"POST", body:{
     ano:      ano,
     mes:      mes+1,
     brass:    merged.brass    || null,
     envTotal: merged.envTotal || null,
     formatos: merged.formatos || {}
   }});
+  // DEBUG temporário — remover após confirmar
+  console.log("[metas] salvo:", JSON.stringify(resposta));
+  toast("Salvo: brass="+(merged.brass||"—")+" env="+(merged.envTotal||"—"), "ok");
 }
 
 function atualizarLabelsMetaMes(){
@@ -4753,28 +4756,32 @@ async function carregarMetas(){
   renderMetaFormularios(meta);
 }
 
-function renderBarra(realizado, metaVal, unidade){
+function renderBarra(realizado, metaVal, unidade, temPrevisto){
   if (!metaVal) return "<div style='color:var(--muted);font-size:.82rem;padding:4px 0'>Meta não definida — clique em ✏ definir meta</div>";
   var pct = Math.round(realizado/metaVal*100);
   var classe = pct >= 100 ? "acima" : (pct >= 80 ? "atingida" : "");
+  var labelExtra = temPrevisto
+    ? " <span style='font-size:.72rem;color:#8B6914;background:#FFF8E1;border:1px solid #E6C84A;border-radius:4px;padding:1px 6px'>previsto</span>"
+    : "";
+  var fillStyle = temPrevisto ? "width:"+Math.min(100,pct)+"%;opacity:.6;background:#8B6914" : "width:"+Math.min(100,pct)+"%";
   return "<div class='meta-barra-wrap'>"+
     "<div class='meta-barra-numeros'>"+
-      "<span class='meta-barra-realizado'>"+fmtNum(realizado)+" "+unidade+"</span>"+
+      "<span class='meta-barra-realizado'>"+fmtNum(realizado)+" "+unidade+labelExtra+"</span>"+
       "<span class='meta-barra-meta'>meta: "+fmtNum(metaVal)+" "+unidade+"</span>"+
     "</div>"+
     "<div class='meta-barra-bg'>"+
-      "<div class='meta-barra-fill "+classe+"' style='width:"+Math.min(100,pct)+"%'></div>"+
+      "<div class='meta-barra-fill "+classe+"' style='"+fillStyle+"'></div>"+
     "</div>"+
-    "<div class='meta-pct'>"+pct+"% atingido"+(pct>=100?" 🎉":"")+"</div>"+
+    "<div class='meta-pct'>"+pct+"% "+(temPrevisto?"previsto":"atingido")+(pct>=100&&!temPrevisto?" 🎉":"")+"</div>"+
   "</div>";
 }
 
-function renderMetaBrassagem(meta, volumeBrassado){
-  $("metaBarraBrass").innerHTML = renderBarra(volumeBrassado, meta.brass, "L");
+function renderMetaBrassagem(meta, volumeBrassado, temPrevisto){
+  $("metaBarraBrass").innerHTML = renderBarra(volumeBrassado, meta.brass, "L", temPrevisto);
 }
 
-function renderMetaEnvase(meta, qtdEnvasada, litrosEnvasados, porFormato){
-  var html = renderBarra(qtdEnvasada, meta.envTotal, "un");
+function renderMetaEnvase(meta, qtdEnvasada, litrosEnvasados, porFormato, temPrevisto){
+  var html = renderBarra(qtdEnvasada, meta.envTotal, "un", temPrevisto);
 
   // detalhes por formato
   var formatos = Object.keys(porFormato);
