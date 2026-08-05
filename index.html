@@ -2073,7 +2073,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.3.8";
+var VERSAO = "2.3.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4201,7 +4201,8 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
       if (it.formato)      detalhe += "<span class='item-desc'>"+esc(it.formato)+"</span> ";
       if (it.qtd)          detalhe += "<span class='item-desc'>Prev: "+esc(it.qtd)+"</span>";
     } else {
-      if (it.tanque)       detalhe += "<span class='item-desc'>Tanque: "+esc(it.tanque)+"</span>";
+      if (it.tanque)   detalhe += "<span class='item-desc'>Tanque: "+esc(it.tanque)+"</span>";
+      if (it.volPrev)  detalhe += "<span class='item-desc' style='color:var(--verde);font-weight:600'>Prev: "+esc(it.volPrev)+" L</span>";
     }
 
     var resultado = isEnvase
@@ -4762,24 +4763,23 @@ async function carregarMetas(){
     return api("/api/prog?semana="+chaveSemanaData(seg)).catch(function(){ return {itens:[]}; });
   }));
 
-  // Somar realizados
-  var volumeBrassado = 0;    // litros (do resultado)
-  var qtdEnvasada    = 0;    // unidades (do resultado)
-  var litrosEnvasados= 0;    // litros (calculado por formato)
-  var porFormato     = {};   // formato → {qtd, litros}
+  // Acumuladores separados: previsto = o que foi programado, realizado = resultado real lançado
+  var volRealizado   = 0;   // litros brassados (resultado lançado)
+  var volPrevisto    = 0;   // litros previstos (volPrev do item)
+  var qtdRealizada   = 0;   // unidades envasadas (resultado lançado)
+  var qtdPrevista    = 0;   // unidades previstas (qtd do item)
+  var litrosEnvasados= 0;
+  var porFormato     = {};
   var detalhesSemanas= [];
-
   var totalTemPrevisto = false;
 
   semanas.forEach(function(seg, i){
     var r = resultados[i];
     var itens = r.itens || [];
-    var semVol = 0, semQtd = 0;
-    var semTemPrevisto = false;
+    var semVolReal = 0, semVolPrev = 0, semQtdReal = 0, semQtdPrev = 0;
 
     itens.forEach(function(it){
-      // Verificar se o item pertence ao mês/ano da meta
-      // Usar dataISO do item se disponível, senão calcular pela semana + dia
+      // Filtrar pelo mês/ano da meta usando dataISO ou dia da semana
       var dataItem = null;
       if (it.dataISO) {
         dataItem = new Date(it.dataISO + "T00:00:00");
@@ -4790,90 +4790,108 @@ async function carregarMetas(){
           dataItem = new Date(seg); dataItem.setDate(seg.getDate() + off);
         }
       } else {
-        // sem data definida — usar a segunda-feira da semana como referência
         dataItem = new Date(seg);
       }
-
-      // só conta se a data do item cair no mês/ano selecionado
       if (dataItem && (dataItem.getMonth() !== metaMesAtual || dataItem.getFullYear() !== metaAnoAtual)) {
-        return; // item de outro mês — pular
+        return;
       }
 
       if (it.tipo === "brassagem"){
-        // Resultado real tem prioridade; se não há resultado usa o volume previsto
-        var v = 0;
+        // Previsto: sempre soma o volPrev se existir
+        if (it.volPrev){
+          var vp = parseFloat((it.volPrev+"").replace(",",".")) || 0;
+          volPrevisto += vp;
+          semVolPrev  += vp;
+          if (vp) totalTemPrevisto = true;
+        }
+        // Realizado: soma o volume do resultado se existir
         if (it.resultado && it.resultado.volume){
-          v = parseFloat((it.resultado.volume+"").replace(",",".")) || 0;
-        } else if (it.volPrev){
-          v = parseFloat((it.volPrev+"").replace(",",".")) || 0;
-          if (v) semTemPrevisto = true;
+          var vr = parseFloat((it.resultado.volume+"").replace(",",".")) || 0;
+          volRealizado += vr;
+          semVolReal   += vr;
         }
-        volumeBrassado += v;
-        semVol += v;
       } else if (it.tipo === "envase"){
-        var q = 0;
-        if (it.resultado && it.resultado.qtdEnvasada){
-          q = parseFloat(it.resultado.qtdEnvasada||0) || 0;
-        } else if (it.qtd){
-          q = parseFloat((it.qtd+"").replace(",",".")) || 0;
-          if (q) semTemPrevisto = true;
+        // Previsto: qtd do item
+        if (it.qtd){
+          var qp = parseFloat((it.qtd+"").replace(",",".")) || 0;
+          qtdPrevista += qp;
+          semQtdPrev  += qp;
+          if (qp) totalTemPrevisto = true;
         }
-        qtdEnvasada += q;
-        semQtd += q;
-        // acumular por formato
-        var fmt = it.formato || "";
-        if (fmt && q){
-          if (!porFormato[fmt]) porFormato[fmt] = {qtd:0, litros:0};
-          porFormato[fmt].qtd += q;
-          var lf = (LITROS_FORMATO[fmt]||0) * q;
-          porFormato[fmt].litros += lf;
-          litrosEnvasados += lf;
+        // Realizado: qtd do resultado
+        if (it.resultado && it.resultado.qtdEnvasada){
+          var qr = parseFloat(it.resultado.qtdEnvasada||0) || 0;
+          qtdRealizada += qr;
+          semQtdReal   += qr;
+          var fmt = it.formato || "";
+          if (fmt && qr){
+            if (!porFormato[fmt]) porFormato[fmt] = {qtd:0, litros:0};
+            porFormato[fmt].qtd += qr;
+            var lf = (LITROS_FORMATO[fmt]||0) * qr;
+            porFormato[fmt].litros += lf;
+            litrosEnvasados += lf;
+          }
         }
       }
     });
 
-    if (semTemPrevisto) totalTemPrevisto = true;
     var fim = new Date(seg); fim.setDate(fim.getDate()+6);
     var label = seg.getDate()+" "+MESES_CURTO[seg.getMonth()]+" – "+
                 fim.getDate()+" "+MESES_CURTO[fim.getMonth()];
-    detalhesSemanas.push({label:label, vol:semVol, qtd:semQtd,
-      pctBrass: meta.brass ? Math.min(100, Math.round(semVol/meta.brass*100)) : null,
-      pctEnv:   meta.envTotal ? Math.min(100, Math.round(semQtd/meta.envTotal*100)) : null
+    detalhesSemanas.push({
+      label:label,
+      volReal: semVolReal, volPrev: semVolPrev,
+      qtdReal: semQtdReal, qtdPrev: semQtdPrev,
+      pctBrass: meta.brass ? Math.min(100, Math.round(semVolReal/meta.brass*100)) : null,
+      pctEnv:   meta.envTotal ? Math.min(100, Math.round(semQtdReal/meta.envTotal*100)) : null
     });
   });
 
-  renderMetaBrassagem(meta, volumeBrassado, totalTemPrevisto);
-  renderMetaEnvase(meta, qtdEnvasada, litrosEnvasados, porFormato, totalTemPrevisto);
+  renderMetaBrassagem(meta, volRealizado, volPrevisto);
+  renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porFormato);
   renderMetaSemanas(detalhesSemanas, meta);
   renderMetaFormularios(meta);
 }
 
-function renderBarra(realizado, metaVal, unidade, temPrevisto){
+function renderBarra(realizado, previsto, metaVal, unidade){
   if (!metaVal) return "<div style='color:var(--muted);font-size:.82rem;padding:4px 0'>Meta não definida — clique em ✏ definir meta</div>";
-  var pct = Math.round(realizado/metaVal*100);
-  var classe = pct >= 100 ? "acima" : (pct >= 80 ? "atingida" : "");
-  var labelExtra = temPrevisto
-    ? " <span style='font-size:.72rem;color:#8B6914;background:#FFF8E1;border:1px solid #E6C84A;border-radius:4px;padding:1px 6px'>previsto</span>"
-    : "";
-  var fillStyle = temPrevisto ? "width:"+Math.min(100,pct)+"%;opacity:.6;background:#8B6914" : "width:"+Math.min(100,pct)+"%";
-  return "<div class='meta-barra-wrap'>"+
-    "<div class='meta-barra-numeros'>"+
-      "<span class='meta-barra-realizado'>"+fmtNum(realizado)+" "+unidade+labelExtra+"</span>"+
-      "<span class='meta-barra-meta'>meta: "+fmtNum(metaVal)+" "+unidade+"</span>"+
+  var pctReal = Math.round(realizado/metaVal*100);
+  var pctPrev = previsto ? Math.round(previsto/metaVal*100) : 0;
+  var classeReal = pctReal >= 100 ? "acima" : (pctReal >= 80 ? "atingida" : "");
+  var html = "<div class='meta-barra-wrap'>";
+
+  // Linha realizado
+  html += "<div class='meta-barra-numeros'>"+
+    "<span class='meta-barra-realizado'>✅ Realizado: "+fmtNum(realizado)+" "+unidade+"</span>"+
+    "<span class='meta-barra-meta'>meta: "+fmtNum(metaVal)+" "+unidade+"</span>"+
+  "</div>"+
+  "<div class='meta-barra-bg'>"+
+    "<div class='meta-barra-fill "+classeReal+"' style='width:"+Math.min(100,pctReal)+"%'></div>"+
+  "</div>"+
+  "<div class='meta-pct'>"+pctReal+"% atingido"+(pctReal>=100?" 🎉":"")+"</div>";
+
+  // Linha previsto (só se existir)
+  if (previsto > 0){
+    html += "<div class='meta-barra-numeros' style='margin-top:8px'>"+
+      "<span style='font-size:.8rem;color:#8B6914;font-weight:600'>📋 Previsto: "+fmtNum(previsto)+" "+unidade+"</span>"+
+      "<span class='meta-barra-meta'>falta: "+fmtNum(Math.max(0,metaVal-realizado))+" "+unidade+"</span>"+
     "</div>"+
-    "<div class='meta-barra-bg'>"+
-      "<div class='meta-barra-fill "+classe+"' style='"+fillStyle+"'></div>"+
+    "<div class='meta-barra-bg' style='background:#FEF3C7'>"+
+      "<div class='meta-barra-fill' style='width:"+Math.min(100,pctPrev)+"%;background:#E6A817;opacity:.8'></div>"+
     "</div>"+
-    "<div class='meta-pct'>"+pct+"% "+(temPrevisto?"previsto":"atingido")+(pct>=100&&!temPrevisto?" 🎉":"")+"</div>"+
-  "</div>";
+    "<div class='meta-pct' style='color:#8B6914'>"+pctPrev+"% previsto no mês</div>";
+  }
+
+  html += "</div>";
+  return html;
 }
 
-function renderMetaBrassagem(meta, volumeBrassado, temPrevisto){
-  $("metaBarraBrass").innerHTML = renderBarra(volumeBrassado, meta.brass, "L", temPrevisto);
+function renderMetaBrassagem(meta, volRealizado, volPrevisto){
+  $("metaBarraBrass").innerHTML = renderBarra(volRealizado, volPrevisto, meta.brass, "L");
 }
 
-function renderMetaEnvase(meta, qtdEnvasada, litrosEnvasados, porFormato, temPrevisto){
-  var html = renderBarra(qtdEnvasada, meta.envTotal, "un", temPrevisto);
+function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porFormato){
+  var html = renderBarra(qtdRealizada, qtdPrevista, meta.envTotal, "un");
 
   // detalhes por formato
   var formatos = Object.keys(porFormato);
@@ -4904,15 +4922,17 @@ function renderMetaEnvase(meta, qtdEnvasada, litrosEnvasados, porFormato, temPre
 
 function renderMetaSemanas(semanas, meta){
   $("metaSemanas").innerHTML = semanas.map(function(s){
+    var temQualquer = s.volReal||s.volPrev||s.qtdReal||s.qtdPrev;
     return "<div class='meta-semana-linha'>"+
       "<span class='meta-semana-label'>"+esc(s.label)+"</span>"+
       "<span class='meta-semana-vals'>"+
-        (s.vol?"🍺 "+fmtNum(s.vol)+" L":"")+
-        (s.vol&&s.qtd?" · ":"")+
-        (s.qtd?"📦 "+fmtNum(s.qtd)+" un":"")+
-        (!s.vol&&!s.qtd?"<span style='color:var(--muted)'>sem lançamento</span>":"")+
+        (s.volReal?"✅ "+fmtNum(s.volReal)+" L ":"")+
+        (s.volPrev?"<span style='color:#8B6914'>📋 "+fmtNum(s.volPrev)+" L prev</span> ":"")+
+        (s.qtdReal?"📦 "+fmtNum(s.qtdReal)+" un ":"")+
+        (s.qtdPrev?"<span style='color:#8B6914'>📋 "+fmtNum(s.qtdPrev)+" un prev</span>":"")+
+        (!temQualquer?"<span style='color:var(--muted)'>sem lançamento</span>":"")+
       "</span>"+
-      (meta.brass&&s.vol?
+      (meta.brass&&s.volReal?
         "<div class='meta-semana-barra'>"+
           "<div class='meta-semana-fill' style='width:"+Math.min(100,s.pctBrass)+"%'></div>"+
         "</div>":"<div class='meta-semana-barra'></div>")+
