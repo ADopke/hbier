@@ -91,8 +91,9 @@ export default protegido(async function handler(req, res) {
     };
 
     if (item.tipo === "brassagem") {
-      item.estilo = (dados.estilo || "").trim();
-      item.tanque  = (dados.tanque  || "").trim();
+      item.estilo   = (dados.estilo  || "").trim();
+      item.tanque   = (dados.tanque  || "").trim();
+      item.volPrev  = (dados.volPrev || "").trim();
     } else {
       item.produto      = (dados.produto      || "").trim();
       item.lote         = (dados.lote         || "").trim();
@@ -119,8 +120,9 @@ export default protegido(async function handler(req, res) {
     it.obs = (dados.obs || "").trim();
 
     if (it.tipo === "brassagem") {
-      it.estilo = (dados.estilo || "").trim();
-      it.tanque  = (dados.tanque  || "").trim();
+      it.estilo   = (dados.estilo  || "").trim();
+      it.tanque   = (dados.tanque  || "").trim();
+      it.volPrev  = (dados.volPrev || "").trim();
     } else {
       it.produto      = (dados.produto      || "").trim();
       it.lote         = (dados.lote         || "").trim();
