@@ -2007,7 +2007,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.3.3";
+var VERSAO = "2.3.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4779,7 +4779,10 @@ function renderBarra(realizado, metaVal, unidade, temPrevisto){
 }
 
 function renderMetaBrassagem(meta, volumeBrassado, temPrevisto){
-  $("metaBarraBrass").innerHTML = renderBarra(volumeBrassado, meta.brass, "L", temPrevisto);
+  var _html = renderBarra(volumeBrassado, meta.brass, "L", temPrevisto);
+  var _el = $("metaBarraBrass");
+  toast("brass="+meta.brass+" el="+(_el?"ok":"NULL")+" vol="+volumeBrassado, "ok");
+  if (_el) _el.innerHTML = _html;
 }
 
 function renderMetaEnvase(meta, qtdEnvasada, litrosEnvasados, porFormato, temPrevisto){
