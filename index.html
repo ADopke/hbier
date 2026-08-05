@@ -2007,7 +2007,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.3.2";
+var VERSAO = "2.3.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4679,6 +4679,8 @@ async function carregarMetas(){
   atualizarLabelsMetaMes();
   var semanas = semanasDoMes(metaAnoAtual, metaMesAtual);
   var meta = (await metaLer(metaAnoAtual, metaMesAtual)) || {};
+  // DEBUG
+  toast("Carregado: brass="+(meta.brass||"—")+" env="+(meta.envTotal||"—"), "ok");
 
   // Carregar programação de todas as semanas do mês em paralelo
   var resultados = await Promise.all(semanas.map(function(seg){
