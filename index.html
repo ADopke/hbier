@@ -398,6 +398,45 @@
   .pr-obs{margin-top:7px;font-size:.78rem;color:var(--muted);font-style:italic}
 
   /* ---- programação de produção ---- */
+  /* Cards de programação por tipo */
+  .prog-item-brassagem{
+    border-left:5px solid var(--verde) !important;
+    background:linear-gradient(to right,#E9F5EC 0%,#fff 60%);
+  }
+  .prog-item-brassagem .prog-tipo-header{
+    background:var(--verde);color:#fff;
+    margin:-14px -14px 10px -14px;padding:7px 12px;
+    display:flex;align-items:center;gap:8px;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.88rem;text-transform:uppercase;letter-spacing:.05em;
+    border-radius:10px 10px 0 0;
+  }
+  .prog-item-envase{
+    border-left:5px solid #003E99 !important;
+    background:linear-gradient(to right,#E8F0FF 0%,#fff 60%);
+  }
+  .prog-item-envase .prog-tipo-header{
+    background:#003E99;color:#fff;
+    margin:-14px -14px 10px -14px;padding:7px 12px;
+    display:flex;align-items:center;gap:8px;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.88rem;text-transform:uppercase;letter-spacing:.05em;
+    border-radius:10px 10px 0 0;
+  }
+  .prog-item-barril{
+    border-left:5px solid #7A4500 !important;
+    background:linear-gradient(to right,#FFF3E8 0%,#fff 60%);
+  }
+  .prog-item-barril .prog-tipo-header{
+    background:#7A4500;color:#fff;
+    margin:-14px -14px 10px -14px;padding:7px 12px;
+    display:flex;align-items:center;gap:8px;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.88rem;text-transform:uppercase;letter-spacing:.05em;
+    border-radius:10px 10px 0 0;
+  }
+  .prog-tipo-icone{ font-size:1.1rem; }
+
   .prog-item{
     display:flex;align-items:flex-start;justify-content:space-between;
     gap:10px;padding:10px 14px;border-bottom:1px solid var(--linha);
@@ -2034,7 +2073,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.3.7";
+var VERSAO = "2.3.8";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4118,13 +4157,18 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
       var linhasBarrilHtml = (it.linhas||[]).map(function(l){
         return "<span class='barril-chip'>"+esc(l.formato)+" × "+l.qtd+" = <b>"+fmtNum(l.subtotal)+" L</b></span>";
       }).join("");
-      htmlTotal += "<div class='prog-item' style='border-left:3px solid #7A4500'>"+
+      htmlTotal += "<div class='prog-item prog-item-barril'>"+
         "<div class='prog-main'>"+
-          "🛢 <span class='prog-estilo'>"+esc(it.produto||"Barril")+"</span>"+
-          "<span class='tag' style='background:#FFF0E0;color:#7A4500;border-color:#D4905A'>Barril</span>"+
-          (it.dia?"<span class='tag'>"+esc(it.dia)+"</span>":"")+
-          "<div style='margin-top:4px'>"+
-            (it.lote?"<span class='item-desc'>Lote: "+esc(it.lote)+"</span> ":"")+
+          "<div class='prog-tipo-header'>"+
+            "<span class='prog-tipo-icone'>🛢</span>"+
+            "<span>Barril</span>"+
+            "<span style='opacity:.7;font-size:.75rem;font-weight:400;margin-left:auto'>"+
+              esc(it.produto||"Barril")+
+            "</span>"+
+          "</div>"+
+          "<span class='prog-estilo' style='font-size:1rem'>"+esc(it.produto||"Barril")+"</span>"+
+          "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:6px'>"+
+            (it.lote?"<span class='item-desc'>Lote: "+esc(it.lote)+"</span>":"")+
             (it.tanque?"<span class='item-desc'>"+esc(it.tanque)+"</span>":"")+
           "</div>"+
           "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center'>"+
@@ -4180,13 +4224,20 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
         : "<div class='prog-dia-sep' style='color:var(--muted)'>Sem dia definido</div>";
     }
 
-    htmlTotal += "<div class='prog-item'>"+
+    var tipoClasse = isEnvase ? "prog-item-envase" : "prog-item-brassagem";
+    htmlTotal += "<div class='prog-item "+tipoClasse+"'>"+
       "<div class='prog-main'>"+
-        icone+" <span class='prog-estilo'>"+esc(it.estilo||it.produto||"—")+"</span>"+
-        "<span class='tag' style='"+tagCor+"'>"+tagTxt+"</span>"+
-        (detalhe?"<div style='margin-top:4px'>"+detalhe+"</div>":"")+
-        (it.obs?"<div class='item-desc'>"+esc(it.obs)+"</div>":"")+
-        "<div style='font-size:.73rem;color:var(--muted);margin-top:3px'>por "+esc(it.criadaPor)+"</div>"+
+        "<div class='prog-tipo-header'>"+
+          "<span class='prog-tipo-icone'>"+icone+"</span>"+
+          "<span>"+tagTxt+"</span>"+
+          "<span style='opacity:.7;font-size:.75rem;font-weight:400;margin-left:auto'>"+
+            esc(it.estilo||it.produto||"—")+
+          "</span>"+
+        "</div>"+
+        "<span class='prog-estilo' style='font-size:1rem'>"+esc(it.estilo||it.produto||"—")+"</span>"+
+        (detalhe?"<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:6px'>"+detalhe+"</div>":"")+
+        (it.obs?"<div class='item-desc' style='margin-top:4px'>"+esc(it.obs)+"</div>":"")+
+        "<div style='font-size:.73rem;color:var(--muted);margin-top:4px'>por "+esc(it.criadaPor)+"</div>"+
         resultado+
         (it.tipo === "brassagem" ? badgeTempoTanque(it.resultado) : "")+
         renderBarrilItem(it, barreis)+
