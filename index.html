@@ -489,6 +489,32 @@
   }
   .meta-semana-fill{ height:100%;background:var(--verde);border-radius:99px; }
 
+  /* ---- alertas de tempo no tanque ---- */
+  .alerta-tanque-wrap{
+    padding:10px 14px;display:flex;flex-direction:column;gap:8px;
+  }
+  .alerta-tanque-wrap:empty{ display:none; }
+  .alerta-tanque{
+    display:flex;align-items:flex-start;gap:10px;padding:10px 12px;
+    border-radius:10px;border-left:4px solid;font-size:.83rem;
+  }
+  .alerta-tanque.amarelo{
+    background:#FFFBEA;border-color:#E6A817;color:#7A5500;
+  }
+  .alerta-tanque.vermelho{
+    background:#FEF2F2;border-color:#DC2626;color:#7F1D1D;
+  }
+  .alerta-tanque .at-icone{ font-size:1.2rem;flex-shrink:0;margin-top:1px; }
+  .alerta-tanque .at-body{ flex:1; }
+  .alerta-tanque .at-titulo{ font-weight:700;margin-bottom:2px; }
+  .alerta-tanque .at-sub{ opacity:.8;font-size:.78rem; }
+  .alerta-tanque .at-dias{
+    font-family:'Barlow Condensed',sans-serif;font-weight:800;
+    font-size:1.1rem;flex-shrink:0;align-self:center;
+  }
+  .alerta-tanque.vermelho .at-dias{ color:#DC2626; }
+  .alerta-tanque.amarelo  .at-dias{ color:#E6A817; }
+
   /* ---- visão ampliada por operador ---- */
   .detalhe-op{
     margin-top:10px;border:1px solid var(--linha);border-radius:8px;
@@ -845,6 +871,7 @@
     <!-- ---------- ABA HOJE ---------- -->
     <div id="painelHoje">
       <div id="alertaCriticos"></div>
+      <div id="alertasTanque"></div>
       <section>
         <div class="sec-head">
           <span class="sec-title">✅ Para fazer hoje</span>
@@ -2007,7 +2034,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.3.6";
+var VERSAO = "2.3.7";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2432,6 +2459,8 @@ function renderTudo(){
   renderProgresso();
   $("secVazio").hidden = tarefas.length > 0;
   renderGerenciar();
+  // alertas de tempo no tanque
+  verificarAlertasTanque().then(function(al){ renderAlertasTanque(al,"alertasTanque"); });
 }
 
 function renderCabecalho(){
@@ -4159,6 +4188,7 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
         (it.obs?"<div class='item-desc'>"+esc(it.obs)+"</div>":"")+
         "<div style='font-size:.73rem;color:var(--muted);margin-top:3px'>por "+esc(it.criadaPor)+"</div>"+
         resultado+
+        (it.tipo === "brassagem" ? badgeTempoTanque(it.resultado) : "")+
         renderBarrilItem(it, barreis)+
         renderProgItem_tarefas(it, tarefasVinculadas)+
         renderChecksLancamento(it, semana)+
@@ -4912,6 +4942,99 @@ $("btnSalvarMetaEnv").addEventListener("click", async function(){
     toast("Meta de envase salva.");
   }catch(e){ toast(e.message,"erro"); }
 });
+
+/* ==================================================================
+   Alertas de tempo no tanque (brassagem)
+   ================================================================== */
+
+var DIAS_AVISO   = 12;   // amarelo
+var DIAS_CRITICO = 15;   // vermelho
+
+function diasNoTanque(isoStr){
+  if (!isoStr) return null;
+  var lancado = new Date(isoStr);
+  var hoje    = new Date();
+  // zerar horas para comparar só datas
+  lancado.setHours(0,0,0,0);
+  hoje.setHours(0,0,0,0);
+  return Math.floor((hoje - lancado) / 86400000);
+}
+
+// Busca brassagens com resultado nas últimas 6 semanas e calcula dias no tanque
+async function verificarAlertasTanque(){
+  var alertas = [];
+  var semanas = [];
+  // buscar 6 semanas para trás a partir da semana atual
+  for (var i = 0; i < 6; i++){
+    var seg = new Date(segHoje);
+    seg.setDate(seg.getDate() - i*7);
+    semanas.push(seg);
+  }
+
+  await Promise.all(semanas.map(function(seg){
+    var chSem = seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
+    return api("/api/prog?semana="+chSem).then(function(r){
+      (r.itens||[]).forEach(function(it){
+        if (it.tipo !== "brassagem" || !it.resultado || !it.resultado.em) return;
+        // Só alertar se não tem envase vinculado (tanque ainda cheio)
+        // Critério simples: brassagem sem resultado de envase do mesmo tanque
+        var dias = diasNoTanque(it.resultado.em);
+        if (dias === null || dias < DIAS_AVISO) return;
+        alertas.push({
+          estilo:  it.estilo || "Brassagem",
+          tanque:  it.tanque || "",
+          dia:     it.dia || "",
+          dias:    dias,
+          nivel:   dias >= DIAS_CRITICO ? "vermelho" : "amarelo",
+          semana:  chSem
+        });
+      });
+    }).catch(function(){ return; });
+  }));
+
+  // ordenar do mais crítico para o menos
+  alertas.sort(function(a,b){ return b.dias - a.dias; });
+  return alertas;
+}
+
+function renderAlertasTanque(alertas, destino){
+  var el = $(destino);
+  if (!el) return;
+  if (!alertas || !alertas.length){ el.innerHTML = ""; return; }
+
+  var html = "<div class='alerta-tanque-wrap'>";
+  alertas.forEach(function(a){
+    var icone   = a.nivel === "vermelho" ? "🚨" : "⚠️";
+    var sufixo  = a.dias === 1 ? "dia" : "dias";
+    var msg     = a.nivel === "vermelho"
+      ? "Limite ultrapassado! Verificar urgente."
+      : "Próximo do limite de 15 dias.";
+    html += "<div class='alerta-tanque "+a.nivel+"'>"+
+      "<span class='at-icone'>"+icone+"</span>"+
+      "<div class='at-body'>"+
+        "<div class='at-titulo'>"+esc(a.estilo)+(a.tanque?" — "+esc(a.tanque):"")+"</div>"+
+        "<div class='at-sub'>"+msg+"</div>"+
+      "</div>"+
+      "<div class='at-dias'>"+a.dias+" "+sufixo+"</div>"+
+    "</div>";
+  });
+  html += "</div>";
+  el.innerHTML = html;
+}
+
+// Inserir badge no card de brassagem na programação
+function badgeTempoTanque(resultado){
+  if (!resultado || !resultado.em) return "";
+  var dias = diasNoTanque(resultado.em);
+  if (dias === null || dias < DIAS_AVISO) return "";
+  var nivel = dias >= DIAS_CRITICO ? "vermelho" : "amarelo";
+  var cor   = nivel === "vermelho" ? "#DC2626" : "#E6A817";
+  var bg    = nivel === "vermelho" ? "#FEF2F2" : "#FFFBEA";
+  return "<span style='display:inline-flex;align-items:center;gap:4px;"+
+    "background:"+bg+";color:"+cor+";border:1px solid "+cor+";"+
+    "border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:700;margin-top:6px'>"+
+    (nivel==="vermelho"?"🚨":"⚠️")+" "+dias+" dias no tanque</span>";
+}
 
 /* ==================================================================
    Status dos tanques
