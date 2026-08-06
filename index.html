@@ -1256,6 +1256,8 @@
             <button class="btn mini secundario" id="btnAddEnvase">📦 Envase</button>
             <button class="btn mini" id="btnAddBarril"
               style="background:#7A4500;border-color:#7A4500;color:#fff">🛢 Barril</button>
+            <button class="btn mini" id="btnAddLimpeza"
+              style="background:#065F46;border-color:#065F46;color:#fff">🧹 Limpeza</button>
           </div>
         </div>
       </section>
@@ -1396,8 +1398,19 @@
         <div id="limpModalReg" hidden style="margin:0 14px 14px;padding:14px;
           background:#F0FAF2;border:1.5px solid var(--verde);border-radius:12px">
           <div style="font-weight:700;font-size:.9rem;color:var(--verde);margin-bottom:10px"
-            id="limpModalTitulo">Registrar limpeza</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            id="limpModalTitulo">Atribuir tarefa de limpeza</div>
+
+          <!-- Atribuir a um operador -->
+          <div style="margin-bottom:10px">
+            <label style="font-size:.78rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">
+              👤 Atribuir para</label>
+            <select id="limpFeitoPor" style="width:100%;padding:9px;
+              border:1.5px solid var(--verde);border-radius:7px;font-size:.88rem;font-weight:600">
+              <!-- preenchido por JS -->
+            </select>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
             <div>
               <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">
                 Periodicidade</label>
@@ -1410,27 +1423,33 @@
             </div>
             <div>
               <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">
-                Feito por</label>
-              <select id="limpFeitoPor" style="width:100%;padding:8px;
-                border:1.5px solid var(--linha);border-radius:7px;font-size:.85rem">
-                <!-- preenchido por JS -->
-              </select>
+                Data prevista</label>
+              <input type="date" id="limpData"
+                style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.85rem">
             </div>
           </div>
-          <div style="margin-bottom:10px">
+
+          <div style="margin-bottom:12px">
             <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">
               Observações (opcional)</label>
-            <input type="text" id="limpObs" placeholder="Ex.: encontrado bolor no rodapé, equipamento X com vazamento…"
+            <input type="text" id="limpObs" placeholder="Ex.: limpeza profunda pós-brassagem, CIP do TQ-03…"
               style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.85rem">
           </div>
+
+          <div style="background:#fff;border:1px solid var(--linha);border-radius:8px;
+            padding:8px 12px;margin-bottom:12px;font-size:.78rem;color:var(--muted)">
+            💡 A tarefa aparecerá na seção <b>🏭 Produção</b> do checklist do operador selecionado.
+            Quando concluída, ficará registrada com data/hora e nome.
+          </div>
+
           <div style="display:flex;gap:8px;justify-content:flex-end">
-            <button id="btnLimpCancelar" style="padding:8px 16px;border:1.5px solid var(--linha);
+            <button id="btnLimpCancelar" style="padding:9px 16px;border:1.5px solid var(--linha);
               border-radius:8px;background:#fff;cursor:pointer;font-size:.85rem;font-weight:600">
               Cancelar</button>
-            <button id="btnLimpConfirmar" style="padding:8px 16px;border:none;border-radius:8px;
+            <button id="btnLimpConfirmar" style="padding:9px 16px;border:none;border-radius:8px;
               background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;
               font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">
-              ✓ Confirmar limpeza</button>
+              ➤ Criar tarefa</button>
           </div>
         </div>
 
@@ -1815,6 +1834,101 @@
           background:#7A4500;color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;
           font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">
           Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: limpeza na programação -->
+  <div id="modalLimpezaProg" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.6);
+    display:flex;align-items:center;justify-content:center;z-index:998;padding:16px;overflow-y:auto">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;
+      max-height:92vh;display:flex;flex-direction:column">
+
+      <!-- header verde escuro -->
+      <div style="background:#065F46;color:#fff;padding:14px 16px;
+        border-radius:14px 14px 0 0;flex-shrink:0;display:flex;align-items:center;gap:10px">
+        <div style="flex:1">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;
+            text-transform:uppercase;font-size:1rem">🧹 Limpeza</div>
+          <div style="font-size:.78rem;opacity:.8;margin-top:2px">Atribuir tarefa de limpeza ao checklist do operador</div>
+        </div>
+        <button id="btnLimpProgFechar" style="background:none;border:none;
+          color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">✕</button>
+      </div>
+
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1">
+
+        <!-- Setor -->
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">
+            Setor</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px" id="limpProgSetorGrid">
+            <!-- preenchido por JS -->
+          </div>
+        </div>
+
+        <!-- Itens -->
+        <div id="limpProgItensWrap" hidden>
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">
+            O que foi / será limpo</label>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px" id="limpProgItensGrid">
+            <!-- preenchido por JS -->
+          </div>
+        </div>
+
+        <!-- Operador + periodicidade + data -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label style="font-size:.8rem;font-weight:600;color:#065F46;display:block;margin-bottom:4px">
+              👤 Atribuir para *</label>
+            <select id="limpProgOperador" style="width:100%;padding:9px;
+              border:1.5px solid #065F46;border-radius:8px;font-size:.85rem">
+              <!-- preenchido por JS -->
+            </select>
+          </div>
+          <div>
+            <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">
+              Periodicidade</label>
+            <select id="limpProgPeriodo" style="width:100%;padding:9px;
+              border:1.5px solid var(--linha);border-radius:8px;font-size:.85rem">
+              <option value="diaria">Diária</option>
+              <option value="semanal">Semanal</option>
+              <option value="eventual">Eventual / CIP</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">
+            Data prevista</label>
+          <input type="date" id="limpProgData"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+        </div>
+
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">
+            Observações (opcional)</label>
+          <input type="text" id="limpProgObs" placeholder="Ex.: CIP do TQ-03 pós-brassagem…"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.88rem">
+        </div>
+
+        <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;
+          padding:8px 12px;font-size:.78rem;color:#065F46">
+          💡 A tarefa aparecerá na seção <b>🏭 Produção</b> do checklist do operador.
+          Quando concluída, fica registrada com data/hora e nome.
+        </div>
+      </div>
+
+      <!-- rodapé -->
+      <div style="padding:12px 16px;border-top:1px solid var(--linha);
+        display:flex;gap:8px;justify-content:flex-end;flex-shrink:0">
+        <button id="btnLimpProgCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);
+          border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">
+          Cancelar</button>
+        <button id="btnLimpProgSalvar" style="padding:9px 18px;border:none;border-radius:8px;
+          background:#065F46;color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;
+          font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">
+          ➤ Criar tarefa</button>
       </div>
     </div>
   </div>
@@ -2227,7 +2341,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.4.1";
+var VERSAO = "2.4.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5171,6 +5285,130 @@ $("btnSalvarMetaEnv").addEventListener("click", async function(){
 });
 
 /* ==================================================================
+   Limpeza na Programação (modal)
+   ================================================================== */
+
+var _limpProgSetorAtivo = null;
+var _limpProgItensSel   = [];   // itens selecionados (pode marcar vários)
+
+function abrirModalLimpezaProg(){
+  _limpProgSetorAtivo = null;
+  _limpProgItensSel   = [];
+
+  // Preencher operadores
+  var opts = "<option value=''>— escolher operador —</option>";
+  equipe.forEach(function(u){ opts += "<option value='"+esc(u.login)+"'>"+esc(u.nome||u.login)+"</option>"; });
+  // adicionar o próprio usuário se não estiver na equipe listada
+  if (!equipe.find(function(u){ return u.login===sessao.login; })){
+    opts = "<option value='"+esc(sessao.login)+"'>Eu mesmo (@"+esc(sessao.login)+")</option>"+opts;
+  }
+  $("limpProgOperador").innerHTML = opts;
+
+  // Data padrão = hoje
+  var hoje = new Date();
+  $("limpProgData").value = hoje.getFullYear()+"-"+("0"+(hoje.getMonth()+1)).slice(-2)+"-"+("0"+hoje.getDate()).slice(-2);
+  $("limpProgObs").value = "";
+  $("limpProgPeriodo").value = "eventual";
+  $("limpProgItensWrap").hidden = true;
+
+  // Renderizar grid de setores
+  $("limpProgSetorGrid").innerHTML = LIMP_SETORES.map(function(st){
+    return "<button class='limp-setor-btn' style='font-size:.75rem;padding:8px 4px' "+
+      "data-limp-prog-setor='"+st.id+"'>"+
+      "<span style='font-size:1.1rem'>"+st.icone+"</span>"+
+      "<span>"+esc(st.nome)+"</span>"+
+    "</button>";
+  }).join("");
+
+  $("limpProgItensGrid").innerHTML = "";
+  $("modalLimpezaProg").hidden = false;
+}
+
+function renderLimpProgItens(){
+  if (!_limpProgSetorAtivo) return;
+  $("limpProgItensWrap").hidden = false;
+  $("limpProgItensGrid").innerHTML = LIMP_ITENS.map(function(it){
+    var sel = _limpProgItensSel.includes(it.id);
+    return "<button class='limp-setor-btn"+(sel?" ativo":"")+"' style='font-size:.78rem;padding:8px 4px' "+
+      "data-limp-prog-item='"+it.id+"'>"+
+      "<span style='font-size:1rem'>"+it.icone+"</span>"+
+      "<span>"+esc(it.nome)+"</span>"+
+    "</button>";
+  }).join("");
+}
+
+// Clicks dentro do modal de limpeza da programação
+document.addEventListener("click", function(ev){
+  // selecionar setor
+  var btnSt = ev.target.closest("[data-limp-prog-setor]");
+  if (btnSt){
+    _limpProgSetorAtivo = btnSt.dataset.limpProgSetor;
+    _limpProgItensSel   = [];
+    // destacar setor ativo
+    document.querySelectorAll("[data-limp-prog-setor]").forEach(function(b){
+      b.classList.toggle("ativo", b.dataset.limpProgSetor === _limpProgSetorAtivo);
+    });
+    renderLimpProgItens();
+    return;
+  }
+  // selecionar / desselecionar item (multi)
+  var btnIt = ev.target.closest("[data-limp-prog-item]");
+  if (btnIt){
+    var id = btnIt.dataset.limpProgItem;
+    var idx = _limpProgItensSel.indexOf(id);
+    if (idx >= 0) _limpProgItensSel.splice(idx,1);
+    else          _limpProgItensSel.push(id);
+    renderLimpProgItens();
+    return;
+  }
+});
+
+$("btnAddLimpeza").addEventListener("click", function(){ abrirModalLimpezaProg(); });
+$("btnLimpProgFechar").addEventListener("click",  function(){ $("modalLimpezaProg").hidden=true; });
+$("btnLimpProgCancelar").addEventListener("click", function(){ $("modalLimpezaProg").hidden=true; });
+
+$("btnLimpProgSalvar").addEventListener("click", async function(){
+  if (!_limpProgSetorAtivo){ toast("Selecione o setor.","erro"); return; }
+  if (!_limpProgItensSel.length){ toast("Selecione pelo menos um item.","erro"); return; }
+  var para = $("limpProgOperador").value;
+  if (!para){ toast("Selecione o operador.","erro"); return; }
+
+  var periodo = $("limpProgPeriodo").value;
+  var dataISO = $("limpProgData").value;
+  var obs     = $("limpProgObs").value.trim();
+  var setorObj = LIMP_SETORES.find(function(x){ return x.id===_limpProgSetorAtivo; });
+  var nomeSetor = setorObj ? setorObj.nome : _limpProgSetorAtivo;
+  var periodoLabel = {diaria:"Diária",semanal:"Semanal",eventual:"Eventual/CIP"}[periodo]||periodo;
+
+  var criadas = 0, erros = 0;
+  for (var i=0; i<_limpProgItensSel.length; i++){
+    var itemId  = _limpProgItensSel[i];
+    var itemObj = LIMP_ITENS.find(function(x){ return x.id===itemId; });
+    var nomeItem = itemObj ? itemObj.nome : itemId;
+    var nomeTarefa = "🧹 Limpeza · "+nomeItem+" — "+nomeSetor+" ("+periodoLabel+")";
+    try{
+      await api("/api/tasks",{method:"POST",body:{
+        acao:"criar", para:para, nome:nomeTarefa,
+        desc: obs||"", freq:"producao", data:dataISO,
+        lembrete:"", critica:false, prioridade:false,
+        progId:"limpeza-"+_limpProgSetorAtivo
+      }});
+      // registrar no histórico de limpeza
+      await api("/api/limpeza",{method:"POST",body:{
+        acao:"registrar", setor:_limpProgSetorAtivo, item:itemId,
+        periodicidade:periodo, feitoPor:para, obs:"[TAREFA CRIADA] "+obs
+      }});
+      criadas++;
+    }catch(e){ erros++; }
+  }
+
+  $("modalLimpezaProg").hidden = true;
+  if (criadas) toast(criadas+" tarefa(s) de limpeza criada(s) ✓","ok");
+  if (erros)   toast(erros+" tarefa(s) falharam","erro");
+  atualizarLimpezaProg();
+});
+
+/* ==================================================================
    Aba Limpeza
    ================================================================== */
 
@@ -5363,6 +5601,9 @@ document.addEventListener("click", function(ev){
     var itemObj = LIMP_ITENS.find(function(x){ return x.id===_limpItemAtivo; });
     $("limpModalTitulo").textContent = "Registrar limpeza: "+(itemObj?itemObj.icone+" "+itemObj.nome:_limpItemAtivo);
     $("limpObs").value = "";
+    // data padrão = hoje
+    var hoje = new Date();
+    $("limpData").value = hoje.getFullYear()+"-"+("0"+(hoje.getMonth()+1)).slice(-2)+"-"+("0"+hoje.getDate()).slice(-2);
     $("limpModalReg").hidden = false;
     $("limpModalReg").scrollIntoView({behavior:"smooth",block:"nearest"});
     return;
@@ -5386,20 +5627,57 @@ $("btnLimpCancelar").addEventListener("click", function(){
 
 $("btnLimpConfirmar").addEventListener("click", async function(){
   if (!_limpItemAtivo || !_limpSetorAtivo){ toast("Selecione um item.","erro"); return; }
+
+  var para        = $("limpFeitoPor").value;
+  var periodo     = $("limpPeriodicidade").value;
+  var obs         = $("limpObs").value.trim();
+  var dataISO     = $("limpData").value;  // AAAA-MM-DD
+
+  // Buscar nomes dos objetos para montar o nome da tarefa
+  var setorObj = LIMP_SETORES.find(function(x){ return x.id===_limpSetorAtivo; });
+  var itemObj  = LIMP_ITENS.find(function(x){   return x.id===_limpItemAtivo;  });
+  var nomeSetor = setorObj ? setorObj.nome : _limpSetorAtivo;
+  var nomeItem  = itemObj  ? itemObj.nome  : _limpItemAtivo;
+  var periodoLabel = {diaria:"Diária",semanal:"Semanal",eventual:"Eventual/CIP"}[periodo]||periodo;
+
+  // Nome da tarefa: "🧹 Limpeza · Piso — Brassagem (Semanal)"
+  var nomeTarefa = "🧹 Limpeza · "+nomeItem+" — "+nomeSetor+" ("+periodoLabel+")";
+  var descTarefa = obs || "";
+
+  if (!para){ toast("Selecione o operador.","erro"); return; }
+
   try{
-    await api("/api/limpeza",{method:"POST",body:{
-      acao:           "registrar",
-      setor:          _limpSetorAtivo,
-      item:           _limpItemAtivo,
-      periodicidade:  $("limpPeriodicidade").value,
-      feitoPor:       $("limpFeitoPor").value,
-      obs:            $("limpObs").value.trim()
+    // Criar tarefa de produção no checklist do operador
+    await api("/api/tasks",{method:"POST",body:{
+      acao:       "criar",
+      para:       para,
+      nome:       nomeTarefa,
+      desc:       descTarefa,
+      freq:       "producao",
+      data:       dataISO,
+      lembrete:   "",
+      critica:    false,
+      prioridade: false,
+      progId:     "limpeza-"+_limpSetorAtivo  // vínculo com o setor
     }});
+
+    // Registrar também no histórico de limpeza
+    await api("/api/limpeza",{method:"POST",body:{
+      acao:          "registrar",
+      setor:         _limpSetorAtivo,
+      item:          _limpItemAtivo,
+      periodicidade: periodo,
+      feitoPor:      para,
+      obs:           "[TAREFA CRIADA] "+obs
+    }});
+
     $("limpModalReg").hidden = true;
     _limpItemAtivo = null;
-    toast("Limpeza registrada! ✓","ok");
+
+    var memObj = equipe.find(function(u){ return u.login===para; });
+    var nomeOp = memObj ? (memObj.nome||memObj.login) : para;
+    toast("Tarefa criada para @"+nomeOp+" ✓","ok");
     carregarLimpezaSetor(_limpSetorAtivo);
-    // atualizar status na programação também
     atualizarLimpezaProg();
   }catch(e){ toast(e.message,"erro"); }
 });
