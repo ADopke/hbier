@@ -5553,20 +5553,100 @@ $("btnLimpProgSalvar").addEventListener("click", async function(){
    Aba Limpeza
    ================================================================== */
 
+// Setores e itens conforme Checklist_Limpeza_Setores_HBier.xlsx
 var LIMP_SETORES = [
-  {id:"brassagem",       nome:"Brassagem",         icone:"🍺"},
-  {id:"adega",           nome:"Adega",              icone:"🛢"},
-  {id:"envase",          nome:"Sala de Envase",     icone:"📦"},
-  {id:"recebimento_barris", nome:"Receb. Barris",   icone:"🪣"},
-  {id:"recebimento_mp",  nome:"Receb. MP",          icone:"🌾"}
+  {id:"sala_malte",        nome:"Sala de Malte",             icone:"🌾", responsavel:"Matheus"},
+  {id:"deposito_chopeiras",nome:"Dep. Chopeiras/Cilindros",  icone:"🍺", responsavel:"Jefferson"},
+  {id:"deposito",          nome:"Depósito",                  icone:"📦", responsavel:"Jefferson"},
+  {id:"sala_barris",       nome:"Sala Limpeza de Barris",    icone:"🛢", responsavel:"Alex"},
+  {id:"brassagem",         nome:"Brassagem",                 icone:"🍺", responsavel:"Rhafael"},
+  {id:"adega",             nome:"Adega",                     icone:"🏭", responsavel:"Pablo"},
+  {id:"envase",            nome:"Envase",                    icone:"📦", responsavel:"Leonardo"},
+  {id:"enfardamento",      nome:"Enfardamento",              icone:"📦", responsavel:"Alex"},
+  {id:"sleeve",            nome:"Sleeve",                    icone:"🏷️", responsavel:"Bruno"},
+  {id:"camara_fria",       nome:"Câmara Fria",               icone:"❄️", responsavel:"Alex"},
+  {id:"container",         nome:"Container",                 icone:"🚛", responsavel:"Alex"}
 ];
-var LIMP_ITENS = [
-  {id:"piso",        nome:"Piso",         icone:"⬜", limitesDias:{diaria:1,semanal:7,eventual:30}},
-  {id:"parede",      nome:"Parede",       icone:"🧱", limitesDias:{diaria:1,semanal:7,eventual:30}},
-  {id:"teto",        nome:"Teto",         icone:"🔝", limitesDias:{diaria:1,semanal:7,eventual:30}},
-  {id:"equipamentos",nome:"Equipamentos", icone:"⚙️", limitesDias:{diaria:1,semanal:7,eventual:30}}
-];
-var LIMP_PERIODOS = {diaria:"Diária",semanal:"Semanal",eventual:"Eventual/CIP"};
+
+var LIMP_ITENS_POR_SETOR = {
+  sala_malte:[
+    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
+    {id:"pia",nome:"Pia",freq:"semanal"},{id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},
+    {id:"ralo",nome:"Ralo",freq:"quinzenal"},{id:"maq_funil",nome:"Máquina (Funil)",freq:"a_cada_uso"},
+    {id:"maq_carcaca",nome:"Máquina (Carcaça)",freq:"a_cada_uso"}
+  ],
+  deposito_chopeiras:[
+    {id:"piso",nome:"Piso",freq:"quinzenal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
+    {id:"bancadas",nome:"Bancadas",freq:"quinzenal"}
+  ],
+  deposito:[
+    {id:"piso",nome:"Piso",freq:"quinzenal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
+    {id:"mesas",nome:"Mesas",freq:"quinzenal"},{id:"armarios",nome:"Armários",freq:"quinzenal"}
+  ],
+  sala_barris:[
+    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"quinzenal"},
+    {id:"teto",nome:"Teto",freq:"anual"},{id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},
+    {id:"ralo",nome:"Ralo",freq:"quinzenal"},{id:"maq_soda",nome:"Máquina (Tanque Soda)",freq:"a_cada_uso"},
+    {id:"maq_perac",nome:"Máquina (Tanque Peracético)",freq:"a_cada_uso"},
+    {id:"maq_bocal",nome:"Máquina (Bocal de acoplamento)",freq:"a_cada_uso"},
+    {id:"maq_carcaca",nome:"Máquina (Carcaça)",freq:"semanal"}
+  ],
+  brassagem:[
+    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
+    {id:"pia",nome:"Pia",freq:"quinzenal"},{id:"geladeira",nome:"Geladeira (Interno/Externo)",freq:"quinzenal"},
+    {id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"semanal"},
+    {id:"maquinas",nome:"Máquinas",freq:"a_cada_uso"},{id:"tubulacoes",nome:"Tubulações externas",freq:"quinzenal"},
+    {id:"bancada",nome:"Bancada",freq:"quinzenal"}
+  ],
+  adega:[
+    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
+    {id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},
+    {id:"tanques",nome:"Tanques",freq:"a_cada_uso"},{id:"saca_amostra",nome:"Saca amostra / Escotilha",freq:"a_cada_uso"},
+    {id:"calota",nome:"Calota dos tanques",freq:"anual"},{id:"tubulacoes",nome:"Tubulações externas",freq:"quinzenal"}
+  ],
+  envase:[
+    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
+    {id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},
+    {id:"maq_bicos",nome:"Máquina (Bicos)",freq:"a_cada_uso"},{id:"maq_assoalho",nome:"Máquina (Assoalho)",freq:"a_cada_uso"},
+    {id:"maq_cip",nome:"Máquina (CIP)",freq:"a_cada_uso"},{id:"tubulacoes",nome:"Tubulações externas",freq:"quinzenal"},
+    {id:"bancada",nome:"Bancada de Apoio",freq:"semanal"},{id:"forno_vapor",nome:"Forno Vapor",freq:"quinzenal"},
+    {id:"mesa_acum",nome:"Mesa Acumuladora",freq:"a_cada_uso"}
+  ],
+  enfardamento:[
+    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
+    {id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},
+    {id:"maq_esteira",nome:"Máquinas (Esteira)",freq:"a_cada_uso"},
+    {id:"maq_cabine",nome:"Máquinas (Cabine do Forno)",freq:"a_cada_uso"},
+    {id:"maq_mesa",nome:"Máquina (Mesa Acumuladora)",freq:"a_cada_uso"}
+  ],
+  sleeve:[
+    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
+    {id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},
+    {id:"maq_esteira",nome:"Máquina (Esteira)",freq:"a_cada_uso"},{id:"maq_cabine",nome:"Máquina (Cabine)",freq:"a_cada_uso"},
+    {id:"maq_sensores",nome:"Máquina (Sensores)",freq:"a_cada_uso"},{id:"maq_torpedo",nome:"Máquina (Torpedo)",freq:"a_cada_uso"},
+    {id:"maq_facas",nome:"Máquina (Facas)",freq:"a_cada_uso"},{id:"bancada",nome:"Bancada",freq:"semanal"}
+  ],
+  camara_fria:[
+    {id:"piso",nome:"Piso",freq:"mensal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
+    {id:"teto",nome:"Teto",freq:"mensal"},{id:"porta",nome:"Porta",freq:"mensal"},
+    {id:"rampa",nome:"Rampa",freq:"mensal"}
+  ],
+  container:[
+    {id:"piso",nome:"Piso",freq:"mensal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
+    {id:"teto",nome:"Teto",freq:"mensal"},{id:"porta",nome:"Porta",freq:"mensal"}
+  ]
+};
+
+var LIMP_LIMITE_DIAS = {
+  semanal:7, quinzenal:15, mensal:30, anual:365, a_cada_uso:3, eventual:30
+};
+
+var LIMP_PERIODOS = {
+  semanal:"Semanal", quinzenal:"Quinzenal", mensal:"Mensal",
+  anual:"Anual", a_cada_uso:"A cada uso", eventual:"Eventual/CIP"
+};
+
+var LIMP_ITENS = [];  // compatibilidade — itens carregados por setor
 
 var _limpSetorAtivo = null;
 var _limpItemAtivo  = null;
@@ -5579,11 +5659,12 @@ function limpDiasDesde(isoStr){
   return Math.floor((h-d)/86400000);
 }
 
-function limpStatusDias(dias){
+function limpStatusDias(dias, freq){
   if (dias === null) return "neutro";
-  if (dias === 0)    return "ok";
-  if (dias <= 3)     return "ok";
-  if (dias <= 7)     return "aviso";
+  var limite = (LIMP_LIMITE_DIAS && LIMP_LIMITE_DIAS[freq]) ? LIMP_LIMITE_DIAS[freq] : 7;
+  if (dias === 0)           return "ok";
+  if (dias <= limite*0.7)   return "ok";
+  if (dias <= limite)       return "aviso";
   return "critico";
 }
 
@@ -5610,14 +5691,16 @@ function renderLimpSetores(){
     var resumoSetor = _limpResumo[st.id] || {};
     // status geral do setor = o item mais crítico
     var piorDias = null;
-    LIMP_ITENS.forEach(function(it){
+    var itensSetor = LIMP_ITENS_POR_SETOR[st.id] || [];
+    var piorNorm = null;
+    itensSetor.forEach(function(it){
       var reg = resumoSetor[it.id];
       var dias = reg ? limpDiasDesde(reg.em) : null;
-      if (piorDias === null || (dias !== null && dias > piorDias) || (piorDias === null && dias === null)) {
-        piorDias = dias;
-      }
+      var lim = LIMP_LIMITE_DIAS[it.freq] || 7;
+      var norm = dias === null ? 999 : dias / lim;
+      if (piorNorm === null || norm > piorNorm) piorNorm = norm;
     });
-    var status = limpStatusDias(piorDias);
+    var status = piorNorm===null||piorNorm>=999?"neutro":piorNorm<=0.7?"ok":piorNorm<=1?"aviso":"critico";
     var label  = limpStatusLabel(piorDias);
     var ativo  = _limpSetorAtivo === st.id ? " ativo" : "";
     html += "<button class='limp-setor-btn"+ativo+"' data-limp-setor='"+st.id+"'>"+
@@ -5661,12 +5744,13 @@ async function carregarLimpezaSetor(setorId){
       ultimoPorItem[r.item] = r;
   });
 
-  // Renderizar cards de itens
+  // Renderizar cards de itens do setor
   var htmlItens = "";
-  LIMP_ITENS.forEach(function(it){
+  var itensDoSetor = LIMP_ITENS_POR_SETOR[setorId] || [];
+  itensDoSetor.forEach(function(it){
     var ultimo = ultimoPorItem[it.id];
     var dias   = ultimo ? limpDiasDesde(ultimo.em) : null;
-    var status = limpStatusDias(dias);
+    var status = limpStatusDias(dias, it.freq);
     var label  = limpStatusLabel(dias);
     var labelPeriodo = ultimo ? " · "+LIMP_PERIODOS[ultimo.periodicidade] : "";
     htmlItens += "<div class='limp-item-card'>"+
@@ -5674,8 +5758,9 @@ async function carregarLimpezaSetor(setorId){
         "<div>"+
           "<div class='limp-item-nome'>"+it.icone+" "+esc(it.nome)+"</div>"+
           "<div class='limp-item-ultima'>"+
+            "<span style='background:var(--cinza);border-radius:4px;padding:1px 6px;font-size:.7rem;margin-right:4px'>"+esc(LIMP_PERIODOS[it.freq]||it.freq)+"</span>"+
             (ultimo
-              ? "Última: "+esc(fmtDia(new Date(ultimo.em)))+" por @"+esc(ultimo.nomeFeitoPor||ultimo.feitoPor)+labelPeriodo
+              ? "Última: "+esc(fmtDia(new Date(ultimo.em)))+" por @"+esc(ultimo.nomeFeitoPor||ultimo.feitoPor)
               : "Nunca registrada")+
             (ultimo&&ultimo.obs ? " · "+esc(ultimo.obs.substring(0,40)) : "")+
           "</div>"+
@@ -5713,11 +5798,14 @@ async function carregarLimpezaSetor(setorId){
 
   // Status geral no cabeçalho
   var piorDias = null;
-  Object.values(ultimoPorItem).forEach(function(r){
-    var d = limpDiasDesde(r.em);
-    if (piorDias === null || d > piorDias) piorDias = d;
+  (LIMP_ITENS_POR_SETOR[setorId]||[]).forEach(function(it){
+    var reg = ultimoPorItem[it.id];
+    var d = reg ? limpDiasDesde(reg.em) : null;
+    var lim = LIMP_LIMITE_DIAS[it.freq]||7;
+    var norm = d===null?999:d/lim;
+    if (piorDias===null||norm>piorDias) piorDias=norm;
   });
-  var stLabel = limpStatusDias(piorDias);
+  var stLabel = piorDias===null||piorDias>=999?"neutro":piorDias<=0.7?"ok":piorDias<=1?"aviso":"critico";
   var cores = {ok:"var(--verde)",aviso:"#E6A817",critico:"#DC2626",neutro:"var(--muted)"};
   $("limpSetorStatus").textContent = stLabel === "neutro" ? "sem registros" :
     stLabel === "ok" ? "✓ em dia" :
@@ -5834,12 +5922,16 @@ async function atualizarLimpezaProg(){
     LIMP_SETORES.forEach(function(st){
       var resumoSetor = resumo[st.id]||{};
       var piorDias = null;
-      LIMP_ITENS.forEach(function(it){
+      var itensS = LIMP_ITENS_POR_SETOR[st.id]||[];
+      var piorN = null;
+      itensS.forEach(function(it){
         var reg = resumoSetor[it.id];
-        var dias = reg ? limpDiasDesde(reg.em) : null;
-        if (piorDias === null || (dias !== null && dias > piorDias)) piorDias = dias;
+        var dias = reg?limpDiasDesde(reg.em):null;
+        var lim = LIMP_LIMITE_DIAS[it.freq]||7;
+        var norm = dias===null?999:dias/lim;
+        if (piorN===null||norm>piorN) piorN=norm;
       });
-      var status = limpStatusDias(piorDias);
+      var status = piorN===null||piorN>=999?"neutro":piorN<=0.7?"ok":piorN<=1?"aviso":"critico";
       chips += "<span class='prog-limp-chip "+status+"' data-limp-setor='"+st.id+"' "+
         "title='"+esc(st.nome)+"'>"+st.icone+" "+limpStatusLabel(piorDias)+"</span>";
     });
