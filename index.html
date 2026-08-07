@@ -1326,34 +1326,65 @@
             </div>
             <div class="meta-card-body">
               <div class="meta-form" id="metaFormEnv" hidden>
-                <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">
-                  Meta total de envase (unidades)</label>
-                <div style="display:flex;gap:8px;margin-bottom:10px">
-                  <input type="number" id="metaValorEnvTotal" placeholder="Ex.: 85000 un"
-                    style="flex:1;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+                <!-- 355ml -->
+                <div style="background:#EEF2FF;border-radius:8px;padding:10px 12px;margin-bottom:10px">
+                  <div style="font-size:.8rem;font-weight:700;color:#003E99;margin-bottom:8px">
+                    📦 Garrafa 355ml</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Helles (un)</label>
+                      <input type="number" id="metaEnv355Helles" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Red Ale (un)</label>
+                      <input type="number" id="metaEnv355RedAle" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">IPA (un)</label>
+                      <input type="number" id="metaEnv355IPA" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Sem Álcool (un)</label>
+                      <input type="number" id="metaEnv355SemAlcool" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                  </div>
                 </div>
-                <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:6px">
-                  Por formato (opcional)</label>
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-                  <div>
-                    <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Garrafa 355ml (un)</label>
-                    <input type="number" id="metaEnvGar355" placeholder="0"
-                      style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.88rem">
+                <!-- 500ml -->
+                <div style="background:#EEF2FF;border-radius:8px;padding:10px 12px;margin-bottom:10px">
+                  <div style="font-size:.8rem;font-weight:700;color:#003E99;margin-bottom:8px">
+                    📦 PET 500ml</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Helles (un)</label>
+                      <input type="number" id="metaEnv500Helles" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Red Ale (un)</label>
+                      <input type="number" id="metaEnv500RedAle" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">IPA (un)</label>
+                      <input type="number" id="metaEnv500IPA" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Sem Álcool (un)</label>
+                      <input type="number" id="metaEnv500SemAlcool" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
                   </div>
-                  <div>
-                    <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">PET 500ml (un)</label>
-                    <input type="number" id="metaEnv500" placeholder="0"
-                      style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.88rem">
+                </div>
+                <!-- 1L -->
+                <div style="background:#EEF2FF;border-radius:8px;padding:10px 12px;margin-bottom:10px">
+                  <div style="font-size:.8rem;font-weight:700;color:#003E99;margin-bottom:8px">
+                    📦 PET 1L</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Helles (un)</label>
+                      <input type="number" id="metaEnv1LHelles" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Oktoberfest (un)</label>
+                      <input type="number" id="metaEnv1LOktoberfest" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
                   </div>
+                </div>
+                <!-- 2L -->
+                <div style="background:#EEF2FF;border-radius:8px;padding:10px 12px;margin-bottom:12px">
+                  <div style="font-size:.8rem;font-weight:700;color:#003E99;margin-bottom:8px">
+                    📦 PET 2L</div>
                   <div>
-                    <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">PET 1L (un)</label>
-                    <input type="number" id="metaEnv1L" placeholder="0"
-                      style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.88rem">
-                  </div>
-                  <div>
-                    <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">PET 2L (un)</label>
+                    <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Total (un)</label>
                     <input type="number" id="metaEnv2L" placeholder="0"
-                      style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.88rem">
+                      style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem">
                   </div>
                 </div>
                 <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -2352,7 +2383,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.5.0";
+var VERSAO = "2.5.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5264,7 +5295,8 @@ async function carregarMetas(){
   renderMetaFormularios(meta);
 }
 
-function renderBarra(realizado, previsto, metaVal, unidade){
+function renderBarra(realizado, previsto, metaVal, unidade, rotulo){
+  rotulo = rotulo || "";
   if (!metaVal) return "<div style='color:var(--muted);font-size:.82rem;padding:4px 0'>Meta não definida — clique em ✏ definir meta</div>";
   var pctReal = Math.round(realizado/metaVal*100);
   var pctPrev = previsto ? Math.round(previsto/metaVal*100) : 0;
@@ -5273,7 +5305,7 @@ function renderBarra(realizado, previsto, metaVal, unidade){
 
   // Linha realizado
   html += "<div class='meta-barra-numeros'>"+
-    "<span class='meta-barra-realizado'>✅ Realizado: "+fmtNum(realizado)+" "+unidade+"</span>"+
+    "<span class='meta-barra-realizado'>"+esc(rotulo)+" Realizado: "+fmtNum(realizado)+" "+unidade+"</span>"+
     "<span class='meta-barra-meta'>meta: "+fmtNum(metaVal)+" "+unidade+"</span>"+
   "</div>"+
   "<div class='meta-barra-bg'>"+
@@ -5284,7 +5316,7 @@ function renderBarra(realizado, previsto, metaVal, unidade){
   // Linha previsto (só se existir)
   if (previsto > 0){
     html += "<div class='meta-barra-numeros' style='margin-top:8px'>"+
-      "<span style='font-size:.8rem;color:#8B6914;font-weight:600'>📋 Previsto: "+fmtNum(previsto)+" "+unidade+"</span>"+
+      "<span style='font-size:.8rem;color:#8B6914;font-weight:600'>"+esc(rotulo)+" Previsto: "+fmtNum(previsto)+" "+unidade+"</span>"+
       "<span class='meta-barra-meta'>falta: "+fmtNum(Math.max(0,metaVal-realizado))+" "+unidade+"</span>"+
     "</div>"+
     "<div class='meta-barra-bg' style='background:#FEF3C7'>"+
@@ -5298,31 +5330,73 @@ function renderBarra(realizado, previsto, metaVal, unidade){
 }
 
 function renderMetaBrassagem(meta, volRealizado, volPrevisto){
-  $("metaBarraBrass").innerHTML = renderBarra(volRealizado, volPrevisto, meta.brass, "L");
+  $("metaBarraBrass").innerHTML = renderBarra(volRealizado, volPrevisto, meta.brass, "L", "Brassagem");
 }
 
 function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porFormato){
-  var html = renderBarra(qtdRealizada, qtdPrevista, meta.envTotal, "un");
+  // Barra geral de envase
+  var html = renderBarra(qtdRealizada, qtdPrevista, meta.envTotal, "un", "Envase");
 
-  // detalhes por formato
-  var formatos = Object.keys(porFormato);
-  if (formatos.length || (meta.formatos && Object.keys(meta.formatos).length)){
-    html += "<div class='meta-formatos'>";
-    var todosFormatos = new Set(formatos.concat(Object.keys(meta.formatos||{})));
-    todosFormatos.forEach(function(fmt){
-      var real = (porFormato[fmt]||{}).qtd || 0;
-      var metaFmt = (meta.formatos||{})[fmt] || 0;
-      var pct = metaFmt ? Math.min(100, Math.round(real/metaFmt*100)) : null;
-      html += "<div class='meta-formato-linha'>"+
-        "<span class='meta-formato-nome'>"+esc(fmt)+"</span>"+
-        "<span class='meta-formato-realizado'>"+fmtNum(real)+" un</span>"+
-        "<span class='meta-formato-meta'>"+(metaFmt?"meta: "+fmtNum(metaFmt)+" un"+(pct!==null?" ("+pct+"%)":""):"—")+"</span>"+
-      "</div>";
+  // Agrupar por formato×produto — mostrar barras individuais
+  var fmtsMeta = meta.formatos || {};
+  var grupos = {
+    "Garrafa 355ml": ["Garrafa 355ml Helles","Garrafa 355ml Red Ale","Garrafa 355ml IPA","Garrafa 355ml Sem Alcool"],
+    "PET 500ml":     ["PET 500ml Helles","PET 500ml Red Ale","PET 500ml IPA","PET 500ml Sem Alcool"],
+    "PET 1L":        ["PET 1L Helles","PET 1L Oktoberfest"],
+    "PET 2L":        ["PET 2L"]
+  };
+
+  // realizado por produto: vem do porFormato (keyed pelo formato do item, ex: "PET 1L")
+  // mapear do formato do item para cada linha de meta
+  // Como o envase registra só o formato (ex "PET 1L"), o realizado vai para o total do formato
+  // e exibimos o total do formato vs soma das metas dos produtos daquele formato
+
+  var temAlgumaMeta = Object.keys(fmtsMeta).length > 0;
+  var temAlgumReal  = Object.keys(porFormato).length > 0;
+
+  if (temAlgumaMeta || temAlgumReal){
+    html += "<div style='margin-top:12px;display:flex;flex-direction:column;gap:10px'>";
+    Object.keys(grupos).forEach(function(fmt){
+      var produtos = grupos[fmt];
+      var metaFmt = produtos.reduce(function(acc,p){ return acc+(fmtsMeta[p]||0); }, 0);
+      var realFmt = (porFormato[fmt]||{}).qtd || 0;
+      var prevFmt = 0; // previsto do formato
+      if (metaFmt === 0 && realFmt === 0) return; // pular se não tem nada
+
+      html += "<div style='background:#F0F4FF;border-radius:8px;padding:10px 12px'>";
+      html += "<div style='font-weight:700;font-size:.85rem;color:#003E99;margin-bottom:6px'>"+esc(fmt)+"</div>";
+
+      // Se tem meta por produto, mostrar cada um
+      if (metaFmt > 0){
+        produtos.forEach(function(prod){
+          var metaProd = fmtsMeta[prod] || 0;
+          if (!metaProd) return;
+          var nomeProd = prod.replace(fmt+" ",""); // ex: "Helles"
+          var pct = Math.round(realFmt/metaProd*100); // aproximado (real do formato inteiro vs meta do produto)
+          var classe = pct>=100?"acima":pct>=80?"atingida":"";
+          html += "<div style='margin-bottom:6px'>"+
+            "<div class='meta-barra-numeros' style='margin-bottom:3px'>"+
+              "<span style='font-size:.8rem;font-weight:600;color:var(--ink)'>"+esc(nomeProd)+"</span>"+
+              "<span class='meta-barra-meta'>meta: "+fmtNum(metaProd)+" un</span>"+
+            "</div>"+
+            "<div class='meta-barra-bg'>"+
+              "<div class='meta-barra-fill "+classe+"' style='width:"+Math.min(100,pct)+"%'></div>"+
+            "</div>"+
+          "</div>";
+        });
+        // total do formato realizado
+        html += "<div style='font-size:.78rem;color:var(--muted);margin-top:4px'>"+
+          "Realizado no formato: <b style='color:var(--ink)'>"+fmtNum(realFmt)+" un</b> / "+
+          "Meta total: <b>"+fmtNum(metaFmt)+" un</b></div>";
+      } else {
+        // sem meta definida, só mostrar realizado
+        html += "<div style='font-size:.8rem;color:var(--muted)'>Realizado: <b style='color:var(--ink)'>"+fmtNum(realFmt)+" un</b> (sem meta definida)</div>";
+      }
+      html += "</div>";
     });
     html += "</div>";
   }
 
-  // litros totais envasados
   if (litrosEnvasados > 0){
     html += "<div style='margin-top:8px;font-size:.8rem;color:var(--muted)'>"+
       "Volume total envasado: <b style='color:var(--ink)'>"+fmtNum(litrosEnvasados)+" L</b></div>";
@@ -5352,19 +5426,25 @@ function renderMetaSemanas(semanas, meta){
 }
 
 function renderMetaFormularios(meta){
-  // preencher campos do formulário de brassagem
+  // brassagem
   $("metaValorBrass").value = meta.brass || "";
-  // preencher campos de envase
-  $("metaValorEnvTotal").value = meta.envTotal || "";
-  var campos = {
-    "Garrafa 355ml": "metaEnvGar355",
-    "PET 500ml": "metaEnv500",
-    "PET 1L": "metaEnv1L",
-    "PET 2L": "metaEnv2L"
+  // envase — campos individuais por produto×formato
+  var camposEnv = {
+    "Garrafa 355ml Helles":    "metaEnv355Helles",
+    "Garrafa 355ml Red Ale":   "metaEnv355RedAle",
+    "Garrafa 355ml IPA":       "metaEnv355IPA",
+    "Garrafa 355ml Sem Alcool":"metaEnv355SemAlcool",
+    "PET 500ml Helles":        "metaEnv500Helles",
+    "PET 500ml Red Ale":       "metaEnv500RedAle",
+    "PET 500ml IPA":           "metaEnv500IPA",
+    "PET 500ml Sem Alcool":    "metaEnv500SemAlcool",
+    "PET 1L Helles":           "metaEnv1LHelles",
+    "PET 1L Oktoberfest":      "metaEnv1LOktoberfest",
+    "PET 2L":                  "metaEnv2L"
   };
-  Object.keys(campos).forEach(function(fmt){
-    var el = $(campos[fmt]);
-    if (el) el.value = (meta.formatos&&meta.formatos[fmt]) || "";
+  Object.keys(camposEnv).forEach(function(chave){
+    var el = $(camposEnv[chave]);
+    if (el) el.value = (meta.formatos && meta.formatos[chave]) || "";
   });
 }
 
@@ -5400,23 +5480,31 @@ $("btnSalvarMetaBrass").addEventListener("click", async function(){
 // Formulário envase
 $("btnEditarMetaEnv").addEventListener("click", function(){
   $("metaFormEnv").hidden = !$("metaFormEnv").hidden;
-  if(!$("metaFormEnv").hidden) $("metaValorEnvTotal").focus();
+  if(!$("metaFormEnv").hidden) $("metaEnv355Helles").focus();
 });
 $("btnCancelarMetaEnv").addEventListener("click", function(){ $("metaFormEnv").hidden=true; });
 $("btnSalvarMetaEnv").addEventListener("click", async function(){
-  var metaEnvTotal = parseFloat($("metaValorEnvTotal").value)||null;
-  var campos = {
-    "Garrafa 355ml":"metaEnvGar355",
-    "PET 500ml":"metaEnv500",
-    "PET 1L":"metaEnv1L",
+  var camposEnv = {
+    "Garrafa 355ml Helles":"metaEnv355Helles",
+    "Garrafa 355ml Red Ale":"metaEnv355RedAle",
+    "Garrafa 355ml IPA":"metaEnv355IPA",
+    "Garrafa 355ml Sem Alcool":"metaEnv355SemAlcool",
+    "PET 500ml Helles":"metaEnv500Helles",
+    "PET 500ml Red Ale":"metaEnv500RedAle",
+    "PET 500ml IPA":"metaEnv500IPA",
+    "PET 500ml Sem Alcool":"metaEnv500SemAlcool",
+    "PET 1L Helles":"metaEnv1LHelles",
+    "PET 1L Oktoberfest":"metaEnv1LOktoberfest",
     "PET 2L":"metaEnv2L"
   };
   var fmts = {};
-  Object.keys(campos).forEach(function(fmt){
-    var v = parseFloat($(campos[fmt]).value)||0;
-    if(v) fmts[fmt] = v;
+  Object.keys(camposEnv).forEach(function(chave){
+    var v = parseFloat($(camposEnv[chave]).value)||0;
+    if(v) fmts[chave] = v;
   });
-  var meta = { envTotal: metaEnvTotal, formatos: fmts };  // só envia estes campos
+  // total geral = soma de todos os campos
+  var total = Object.values(fmts).reduce(function(a,b){return a+b;},0);
+  var meta = { envTotal: total||null, formatos: fmts };
   try{
     await metaSalvar(metaAnoAtual,metaMesAtual,meta);
     $("metaFormEnv").hidden=true;
