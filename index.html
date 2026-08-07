@@ -2383,7 +2383,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.5.1";
+var VERSAO = "2.5.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5411,10 +5411,11 @@ function renderMetaSemanas(semanas, meta){
     return "<div class='meta-semana-linha'>"+
       "<span class='meta-semana-label'>"+esc(s.label)+"</span>"+
       "<span class='meta-semana-vals'>"+
-        (s.volReal?"✅ "+fmtNum(s.volReal)+" L ":"")+
-        (s.volPrev?"<span style='color:#8B6914'>📋 "+fmtNum(s.volPrev)+" L prev</span> ":"")+
-        (s.qtdReal?"📦 "+fmtNum(s.qtdReal)+" un ":"")+
-        (s.qtdPrev?"<span style='color:#8B6914'>📋 "+fmtNum(s.qtdPrev)+" un prev</span>":"")+
+        (s.volReal?"Brassagem Realizado: "+fmtNum(s.volReal)+" L ":"")+
+        (s.volPrev?"<span style='color:#8B6914'> Brassagem Previsto: "+fmtNum(s.volPrev)+" L</span> ":"")+
+        (s.volReal&&(s.qtdReal||s.qtdPrev)?" · ":"")+
+        (s.qtdReal?"Envase Realizado: "+fmtNum(s.qtdReal)+" un ":"")+
+        (s.qtdPrev?"<span style='color:#8B6914'>Envase Previsto: "+fmtNum(s.qtdPrev)+" un</span>":"")+
         (!temQualquer?"<span style='color:var(--muted)'>sem lançamento</span>":"")+
       "</span>"+
       (meta.brass&&s.volReal?
