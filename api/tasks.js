@@ -10,7 +10,7 @@ import {
   novoId,
 } from "./_lib.js";
 
-const FREQS = ["diaria", "semanal", "quinzenal", "demanda", "producao", "lembrete"];
+const FREQS = ["diaria", "semanal", "quinzenal", "demanda", "producao", "limpeza", "lembrete"];
 
 export default protegido(async function handler(req, res) {
   const sessao = await exigirLogin(req, res);
