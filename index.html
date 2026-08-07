@@ -1004,6 +1004,17 @@
         <div class="grade-wrap"><table id="tabelaDiaria"></table></div>
       </section>
 
+      <!-- Tarefas de limpeza — logo após produção -->
+      <section id="secLimpezaTarefas" hidden style="border-left:4px solid #065F46;
+        margin-left:0;background:linear-gradient(to right,#F0FDF4 0%,transparent 40%);">
+        <div class="sec-head" style="background:#065F46;color:#fff;border-radius:0;
+          margin:0;padding:10px 16px;">
+          <span class="sec-title" style="color:#fff;font-size:.95rem">🧹 Limpeza</span>
+          <span class="sec-sub" style="color:rgba(255,255,255,.75)">tarefas de limpeza atribuídas</span>
+        </div>
+        <ul class="lista" id="listaLimpezaTarefas" style="padding:4px 0"></ul>
+      </section>
+
       <!-- Tarefas de produção — logo após as diárias -->
       <section id="secProducao" hidden style="border-left:4px solid var(--verde);
         margin-left:0;background:linear-gradient(to right,#E9F3EB 0%,transparent 40%);">
@@ -2341,7 +2352,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.4.3";
+var VERSAO = "2.4.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2369,7 +2380,7 @@ var DIAS = ["seg","ter","qua","qui","sex"];
 var NOMES = {seg:"Seg",ter:"Ter",qua:"Qua",qui:"Qui",sex:"Sex",sab:"Sáb"};
 var MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 
-function vazio(){ return {d:{},w:{},c:{},l:{},v:{},m:{},h:{},r:{},o:{},p:{}}; }
+function vazio(){ return {d:{},w:{},c:{},l:{},v:{},m:{},h:{},r:{},o:{},p:{},lz:{}}; }
 
 /* Observações nas marcações — qualquer tipo de tarefa */
 function chaveObs(tid, dia){
@@ -2573,7 +2584,7 @@ async function abrirApp(){
     return t.vinculo || t.pop || t.paramCodigo;
   })){
     carregarBase().then(function(){
-      renderSemanais(); renderQuinzenais(); renderProducao(); renderDemanda();
+      renderSemanais(); renderQuinzenais(); renderLimpezaTarefas(); renderProducao(); renderDemanda();
     });
   }
   if (sessao.papel === "admin") await carregarEquipe();
@@ -2760,6 +2771,7 @@ function renderTudo(){
   renderDiarias();
   renderSemanais();
   renderQuinzenais();
+  renderLimpezaTarefas();
   renderProducao();
   renderDemanda();
   renderLembretes();
@@ -2922,6 +2934,70 @@ function renderQuinzenais(){
   $("listaQuinzenais").innerHTML = html;
 }
 
+function renderLimpezaTarefas(){
+  var lista = porFreq("limpeza");
+  $("secLimpezaTarefas").hidden = lista.length === 0;
+  if (!lista.length) return;
+
+  var pendentes  = [];
+  var concluidas = [];
+  lista.forEach(function(t){
+    var feita = !!(estado.lz && estado.lz[t.id]);
+    if (feita) concluidas.push(t);
+    else       pendentes.push(t);
+  });
+
+  function itemLimp(t, feita){
+    var tagProg = t.progId
+      ? "<span class='tag' style='font-size:.68rem;background:#D1FAE5;color:#065F46;border-color:#34D399'>🧹</span>"
+      : "";
+    if (feita){
+      var iso = estado.lz[t.id];
+      var dt  = iso ? new Date(iso) : null;
+      var carimbo = dt
+        ? "✓ concluída em "+("0"+dt.getDate()).slice(-2)+"/"+("0"+(dt.getMonth()+1)).slice(-2)+
+          " às "+("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2)
+        : "✓ concluída";
+      return "<li class='item prod-feita'>"+
+        "<span class='prod-check-feito' style='background:#065F46'>✓</span>"+
+        "<div class='item-info'>"+
+          "<div class='item-nome' style='text-decoration:line-through;color:var(--muted)'>"+
+            esc(t.nome)+" "+tagProg+"</div>"+
+          "<div class='carimbo'>"+carimbo+"</div>"+
+        "</div>"+
+        "<div class='btn-linha' style='flex-direction:column;align-items:flex-end;gap:4px'>"+
+          "<button class='btn-mini secundario' data-limpz-desmarcar='"+esc(t.id)+"'>↩ desmarcar</button>"+
+          "<button class='btn-mini secundario' data-limpz-editar='"+esc(t.id)+"'>✏ editar</button>"+
+        "</div>"+
+      "</li>";
+    }
+    return "<li class='item'>"+
+      "<input type='checkbox' class='check-limpz' data-limpz='"+esc(t.id)+"'>"+
+      "<div class='item-info'>"+
+        "<div class='item-nome'>"+esc(t.nome)+" "+tagProg+"</div>"+
+        (t.desc?"<div class='item-desc'>"+esc(t.desc)+"</div>":"")+
+      "</div>"+
+    "</li>";
+  }
+
+  var html = pendentes.map(function(t){ return itemLimp(t,false); }).join("");
+
+  if (concluidas.length){
+    html += "<li class='prod-sep-conc'>"+
+      "<button class='prod-toggle-conc' data-toggle-limpz='1'>"+
+      "▼ "+concluidas.length+" concluída(s)</button>"+
+    "</li>"+
+    "<div id='limpzConcLista'>"+
+      concluidas.map(function(t){ return itemLimp(t,true); }).join("")+
+    "</div>";
+  }
+
+  if (!pendentes.length && !concluidas.length){
+    html = "<div class='vazio'>Nenhuma tarefa de limpeza.</div>";
+  }
+  $("listaLimpezaTarefas").innerHTML = html;
+}
+
 function renderProducao(){
   var lista = porFreq("producao");
   $("secProducao").hidden = lista.length === 0;
@@ -2994,6 +3070,71 @@ function renderProducao(){
 
   $("listaProducao").innerHTML = html;
 }
+
+// Handlers da seção de Limpeza
+$("listaLimpezaTarefas").addEventListener("change", function(ev){
+  var cb = ev.target.closest(".check-limpz");
+  if (!cb) return;
+  var tid = cb.dataset.limpz;
+  if (cb.checked){
+    estado.lz = estado.lz || {};
+    estado.lz[tid] = new Date().toISOString();
+    salvar();
+    var li = cb.closest("li");
+    if (li){ li.style.opacity="0"; li.style.transition=".3s"; }
+    setTimeout(function(){ renderLimpezaTarefas(); }, 300);
+    toast("Limpeza concluída ✓", "ok");
+  }
+});
+
+$("listaLimpezaTarefas").addEventListener("click", function(ev){
+  var btnToggle = ev.target.closest("[data-toggle-limpz]");
+  if (btnToggle){
+    var el = document.getElementById("limpzConcLista");
+    if (!el) return;
+    el.hidden = !el.hidden;
+    btnToggle.textContent = el.hidden
+      ? "► " + btnToggle.textContent.replace(/[\u25ba\u25bc]\s*/,"")
+      : "▼ " + btnToggle.textContent.replace(/[\u25ba\u25bc]\s*/,"");
+    return;
+  }
+  var btnDesm = ev.target.closest("[data-limpz-desmarcar]");
+  if (btnDesm){
+    var tid = btnDesm.dataset.limpzDesmarcar;
+    if (estado.lz) delete estado.lz[tid];
+    salvar(); renderLimpezaTarefas();
+    toast("Tarefa desmarcada.");
+    return;
+  }
+  var btnEdit = ev.target.closest("[data-limpz-editar]");
+  if (btnEdit){
+    var tid = btnEdit.dataset.limpzEditar;
+    var t = tarefas.find(function(x){ return x.id===tid; });
+    if (!t) return;
+    var abaBtn = document.querySelector(".abas button[data-aba='tarefas']");
+    if (abaBtn) abaBtn.click();
+    editando = t.id;
+    $("tfNome").value=$("tfDesc").value="";
+    $("tfNome").value=t.nome; $("tfDesc").value=t.desc||"";
+    $("tfFreq").value=t.freq; $("tfDia").value=t.dia||"";
+    $("tfData").value=t.data||""; $("tfLembrete").value=t.lembrete||"";
+    $("tfFreq").dispatchEvent(new Event("change"));
+    $("tfVinculo").value=t.vinculo||"";
+    $("tfVinculo").dispatchEvent(new Event("change"));
+    if(t.vinculoCampo) $("tfVinculoCampo").value=t.vinculoCampo;
+    $("tfMedicao").checked=!!t.medicao;
+    $("tfMedicao").dispatchEvent(new Event("change"));
+    $("tfUnidade").value=t.unidade||""; $("tfParam").value=t.paramCodigo||"";
+    $("tfPop").value=t.pop||""; $("tfCritica").value=t.critica?"1":"";
+    $("tfPrioridade").value=t.prioridade?"1":"";
+    $("tituloForm").textContent="✏️ Editando tarefa";
+    $("btnSalvarTarefa").textContent="Salvar alterações";
+    $("btnCancelarEdicao").hidden=false; $("campoPara").hidden=true;
+    window.scrollTo({top:0,behavior:"smooth"});
+    toast("Tarefa aberta para edição.");
+    return;
+  }
+});
 
 // Handlers das tarefas de produção concluídas
 $("listaProducao").addEventListener("click", function(ev){
@@ -5653,7 +5794,7 @@ $("btnLimpConfirmar").addEventListener("click", async function(){
       para:       para,
       nome:       nomeTarefa,
       desc:       descTarefa,
-      freq:       "producao",
+      freq:       "limpeza",
       data:       dataISO,
       lembrete:   "",
       critica:    false,
@@ -6217,6 +6358,7 @@ var MAPA_FREQ = {
   "quinzenal":"quinzenal",
   "conforme demanda":"demanda", "demanda":"demanda",
   "producao":"producao",
+  "limpeza":"limpeza",
   "lembrete":"lembrete", "lembrete programado":"lembrete"
 };
 var MAPA_DIA = {
