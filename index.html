@@ -2383,7 +2383,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.5.3";
+var VERSAO = "2.5.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5853,7 +5853,7 @@ async function carregarLimpezaSetor(setorId){
     htmlItens += "<div class='limp-item-card'>"+
       "<div class='limp-item-header' data-limp-item='"+it.id+"'>"+
         "<div>"+
-          "<div class='limp-item-nome'>"+it.icone+" "+esc(it.nome)+"</div>"+
+          "<div class='limp-item-nome'>"+esc(it.nome)+"</div>"+
           "<div class='limp-item-ultima'>"+
             "<span style='background:var(--cinza);border-radius:4px;padding:1px 6px;font-size:.7rem;margin-right:4px'>"+esc(LIMP_PERIODOS[it.freq]||it.freq)+"</span>"+
             (ultimo
@@ -5883,7 +5883,7 @@ async function carregarLimpezaSetor(setorId){
       htmlHist += "<div class='limp-hist-item'>"+
         "<div class='limp-hist-check'>✓</div>"+
         "<div class='limp-hist-info'>"+
-          "<div class='limp-hist-titulo'>"+(itemObj?itemObj.icone+" "+esc(itemObj.nome):esc(r.item))+" · "+esc(LIMP_PERIODOS[r.periodicidade]||r.periodicidade)+"</div>"+
+          "<div class='limp-hist-titulo'>"+(itemObj?esc(itemObj.nome):esc(r.item))+" · "+esc(LIMP_PERIODOS[r.periodicidade]||r.periodicidade)+"</div>"+
           "<div class='limp-hist-sub'>"+carimbo+" por @"+esc(r.nomeFeitoPor||r.feitoPor)+
             (r.obs?" · "+esc(r.obs.substring(0,50)):"")+"</div>"+
         "</div>"+
