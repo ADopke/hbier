@@ -2383,7 +2383,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.5.2";
+var VERSAO = "2.5.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5557,11 +5557,11 @@ function abrirModalLimpezaProg(){
 function renderLimpProgItens(){
   if (!_limpProgSetorAtivo) return;
   $("limpProgItensWrap").hidden = false;
-  $("limpProgItensGrid").innerHTML = LIMP_ITENS.map(function(it){
+  var itensSetor = LIMP_ITENS_POR_SETOR[_limpProgSetorAtivo] || [];
+  $("limpProgItensGrid").innerHTML = itensSetor.map(function(it){
     var sel = _limpProgItensSel.includes(it.id);
     return "<button class='limp-setor-btn"+(sel?" ativo":"")+"' style='font-size:.78rem;padding:8px 4px' "+
       "data-limp-prog-item='"+it.id+"'>"+
-      "<span style='font-size:1rem'>"+it.icone+"</span>"+
       "<span>"+esc(it.nome)+"</span>"+
     "</button>";
   }).join("");
@@ -5613,7 +5613,7 @@ $("btnLimpProgSalvar").addEventListener("click", async function(){
   var criadas = 0, erros = 0;
   for (var i=0; i<_limpProgItensSel.length; i++){
     var itemId  = _limpProgItensSel[i];
-    var itemObj = LIMP_ITENS.find(function(x){ return x.id===itemId; });
+    var itemObj = limpAcharItem(itemId, _limpProgSetorAtivo);
     var nomeItem = itemObj ? itemObj.nome : itemId;
     var nomeTarefa = "🧹 Limpeza · "+nomeItem+" — "+nomeSetor+" ("+periodoLabel+")";
     try{
@@ -5736,6 +5736,14 @@ var LIMP_PERIODOS = {
 };
 
 var LIMP_ITENS = [];  // compatibilidade — itens carregados por setor
+
+// Buscar item pelo id dentro de um setor ou em todos
+function limpAcharItem(itemId, setorId){
+  var lista = setorId
+    ? (LIMP_ITENS_POR_SETOR[setorId] || [])
+    : Object.values(LIMP_ITENS_POR_SETOR).reduce(function(a,v){ return a.concat(v); }, []);
+  return lista.find(function(x){ return x.id === itemId; });
+}
 
 var _limpSetorAtivo = null;
 var _limpItemAtivo  = null;
@@ -5867,7 +5875,7 @@ async function carregarLimpezaSetor(setorId){
   } else {
     var top20 = registros.slice(0,20);
     top20.forEach(function(r){
-      var itemObj = LIMP_ITENS.find(function(x){ return x.id===r.item; });
+      var itemObj = limpAcharItem(r.item, setorId);
       var dt = new Date(r.em);
       var carimbo = ("0"+dt.getDate()).slice(-2)+"/"+("0"+(dt.getMonth()+1)).slice(-2)+
         " "+("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2);
@@ -5916,8 +5924,8 @@ document.addEventListener("click", function(ev){
   var btnItem = ev.target.closest("[data-limp-item]");
   if (btnItem && $("painelLimpeza") && !$("painelLimpeza").hidden){
     _limpItemAtivo = btnItem.dataset.limpItem;
-    var itemObj = LIMP_ITENS.find(function(x){ return x.id===_limpItemAtivo; });
-    $("limpModalTitulo").textContent = "Registrar limpeza: "+(itemObj?itemObj.icone+" "+itemObj.nome:_limpItemAtivo);
+    var itemObj = limpAcharItem(_limpItemAtivo, _limpSetorAtivo);
+    $("limpModalTitulo").textContent = "Registrar limpeza: "+(itemObj?itemObj.nome:_limpItemAtivo);
     $("limpObs").value = "";
     // data padrão = hoje
     var hoje = new Date();
@@ -5953,7 +5961,7 @@ $("btnLimpConfirmar").addEventListener("click", async function(){
 
   // Buscar nomes dos objetos para montar o nome da tarefa
   var setorObj = LIMP_SETORES.find(function(x){ return x.id===_limpSetorAtivo; });
-  var itemObj  = LIMP_ITENS.find(function(x){   return x.id===_limpItemAtivo;  });
+  var itemObj  = limpAcharItem(_limpItemAtivo, _limpSetorAtivo);
   var nomeSetor = setorObj ? setorObj.nome : _limpSetorAtivo;
   var nomeItem  = itemObj  ? itemObj.nome  : _limpItemAtivo;
   var periodoLabel = {diaria:"Diária",semanal:"Semanal",eventual:"Eventual/CIP"}[periodo]||periodo;
