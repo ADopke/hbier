@@ -2383,7 +2383,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.5.4";
+var VERSAO = "2.5.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5619,7 +5619,7 @@ $("btnLimpProgSalvar").addEventListener("click", async function(){
     try{
       await api("/api/tasks",{method:"POST",body:{
         acao:"criar", para:para, nome:nomeTarefa,
-        desc: obs||"", freq:"producao", data:dataISO,
+        desc: obs||"", freq:"limpeza", data:dataISO,
         lembrete:"", critica:false, prioridade:false,
         progId:"limpeza-"+_limpProgSetorAtivo
       }});
@@ -5940,8 +5940,10 @@ document.addEventListener("click", function(ev){
     if (!confirm("Remover este registro de limpeza?")) return;
     api("/api/limpeza",{method:"POST",body:{
       acao:"remover", id:btnDel.dataset.limpDel, setor:btnDel.dataset.limpDelSetor
-    }}).then(function(){ carregarLimpezaSetor(_limpSetorAtivo); })
-      .catch(function(e){ toast(e.message,"erro"); });
+    }}).then(function(){
+      carregarLimpezaSetor(_limpSetorAtivo);
+      toast("Registro removido.");
+    }).catch(function(e){ toast(e.message,"erro"); });
     return;
   }
 });
