@@ -30,42 +30,6 @@ export default protegido(async function handler(req, res) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(semana))
       return erro(res, 400, "Semana inválida (AAAA-MM-DD).");
     const itens = (await ler(chave(semana))) || [];
-
-    // ?tarefas=1 — devolve também as tarefas vinculadas a cada item,
-    // agrupadas por progId, buscando em todos os membros da equipe
-    if (req.query.tarefas === "1") {
-      const userlist = (await ler("userlist")) || [];
-      const porProgId = {};   // { [progId]: [{login, nome, taskNome, taskId}] }
-
-      for (const u of userlist) {
-        const tasks = (await ler(`tasks:${u}`)) || [];
-        for (const t of tasks) {
-          if (!t.progId) continue;
-          if (!porProgId[t.progId]) porProgId[t.progId] = [];
-          porProgId[t.progId].push({
-            login: u,
-            taskId: t.id,
-            taskNome: t.nome,
-            freq: t.freq,
-            data: t.data || "",
-          });
-        }
-      }
-      // buscar registros de barril:
-      // 1. vinculados a itens específicos
-      // 2. independentes (chave "barril-{semana}" — envase barril pelo botão principal)
-      const barreis = {};
-      for (const it of itens) {
-        const regs = (await ler(`barril:${semana}:${it.id}`)) || [];
-        if (regs.length) barreis[it.id] = regs;
-      }
-      const chaveBarrilIndep = `barril-${semana}`;
-      const regsIndep = (await ler(`barril:${semana}:${chaveBarrilIndep}`)) || [];
-      if (regsIndep.length) barreis[chaveBarrilIndep] = regsIndep;
-
-      return res.json({ ok: true, semana, itens, tarefasVinculadas: porProgId, barreis });
-    }
-
     return res.json({ ok: true, semana, itens });
   }
 
@@ -81,6 +45,10 @@ export default protegido(async function handler(req, res) {
     if (!podeProgramar(sessao.papel))
       return erro(res, 403, "Apenas admin ou gestor podem programar.");
 
+    // LOG TEMPORÁRIO DE DEBUG
+    console.log("[prog criar] dados.tipo recebido:", JSON.stringify(dados.tipo));
+    console.log("[prog criar] body completo:", JSON.stringify(dados));
+
     const item = {
       id: novoId(),
       tipo: dados.tipo === "envase" ? "envase" : "brassagem",
@@ -91,9 +59,8 @@ export default protegido(async function handler(req, res) {
     };
 
     if (item.tipo === "brassagem") {
-      item.estilo   = (dados.estilo  || "").trim();
-      item.tanque   = (dados.tanque  || "").trim();
-      item.volPrev  = (dados.volPrev || "").trim();
+      item.estilo = (dados.estilo || "").trim();
+      item.tanque  = (dados.tanque  || "").trim();
     } else {
       item.produto      = (dados.produto      || "").trim();
       item.lote         = (dados.lote         || "").trim();
@@ -104,7 +71,7 @@ export default protegido(async function handler(req, res) {
 
     itens.push(item);
     await gravar(chave(semana), itens);
-    return res.json({ ok: true, itens });
+    return res.json({ ok: true, itens, _debug_tipo_recebido: dados.tipo, _debug_tipo_salvo: item.tipo });
   }
 
   /* ---------- editar ---------- */
@@ -120,9 +87,8 @@ export default protegido(async function handler(req, res) {
     it.obs = (dados.obs || "").trim();
 
     if (it.tipo === "brassagem") {
-      it.estilo   = (dados.estilo  || "").trim();
-      it.tanque   = (dados.tanque  || "").trim();
-      it.volPrev  = (dados.volPrev || "").trim();
+      it.estilo = (dados.estilo || "").trim();
+      it.tanque  = (dados.tanque  || "").trim();
     } else {
       it.produto      = (dados.produto      || "").trim();
       it.lote         = (dados.lote         || "").trim();
@@ -143,15 +109,6 @@ export default protegido(async function handler(req, res) {
     const filtrado = itens.filter((x) => x.id !== dados.id);
     await gravar(chave(semana), filtrado);
     return res.json({ ok: true, itens: filtrado });
-  }
-
-  /* ---------- remover resultado ---------- */
-  if (dados.acao === "resultado_del") {
-    const idx = itens.findIndex((x) => x.id === dados.id);
-    if (idx < 0) return erro(res, 404, "Item não encontrado.");
-    delete itens[idx].resultado;
-    await gravar(chave(semana), itens);
-    return res.json({ ok: true, item: itens[idx] });
   }
 
   /* ---------- lançar resultado ---------- */
@@ -201,83 +158,6 @@ export default protegido(async function handler(req, res) {
 
     await gravar(chave(semana), itens);
     return res.json({ ok: true, item: itens[idx] });
-  }
-
-  /* ---------- check (toggle BeerSales / Beerbo) ---------- */
-  if (dados.acao === "check") {
-    const idx = itens.findIndex((x) => x.id === dados.id);
-    if (idx < 0) return erro(res, 404, "Item não encontrado.");
-
-    const camposPermitidos = ["lancadoBeerSales", "lancadoBeerbo"];
-    if (!camposPermitidos.includes(dados.campo)) {
-      return erro(res, 400, "Campo inválido.");
-    }
-
-    itens[idx].checks = itens[idx].checks || {};
-    // toggle
-    itens[idx].checks[dados.campo] = !itens[idx].checks[dados.campo];
-
-    // registrar quem marcou e quando
-    itens[idx].checks[dados.campo + "_por"] = sessao.login;
-    itens[idx].checks[dados.campo + "_em"]  = new Date().toISOString();
-
-    await gravar(chave(semana), itens);
-    return res.json({ ok: true, item: itens[idx] });
-  }
-
-  /* ---------- barril (envase de barril) ---------- */
-  if (dados.acao === "barril") {
-    const progId = (dados.progId || "").trim();
-    if (!progId) return erro(res, 400, "progId obrigatório.");
-
-    const registros = (await ler(`barril:${semana}:${progId}`)) || [];
-    registros.push({
-      id: novoId(),
-      produto: (dados.produto || "").trim(),
-      tanque:  (dados.tanque  || "").trim(),
-      lote:    (dados.lote    || "").trim(),
-      dia:     (dados.dia     || "").trim(),
-      dataISO: (dados.dataISO || "").trim(),
-      linhas: Array.isArray(dados.linhas) ? dados.linhas : [],
-      total: Number(dados.total) || 0,
-      lancadoPor: sessao.login,
-      em: new Date().toISOString(),
-    });
-    await gravar(`barril:${semana}:${progId}`, registros);
-    return res.json({ ok: true, registros });
-  }
-
-  /* ---------- barril_check (toggle BeerSales no barril) ---------- */
-  if (dados.acao === "barril_check") {
-    const progId = (dados.progId || "").trim();
-    const id     = (dados.id    || "").trim();
-    const campo  = (dados.campo || "").trim();
-    if (!progId || !id) return erro(res, 400, "progId e id obrigatórios.");
-    if (campo !== "lancadoBeerSales") return erro(res, 400, "Campo inválido.");
-
-    const registros = (await ler(`barril:${semana}:${progId}`)) || [];
-    const idx = registros.findIndex((r) => r.id === id);
-    if (idx < 0) return erro(res, 404, "Registro não encontrado.");
-
-    registros[idx].checks = registros[idx].checks || {};
-    registros[idx].checks[campo] = !registros[idx].checks[campo];
-    registros[idx].checks[campo + "_por"] = sessao.login;
-    registros[idx].checks[campo + "_em"]  = new Date().toISOString();
-
-    await gravar(`barril:${semana}:${progId}`, registros);
-    return res.json({ ok: true, item: registros[idx] });
-  }
-
-  /* ---------- barril_del (remover registro de barril) ---------- */
-  if (dados.acao === "barril_del") {
-    const progId = (dados.progId || "").trim();
-    if (!progId) return erro(res, 400, "progId obrigatório.");
-    if (!podeProgramar(sessao.papel))
-      return erro(res, 403, "Apenas admin ou gestor podem remover.");
-    const registros = (await ler(`barril:${semana}:${progId}`)) || [];
-    const filtrado = registros.filter((r) => r.id !== dados.id);
-    await gravar(`barril:${semana}:${progId}`, filtrado);
-    return res.json({ ok: true, registros: filtrado });
   }
 
   return erro(res, 400, "Ação desconhecida.");
