@@ -399,52 +399,43 @@
 
   /* ---- programação de produção ---- */
   /* Cards de programação por tipo */
-  /* ---- Cards programação — novo design ---- */
-  .prog-item{ border-radius:12px !important; overflow:hidden; }
-  .prog-item-brassagem,.prog-item-envase,.prog-item-barril{ border:1.5px solid var(--linha) !important;background:#fff; }
-  .prog-item.prog-critico{ border-color:#FECACA !important;border-width:2px !important; }
-  .prog-card-header{ display:flex;align-items:center;gap:8px;padding:9px 13px 8px;border-bottom:1px solid var(--linha); }
-  .prog-card-header.critico-bg{ background:#FFF5F5; }
-  .prog-tipo-pill{ font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;padding:3px 9px;border-radius:20px;flex-shrink:0; }
-  .pill-brass{ background:var(--verde-claro);color:var(--verde); }
-  .pill-env{ background:#E8F0FF;color:#003E99; }
-  .pill-barril{ background:#FFF3E8;color:#7A4500; }
-  .prog-card-nome{ font-weight:700;font-size:.93rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-  .prog-status-badge{ font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:20px;flex-shrink:0;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.04em; }
-  .psb-pend{ background:#FEF3C7;color:#92400E; }
-  .psb-ok{ background:#D1FAE5;color:#065F46; }
-  .psb-crit{ background:#FEE2E2;color:#991B1B; }
-  .psb-barril{ background:#FFF3E8;color:#7A4500; }
-  .prog-meta{ display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:9px 13px 0; }
-  .mchip{ font-size:.73rem;padding:2px 8px;border-radius:5px;background:var(--cinza);color:var(--muted);font-weight:500; }
-  .mchip-g{ background:var(--verde-claro);color:var(--verde);font-weight:600;font-size:.73rem;padding:2px 8px;border-radius:5px; }
-  .mchip-b{ background:#E8F0FF;color:#003E99;font-weight:600;font-size:.73rem;padding:2px 8px;border-radius:5px; }
-  .mchip-autor{ margin-left:auto;font-size:.67rem;color:var(--muted); }
-  .prog-res-box{ margin:8px 13px 0;background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center; }
-  .prog-res-box.crit{ background:#FFF5F5;border-color:#FECACA; }
-  .prb-tit{ font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--verde);width:100%;margin-bottom:2px; }
-  .prb-tit.crit{ color:#DC2626; }
-  .prb-val{ display:flex;flex-direction:column; }
-  .prb-num{ font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:800;color:var(--verde);line-height:1; }
-  .prb-num.crit{ color:#DC2626; }
-  .prb-lbl{ font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em; }
-  .prb-alerta{ display:inline-flex;align-items:center;gap:5px;font-size:.73rem;font-weight:600;padding:3px 8px;border-radius:6px;margin-left:auto;background:#FEF3C7;color:#92400E; }
-  .prog-bfmts{ display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:6px 13px 0; }
-  .bfmt-chip{ font-size:.76rem;padding:3px 8px;background:#FFF3E8;color:#7A4500;border:1px solid #D4905A;border-radius:6px;font-weight:600; }
-  .bfmt-total{ font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;color:#7A4500;margin-left:auto; }
-  .prog-checks-faixa{ display:flex;gap:5px;flex-wrap:wrap;padding:7px 13px;border-top:1px solid var(--linha);background:var(--cinza);align-items:center;margin-top:8px; }
-  .chk-pill{ display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.71rem;font-weight:600;border:1.5px solid var(--linha);background:#fff;color:var(--muted);cursor:pointer; }
-  .chk-pill .dot{ width:13px;height:13px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:.55rem; }
-  .chk-pill.marcado{ background:#D1FAE5;border-color:var(--verde);color:var(--verde); }
-  .chk-pill.marcado .dot{ background:var(--verde);border-color:var(--verde);color:#fff; }
-  .btn-lancr{ margin-left:auto;font-size:.71rem;font-weight:700;padding:4px 11px;border-radius:6px;border:none;cursor:pointer;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.04em; }
-  .btn-lancr-g{ background:var(--verde);color:#fff; }
-  .btn-lancr-b{ background:#003E99;color:#fff; }
-  .prog-acoes{ display:flex;gap:5px;padding:5px 13px 8px;align-items:center; }
-  .prog-acoes .sp{ flex:1; }
-  .ba-prog{ font-size:.7rem;font-weight:600;padding:3px 9px;border-radius:6px;border:1.5px solid var(--linha);background:#fff;color:var(--muted);cursor:pointer; }
-  .ba-prog.del{ color:#DC2626;border-color:#FECACA;background:#FFF5F5; }
-  .ba-prog.task{ color:#6B00C2;border-color:#C4A0E8; }
+  .prog-item-brassagem{
+    border-left:5px solid var(--verde) !important;
+    background:linear-gradient(to right,#E9F5EC 0%,#fff 60%);
+  }
+  .prog-item-brassagem .prog-tipo-header{
+    background:var(--verde);color:#fff;
+    margin:-14px -14px 10px -14px;padding:7px 12px;
+    display:flex;align-items:center;gap:8px;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.88rem;text-transform:uppercase;letter-spacing:.05em;
+    border-radius:10px 10px 0 0;
+  }
+  .prog-item-envase{
+    border-left:5px solid #003E99 !important;
+    background:linear-gradient(to right,#E8F0FF 0%,#fff 60%);
+  }
+  .prog-item-envase .prog-tipo-header{
+    background:#003E99;color:#fff;
+    margin:-14px -14px 10px -14px;padding:7px 12px;
+    display:flex;align-items:center;gap:8px;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.88rem;text-transform:uppercase;letter-spacing:.05em;
+    border-radius:10px 10px 0 0;
+  }
+  .prog-item-barril{
+    border-left:5px solid #7A4500 !important;
+    background:linear-gradient(to right,#FFF3E8 0%,#fff 60%);
+  }
+  .prog-item-barril .prog-tipo-header{
+    background:#7A4500;color:#fff;
+    margin:-14px -14px 10px -14px;padding:7px 12px;
+    display:flex;align-items:center;gap:8px;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.88rem;text-transform:uppercase;letter-spacing:.05em;
+    border-radius:10px 10px 0 0;
+  }
+  .prog-tipo-icone{ font-size:1.1rem; }
 
   .prog-item{
     display:flex;align-items:flex-start;justify-content:space-between;
@@ -2392,7 +2383,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.6.0";
+var VERSAO = "2.5.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4475,20 +4466,25 @@ function renderChecksBarril(it, semana){
 function renderChecksLancamento(it, semana){
   var ch = it.checks || {};
   var isEnvase = it.tipo === "envase";
-  function pillCheck(campo, rotulo){
+
+  function btnCheck(campo, rotulo){
     var marcado = !!ch[campo];
     var por = ch[campo+"_por"] ? " @"+ch[campo+"_por"] : "";
-    return "<button class='chk-pill"+(marcado?" marcado":"")+"'"+
+    return "<button class='check-lancamento"+(marcado?" marcado":"")+"'"+
       " data-prog-check='"+esc(campo)+"'"+
       " data-prog-check-id='"+esc(it.id)+"'"+
-      " data-prog-check-semana='"+esc(semana)+"'>"+
-      "<span class='dot'>"+(marcado?"✓":"")+"</span>"+
-      esc(rotulo)+(marcado&&por?"<span style='font-size:.62rem;opacity:.7'>"+esc(por)+"</span>":"")+
+      " data-prog-check-semana='"+esc(semana)+"'"+
+      " title='"+(marcado?"Marcado por"+esc(por)+" — clique para desmarcar":"Marcar como lançado")+"'>"+
+      "<span class='cl-icone'>"+(marcado?"✓":"")+"</span>"+
+      esc(rotulo)+(marcado&&por?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+"</span>":"")+
       "</button>";
   }
-  var botoes = pillCheck("lancadoBeerSales", "BeerSales");
-  if (!isEnvase) botoes += pillCheck("lancadoBeerbo", "Beerbo");
-  return botoes;
+
+  var botoes = "";
+  botoes += btnCheck("lancadoBeerSales", "BeerSales");
+  if (!isEnvase) botoes += btnCheck("lancadoBeerbo", "Beerbo");
+
+  return "<div class='checks-lancamento'>"+botoes+"</div>";
 }
 
 function renderProgItem_tarefas(it, tarefasVinculadas){
@@ -4601,35 +4597,33 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
           : "<div class='prog-dia-sep' style='color:var(--muted)'>Sem dia definido</div>";
       }
       var linhasBarrilHtml = (it.linhas||[]).map(function(l){
-        return "<span class='bfmt-chip'>"+esc(l.formato)+" × "+l.qtd+" = "+fmtNum(l.subtotal)+"L</span>";
+        return "<span class='barril-chip'>"+esc(l.formato)+" × "+l.qtd+" = <b>"+fmtNum(l.subtotal)+" L</b></span>";
       }).join("");
-      var chBarril = it.checks||{};
-      var bsalM = !!chBarril["lancadoBeerSales"];
-      var bsalP = chBarril["lancadoBeerSales_por"]?" @"+chBarril["lancadoBeerSales_por"]:"";
       htmlTotal += "<div class='prog-item prog-item-barril'>"+
-        "<div class='prog-card-header'>"+
-          "<span class='prog-tipo-pill pill-barril'>🛢 Barril</span>"+
-          "<span class='prog-card-nome'>"+esc(it.produto||"Barril")+"</span>"+
-          "<span class='prog-status-badge psb-barril'>"+fmtNum(it.total)+" L total</span>"+
-        "</div>"+
-        "<div class='prog-meta'>"+
-          (it.tanque?"<span class='mchip'>"+esc(it.tanque)+"</span>":"")+
-          (it.lote?"<span class='mchip'>"+esc(it.lote)+"</span>":"")+
-          "<span class='mchip mchip-autor'>por @"+esc(it.lancadoPor)+"</span>"+
-        "</div>"+
-        "<div class='prog-bfmts'>"+linhasBarrilHtml+"<span class='bfmt-total'>= "+fmtNum(it.total)+" L</span></div>"+
-        "<div class='prog-checks-faixa'>"+
-          "<button class='chk-pill"+(bsalM?" marcado":"")+"'"+
-          " data-barril-check='lancadoBeerSales'"+
-          " data-barril-check-id='"+esc(it.id)+"'"+
-          " data-barril-check-semana='"+esc(semana)+"'>"+
-          "<span class='dot'>"+(bsalM?"✓":"")+"</span>"+
-          "BeerSales"+(bsalM&&bsalP?"<span style='font-size:.62rem;opacity:.7'>"+esc(bsalP)+"</span>":"")+
-          "</button>"+
-        "</div>"+
-        "<div class='prog-acoes'>"+
-          (podeEditar?"<button class='ba-prog del' data-barril-del='"+esc(it.id)+"' data-barril-prog='"+esc(chaveBarrilIndep)+"'>remover</button>":"")+
-          (podeEditar?"<button class='ba-prog' data-barril-editar='"+esc(it.id)+"' data-barril-semana='"+esc(semana)+"'>✏ editar</button>":"")+
+        "<div class='prog-main'>"+
+          "<div class='prog-tipo-header'>"+
+            "<span class='prog-tipo-icone'>🛢</span>"+
+            "<span>Barril</span>"+
+            "<span style='opacity:.7;font-size:.75rem;font-weight:400;margin-left:auto'>"+
+              esc(it.produto||"Barril")+
+            "</span>"+
+          "</div>"+
+          "<span class='prog-estilo' style='font-size:1rem'>"+esc(it.produto||"Barril")+"</span>"+
+          "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:6px'>"+
+            (it.lote?"<span class='item-desc'>Lote: "+esc(it.lote)+"</span>":"")+
+            (it.tanque?"<span class='item-desc'>"+esc(it.tanque)+"</span>":"")+
+          "</div>"+
+          "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center'>"+
+            linhasBarrilHtml+
+            "<span class='barril-total-chip'>=\u00a0"+fmtNum(it.total)+" L</span>"+
+          "</div>"+
+          "<div style='font-size:.73rem;color:var(--muted);margin-top:4px'>por "+esc(it.lancadoPor)+"</div>"+
+          renderChecksBarril(it, semana)+
+          (podeEditar?
+            "<div class='btn-linha' style='margin-top:8px'>"+
+            "<button class='btn-mini secundario' data-barril-editar='"+esc(it.id)+"' data-barril-semana='"+esc(semana)+"'>editar</button>"+
+            "<button class='btn-mini perigo' data-barril-del='"+esc(it.id)+"' data-barril-prog='"+esc(chaveBarrilIndep)+"'>remover</button>"+
+            "</div>":"")+
         "</div>"+
       "</div>";
       return;  // próximo item
@@ -4674,70 +4668,38 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
     }
 
     var tipoClasse = isEnvase ? "prog-item-envase" : "prog-item-brassagem";
-
-    var temResultado = !!(it.resultado);
-    var diasAlerta   = temResultado && it.resultado.em ? diasNoTanque(it.resultado.em) : null;
-    var isCritico    = diasAlerta !== null && diasAlerta >= DIAS_CRITICO;
-    var statusBadge;
-    if (it.tipo === "brassagem" && isCritico){
-      statusBadge = "<span class='prog-status-badge psb-crit'>🚨 "+diasAlerta+" dias no tanque</span>";
-    } else if (temResultado){
-      statusBadge = "<span class='prog-status-badge psb-ok'>✓ Resultado</span>";
-    } else {
-      statusBadge = "<span class='prog-status-badge psb-pend'>Aguardando</span>";
-    }
-
-    var pillClasse = isEnvase ? "pill-env" : "pill-brass";
-    var pillLabel  = isEnvase ? "📦 Envase" : "🍺 Brassagem";
-    var corBtnRes  = isEnvase ? "btn-lancr btn-lancr-b" : "btn-lancr btn-lancr-g";
-
-    var resBox = "";
-    if (temResultado){
-      resBox = "<div class='prog-res-box"+(isCritico?" crit":"")+"'>";
-      resBox += "<div class='prb-tit"+(isCritico?" crit":"")+"'>"+(isCritico?"⚠️ Verificar urgente — ":"✅ ")+"Resultado · @"+esc(it.resultado.lancadoPor||it.criadaPor)+"</div>";
-      if (it.resultado.volume)    resBox += "<div class='prb-val'><span class='prb-num"+(isCritico?" crit":"")+"'>"+esc(it.resultado.volume)+" L</span><span class='prb-lbl'>Volume</span></div>";
-      if (it.resultado.og)        resBox += "<div class='prb-val'><span class='prb-num"+(isCritico?" crit":"")+"'>"+esc(it.resultado.og)+"</span><span class='prb-lbl'>OG</span></div>";
-      if (it.resultado.qtdEnvasada) resBox += "<div class='prb-val'><span class='prb-num"+(isCritico?" crit":"")+"'>"+fmtNum(it.resultado.qtdEnvasada)+" un</span><span class='prb-lbl'>Qtd</span></div>";
-      if (it.tipo==="brassagem" && diasAlerta!==null && diasAlerta>=DIAS_AVISO && !isCritico) resBox += "<span class='prb-alerta'>⚠️ "+diasAlerta+" dias no tanque</span>";
-      resBox += "</div>";
-    }
-
-    var checksHtml = "<div class='prog-checks-faixa'>"+
-      renderChecksLancamento(it, semana)+
-      (!temResultado
-        ? "<button class='"+corBtnRes+"' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+esc(semana)+"' data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"'>📋 Lançar resultado</button>"
-        : "<button class='btn-lancr' style='background:var(--dourado);color:#3A2D00' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+esc(semana)+"' data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"'>✏ Editar resultado</button>")+
-    "</div>";
-
-    htmlTotal += "<div class='prog-item "+tipoClasse+(isCritico?" prog-critico":"")+"'>"+
-      "<div class='prog-card-header"+(isCritico?" critico-bg":"")+"'>"+
-        "<span class='prog-tipo-pill "+pillClasse+"'>"+pillLabel+"</span>"+
-        "<span class='prog-card-nome'>"+esc(it.estilo||it.produto||"—")+"</span>"+
-        statusBadge+
-      "</div>"+
-      "<div class='prog-meta'>"+
-        (it.tanque?"<span class='mchip'>"+esc(it.tanque)+"</span>":"")+
-        (it.tanqueOrigem?"<span class='mchip'>"+esc(it.tanqueOrigem)+"</span>":"")+
-        (it.lote?"<span class='mchip'>"+esc(it.lote)+"</span>":"")+
-        (isEnvase&&it.formato?"<span class='mchip-b'>"+esc(it.formato)+"</span>":"")+
-        (isEnvase&&it.qtd?"<span class='mchip-b'>Prev: "+esc(it.qtd)+" un</span>":"")+
-        (!isEnvase&&it.volPrev?"<span class='mchip-g'>Prev: "+esc(it.volPrev)+" L</span>":"")+
-        (it.obs?"<span class='mchip'>"+esc(it.obs)+"</span>":"")+
-        "<span class='mchip mchip-autor'>por @"+esc(it.criadaPor)+"</span>"+
-      "</div>"+
-      resBox+
-      renderBarrilItem(it, barreis)+
-      renderProgItem_tarefas(it, tarefasVinculadas)+
-      checksHtml+
-      "<div class='prog-acoes'>"+
-        (podeEditar?"<button class='ba-prog del' data-prog-del='"+esc(it.id)+"' data-prog-semana='"+esc(semana)+"'>remover</button>":"")+
-        (podeEditar?"<button class='ba-prog' data-prog-edit='"+esc(it.id)+"' data-prog-semana='"+esc(semana)+"'>✏ editar</button>":"")+
-        "<div class='sp'></div>"+
-        "<button class='ba-prog task'"+
+    htmlTotal += "<div class='prog-item "+tipoClasse+"'>"+
+      "<div class='prog-main'>"+
+        "<div class='prog-tipo-header'>"+
+          "<span class='prog-tipo-icone'>"+icone+"</span>"+
+          "<span>"+tagTxt+"</span>"+
+          "<span style='opacity:.7;font-size:.75rem;font-weight:400;margin-left:auto'>"+
+            esc(it.estilo||it.produto||"—")+
+          "</span>"+
+        "</div>"+
+        "<span class='prog-estilo' style='font-size:1rem'>"+esc(it.estilo||it.produto||"—")+"</span>"+
+        (detalhe?"<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:6px'>"+detalhe+"</div>":"")+
+        (it.obs?"<div class='item-desc' style='margin-top:4px'>"+esc(it.obs)+"</div>":"")+
+        "<div style='font-size:.73rem;color:var(--muted);margin-top:4px'>por "+esc(it.criadaPor)+"</div>"+
+        resultado+
+        (it.tipo === "brassagem" ? badgeTempoTanque(it.resultado) : "")+
+        renderBarrilItem(it, barreis)+
+        renderProgItem_tarefas(it, tarefasVinculadas)+
+        renderChecksLancamento(it, semana)+
+        "<div class='btn-linha' style='margin-top:8px'>"+
+        btnResultado+
+        "<button class='btn-mini' style='background:#6B00C2;border-color:#6B00C2;color:#fff'"+
         " data-prog-tasks='"+esc(it.id)+"'"+
         " data-prog-tasks-tipo='"+(isEnvase?"envase":"brassagem")+"'"+
         " data-prog-tasks-titulo='"+esc(it.estilo||it.produto||"")+"'"+
         " data-prog-tasks-dia='"+esc(it.dia||"")+"'>＋ Tarefas</button>"+
+
+        (podeEditar?
+          "<button class='btn-mini secundario' data-prog-edit='"+esc(it.id)+"' data-prog-semana='"+
+          esc(semana)+"'>editar</button>"+
+          "<button class='btn-mini perigo' data-prog-del='"+esc(it.id)+"' data-prog-semana='"+
+          esc(semana)+"'>remover</button>" : "")+
+        "</div>"+
       "</div>"+
     "</div>";
   });
