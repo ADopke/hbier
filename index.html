@@ -4666,8 +4666,22 @@ function renderChecksLancamento(it, semana){
       "</button>";
   }
 
+  function btnCheckProg(campo, rotulo){
+    var marcado = !!ch[campo];
+    var por = ch[campo+"_por"] ? " @"+ch[campo+"_por"] : "";
+    return "<button class='check-lancamento"+(marcado?" programado":"")+"'"+
+      " data-prog-check='"+esc(campo)+"'"+
+      " data-prog-check-id='"+esc(it.id)+"'"+
+      " data-prog-check-semana='"+esc(semana)+"'"+
+      " title='"+(marcado?"Programado por"+esc(por)+" — clique para desmarcar":"Marcar como programado no BeerSales")+"'>"+
+      "<span class='cl-icone'>"+(marcado?"✓":"")+"</span>"+
+      esc(rotulo)+(marcado&&por?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+"</span>":"")+
+      "</button>";
+  }
+
   var botoes = "";
-  botoes += btnCheck("lancadoBeerSales", "BeerSales");
+  botoes += btnCheckProg("beerSalesProg",   "BeerSales Prog.");
+  botoes += btnCheck("lancadoBeerSales",    "BeerSales Conc.");
   if (!isEnvase) botoes += btnCheck("lancadoBeerbo", "Beerbo");
 
   return "<div class='checks-lancamento'>"+botoes+"</div>";
