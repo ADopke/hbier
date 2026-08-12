@@ -2549,7 +2549,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.6.0";
+var VERSAO = "2.6.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5285,6 +5285,10 @@ $("btnBrassSalvar").addEventListener("click", async function(){
     $("modalBrassagem").hidden = true;
     var eraEdicao = !!_brasseditando;
     _brasseditando = null;
+    // Se o item foi movido para outra semana, navegar até ela
+    if (rBrass && rBrass.movido){
+      segProg = segundaDe(new Date(rBrass.movido+"T00:00:00"));
+    }
     carregarProg();
     // Só abre tarefas auto ao criar (não ao editar)
     if (!eraEdicao){
@@ -5342,6 +5346,10 @@ $("btnEnvSalvar").addEventListener("click", async function(){
     $("modalEnvase").hidden = true;
     var eraEdicaoEnv = !!_enveditando;
     _enveditando = null;
+    // Se o item foi movido para outra semana, navegar até ela
+    if (rEnv && rEnv.movido){
+      segProg = segundaDe(new Date(rEnv.movido+"T00:00:00"));
+    }
     carregarProg();
     if (!eraEdicaoEnv){
       var dataISOEnv = _diaEnv.dataISO;
