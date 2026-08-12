@@ -2549,7 +2549,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.5.9";
+var VERSAO = "2.6.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5211,16 +5211,43 @@ $("progVoltarHoje").addEventListener("click", function(){
 var _brasseditando = null;
 var _enveditando = null;
 
-function preencherDias(selectId){
-  var nomes = ["Segunda","Ter\u00e7a","Quarta","Quinta","Sexta","S\u00e1bado"];
-  var opcs = "<option value=''>N\u00e3o definido</option>";
-  nomes.forEach(function(nome, i){
-    var d = new Date(segProg); d.setDate(d.getDate()+i);
-    var dt = ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2);
-    opcs += "<option value='"+nome+"'>"+nome+" \u2014 "+dt+"</option>";
-  });
-  $(selectId).innerHTML = opcs;
+function preencherDias(selectId, valorAtual){
+  // Gera os proximos 30 dias uteis (seg a sab) a partir de hoje
+  var NOMES_DIA = ["Dom","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+  var MESES_C   = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+  var opcs = "<option value=''>Não definido</option>";
+  var base = new Date(); base.setHours(0,0,0,0);
+  var adicionados = 0;
+  var d = new Date(base);
+  while (adicionados < 30){
+    var dow = d.getDay();
+    if (dow >= 1 && dow <= 6){
+      var nome = NOMES_DIA[dow];
+      var isoD = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
+      var dt   = d.getDate()+" "+MESES_C[d.getMonth()];
+      var label = nome+" — "+dt;
+      // marcar com estrela os dias da semana atualmente exibida
+      var segD = new Date(segProg); segD.setHours(0,0,0,0);
+      var fimD = new Date(segProg); fimD.setDate(fimD.getDate()+6); fimD.setHours(0,0,0,0);
+      var dd   = new Date(d);       dd.setHours(0,0,0,0);
+      if (dd >= segD && dd <= fimD) label += " ★";
+      opcs += "<option value='"+nome+"|"+isoD+"'>"+label+"</option>";
+      adicionados++;
+    }
+    d.setDate(d.getDate()+1);
+  }
+  var sel = $(selectId);
+  sel.innerHTML = opcs;
+  if (valorAtual) sel.value = valorAtual;
 }
+
+function parseDiaSelect(val){
+  if (!val) return {nome:"", dataISO:""};
+  var p = val.split("|");
+  return {nome: p[0]||"", dataISO: p[1]||""};
+}
+
+
 
 // ===== BRASSAGEM =====
 $("btnAddProg").addEventListener("click", function(){
@@ -5241,7 +5268,8 @@ $("btnBrassSalvar").addEventListener("click", async function(){
   if (!estilo){ toast("Informe o estilo.", "erro"); return; }
   var seg = chaveSemana(segProg);
   try{
-    var diaBrass = $("brassDia").value;
+    var _diaBrass = parseDiaSelect($("brassDia").value);
+    var diaBrass  = _diaBrass.nome;
     var rBrass = await api("/api/prog", {method:"POST", body:{
       acao: _brasseditando ? "editar" : "criar",
       id:   _brasseditando ? _brasseditando.id : undefined,
@@ -5251,6 +5279,7 @@ $("btnBrassSalvar").addEventListener("click", async function(){
       tanque:    $("brassTanque").value.trim(),
       volPrev:   $("brassVolPrev").value.trim(),
       dia:       diaBrass,
+      dataISO:   _diaBrass.dataISO,
       obs:       $("brassObs").value.trim()
     }});
     $("modalBrassagem").hidden = true;
@@ -5259,8 +5288,8 @@ $("btnBrassSalvar").addEventListener("click", async function(){
     carregarProg();
     // Só abre tarefas auto ao criar (não ao editar)
     if (!eraEdicao){
-      var dataISO = "";
-      if (diaBrass){
+      var dataISO = _diaBrass.dataISO;
+      if (!dataISO && diaBrass){
         var DIAS_ISO = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
         var d = new Date(segProg); d.setDate(d.getDate()+(DIAS_ISO[diaBrass]||0));
         dataISO = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
@@ -5294,7 +5323,8 @@ $("btnEnvSalvar").addEventListener("click", async function(){
   if (!produto){ toast("Informe o produto.", "erro"); return; }
   var seg = chaveSemana(segProg);
   try{
-    var diaEnv = $("envDia").value;
+    var _diaEnv = parseDiaSelect($("envDia").value);
+    var diaEnv  = _diaEnv.nome;
     var rEnv = await api("/api/prog", {method:"POST", body:{
       acao:     _enveditando ? "editar" : "criar",
       id:       _enveditando ? _enveditando.id : undefined,
@@ -5306,6 +5336,7 @@ $("btnEnvSalvar").addEventListener("click", async function(){
       formato:  $("envFormato").value,
       qtd:      $("envQtd").value.trim(),
       dia:      diaEnv,
+      dataISO:  _diaEnv.dataISO,
       obs:      $("envObs").value.trim()
     }});
     $("modalEnvase").hidden = true;
@@ -5313,8 +5344,8 @@ $("btnEnvSalvar").addEventListener("click", async function(){
     _enveditando = null;
     carregarProg();
     if (!eraEdicaoEnv){
-      var dataISOEnv = "";
-      if (diaEnv){
+      var dataISOEnv = _diaEnv.dataISO;
+      if (!dataISOEnv && diaEnv){
         var DIAS_ISO2 = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
         var d2 = new Date(segProg); d2.setDate(d2.getDate()+(DIAS_ISO2[diaEnv]||0));
         dataISOEnv = d2.getFullYear()+"-"+("0"+(d2.getMonth()+1)).slice(-2)+"-"+("0"+d2.getDate()).slice(-2);
@@ -5348,7 +5379,8 @@ $("progLista").addEventListener("click", async function(ev){
       $("envQtd").value     = it.qtd||"";
       $("envObs").value     = it.obs||"";
       preencherDias("envDia");
-      $("envDia").value     = it.dia||"";
+      if (it.dataISO) $("envDia").value = (it.dia||"")+"|"+it.dataISO;
+      else $("envDia").value = it.dia||"";
       $("modalEnvase").hidden = false;
     } else {
       _brasseditando = {id: it.id, semana};
@@ -5358,7 +5390,9 @@ $("progLista").addEventListener("click", async function(ev){
       $("brassVolPrev").value  = it.volPrev||"";
       $("brassObs").value      = it.obs||"";
       preencherDias("brassDia");
-      $("brassDia").value    = it.dia||"";
+      // Tentar restaurar pelo dataISO, senão pelo nome do dia
+      if (it.dataISO) $("brassDia").value = (it.dia||"")+"|"+it.dataISO;
+      else $("brassDia").value = it.dia||"";
       $("modalBrassagem").hidden = false;
     }
   }
