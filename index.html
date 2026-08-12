@@ -273,20 +273,141 @@
   }
   .config-sugestoes-item:last-child{ border-bottom:none; }
 
+  /* ---- toggle visão semanal/mensal ---- */
+  .visao-toggle{
+    display:flex;gap:3px;background:var(--cinza);
+    border-radius:8px;padding:3px;
+  }
+  .vt-btn{
+    padding:4px 11px;border-radius:6px;border:none;cursor:pointer;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.76rem;
+    letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+    background:transparent;transition:.12s;
+  }
+  .vt-btn.ativo{
+    background:#fff;color:var(--verde);
+    box-shadow:0 1px 4px rgba(0,0,0,.1);
+  }
+
+  /* ---- totais mensais ---- */
+  .totais-mensais{
+    padding:12px 14px;display:grid;
+    grid-template-columns:1fr 1fr;gap:8px;
+    border-bottom:1px solid var(--linha);
+  }
+  .tm-card{
+    border-radius:8px;padding:9px 11px;
+    display:flex;flex-direction:column;gap:2px;
+  }
+  .tm-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+  .tm-num{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.35rem;line-height:1.1;}
+  .tm-sub{font-size:.68rem;color:var(--muted);}
+  .tm-barra{height:4px;background:rgba(0,0,0,.08);border-radius:99px;overflow:hidden;margin-top:5px;}
+  .tm-fill{height:100%;border-radius:99px;}
+  .tm-brass{background:var(--verde-claro);border:1px solid #A8D4B4;}
+  .tm-env{background:#E8F0FF;border:1px solid #B3C8F5;}
+  .tm-barril{background:#FFF3E8;border:1px solid #D4905A;}
+  .tm-vol{background:var(--dourado-claro);border:1px solid #E6C84A;grid-column:1/-1;}
+  .tm-brass .tm-num{color:var(--verde);}
+  .tm-env .tm-num{color:#003E99;}
+  .tm-barril .tm-num{color:#7A4500;}
+  .tm-vol .tm-num{color:var(--verde);font-size:1.1rem;}
+  .tm-vol-linha{display:flex;align-items:baseline;gap:8px;}
+  .tm-vol-meta{font-size:.72rem;color:var(--muted);}
+
+  /* ---- legenda do calendário ---- */
+  .cal-legenda{
+    padding:6px 14px;border-bottom:1px solid var(--linha);
+    display:flex;gap:10px;flex-wrap:wrap;background:var(--cinza);
+  }
+  .cal-leg-item{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;color:var(--muted);}
+  .cal-leg-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+
+  /* ---- calendário mensal ---- */
+  .cal-header-mensal{
+    display:grid;grid-template-columns:repeat(7,1fr);
+    border-bottom:1px solid var(--linha);background:var(--cinza);
+  }
+  .cal-dh-m{
+    text-align:center;padding:5px 2px;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+  }
+  .cal-dh-m.fw{color:var(--vermelho);}
+  .cal-grid-mensal{display:grid;grid-template-columns:repeat(7,1fr);}
+  .cal-dia-m{
+    border-right:1px solid var(--linha);border-bottom:1px solid var(--linha);
+    min-height:46px;padding:4px 3px 3px;
+    position:relative;cursor:pointer;transition:background .1s;
+  }
+  .cal-dia-m:nth-child(7n){border-right:none;}
+  .cal-dia-m:hover{background:#F0EFE8;}
+  .cal-dia-m.outro{background:var(--cinza);opacity:.6;pointer-events:none;}
+  .cal-dia-m.hoje-cal{background:var(--dourado-claro);}
+  .cal-dia-m.hoje-cal .cal-n-m{color:var(--dourado);font-weight:800;}
+  .cal-dia-m.sel-cal{background:var(--verde-claro) !important;}
+  .cal-dia-m.sel-cal .cal-n-m{color:var(--verde);font-weight:800;}
+  .cal-dia-m.fw-cal .cal-n-m{color:var(--vermelho);}
+  .cal-n-m{
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.8rem;color:var(--muted);display:block;margin-bottom:3px;
+  }
+  .cal-dia-m.tem-cal .cal-n-m{color:var(--ink);}
+  .cal-cpills{display:flex;flex-direction:column;gap:2px;}
+  .cal-cp{height:4px;border-radius:2px;width:100%;}
+  .cal-cp-b{background:var(--verde);}
+  .cal-cp-e{background:#003E99;}
+  .cal-cp-r{background:#7A4500;}
+  .cal-cp-b.res,.cal-cp-e.res{opacity:.45;}
+  .cal-res-dot{position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:#34D399;}
+
+  /* ---- detalhe do dia clicado ---- */
+  .det-dia-m{border-top:2px solid var(--verde);}
+  .det-dia-header-m{
+    padding:9px 14px;background:var(--verde);color:#fff;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.9rem;text-transform:uppercase;letter-spacing:.05em;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .det-dia-fechar-m{background:none;border:none;color:rgba(255,255,255,.8);font-size:1rem;cursor:pointer;}
+  .det-dia-item-m{
+    padding:9px 14px;border-top:1px solid var(--linha);
+    display:flex;align-items:center;gap:9px;
+  }
+  .det-dia-pill-m{
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.66rem;
+    text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:20px;flex-shrink:0;
+  }
+  .ddp-b{background:var(--verde-claro);color:var(--verde);}
+  .ddp-e{background:#E8F0FF;color:#003E99;}
+  .ddp-r{background:#FFF3E8;color:#7A4500;}
+  .det-dia-nome-m{font-weight:700;font-size:.87rem;flex:1;}
+  .det-dia-sub-m{font-size:.72rem;color:var(--muted);margin-top:2px;}
+  .det-dia-badge-m{
+    font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:20px;
+    font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;flex-shrink:0;
+  }
+  .ddb-ok{background:#D1FAE5;color:#065F46;}
+  .ddb-pend{background:#FEF3C7;color:#92400E;}
+  .det-dia-ir-m{
+    padding:8px 14px;border-top:1px solid var(--linha);
+    background:var(--cinza);
+  }
+
   /* ---- separador de dia na programação ---- */
   .prog-dia-sep{
     padding:10px 14px 8px;
     font-family:'Barlow Condensed',sans-serif;font-weight:800;
     font-size:1.1rem;letter-spacing:.08em;text-transform:uppercase;
     color:#fff;
-    background:#3D3D3D;
+    background:var(--verde);
     border-radius:0;
     margin-top:10px;
     display:flex;align-items:center;gap:10px;
   }
   .prog-dia-sep::before{
     content:'';display:inline-block;
-    width:4px;height:1.1rem;background:rgba(255,255,255,.4);border-radius:2px;
+    width:4px;height:1.1rem;background:rgba(255,255,255,.5);border-radius:2px;
     flex-shrink:0;
   }
   .prog-dia-sep:first-child{ margin-top:0; }
@@ -1229,8 +1350,13 @@
         <div class="sec-head" style="flex-wrap:wrap;gap:8px;align-items:flex-start">
           <span class="sec-title">🗓 Programação</span>
           <div style="display:flex;flex-direction:column;gap:6px;margin-left:auto;align-items:flex-end">
+            <!-- toggle visão semanal / mensal -->
+            <div class="visao-toggle">
+              <button class="vt-btn ativo" id="btnVisaoSem" onclick="progSetVisao('semanal')">Semana</button>
+              <button class="vt-btn" id="btnVisaoMes" onclick="progSetVisao('mensal')">Mês</button>
+            </div>
             <!-- linha 1: ano -->
-            <div style="display:flex;align-items:center;gap:4px">
+            <div style="display:flex;align-items:center;gap:4px" id="progNavAno">
               <button class="btn-hoje-sem" id="progPrevAno" style="font-size:.7rem;padding:3px 8px">‹‹</button>
               <span id="progAnoLabel" style="font-size:.78rem;font-weight:700;color:var(--verde);
                 min-width:36px;text-align:center"></span>
@@ -1243,8 +1369,8 @@
                 min-width:60px;text-align:center"></span>
               <button class="btn-hoje-sem" id="progNextMes" style="font-size:.8rem;padding:3px 9px">›</button>
             </div>
-            <!-- linha 3: semana dentro do mês -->
-            <div style="display:flex;align-items:center;gap:4px">
+            <!-- linha 3: semana dentro do mês (só visão semanal) -->
+            <div style="display:flex;align-items:center;gap:4px" id="progNavSem">
               <button class="btn-hoje-sem" id="progPrevSem">‹ sem</button>
               <span id="progSemana" style="font-size:.78rem;font-weight:600;
                 color:var(--muted);white-space:nowrap;min-width:140px;text-align:center"></span>
@@ -1260,8 +1386,48 @@
           border-bottom:1px solid var(--linha);display:flex;flex-wrap:wrap;
           gap:6px;align-items:center;min-height:0"></div>
 
-        <div id="progLista" style="padding:14px"></div>
-        <div style="padding:0 14px 14px">
+        <!-- visão semanal -->
+        <div id="progListaWrap">
+          <div id="progLista" style="padding:14px"></div>
+        </div>
+
+        <!-- visão mensal (hidden por padrão) -->
+        <div id="progMensalWrap" hidden>
+          <!-- totais -->
+          <div class="totais-mensais" id="progMensalTotais"></div>
+          <!-- legenda -->
+          <div class="cal-legenda">
+            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--verde)"></span> Brassagem</span>
+            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#003E99"></span> Envase</span>
+            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#7A4500"></span> Barril</span>
+            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#D1FAE5;border:1px solid #34D399"></span> Com resultado</span>
+          </div>
+          <!-- calendário -->
+          <div class="cal-header-mensal">
+            <div class="cal-dh-m">Seg</div>
+            <div class="cal-dh-m">Ter</div>
+            <div class="cal-dh-m">Qua</div>
+            <div class="cal-dh-m">Qui</div>
+            <div class="cal-dh-m">Sex</div>
+            <div class="cal-dh-m fw">Sáb</div>
+            <div class="cal-dh-m fw">Dom</div>
+          </div>
+          <div class="cal-grid-mensal" id="progCalGrid"></div>
+          <!-- detalhe do dia selecionado -->
+          <div class="det-dia-m" id="progDetDia" hidden>
+            <div class="det-dia-header-m">
+              <span id="progDetDiaLabel"></span>
+              <button class="det-dia-fechar-m" id="btnDetDiaFechar">✕</button>
+            </div>
+            <div id="progDetDiaItens"></div>
+            <div class="det-dia-ir-m">
+              <button class="btn-hoje-sem" id="btnDetDiaIrSem"
+                style="font-size:.72rem;width:100%;text-align:center">→ Ver semana completa desta data</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:0 14px 14px;border-top:1px solid var(--linha)">
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn mini" id="btnAddProg">🍺 Brassagem</button>
             <button class="btn mini secundario" id="btnAddEnvase">📦 Envase</button>
@@ -2383,7 +2549,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.5.6";
+var VERSAO = "2.5.7";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4376,6 +4542,19 @@ var _progEditando = null;
 var DIAS_PROG = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 
 async function carregarProg(){
+  // Se estiver em visão mensal, recarregar o calendário e sair
+  if (_progVisao === "mensal"){
+    var naAtualMes = segProg.getFullYear()===new Date().getFullYear() &&
+                     segProg.getMonth()===new Date().getMonth();
+    $("progVoltarHoje").hidden = naAtualMes;
+    var MESES_L2 = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+      "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    $("progMesLabel").textContent  = MESES_L2[segProg.getMonth()];
+    $("progAnoLabel").textContent  = segProg.getFullYear();
+    await carregarProgMensal();
+    return;
+  }
+
   var seg = chaveSemana(segProg);
   var fim = new Date(segProg); fim.setDate(fim.getDate()+6);
 
@@ -4704,6 +4883,257 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
     "</div>";
   });
   $("progLista").innerHTML = htmlTotal;
+}
+
+/* ==================================================================
+   Visão mensal da programação
+   ================================================================== */
+var _progVisao = "semanal";   // "semanal" | "mensal"
+var _calDiaSel = null;        // elemento do dia selecionado no calendário
+var _calDadosMes = {};        // cache dos dados carregados do mês
+
+function progSetVisao(v){
+  _progVisao = v;
+  $("btnVisaoSem").classList.toggle("ativo", v === "semanal");
+  $("btnVisaoMes").classList.toggle("ativo", v === "mensal");
+  $("progListaWrap").hidden  = (v === "mensal");
+  $("progMensalWrap").hidden = (v === "semanal");
+  $("progNavSem").hidden     = (v === "mensal");
+  $("progNavAno").hidden     = (v === "mensal");
+  $("progVoltarHoje").hidden = true;
+  if (v === "mensal") carregarProgMensal();
+}
+
+async function carregarProgMensal(){
+  var ano = segProg.getFullYear();
+  var mes = segProg.getMonth();   // 0-11
+
+  // Semanas que tocam o mês
+  var semanas = [];
+  var d = new Date(ano, mes, 1);
+  d.setDate(d.getDate() - ((d.getDay()+6)%7));
+  while(true){
+    var fim7 = new Date(d); fim7.setDate(fim7.getDate()+6);
+    if (d.getMonth() === mes || fim7.getMonth() === mes) semanas.push(new Date(d));
+    d.setDate(d.getDate()+7);
+    if (d.getFullYear() > ano || (d.getFullYear() === ano && d.getMonth() > mes)) break;
+  }
+
+  // Carregar todas as semanas em paralelo
+  var resultados = await Promise.all(semanas.map(function(seg){
+    var chave = seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
+    return api("/api/prog?semana="+chave).then(function(r){
+      return {seg:seg, itens:r.itens||[], barreis:r.barreis||{}};
+    }).catch(function(){ return {seg:seg, itens:[], barreis:{}}; });
+  }));
+
+  // Montar mapa dia → itens
+  var DIAS_OFF = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
+  var mapaDia = {};  // "YYYY-MM-DD" → [{tipo,nome,resultado,...}]
+  var totBrass=0, totEnv=0, totBarril=0, totVolReal=0, totVolPrev=0;
+
+  resultados.forEach(function(semR){
+    var seg = semR.seg;
+
+    // itens de prog normais
+    semR.itens.forEach(function(it){
+      var dataItem;
+      if (it.dataISO){ dataItem = it.dataISO; }
+      else if (it.dia !== undefined && it.dia !== ""){
+        var off = DIAS_OFF[it.dia];
+        if (off !== undefined){
+          var dd = new Date(seg); dd.setDate(dd.getDate()+off);
+          dataItem = dd.getFullYear()+"-"+("0"+(dd.getMonth()+1)).slice(-2)+"-"+("0"+dd.getDate()).slice(-2);
+        }
+      }
+      if (!dataItem) return;
+      // só incluir se cai no mês/ano corrente
+      var dm = new Date(dataItem+"T00:00:00");
+      if (dm.getMonth() !== mes || dm.getFullYear() !== ano) return;
+
+      if (!mapaDia[dataItem]) mapaDia[dataItem] = [];
+      mapaDia[dataItem].push(it);
+
+      if (it.tipo === "brassagem"){
+        totBrass++;
+        if (it.resultado && it.resultado.volume){
+          totVolReal += parseFloat((it.resultado.volume+"").replace(",",".")) || 0;
+        }
+        if (it.volPrev) totVolPrev += parseFloat((it.volPrev+"").replace(",",".")) || 0;
+      } else if (it.tipo === "envase"){ totEnv++; }
+    });
+
+    // barreis
+    var chSem = seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
+    var regsBarril = semR.barreis["barril-"+chSem] || [];
+    regsBarril.forEach(function(r){
+      var dataItem;
+      if (r.dataISO){ dataItem = r.dataISO; }
+      else if (r.dia && DIAS_OFF[r.dia] !== undefined){
+        var dd = new Date(seg); dd.setDate(dd.getDate()+DIAS_OFF[r.dia]);
+        dataItem = dd.getFullYear()+"-"+("0"+(dd.getMonth()+1)).slice(-2)+"-"+("0"+dd.getDate()).slice(-2);
+      }
+      if (!dataItem) return;
+      var dm = new Date(dataItem+"T00:00:00");
+      if (dm.getMonth() !== mes || dm.getFullYear() !== ano) return;
+      if (!mapaDia[dataItem]) mapaDia[dataItem] = [];
+      mapaDia[dataItem].push({tipo:"barril", produto:r.produto, total:r.total, _barrilReg:r});
+      totBarril++;
+    });
+  });
+
+  _calDadosMes = mapaDia;
+
+  // Renderizar totais
+  var metaBrass = 0;
+  try{ var mr = await api("/api/metas?ano="+ano+"&mes="+(mes+1)); metaBrass = (mr.meta&&mr.meta.brass)||0; }catch(e){}
+  var pctVol = metaBrass ? Math.min(100, Math.round(totVolReal/metaBrass*100)) : 0;
+  var brassCom = Object.values(mapaDia).reduce(function(acc,lst){
+    return acc + lst.filter(function(x){ return x.tipo==="brassagem"&&x.resultado; }).length; },0);
+  var envCom = Object.values(mapaDia).reduce(function(acc,lst){
+    return acc + lst.filter(function(x){ return x.tipo==="envase"&&x.resultado; }).length; },0);
+  var totBarrilL = Object.values(mapaDia).reduce(function(acc,lst){
+    return acc + lst.filter(function(x){ return x.tipo==="barril"; })
+      .reduce(function(a,b){ return a+(b.total||0); },0); },0);
+
+  $("progMensalTotais").innerHTML =
+    "<div class='tm-card tm-brass'>"+
+      "<span class='tm-label'>🍺 Brassagens</span>"+
+      "<span class='tm-num'>"+totBrass+"</span>"+
+      "<span class='tm-sub'>"+brassCom+" com resultado lançado</span>"+
+      "<div class='tm-barra'><div class='tm-fill' style='width:"+(totBrass?Math.round(brassCom/totBrass*100):0)+"%;background:var(--verde)'></div></div>"+
+    "</div>"+
+    "<div class='tm-card tm-env'>"+
+      "<span class='tm-label'>📦 Envases</span>"+
+      "<span class='tm-num'>"+totEnv+"</span>"+
+      "<span class='tm-sub'>"+envCom+" com resultado lançado</span>"+
+      "<div class='tm-barra'><div class='tm-fill' style='width:"+(totEnv?Math.round(envCom/totEnv*100):0)+"%;background:#003E99'></div></div>"+
+    "</div>"+
+    "<div class='tm-card tm-barril'>"+
+      "<span class='tm-label'>🛢 Barris</span>"+
+      "<span class='tm-num'>"+totBarril+"</span>"+
+      "<span class='tm-sub'>"+(totBarrilL?fmtNum(totBarrilL)+" L total":"nenhum")+"</span>"+
+      "<div class='tm-barra'><div class='tm-fill' style='width:100%;background:#7A4500'></div></div>"+
+    "</div>"+
+    "<div class='tm-card tm-vol'>"+
+      "<span class='tm-label'>Volume brassado no mês</span>"+
+      "<div class='tm-vol-linha'>"+
+        "<span class='tm-num'>"+fmtNum(totVolReal)+" L</span>"+
+        (metaBrass?"<span class='tm-vol-meta'>de "+fmtNum(metaBrass)+" L meta ("+pctVol+"%)</span>":"")+
+      "</div>"+
+      "<div class='tm-barra'><div class='tm-fill' style='width:"+pctVol+"%;background:var(--dourado)'></div></div>"+
+    "</div>";
+
+  // Renderizar calendário
+  var primeiroDia = new Date(ano, mes, 1);
+  var ultimoDia   = new Date(ano, mes+1, 0);
+  // início da grade = segunda da semana do dia 1
+  var inicioGrade = new Date(primeiroDia);
+  inicioGrade.setDate(inicioGrade.getDate() - ((inicioGrade.getDay()+6)%7));
+
+  var hojeStr = (function(){
+    var h = new Date(); h.setHours(0,0,0,0);
+    return h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);
+  })();
+
+  var html = "";
+  var cur = new Date(inicioGrade);
+  // 6 semanas no máximo
+  for (var w=0; w<6; w++){
+    var algumDoMes = false;
+    for (var d2=0; d2<7; d2++){
+      if (cur.getMonth()===mes) algumDoMes=true;
+      cur.setDate(cur.getDate()+1);
+    }
+    cur.setDate(cur.getDate()-7);
+    if (w > 4 && !algumDoMes) break;
+
+    for (var d2=0; d2<7; d2++){
+      var isoD = cur.getFullYear()+"-"+("0"+(cur.getMonth()+1)).slice(-2)+"-"+("0"+cur.getDate()).slice(-2);
+      var doMes = cur.getMonth()===mes;
+      var fimSem = d2>=5;
+      var ehHoje = isoD===hojeStr;
+      var itensD = mapaDia[isoD]||[];
+      var temItem = itensD.length>0;
+      var temRes  = itensD.some(function(x){ return x.resultado; });
+      var cls = "cal-dia-m"+(!doMes?" outro":"")+(ehHoje?" hoje-cal":"")+(fimSem?" fw-cal":"")+(temItem?" tem-cal":"");
+
+      var pills = itensD.map(function(it){
+        var tc = it.tipo==="brassagem"?"cal-cp-b":(it.tipo==="envase"?"cal-cp-e":"cal-cp-r");
+        var res = it.resultado?" res":"";
+        return "<div class='cal-cp "+tc+res+"'></div>";
+      }).join("");
+
+      html += "<div class='"+cls+"' data-iso='"+isoD+"' data-doMes='"+(doMes?"1":"0")+"'>"+
+        "<span class='cal-n-m'>"+cur.getDate()+"</span>"+
+        (pills?"<div class='cal-cpills'>"+pills+"</div>":"")+
+        (temRes?"<div class='cal-res-dot'></div>":"")+
+      "</div>";
+      cur.setDate(cur.getDate()+1);
+    }
+  }
+  $("progCalGrid").innerHTML = html;
+
+  // Detalhe: fechar e evento de clique
+  $("progDetDia").hidden = true;
+  _calDiaSel = null;
+
+  $("progCalGrid").onclick = function(ev){
+    var cel = ev.target.closest(".cal-dia-m");
+    if (!cel || cel.dataset.doMes === "0") return;
+    var iso = cel.dataset.iso;
+    var itens = _calDadosMes[iso]||[];
+    if (!itens.length) return;
+
+    if (_calDiaSel) _calDiaSel.classList.remove("sel-cal");
+    cel.classList.add("sel-cal");
+    _calDiaSel = cel;
+
+    var d = new Date(iso+"T00:00:00");
+    var NOMES_DIAS2 = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+    $("progDetDiaLabel").textContent = NOMES_DIAS2[d.getDay()]+" — "+d.getDate()+" "+MESES[d.getMonth()];
+
+    var htmlItens = itens.map(function(it){
+      var pillCls = it.tipo==="brassagem"?"ddp-b":(it.tipo==="envase"?"ddp-e":"ddp-r");
+      var pillTxt = it.tipo==="brassagem"?"🍺 Brassagem":(it.tipo==="envase"?"📦 Envase":"🛢 Barril");
+      var nome    = esc(it.estilo||it.produto||"—");
+      var sub     = [];
+      if (it.tanque) sub.push(esc(it.tanque));
+      if (it.tanqueOrigem) sub.push(esc(it.tanqueOrigem));
+      if (it.volPrev) sub.push("Prev: "+esc(it.volPrev)+" L");
+      if (it.qtd) sub.push("Prev: "+esc(it.qtd)+" un");
+      if (it.total) sub.push(fmtNum(it.total)+" L total");
+      if (it.criadaPor) sub.push("por @"+esc(it.criadaPor));
+      if (it.lancadoPor) sub.push("por @"+esc(it.lancadoPor));
+      var badgeCls = it.resultado?"ddb-ok":"ddb-pend";
+      var badgeTxt = it.resultado?"✓ Resultado":"Aguardando";
+      return "<div class='det-dia-item-m'>"+
+        "<span class='det-dia-pill-m "+pillCls+"'>"+pillTxt+"</span>"+
+        "<div style='flex:1'>"+
+          "<div class='det-dia-nome-m'>"+nome+"</div>"+
+          (sub.length?"<div class='det-dia-sub-m'>"+sub.join(" · ")+"</div>":"")+
+        "</div>"+
+        "<span class='det-dia-badge-m "+badgeCls+"'>"+badgeTxt+"</span>"+
+      "</div>";
+    }).join("");
+    $("progDetDiaItens").innerHTML = htmlItens;
+    $("progDetDia").hidden = false;
+    $("progDetDia").scrollIntoView({behavior:"smooth",block:"nearest"});
+
+    // Botão "ir para semana"
+    $("btnDetDiaIrSem").onclick = function(){
+      var dataAlvo = new Date(iso+"T00:00:00");
+      segProg = segundaDe(dataAlvo);
+      progSetVisao("semanal");
+      carregarProg();
+    };
+  };
+
+  $("btnDetDiaFechar").addEventListener("click", function(){
+    if (_calDiaSel) _calDiaSel.classList.remove("sel-cal");
+    _calDiaSel = null;
+    $("progDetDia").hidden = true;
+  });
 }
 
 // Semana exibida na aba Programação — independente do checklist
