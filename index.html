@@ -2549,7 +2549,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.5.8";
+var VERSAO = "2.5.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4626,18 +4626,25 @@ function renderResultadoEnvase(r){
 }
 
 function renderChecksBarril(it, semana){
-  // Barril tem só o check de BeerSales (transferência no sistema)
   var ch = it.checks || {};
-  var marcado = !!ch["lancadoBeerSales"];
-  var por = ch["lancadoBeerSales_por"] ? " @"+ch["lancadoBeerSales_por"] : "";
+  var mProg = !!ch["beerSalesProg"];
+  var pProg = ch["beerSalesProg_por"] ? " @"+ch["beerSalesProg_por"] : "";
+  var mConc = !!ch["lancadoBeerSales"];
+  var pConc = ch["lancadoBeerSales_por"] ? " @"+ch["lancadoBeerSales_por"] : "";
   return "<div class='checks-lancamento'>"+
-    "<button class='check-lancamento"+(marcado?" marcado":"")+"'"+
+    "<button class='check-lancamento"+(mProg?" programado":"")+"'"+
+    " data-barril-check='beerSalesProg'"+
+    " data-barril-check-id='"+esc(it.id)+"'"+
+    " data-barril-check-semana='"+esc(semana)+"'>"+
+    "<span class='cl-icone'>"+(mProg?"✓":"")+"</span>"+
+    "BeerSales Prog."+(mProg&&pProg?"<span style='font-size:.7rem;opacity:.75'>"+esc(pProg)+"</span>":"")+
+    "</button>"+
+    "<button class='check-lancamento"+(mConc?" marcado":"")+"'"+
     " data-barril-check='lancadoBeerSales'"+
     " data-barril-check-id='"+esc(it.id)+"'"+
     " data-barril-check-semana='"+esc(semana)+"'>"+
-    "<span class='cl-icone'>"+(marcado?"✓":"")+"</span>"+
-    "BeerSales"+
-    (marcado&&por?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+"</span>":"")+
+    "<span class='cl-icone'>"+(mConc?"✓":"")+"</span>"+
+    "BeerSales Conc."+(mConc&&pConc?"<span style='font-size:.7rem;opacity:.75'>"+esc(pConc)+"</span>":"")+
     "</button>"+
   "</div>";
 }
