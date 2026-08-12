@@ -134,6 +134,29 @@ export default protegido(async function handler(req, res) {
       it.qtd          = (dados.qtd          || "").trim();
     }
 
+    // Se o dataISO cair em uma semana diferente da atual, mover o item
+    if (it.dataISO) {
+      const d = new Date(it.dataISO + "T00:00:00");
+      const dow = d.getDay(); // 0=dom
+      const diffSeg = (dow + 6) % 7; // dias até a segunda anterior
+      const seg = new Date(d);
+      seg.setDate(seg.getDate() - diffSeg);
+      const novaChaveSem = seg.getFullYear() + "-" +
+        String(seg.getMonth() + 1).padStart(2, "0") + "-" +
+        String(seg.getDate()).padStart(2, "0");
+
+      if (novaChaveSem !== semana) {
+        // Remover da semana original
+        const filtrado = itens.filter((x) => x.id !== dados.id);
+        await gravar(chave(semana), filtrado);
+        // Adicionar na semana nova
+        const itensNovaSem = (await ler(chave(novaChaveSem))) || [];
+        itensNovaSem.push(it);
+        await gravar(chave(novaChaveSem), itensNovaSem);
+        return res.json({ ok: true, itens: filtrado, movido: novaChaveSem });
+      }
+    }
+
     await gravar(chave(semana), itens);
     return res.json({ ok: true, itens });
   }
