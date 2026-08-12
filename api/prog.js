@@ -160,5 +160,14 @@ export default protegido(async function handler(req, res) {
     return res.json({ ok: true, item: itens[idx] });
   }
 
+  /* ---------- remover resultado ---------- */
+  if (dados.acao === "resultado_del") {
+    const idx = itens.findIndex((x) => x.id === dados.id);
+    if (idx < 0) return erro(res, 404, "Item não encontrado.");
+    delete itens[idx].resultado;
+    await gravar(chave(semana), itens);
+    return res.json({ ok: true, item: itens[idx] });
+  }
+
   return erro(res, 400, "Ação desconhecida.");
 });
