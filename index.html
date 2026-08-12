@@ -1352,8 +1352,8 @@
           <div style="display:flex;flex-direction:column;gap:6px;margin-left:auto;align-items:flex-end">
             <!-- toggle visão semanal / mensal -->
             <div class="visao-toggle">
-              <button class="vt-btn ativo" id="btnVisaoSem" onclick="progSetVisao('semanal')">Semana</button>
-              <button class="vt-btn" id="btnVisaoMes" onclick="progSetVisao('mensal')">Mês</button>
+              <button class="vt-btn ativo" id="btnVisaoSem" >Semana</button>
+              <button class="vt-btn" id="btnVisaoMes" >Mês</button>
             </div>
             <!-- linha 1: ano -->
             <div style="display:flex;align-items:center;gap:4px" id="progNavAno">
@@ -2549,7 +2549,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.5.7";
+var VERSAO = "2.5.8";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4891,6 +4891,15 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
 var _progVisao = "semanal";   // "semanal" | "mensal"
 var _calDiaSel = null;        // elemento do dia selecionado no calendário
 var _calDadosMes = {};        // cache dos dados carregados do mês
+
+// Listeners do toggle semanal/mensal (não podem ficar em onclick pois estão no IIFE)
+document.addEventListener("DOMContentLoaded", function(){});  // garante DOM pronto
+setTimeout(function(){
+  var btnS = $("btnVisaoSem");
+  var btnM = $("btnVisaoMes");
+  if (btnS) btnS.addEventListener("click", function(){ progSetVisao("semanal"); carregarProg(); });
+  if (btnM) btnM.addEventListener("click", function(){ progSetVisao("mensal");  carregarProg(); });
+}, 0);
 
 function progSetVisao(v){
   _progVisao = v;
