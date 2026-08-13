@@ -250,8 +250,6 @@ export default protegido(async function handler(req, res) {
 
   /* ---------- registrar barril ---------- */
   if (dados.acao === "barril") {
-    if (!podeProgramar(sessao.papel))
-      return erro(res, 403, "Apenas admin ou gestor podem registrar barreis.");
 
     const barreis = (await ler(chaveBarril(semana))) || {};
     const progId  = (dados.progId || `barril-${semana}`).trim();
