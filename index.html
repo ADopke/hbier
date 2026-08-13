@@ -2554,7 +2554,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.6.3";
+var VERSAO = "2.6.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5140,9 +5140,29 @@ async function carregarProgMensal(){
       var sub     = [];
       if (it.tanque) sub.push(esc(it.tanque));
       if (it.tanqueOrigem) sub.push(esc(it.tanqueOrigem));
-      if (it.volPrev) sub.push("Prev: "+esc(it.volPrev)+" L");
-      if (it.qtd) sub.push("Prev: "+esc(it.qtd)+" un");
-      if (it.total) sub.push(fmtNum(it.total)+" L total");
+      if (it.lote) sub.push("Lote: "+esc(it.lote));
+
+      // Previsto
+      if (it.tipo==="brassagem"){
+        if (it.volPrev) sub.push("Prev: "+esc(it.volPrev)+" L");
+      } else if (it.tipo==="envase"){
+        if (it.formato) sub.push(esc(it.formato));
+        if (it.qtd) sub.push("Prev: "+esc(it.qtd)+" un");
+      } else {
+        if (it.total) sub.push(fmtNum(it.total)+" L total");
+      }
+
+      // Realizado
+      if (it.resultado){
+        if (it.tipo==="brassagem"){
+          if (it.resultado.volume) sub.push("Real: "+esc(it.resultado.volume)+" L");
+          if (it.resultado.og)     sub.push("OG: "+esc(it.resultado.og));
+        } else if (it.tipo==="envase"){
+          if (it.resultado.qtdEnvasada) sub.push("Real: "+fmtNum(it.resultado.qtdEnvasada)+" un");
+          if (it.resultado.litrosUsados) sub.push(fmtNum(it.resultado.litrosUsados)+" L usados");
+        }
+      }
+
       if (it.criadaPor) sub.push("por @"+esc(it.criadaPor));
       if (it.lancadoPor) sub.push("por @"+esc(it.lancadoPor));
       var badgeCls = it.resultado?"ddb-ok":"ddb-pend";
