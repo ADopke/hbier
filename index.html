@@ -2351,8 +2351,7 @@
         border-radius:14px 14px 0 0;display:flex;align-items:center;gap:10px">
         <span id="brassFormTitulo" style="font-family:'Barlow Condensed',sans-serif;
           font-weight:700;text-transform:uppercase;font-size:1rem;flex:1">&#x1F37A; Nova Brassagem</span>
-        <button onclick="$('modalBrassagem').hidden=true"
-          style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
+        <button id="btnBrassFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
       </div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
         <div>
@@ -2389,8 +2388,7 @@
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button onclick="$('modalBrassagem').hidden=true"
-            style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
+          <button id="btnBrassCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
           <button id="btnBrassSalvar"
             style="padding:9px 18px;border:none;border-radius:8px;background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Salvar</button>
         </div>
@@ -2406,8 +2404,7 @@
         border-radius:14px 14px 0 0;display:flex;align-items:center;gap:10px">
         <span id="envFormTitulo" style="font-family:'Barlow Condensed',sans-serif;
           font-weight:700;text-transform:uppercase;font-size:1rem;flex:1">&#x1F4E6; Novo Envase</span>
-        <button onclick="$('modalEnvase').hidden=true"
-          style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
+        <button id="btnEnvFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
       </div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
         <div>
@@ -2454,8 +2451,7 @@
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button onclick="$('modalEnvase').hidden=true"
-            style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
+          <button id="btnEnvCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
           <button id="btnEnvSalvar"
             style="padding:9px 18px;border:none;border-radius:8px;background:#003E99;color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Salvar</button>
         </div>
@@ -2554,7 +2550,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.6.5";
+var VERSAO = "2.6.6";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4196,6 +4192,10 @@ $("btnAddBarril").addEventListener("click", function(){
 });
 $("btnBarrilFechar").addEventListener("click", function(){$("modalBarril").hidden=true;});
 $("btnBarrilCancelar").addEventListener("click", function(){$("modalBarril").hidden=true;});
+$("btnBrassFechar").addEventListener("click", function(){$("modalBrassagem").hidden=true;});
+$("btnBrassCancelar").addEventListener("click", function(){$("modalBrassagem").hidden=true;});
+$("btnEnvFechar").addEventListener("click", function(){$("modalEnvase").hidden=true;});
+$("btnEnvCancelar").addEventListener("click", function(){$("modalEnvase").hidden=true;});
 
 $("btnBarrilSalvar").addEventListener("click", async function(){
   var resumo = calcBarril();
