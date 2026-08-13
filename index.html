@@ -2554,7 +2554,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.6.2";
+var VERSAO = "2.6.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4201,10 +4201,13 @@ $("btnBarrilSalvar").addEventListener("click", async function(){
   var resumo = calcBarril();
   if (!resumo.linhas.length){ toast("Informe pelo menos uma quantidade.","erro"); return; }
   var produto = $("barrilProduto").value.trim();
-  if (!produto){ toast("Informe o produto/estilo.","erro"); return; }
-  var tanque = $("barrilTanque").value.trim();
-  var lote   = $("barrilLote").value.trim();
-  var dia    = $("barrilDia").value;
+  var tanque  = $("barrilTanque").value.trim();
+  var lote    = $("barrilLote").value.trim();
+  var dia     = $("barrilDia").value;
+  if (!produto) { toast("Informe o produto/estilo.","erro"); $("barrilProduto").focus(); return; }
+  if (!lote)    { toast("Informe o lote.","erro"); $("barrilLote").focus(); return; }
+  if (!tanque)  { toast("Informe o tanque de origem.","erro"); $("barrilTanque").focus(); return; }
+  if (!dia)     { toast("Selecione o dia previsto.","erro"); $("barrilDia").focus(); return; }
   // usar a semana selecionada no modal (não a semana que o usuário está navegando)
   var seg    = chaveSemana(_barrilSegProg || segProg);
 
@@ -4815,8 +4818,9 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
           "</div>"+
           "<span class='prog-estilo' style='font-size:1rem'>"+esc(it.produto||"Barril")+"</span>"+
           "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:6px'>"+
-            (it.lote?"<span class='item-desc'>Lote: "+esc(it.lote)+"</span>":"")+
             (it.tanque?"<span class='item-desc'>"+esc(it.tanque)+"</span>":"")+
+            (it.lote?"<span class='item-desc'>Lote: "+esc(it.lote)+"</span>":"")+
+            (it.dia?"<span class='item-desc'>"+esc(it.dia)+"</span>":"")+
           "</div>"+
           "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center'>"+
             linhasBarrilHtml+
@@ -4848,8 +4852,9 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
       if (it.formato)      detalhe += "<span class='item-desc'>"+esc(it.formato)+"</span> ";
       if (it.qtd)          detalhe += "<span class='item-desc'>Prev: "+esc(it.qtd)+"</span>";
     } else {
-      if (it.tanque)   detalhe += "<span class='item-desc'>Tanque: "+esc(it.tanque)+"</span>";
-      if (it.volPrev)  detalhe += "<span class='item-desc' style='color:var(--verde);font-weight:600'>Prev: "+esc(it.volPrev)+" L</span>";
+      if (it.lote)    detalhe += "<span class='item-desc'>Lote: "+esc(it.lote)+"</span> ";
+      if (it.tanque)  detalhe += "<span class='item-desc'>"+esc(it.tanque)+"</span> ";
+      if (it.volPrev) detalhe += "<span class='item-desc' style='color:var(--verde);font-weight:600'>Prev: "+esc(it.volPrev)+" L</span>";
     }
 
     var resultado = isEnvase
@@ -5270,8 +5275,16 @@ $("btnAddProg").addEventListener("click", function(){
 });
 
 $("btnBrassSalvar").addEventListener("click", async function(){
-  var estilo = $("brassEstilo").value.trim();
-  if (!estilo){ toast("Informe o estilo.", "erro"); return; }
+  var estilo   = $("brassEstilo").value.trim();
+  var brassTq  = $("brassTanque").value.trim();
+  var brassLt  = $("brassLote").value.trim();
+  var brassVol = $("brassVolPrev").value.trim();
+  var brassDv  = $("brassDia").value;
+  if (!estilo)   { toast("Informe o estilo.", "erro"); $("brassEstilo").focus(); return; }
+  if (!brassTq)  { toast("Informe o tanque destino.", "erro"); $("brassTanque").focus(); return; }
+  if (!brassLt)  { toast("Informe o lote.", "erro"); $("brassLote").focus(); return; }
+  if (!brassVol) { toast("Informe o volume previsto.", "erro"); $("brassVolPrev").focus(); return; }
+  if (!brassDv)  { toast("Selecione o dia previsto.", "erro"); $("brassDia").focus(); return; }
   var seg = chaveSemana(segProg);
   try{
     var _diaBrass = parseDiaSelect($("brassDia").value);
@@ -5330,8 +5343,18 @@ $("btnAddEnvase").addEventListener("click", function(){
 });
 
 $("btnEnvSalvar").addEventListener("click", async function(){
-  var produto = $("envProduto").value.trim();
-  if (!produto){ toast("Informe o produto.", "erro"); return; }
+  var produto  = $("envProduto").value.trim();
+  var envLt    = $("envLote").value.trim();
+  var envTq    = $("envTanque").value.trim();
+  var envFmt   = $("envFormato").value;
+  var envQt    = $("envQtd").value.trim();
+  var envDv    = $("envDia").value;
+  if (!produto) { toast("Informe o produto.", "erro"); $("envProduto").focus(); return; }
+  if (!envLt)   { toast("Informe o lote.", "erro"); $("envLote").focus(); return; }
+  if (!envTq)   { toast("Informe o tanque de origem.", "erro"); $("envTanque").focus(); return; }
+  if (!envFmt)  { toast("Selecione o formato.", "erro"); $("envFormato").focus(); return; }
+  if (!envQt)   { toast("Informe a quantidade prevista.", "erro"); $("envQtd").focus(); return; }
+  if (!envDv)   { toast("Selecione o dia previsto.", "erro"); $("envDia").focus(); return; }
   var seg = chaveSemana(segProg);
   try{
     var _diaEnv = parseDiaSelect($("envDia").value);
