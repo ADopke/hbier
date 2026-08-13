@@ -2365,6 +2365,11 @@
           <input type="text" id="brassTanque" placeholder="Ex.: TQ-03"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
         </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Lote</label>
+          <input type="text" id="brassLote" placeholder="Ex.: LOT38/26TQ03"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
             <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Dia previsto</label>
@@ -2549,7 +2554,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.6.1";
+var VERSAO = "2.6.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5255,7 +5260,8 @@ $("btnAddProg").addEventListener("click", function(){
   $("brassFormTitulo").textContent = "\uD83C\uDF7A Nova Brassagem";
   $("brassEstilo").value = "";
   $("brassTanque").value = "";
-  $("brassObs").value = "";
+  $("brassLote").value   = "";
+  $("brassObs").value    = "";
   $("brassVolPrev").value = "";
   preencherDias("brassDia");
   $("brassDia").value = "";
@@ -5277,6 +5283,7 @@ $("btnBrassSalvar").addEventListener("click", async function(){
       tipo: "brassagem",
       estilo: estilo,
       tanque:    $("brassTanque").value.trim(),
+      lote:      $("brassLote").value.trim(),
       volPrev:   $("brassVolPrev").value.trim(),
       dia:       diaBrass,
       dataISO:   _diaBrass.dataISO,
@@ -5395,6 +5402,7 @@ $("progLista").addEventListener("click", async function(ev){
       $("brassFormTitulo").textContent = "\uD83C\uDF7A Editar Brassagem";
       $("brassEstilo").value   = it.estilo||"";
       $("brassTanque").value   = it.tanque||"";
+      $("brassLote").value     = it.lote||"";
       $("brassVolPrev").value  = it.volPrev||"";
       $("brassObs").value      = it.obs||"";
       preencherDias("brassDia");
