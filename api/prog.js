@@ -237,9 +237,11 @@ export default protegido(async function handler(req, res) {
     if (it.checks[campo]) {
       delete it.checks[campo];
       delete it.checks[campo + "_por"];
+      delete it.checks[campo + "_em"];
     } else {
       it.checks[campo]          = true;
       it.checks[campo + "_por"] = sessao.login;
+      it.checks[campo + "_em"]  = new Date().toISOString();
     }
 
     await gravar(chave(semana), itens);
@@ -305,9 +307,11 @@ export default protegido(async function handler(req, res) {
     if (reg.checks[campo]) {
       delete reg.checks[campo];
       delete reg.checks[campo + "_por"];
+      delete reg.checks[campo + "_em"];
     } else {
       reg.checks[campo]          = true;
       reg.checks[campo + "_por"] = sessao.login;
+      reg.checks[campo + "_em"]  = new Date().toISOString();
     }
 
     barreis[progId] = lista;
