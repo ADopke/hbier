@@ -2550,7 +2550,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.6.6";
+var VERSAO = "2.6.7";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4633,6 +4633,14 @@ function renderResultadoEnvase(r){
   "</div>";
 }
 
+function fmtCheckEm(iso){
+  if (!iso) return "";
+  var d = new Date(iso);
+  if (isNaN(d)) return "";
+  return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+
+    " "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+}
+
 function renderChecksBarril(it, semana){
   var ch = it.checks || {};
   var mProg = !!ch["beerSalesProg"];
@@ -4645,14 +4653,14 @@ function renderChecksBarril(it, semana){
     " data-barril-check-id='"+esc(it.id)+"'"+
     " data-barril-check-semana='"+esc(semana)+"'>"+
     "<span class='cl-icone'>"+(mProg?"✓":"")+"</span>"+
-    "BeerSales Prog."+(mProg&&pProg?"<span style='font-size:.7rem;opacity:.75'>"+esc(pProg)+"</span>":"")+
+    "BeerSales Prog."+(mProg?"<span style='font-size:.7rem;opacity:.75'>"+esc(pProg||"")+(ch["beerSalesProg_em"]?" · "+fmtCheckEm(ch["beerSalesProg_em"]):"")+"</span>":"")+
     "</button>"+
     "<button class='check-lancamento"+(mConc?" marcado":"")+"'"+
     " data-barril-check='lancadoBeerSales'"+
     " data-barril-check-id='"+esc(it.id)+"'"+
     " data-barril-check-semana='"+esc(semana)+"'>"+
     "<span class='cl-icone'>"+(mConc?"✓":"")+"</span>"+
-    "BeerSales Conc."+(mConc&&pConc?"<span style='font-size:.7rem;opacity:.75'>"+esc(pConc)+"</span>":"")+
+    "BeerSales Conc."+(mConc?"<span style='font-size:.7rem;opacity:.75'>"+esc(pConc||"")+(ch["lancadoBeerSales_em"]?" · "+fmtCheckEm(ch["lancadoBeerSales_em"]):"")+"</span>":"")+
     "</button>"+
   "</div>";
 }
@@ -4670,7 +4678,7 @@ function renderChecksLancamento(it, semana){
       " data-prog-check-semana='"+esc(semana)+"'"+
       " title='"+(marcado?"Marcado por"+esc(por)+" — clique para desmarcar":"Marcar como lançado")+"'>"+
       "<span class='cl-icone'>"+(marcado?"✓":"")+"</span>"+
-      esc(rotulo)+(marcado&&por?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+"</span>":"")+
+      esc(rotulo)+(marcado?"<span style='font-size:.7rem;opacity:.75'>"+esc(por||"")+(ch[campo+"_em"]?" · "+fmtCheckEm(ch[campo+"_em"]):"")+"</span>":"")+
       "</button>";
   }
 
@@ -4683,7 +4691,7 @@ function renderChecksLancamento(it, semana){
       " data-prog-check-semana='"+esc(semana)+"'"+
       " title='"+(marcado?"Programado por"+esc(por)+" — clique para desmarcar":"Marcar como programado no BeerSales")+"'>"+
       "<span class='cl-icone'>"+(marcado?"✓":"")+"</span>"+
-      esc(rotulo)+(marcado&&por?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+"</span>":"")+
+      esc(rotulo)+(marcado?"<span style='font-size:.7rem;opacity:.75'>"+esc(por||"")+(ch[campo+"_em"]?" · "+fmtCheckEm(ch[campo+"_em"]):"")+"</span>":"")+
       "</button>";
   }
 
