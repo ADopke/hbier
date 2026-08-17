@@ -102,6 +102,7 @@ export default protegido(async function handler(req, res) {
       item.lote         = (dados.lote         || "").trim();
       item.tanqueOrigem = (dados.tanqueOrigem || "").trim();
       item.formato      = (dados.formato      || "").trim();
+      item.estilo       = (dados.estilo       || "").trim();
       item.qtd          = (dados.qtd          || "").trim();
     }
 
@@ -133,6 +134,7 @@ export default protegido(async function handler(req, res) {
       it.lote         = (dados.lote         || "").trim();
       it.tanqueOrigem = (dados.tanqueOrigem || "").trim();
       it.formato      = (dados.formato      || "").trim();
+      it.estilo       = (dados.estilo       || "").trim();
       it.qtd          = (dados.qtd          || "").trim();
     }
 
