@@ -2550,7 +2550,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.6.7";
+var VERSAO = "2.6.8";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5826,13 +5826,20 @@ async function carregarMetas(){
           var qr = parseFloat(it.resultado.qtdEnvasada||0) || 0;
           qtdRealizada += qr;
           semQtdReal   += qr;
-          var fmt = it.formato || "";
+          var fmt  = it.formato  || "";
+          var prod = it.produto  || "";
           if (fmt && qr){
             if (!porFormato[fmt]) porFormato[fmt] = {qtd:0, litros:0};
             porFormato[fmt].qtd += qr;
             var lf = (LITROS_FORMATO[fmt]||0) * qr;
             porFormato[fmt].litros += lf;
             litrosEnvasados += lf;
+            // chave produto = "formato produto" ex: "PET 500ml IPA"
+            if (prod){
+              var chaveProd = fmt+" "+prod;
+              if (!porFormato["_prod_"+chaveProd]) porFormato["_prod_"+chaveProd] = 0;
+              porFormato["_prod_"+chaveProd] += qr;
+            }
           }
         }
       }
@@ -5933,12 +5940,14 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
           var metaProd = fmtsMeta[prod] || 0;
           if (!metaProd) return;
           var nomeProd = prod.replace(fmt+" ",""); // ex: "Helles"
-          var pct = Math.round(realFmt/metaProd*100); // aproximado (real do formato inteiro vs meta do produto)
+          // realizado somente para este produto (formato + nome)
+          var realProd = porFormato["_prod_"+prod] || 0;
+          var pct = metaProd ? Math.round(realProd/metaProd*100) : 0;
           var classe = pct>=100?"acima":pct>=80?"atingida":"";
           html += "<div style='margin-bottom:6px'>"+
             "<div class='meta-barra-numeros' style='margin-bottom:3px'>"+
               "<span style='font-size:.8rem;font-weight:600;color:var(--ink)'>"+esc(nomeProd)+"</span>"+
-              "<span class='meta-barra-meta'>meta: "+fmtNum(metaProd)+" un</span>"+
+              "<span style='font-size:.75rem;color:var(--muted)'>"+fmtNum(realProd)+" / "+fmtNum(metaProd)+" un</span>"+
             "</div>"+
             "<div class='meta-barra-bg'>"+
               "<div class='meta-barra-fill "+classe+"' style='width:"+Math.min(100,pct)+"%'></div>"+
