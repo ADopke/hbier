@@ -2439,6 +2439,12 @@
               style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem">
           </div>
         </div>
+        <div id="envEstiloWrap" hidden>
+          <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Estilo</label>
+          <select id="envEstilo" style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.85rem">
+            <option value="">Selecione o estilo</option>
+          </select>
+        </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Dia previsto</label>
           <select id="envDia" style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
@@ -2550,7 +2556,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.6.8";
+var VERSAO = "2.6.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5149,6 +5155,7 @@ async function carregarProgMensal(){
       if (it.tanque) sub.push(esc(it.tanque));
       if (it.tanqueOrigem) sub.push(esc(it.tanqueOrigem));
       if (it.lote) sub.push("Lote: "+esc(it.lote));
+      if (it.estilo) sub.push(esc(it.estilo));
 
       // Previsto
       if (it.tipo==="brassagem"){
@@ -5366,9 +5373,12 @@ $("btnAddEnvase").addEventListener("click", function(){
   $("envObs").value = "";
   preencherDias("envDia");
   $("envDia").value = "";
+  $("envEstiloWrap").hidden = true;
+  $("envEstilo").value = "";
   $("modalEnvase").hidden = false;
   setTimeout(function(){ $("envProduto").focus(); }, 80);
 });
+$("envFormato").addEventListener("change", atualizarEnvEstilo);
 
 $("btnEnvSalvar").addEventListener("click", async function(){
   var produto  = $("envProduto").value.trim();
@@ -5377,10 +5387,12 @@ $("btnEnvSalvar").addEventListener("click", async function(){
   var envFmt   = $("envFormato").value;
   var envQt    = $("envQtd").value.trim();
   var envDv    = $("envDia").value;
+  var envEstiloVal = (ENV_ESTILOS[envFmt] && ENV_ESTILOS[envFmt].length) ? $("envEstilo").value : "";
   if (!produto) { toast("Informe o produto.", "erro"); $("envProduto").focus(); return; }
   if (!envLt)   { toast("Informe o lote.", "erro"); $("envLote").focus(); return; }
   if (!envTq)   { toast("Informe o tanque de origem.", "erro"); $("envTanque").focus(); return; }
   if (!envFmt)  { toast("Selecione o formato.", "erro"); $("envFormato").focus(); return; }
+  if (ENV_ESTILOS[envFmt] && !envEstiloVal) { toast("Selecione o estilo.", "erro"); $("envEstilo").focus(); return; }
   if (!envQt)   { toast("Informe a quantidade prevista.", "erro"); $("envQtd").focus(); return; }
   if (!envDv)   { toast("Selecione o dia previsto.", "erro"); $("envDia").focus(); return; }
   var seg = chaveSemana(segProg);
@@ -5396,6 +5408,7 @@ $("btnEnvSalvar").addEventListener("click", async function(){
       lote:     $("envLote").value.trim(),
       tanqueOrigem: $("envTanque").value.trim(),
       formato:  $("envFormato").value,
+      estilo:   envEstiloVal,
       qtd:      $("envQtd").value.trim(),
       dia:      diaEnv,
       dataISO:  _diaEnv.dataISO,
@@ -5441,6 +5454,11 @@ $("progLista").addEventListener("click", async function(ev){
       $("envProduto").value = it.produto||"";
       $("envLote").value    = it.lote||"";
       $("envTanque").value  = it.tanqueOrigem||"";
+      // Restaurar estilo se o formato tiver estilos definidos
+      setTimeout(function(){
+        atualizarEnvEstilo();
+        if (it.estilo) $("envEstilo").value = it.estilo;
+      }, 0);
       $("envFormato").value = it.formato||"";
       $("envQtd").value     = it.qtd||"";
       $("envObs").value     = it.obs||"";
@@ -5834,9 +5852,11 @@ async function carregarMetas(){
             var lf = (LITROS_FORMATO[fmt]||0) * qr;
             porFormato[fmt].litros += lf;
             litrosEnvasados += lf;
-            // chave produto = "formato produto" ex: "PET 500ml IPA"
-            if (prod){
-              var chaveProd = fmt+" "+prod;
+            // chave produto = "formato estilo" ex: "PET 500ml IPA"
+            // usar it.estilo se disponível, senão it.produto como fallback
+            var estiloEnv = it.estilo || prod;
+            if (estiloEnv){
+              var chaveProd = fmt+" "+estiloEnv;
               if (!porFormato["_prod_"+chaveProd]) porFormato["_prod_"+chaveProd] = 0;
               porFormato["_prod_"+chaveProd] += qr;
             }
