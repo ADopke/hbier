@@ -2573,7 +2573,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.7.3";
+var VERSAO = "2.7.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5858,7 +5858,8 @@ async function carregarMetas(){
     var r = resultados[i];
     var itens = r.itens || [];
     var semVolReal = 0, semVolPrev = 0, semQtdReal = 0, semQtdPrev = 0;
-    var semFmtReal = {};  // { "PET 500ml IPA": qtd, "PET 1L Helles": qtd, ... }
+    var semFmtReal = {};  // { "PET 500ml IPA": qtd real, ... }
+    var semFmtPrev = {};  // { "PET 500ml IPA": qtd prevista, ... }
 
     itens.forEach(function(it){
       // Filtrar pelo mês/ano da meta usando dataISO ou dia da semana
@@ -5899,6 +5900,14 @@ async function carregarMetas(){
           qtdPrevista += qp;
           semQtdPrev  += qp;
           if (qp) totalTemPrevisto = true;
+          // acumular previsto por formato/estilo na semana
+          var fmtP  = it.formato || "";
+          var estP  = (it.estilo || "").trim() || (it.produto || "").trim();
+          if (fmtP){
+            var chavePrev = estP ? fmtP+" "+estP : fmtP;
+            if (!semFmtPrev[chavePrev]) semFmtPrev[chavePrev] = 0;
+            semFmtPrev[chavePrev] += qp;
+          }
         }
         // Realizado: qtd do resultado
         if (it.resultado && it.resultado.qtdEnvasada){
@@ -5942,6 +5951,7 @@ async function carregarMetas(){
       volReal: semVolReal, volPrev: semVolPrev,
       qtdReal: semQtdReal, qtdPrev: semQtdPrev,
       fmtReal: semFmtReal,
+      fmtPrev: semFmtPrev,
       pctBrass: meta.brass ? Math.min(100, Math.round(semVolReal/meta.brass*100)) : null,
       pctEnv:   meta.envTotal ? Math.min(100, Math.round(semQtdReal/meta.envTotal*100)) : null
     });
@@ -6121,24 +6131,46 @@ function renderMetaSemanas(semanas, meta){
     var fmtsMeta = (typeof meta !== "undefined" && meta.formatos) ? meta.formatos : {};
     var fmtReal  = sem.fmtReal || {};
 
-    // Coletar quais formatos têm dado esta semana ou meta definida
+    // Coletar quais formatos têm dado esta semana (real OU previsto)
+    var fmtReal  = sem.fmtReal || {};
+    var fmtPrev  = sem.fmtPrev || {};
+    var todasChaves = {};
+    Object.keys(fmtReal).forEach(function(k){ todasChaves[k]=1; });
+    Object.keys(fmtPrev).forEach(function(k){ todasChaves[k]=1; });
+
+    // Agrupar por formato
     var fmtsComDado = {};
     Object.keys(GRUPOS_META).forEach(function(fmt){
       var prods = GRUPOS_META[fmt];
       prods.forEach(function(prod){
-        var real = (prod === fmt) ? (fmtReal[fmt]||0) : (fmtReal[prod]||0);
-        var metaP = fmtsMeta[prod] || 0;
-        if (real > 0 || metaP > 0){
+        var chave = (prod === fmt) ? fmt : prod;
+        var real  = fmtReal[chave] || 0;
+        var prev  = fmtPrev[chave] || fmtPrev[fmt] || 0;
+        if (real > 0 || prev > 0){
           if (!fmtsComDado[fmt]) fmtsComDado[fmt] = [];
-          fmtsComDado[fmt].push({prod:prod, real:real, meta:metaP});
+          fmtsComDado[fmt].push({prod:prod, chave:chave, real:real, prev:prev});
         }
       });
     });
 
-    var temQualquerEnv = Object.keys(fmtsComDado).length > 0;
-    if (temQualquerEnv || temEnv){
+    // Formatos com dado mas não mapeados no GRUPOS_META
+    Object.keys(todasChaves).forEach(function(k){
+      if (k.indexOf("_prod_")===0) return;
+      // verificar se já está coberto
+      var coberto = false;
+      Object.keys(GRUPOS_META).forEach(function(fmt){
+        if (k===fmt || k.indexOf(fmt+" ")===0) coberto=true;
+      });
+      if (!coberto && (fmtReal[k]||0)+(fmtPrev[k]||0) > 0){
+        if (!fmtsComDado[k]) fmtsComDado[k] = [];
+        fmtsComDado[k].push({prod:k, chave:k, real:fmtReal[k]||0, prev:fmtPrev[k]||0});
+      }
+    });
+
+    var temQualquerEnv = Object.keys(fmtsComDado).length > 0 || temEnv;
+    if (temQualquerEnv){
       if (Object.keys(fmtsComDado).length === 0){
-        // Só tem total, sem meta por formato — mostrar linha simples
+        // Sem detalhamento — linha simples
         var numsEnv = [];
         if (sem.qtdReal) numsEnv.push("Real: <b style='color:#003E99'>"+fmtNum(sem.qtdReal)+" un</b>");
         if (sem.qtdPrev) numsEnv.push("Prev: <span style='color:#8B6914'>"+fmtNum(sem.qtdPrev)+" un</span>");
@@ -6148,37 +6180,38 @@ function renderMetaSemanas(semanas, meta){
           (pctEnv>0?"<span class='meta-semana-pct' style='color:"+corEnv+"'>"+pctEnv+"%</span>":"")+
         "</div>";
       } else {
-        // Uma sublinha por formato
         Object.keys(fmtsComDado).forEach(function(fmt){
           var linhas = fmtsComDado[fmt];
-          var totalRealFmt = linhas.reduce(function(a,x){ return a+x.real; }, 0);
-          var totalMetaFmt = linhas.reduce(function(a,x){ return a+x.meta; }, 0);
+          var totalReal = linhas.reduce(function(a,x){ return a+x.real; }, 0);
+          var totalPrev = linhas.reduce(function(a,x){ return a+x.prev; }, 0);
+          var pctFmtHdr = totalPrev ? Math.min(100,Math.round(totalReal/totalPrev*100)) : 0;
+          var corFmtHdr = pctFmtHdr>=100?"var(--verde)":pctFmtHdr>=80?"var(--dourado)":"var(--muted)";
 
-          // Cabeçalho do formato
           html += "<div class='meta-semana-row'>"+
             "<span class='meta-semana-row-label' style='color:#003E99;font-weight:700'>📦 "+esc(fmt)+"</span>"+
             "<span class='meta-semana-row-nums' style='color:var(--muted)'>"+
-              (totalRealFmt?"Real: <b style='color:#003E99'>"+fmtNum(totalRealFmt)+" un</b>":"")+
-              (totalMetaFmt?" Meta: "+fmtNum(totalMetaFmt)+" un":"")+
+              (totalReal?"Real: <b style='color:#003E99'>"+fmtNum(totalReal)+" un</b> ":"")+
+              (totalPrev?" Prev: <span style='color:#8B6914'>"+fmtNum(totalPrev)+" un</span>":"")+
             "</span>"+
+            (pctFmtHdr>0?"<span class='meta-semana-pct' style='color:"+corFmtHdr+"'>"+pctFmtHdr+"%</span>":"")+
           "</div>";
 
-          // Sublinhas por produto/estilo (se mais de um)
+          // Sublinhas por estilo (se mais de um)
           if (linhas.length > 1){
             linhas.forEach(function(lp){
-              if (lp.real === 0 && lp.meta === 0) return;
+              if (lp.real === 0 && lp.prev === 0) return;
               var nomeProd = lp.prod.replace(fmt+" ","");
-              var pctP = lp.meta ? Math.min(100,Math.round(lp.real/lp.meta*100)) : 0;
+              var pctP = lp.prev ? Math.min(100,Math.round(lp.real/lp.prev*100)) : 0;
               var corP = pctP>=100?"var(--verde)":pctP>=80?"var(--dourado)":"var(--muted)";
-              html += "<div class='meta-semana-row' style='padding-left:8px;opacity:.9'>"+
+              html += "<div class='meta-semana-row' style='padding-left:8px'>"+
                 "<span class='meta-semana-row-label' style='color:#6B8FC9;font-size:.72rem'>"+esc(nomeProd)+"</span>"+
                 "<span class='meta-semana-row-nums'>"+
                   (lp.real?"<b style='color:#003E99'>"+fmtNum(lp.real)+" un</b>":"")+
-                  (lp.meta?" / "+fmtNum(lp.meta)+" un":"")+
+                  (lp.prev?" / Prev: <span style='color:#8B6914'>"+fmtNum(lp.prev)+" un</span>":"")+
                 "</span>"+
                 (pctP>0?"<span class='meta-semana-pct' style='color:"+corP+";font-size:.72rem'>"+pctP+"%</span>":"")+
               "</div>";
-              if (lp.meta){
+              if (lp.prev){
                 html += "<div class='meta-semana-row' style='gap:6px;padding-left:8px'>"+
                   "<div style='width:80px;flex-shrink:0'></div>"+
                   "<div class='meta-semana-barra'>"+
@@ -6187,15 +6220,12 @@ function renderMetaSemanas(semanas, meta){
                 "</div>";
               }
             });
-          } else if (totalMetaFmt > 0){
-            // Só um produto — mostrar barra direto
-            var pctFmt = Math.min(100,Math.round(totalRealFmt/totalMetaFmt*100));
-            var corFmt = pctFmt>=100?"var(--verde)":pctFmt>=80?"var(--dourado)":"var(--muted)";
+          } else if (totalPrev > 0){
+            // Um único produto — barra direta
             html += "<div class='meta-semana-row' style='gap:6px'>"+
               "<div style='width:80px;flex-shrink:0'></div>"+
-              "<span class='meta-semana-pct' style='color:"+corFmt+"'>"+pctFmt+"%</span>"+
               "<div class='meta-semana-barra'>"+
-                "<div class='meta-semana-fill' style='width:"+pctFmt+"%;background:#003E99'></div>"+
+                "<div class='meta-semana-fill' style='width:"+pctFmtHdr+"%;background:#003E99'></div>"+
               "</div>"+
             "</div>";
           }
