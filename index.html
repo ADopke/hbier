@@ -273,144 +273,23 @@
   }
   .config-sugestoes-item:last-child{ border-bottom:none; }
 
-  /* ---- toggle visão semanal/mensal ---- */
-  .visao-toggle{
-    display:flex;gap:3px;background:var(--cinza);
-    border-radius:8px;padding:3px;
-  }
-  .vt-btn{
-    padding:4px 11px;border-radius:6px;border:none;cursor:pointer;
-    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.76rem;
-    letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
-    background:transparent;transition:.12s;
-  }
-  .vt-btn.ativo{
-    background:#fff;color:var(--verde);
-    box-shadow:0 1px 4px rgba(0,0,0,.1);
-  }
-
-  /* ---- totais mensais ---- */
-  .totais-mensais{
-    padding:12px 14px;display:grid;
-    grid-template-columns:1fr 1fr;gap:8px;
-    border-bottom:1px solid var(--linha);
-  }
-  .tm-card{
-    border-radius:8px;padding:9px 11px;
-    display:flex;flex-direction:column;gap:2px;
-  }
-  .tm-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
-  .tm-num{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.35rem;line-height:1.1;}
-  .tm-sub{font-size:.68rem;color:var(--muted);}
-  .tm-barra{height:4px;background:rgba(0,0,0,.08);border-radius:99px;overflow:hidden;margin-top:5px;}
-  .tm-fill{height:100%;border-radius:99px;}
-  .tm-brass{background:var(--verde-claro);border:1px solid #A8D4B4;}
-  .tm-env{background:#E8F0FF;border:1px solid #B3C8F5;}
-  .tm-barril{background:#FFF3E8;border:1px solid #D4905A;}
-  .tm-vol{background:var(--dourado-claro);border:1px solid #E6C84A;grid-column:1/-1;}
-  .tm-brass .tm-num{color:var(--verde);}
-  .tm-env .tm-num{color:#003E99;}
-  .tm-barril .tm-num{color:#7A4500;}
-  .tm-vol .tm-num{color:var(--verde);font-size:1.1rem;}
-  .tm-vol-linha{display:flex;align-items:baseline;gap:8px;}
-  .tm-vol-meta{font-size:.72rem;color:var(--muted);}
-
-  /* ---- legenda do calendário ---- */
-  .cal-legenda{
-    padding:6px 14px;border-bottom:1px solid var(--linha);
-    display:flex;gap:10px;flex-wrap:wrap;background:var(--cinza);
-  }
-  .cal-leg-item{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;color:var(--muted);}
-  .cal-leg-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
-
-  /* ---- calendário mensal ---- */
-  .cal-header-mensal{
-    display:grid;grid-template-columns:repeat(7,1fr);
-    border-bottom:1px solid var(--linha);background:var(--cinza);
-  }
-  .cal-dh-m{
-    text-align:center;padding:5px 2px;
-    font-family:'Barlow Condensed',sans-serif;font-weight:700;
-    font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
-  }
-  .cal-dh-m.fw{color:var(--vermelho);}
-  .cal-grid-mensal{display:grid;grid-template-columns:repeat(7,1fr);}
-  .cal-dia-m{
-    border-right:1px solid var(--linha);border-bottom:1px solid var(--linha);
-    min-height:46px;padding:4px 3px 3px;
-    position:relative;cursor:pointer;transition:background .1s;
-  }
-  .cal-dia-m:nth-child(7n){border-right:none;}
-  .cal-dia-m:hover{background:#F0EFE8;}
-  .cal-dia-m.outro{background:var(--cinza);opacity:.6;pointer-events:none;}
-  .cal-dia-m.hoje-cal{background:var(--dourado-claro);}
-  .cal-dia-m.hoje-cal .cal-n-m{color:var(--dourado);font-weight:800;}
-  .cal-dia-m.sel-cal{background:var(--verde-claro) !important;}
-  .cal-dia-m.sel-cal .cal-n-m{color:var(--verde);font-weight:800;}
-  .cal-dia-m.fw-cal .cal-n-m{color:var(--vermelho);}
-  .cal-n-m{
-    font-family:'Barlow Condensed',sans-serif;font-weight:700;
-    font-size:.8rem;color:var(--muted);display:block;margin-bottom:3px;
-  }
-  .cal-dia-m.tem-cal .cal-n-m{color:var(--ink);}
-  .cal-cpills{display:flex;flex-direction:column;gap:2px;}
-  .cal-cp{height:4px;border-radius:2px;width:100%;}
-  .cal-cp-b{background:var(--verde);}
-  .cal-cp-e{background:#003E99;}
-  .cal-cp-r{background:#7A4500;}
-  .cal-cp-b.res,.cal-cp-e.res{opacity:.45;}
-  .cal-res-dot{position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:#34D399;}
-
-  /* ---- detalhe do dia clicado ---- */
-  .det-dia-m{border-top:2px solid var(--verde);}
-  .det-dia-header-m{
-    padding:9px 14px;background:var(--verde);color:#fff;
-    font-family:'Barlow Condensed',sans-serif;font-weight:700;
-    font-size:.9rem;text-transform:uppercase;letter-spacing:.05em;
-    display:flex;align-items:center;justify-content:space-between;
-  }
-  .det-dia-fechar-m{background:none;border:none;color:rgba(255,255,255,.8);font-size:1rem;cursor:pointer;}
-  .det-dia-item-m{
-    padding:9px 14px;border-top:1px solid var(--linha);
-    display:flex;align-items:center;gap:9px;
-  }
-  .det-dia-pill-m{
-    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.66rem;
-    text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:20px;flex-shrink:0;
-  }
-  .ddp-b{background:var(--verde-claro);color:var(--verde);}
-  .ddp-e{background:#E8F0FF;color:#003E99;}
-  .ddp-r{background:#FFF3E8;color:#7A4500;}
-  .det-dia-nome-m{font-weight:700;font-size:.87rem;flex:1;}
-  .det-dia-sub-m{font-size:.72rem;color:var(--muted);margin-top:2px;}
-  .det-dia-badge-m{
-    font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:20px;
-    font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;flex-shrink:0;
-  }
-  .ddb-ok{background:#D1FAE5;color:#065F46;}
-  .ddb-pend{background:#FEF3C7;color:#92400E;}
-  .det-dia-ir-m{
-    padding:8px 14px;border-top:1px solid var(--linha);
-    background:var(--cinza);
-  }
-
   /* ---- separador de dia na programação ---- */
   .prog-dia-sep{
-    padding:9px 14px 8px;
+    padding:10px 14px 8px;
     font-family:'Barlow Condensed',sans-serif;font-weight:800;
-    font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;
+    font-size:1.1rem;letter-spacing:.08em;text-transform:uppercase;
     color:#fff;
-    background:#3D3D3D;
-    border-radius:8px;
-    margin-top:20px;
+    background:var(--verde);
+    border-radius:0;
+    margin-top:10px;
     display:flex;align-items:center;gap:10px;
   }
   .prog-dia-sep::before{
     content:'';display:inline-block;
-    width:4px;height:1rem;background:rgba(255,255,255,.35);border-radius:2px;
+    width:4px;height:1.1rem;background:rgba(255,255,255,.5);border-radius:2px;
     flex-shrink:0;
   }
-  .prog-dia-sep:first-child{ margin-top:4px; }
+  .prog-dia-sep:first-child{ margin-top:0; }
 
   /* ---- tarefas de produção ---- */
   .prod-feita{ opacity:.75; }
@@ -638,31 +517,14 @@
   .meta-formato-realizado{ font-weight:700;text-align:right; }
   .meta-formato-meta{ color:var(--muted);text-align:right;font-size:.75rem; }
   .meta-semana-linha{
-    padding:10px 12px;
+    display:flex;align-items:center;gap:8px;padding:8px 10px;
     background:#fff;border:1px solid var(--linha);border-radius:8px;
-    font-size:.82rem;display:flex;flex-direction:column;gap:6px;
+    font-size:.82rem;
   }
-  .meta-semana-cabec{
-    display:flex;align-items:center;justify-content:space-between;
-    margin-bottom:2px;
-  }
-  .meta-semana-label{ font-weight:700;font-size:.85rem;color:var(--ink); }
+  .meta-semana-label{ font-weight:600;flex-shrink:0;min-width:80px; }
   .meta-semana-vals{ flex:1;color:var(--muted); }
-  .meta-semana-row{
-    display:flex;align-items:center;gap:8px;
-  }
-  .meta-semana-row-label{
-    font-size:.75rem;font-weight:600;flex-shrink:0;min-width:80px;
-  }
-  .meta-semana-row-nums{
-    flex:1;font-size:.75rem;color:var(--muted);
-  }
-  .meta-semana-pct{
-    font-family:'Barlow Condensed',sans-serif;font-weight:700;
-    font-size:.8rem;min-width:36px;text-align:right;flex-shrink:0;
-  }
   .meta-semana-barra{
-    flex:1;height:5px;background:var(--cinza);border-radius:99px;overflow:hidden;
+    width:80px;height:6px;background:var(--cinza);border-radius:99px;overflow:hidden;flex-shrink:0;
   }
   .meta-semana-fill{ height:100%;background:var(--verde);border-radius:99px; }
 
@@ -1367,13 +1229,8 @@
         <div class="sec-head" style="flex-wrap:wrap;gap:8px;align-items:flex-start">
           <span class="sec-title">🗓 Programação</span>
           <div style="display:flex;flex-direction:column;gap:6px;margin-left:auto;align-items:flex-end">
-            <!-- toggle visão semanal / mensal -->
-            <div class="visao-toggle">
-              <button class="vt-btn ativo" id="btnVisaoSem" >Semana</button>
-              <button class="vt-btn" id="btnVisaoMes" >Mês</button>
-            </div>
             <!-- linha 1: ano -->
-            <div style="display:flex;align-items:center;gap:4px" id="progNavAno">
+            <div style="display:flex;align-items:center;gap:4px">
               <button class="btn-hoje-sem" id="progPrevAno" style="font-size:.7rem;padding:3px 8px">‹‹</button>
               <span id="progAnoLabel" style="font-size:.78rem;font-weight:700;color:var(--verde);
                 min-width:36px;text-align:center"></span>
@@ -1386,8 +1243,8 @@
                 min-width:60px;text-align:center"></span>
               <button class="btn-hoje-sem" id="progNextMes" style="font-size:.8rem;padding:3px 9px">›</button>
             </div>
-            <!-- linha 3: semana dentro do mês (só visão semanal) -->
-            <div style="display:flex;align-items:center;gap:4px" id="progNavSem">
+            <!-- linha 3: semana dentro do mês -->
+            <div style="display:flex;align-items:center;gap:4px">
               <button class="btn-hoje-sem" id="progPrevSem">‹ sem</button>
               <span id="progSemana" style="font-size:.78rem;font-weight:600;
                 color:var(--muted);white-space:nowrap;min-width:140px;text-align:center"></span>
@@ -1403,48 +1260,8 @@
           border-bottom:1px solid var(--linha);display:flex;flex-wrap:wrap;
           gap:6px;align-items:center;min-height:0"></div>
 
-        <!-- visão semanal -->
-        <div id="progListaWrap">
-          <div id="progLista" style="padding:14px"></div>
-        </div>
-
-        <!-- visão mensal (hidden por padrão) -->
-        <div id="progMensalWrap" hidden>
-          <!-- totais -->
-          <div class="totais-mensais" id="progMensalTotais"></div>
-          <!-- legenda -->
-          <div class="cal-legenda">
-            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--verde)"></span> Brassagem</span>
-            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#003E99"></span> Envase</span>
-            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#7A4500"></span> Barril</span>
-            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#D1FAE5;border:1px solid #34D399"></span> Com resultado</span>
-          </div>
-          <!-- calendário -->
-          <div class="cal-header-mensal">
-            <div class="cal-dh-m">Seg</div>
-            <div class="cal-dh-m">Ter</div>
-            <div class="cal-dh-m">Qua</div>
-            <div class="cal-dh-m">Qui</div>
-            <div class="cal-dh-m">Sex</div>
-            <div class="cal-dh-m fw">Sáb</div>
-            <div class="cal-dh-m fw">Dom</div>
-          </div>
-          <div class="cal-grid-mensal" id="progCalGrid"></div>
-          <!-- detalhe do dia selecionado -->
-          <div class="det-dia-m" id="progDetDia" hidden>
-            <div class="det-dia-header-m">
-              <span id="progDetDiaLabel"></span>
-              <button class="det-dia-fechar-m" id="btnDetDiaFechar">✕</button>
-            </div>
-            <div id="progDetDiaItens"></div>
-            <div class="det-dia-ir-m">
-              <button class="btn-hoje-sem" id="btnDetDiaIrSem"
-                style="font-size:.72rem;width:100%;text-align:center">→ Ver semana completa desta data</button>
-            </div>
-          </div>
-        </div>
-
-        <div style="padding:0 14px 14px;border-top:1px solid var(--linha)">
+        <div id="progLista" style="padding:14px"></div>
+        <div style="padding:0 14px 14px">
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn mini" id="btnAddProg">🍺 Brassagem</button>
             <button class="btn mini secundario" id="btnAddEnvase">📦 Envase</button>
@@ -1598,6 +1415,8 @@
       <section>
         <div class="sec-head">
           <span class="sec-title">🧹 Limpeza</span>
+          <button class="btn-hoje-sem" id="btnLimpExportar"
+            style="font-size:.78rem;padding:5px 11px">📄 Exportar PDF</button>
         </div>
         <div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:10px">
           <!-- seletor de setor -->
@@ -2368,7 +2187,8 @@
         border-radius:14px 14px 0 0;display:flex;align-items:center;gap:10px">
         <span id="brassFormTitulo" style="font-family:'Barlow Condensed',sans-serif;
           font-weight:700;text-transform:uppercase;font-size:1rem;flex:1">&#x1F37A; Nova Brassagem</span>
-        <button id="btnBrassFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
+        <button onclick="$('modalBrassagem').hidden=true"
+          style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
       </div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
         <div>
@@ -2379,11 +2199,6 @@
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Tanque destino</label>
           <input type="text" id="brassTanque" placeholder="Ex.: TQ-03"
-            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
-        </div>
-        <div>
-          <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Lote</label>
-          <input type="text" id="brassLote" placeholder="Ex.: LOT38/26TQ03"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -2405,7 +2220,8 @@
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button id="btnBrassCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
+          <button onclick="$('modalBrassagem').hidden=true"
+            style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
           <button id="btnBrassSalvar"
             style="padding:9px 18px;border:none;border-radius:8px;background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Salvar</button>
         </div>
@@ -2421,7 +2237,8 @@
         border-radius:14px 14px 0 0;display:flex;align-items:center;gap:10px">
         <span id="envFormTitulo" style="font-family:'Barlow Condensed',sans-serif;
           font-weight:700;text-transform:uppercase;font-size:1rem;flex:1">&#x1F4E6; Novo Envase</span>
-        <button id="btnEnvFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
+        <button onclick="$('modalEnvase').hidden=true"
+          style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
       </div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
         <div>
@@ -2456,12 +2273,6 @@
               style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem">
           </div>
         </div>
-        <div id="envEstiloWrap" hidden>
-          <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Estilo</label>
-          <select id="envEstilo" style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.85rem">
-            <option value="">Selecione o estilo</option>
-          </select>
-        </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Dia previsto</label>
           <select id="envDia" style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
@@ -2474,7 +2285,8 @@
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button id="btnEnvCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
+          <button onclick="$('modalEnvase').hidden=true"
+            style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
           <button id="btnEnvSalvar"
             style="padding:9px 18px;border:none;border-radius:8px;background:#003E99;color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Salvar</button>
         </div>
@@ -2564,6 +2376,24 @@
       </div>
     </div>
   </div>
+
+<!-- Modal exportar limpeza PDF -->
+<div id="modalLimpExport" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25)">
+    <div style="background:var(--verde);color:#fff;padding:14px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between">
+      <span>📄 Exportar Limpeza — MAPA</span>
+      <button id="btnLimpExportFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div><label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Data inicial</label>
+        <input type="date" id="limpExportDe" style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem"></div>
+      <div><label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Data final</label>
+        <input type="date" id="limpExportAte" style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem"></div>
+      <p style="font-size:.75rem;color:var(--muted);line-height:1.4">Todos os 11 setores serão incluídos. O relatório abrirá para impressão/PDF.</p>
+      <button id="btnLimpExportGerar" style="padding:11px;border:none;border-radius:8px;background:var(--verde);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;cursor:pointer">Gerar e Imprimir / PDF</button>
+    </div>
+  </div>
+</div>
 <script>
 (function(){
 "use strict";
@@ -2573,7 +2403,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.7.5";
+var VERSAO = "2.7.6";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2673,27 +2503,6 @@ function carimboEm(est, chave){
    Utilidades
    ================================================================== */
 function $(id){ return document.getElementById(id); }
-
-var ENV_ESTILOS = {
-  "PET 500ml": ["Helles","Red Ale","IPA","Sem Álcool"],
-  "PET 1L":    ["Helles","Oktoberfest"]
-};
-
-function atualizarEnvEstilo(){
-  var fmt     = $("envFormato").value;
-  var wrap    = $("envEstiloWrap");
-  var sel     = $("envEstilo");
-  var estilos = ENV_ESTILOS[fmt] || [];
-  if (estilos.length){
-    sel.innerHTML = "<option value=''>Selecione o estilo</option>" +
-      estilos.map(function(e){ return "<option>"+e+"</option>"; }).join("");
-    wrap.hidden = false;
-  } else {
-    wrap.hidden = true;
-    sel.value = "";
-  }
-}
-
 function esc(s){
   return String(s==null?"":s).replace(/[&<>"']/g,function(c){
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
@@ -4236,22 +4045,15 @@ $("btnAddBarril").addEventListener("click", function(){
 });
 $("btnBarrilFechar").addEventListener("click", function(){$("modalBarril").hidden=true;});
 $("btnBarrilCancelar").addEventListener("click", function(){$("modalBarril").hidden=true;});
-$("btnBrassFechar").addEventListener("click", function(){$("modalBrassagem").hidden=true;});
-$("btnBrassCancelar").addEventListener("click", function(){$("modalBrassagem").hidden=true;});
-$("btnEnvFechar").addEventListener("click", function(){$("modalEnvase").hidden=true;});
-$("btnEnvCancelar").addEventListener("click", function(){$("modalEnvase").hidden=true;});
 
 $("btnBarrilSalvar").addEventListener("click", async function(){
   var resumo = calcBarril();
   if (!resumo.linhas.length){ toast("Informe pelo menos uma quantidade.","erro"); return; }
   var produto = $("barrilProduto").value.trim();
-  var tanque  = $("barrilTanque").value.trim();
-  var lote    = $("barrilLote").value.trim();
-  var dia     = $("barrilDia").value;
-  if (!produto) { toast("Informe o produto/estilo.","erro"); $("barrilProduto").focus(); return; }
-  if (!lote)    { toast("Informe o lote.","erro"); $("barrilLote").focus(); return; }
-  if (!tanque)  { toast("Informe o tanque de origem.","erro"); $("barrilTanque").focus(); return; }
-  if (!dia)     { toast("Selecione o dia previsto.","erro"); $("barrilDia").focus(); return; }
+  if (!produto){ toast("Informe o produto/estilo.","erro"); return; }
+  var tanque = $("barrilTanque").value.trim();
+  var lote   = $("barrilLote").value.trim();
+  var dia    = $("barrilDia").value;
   // usar a semana selecionada no modal (não a semana que o usuário está navegando)
   var seg    = chaveSemana(_barrilSegProg || segProg);
 
@@ -4563,193 +4365,6 @@ $("btnAddManut").addEventListener("click", function(){
   $("modalManut").hidden=false; $("manutDesc").focus();
 });
 
-
-// ===== EXPORTAR LIMPEZA PDF =====
-$("btnLimpExportar").addEventListener("click", function(){
-  // Preencher datas default: primeiro e último dia do mês atual
-  var hoje = new Date();
-  var primDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  var ultDia  = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0);
-  function toISO(d){ return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
-  $("limpExportDe").value  = toISO(primDia);
-  $("limpExportAte").value = toISO(ultDia);
-  $("modalLimpExport").hidden = false;
-});
-$("btnLimpExportFechar").addEventListener("click", function(){ $("modalLimpExport").hidden = true; });
-
-$("btnLimpExportGerar").addEventListener("click", async function(){
-  var de  = $("limpExportDe").value;
-  var ate = $("limpExportAte").value;
-  if (!de || !ate){ toast("Selecione o período.", "erro"); return; }
-  if (de > ate){ toast("Data inicial maior que a final.", "erro"); return; }
-
-  $("btnLimpExportGerar").textContent = "Carregando...";
-  $("btnLimpExportGerar").disabled = true;
-
-  try {
-    // Buscar dados de todos os setores em paralelo
-    var resultados = await Promise.all(LIMP_SETORES.map(function(st){
-      return api("/api/limpeza?setor="+st.id)
-        .then(function(r){ return {setor:st, registros:r.registros||[], itens:r.itens||[]}; })
-        .catch(function(){ return {setor:st, registros:[], itens:[]}; });
-    }));
-
-    // Filtrar pelo período
-    var deD  = new Date(de+"T00:00:00");
-    var ateD = new Date(ate+"T23:59:59");
-
-    function fmtDataBR(iso){
-      var d = new Date(iso);
-      return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear()
-            +" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
-    }
-    function fmtDataCurta(iso){
-      var d = new Date(iso);
-      return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();
-    }
-
-    var FREQ_LABEL = {
-      semanal:"Semanal", quinzenal:"Quinzenal", mensal:"Mensal",
-      anual:"Anual", a_cada_uso:"A cada uso", eventual:"Eventual"
-    };
-
-    // Período formatado
-    var periodoTxt = fmtDataCurta(deD.toISOString())+" a "+fmtDataCurta(ateD.toISOString());
-    var emissaoTxt = fmtDataBR(new Date().toISOString());
-
-    // Montar HTML do relatório
-    var setoresHTML = "";
-    resultados.forEach(function(r){
-      var regsFiltrados = r.registros.filter(function(reg){
-        var d = new Date(reg.em);
-        return d >= deD && d <= ateD;
-      });
-
-      // Construir tabela por item (último registro de cada item no período)
-      var ultimoPorItem = {};
-      regsFiltrados.forEach(function(reg){
-        if (!ultimoPorItem[reg.item] || reg.em > ultimoPorItem[reg.item].em){
-          ultimoPorItem[reg.item] = reg;
-        }
-      });
-
-      // Montar linhas da tabela — todos os itens do setor
-      var linhas = "";
-      var itensCadastrados = r.itens.length > 0 ? r.itens : (LIMP_ITENS_POR_SETOR[r.setor.id]||[]);
-      itensCadastrados.forEach(function(item){
-        var reg = ultimoPorItem[item.id];
-        var status    = reg ? "Realizado" : "Não registrado";
-        var dataHora  = reg ? fmtDataBR(reg.em) : "—";
-        var resp      = reg ? (reg.nomeFeitoPor||reg.feitoPor||"—") : "—";
-        var obs       = reg ? (reg.obs||"") : "";
-        var statusCor = reg ? "#065F46" : "#991B1B";
-        var statusBg  = reg ? "#D1FAE5" : "#FEE2E2";
-        linhas += "<tr>"+
-          "<td style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt'>"+item.nome+"</td>"+
-          "<td style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center'>"+
-            (FREQ_LABEL[item.freq]||item.freq)+"</td>"+
-          "<td style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center'>"+
-            dataHora+"</td>"+
-          "<td style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center'>"+
-            resp+"</td>"+
-          "<td style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center;"+
-            "background:"+statusBg+";color:"+statusCor+";font-weight:600'>"+
-            status+"</td>"+
-          "<td style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt'>"+esc(obs)+"</td>"+
-        "</tr>";
-      });
-
-      // Contar registros do setor no período
-      var totalRegs = regsFiltrados.length;
-      if (itensCadastrados.length === 0 && totalRegs === 0) return; // pular setor vazio
-
-      setoresHTML += "<div style='margin-bottom:22px;page-break-inside:avoid'>"+
-        "<div style='background:#025F1D;color:#fff;padding:8px 12px;border-radius:6px 6px 0 0;"+
-          "font-family:Arial,sans-serif;font-size:10pt;font-weight:700;"+
-          "display:flex;justify-content:space-between;align-items:center'>"+
-          "<span>"+r.setor.icone+" "+r.setor.nome+"</span>"+
-          "<span style='font-size:8.5pt;font-weight:400'>Responsável: "+r.setor.responsavel+
-          " &nbsp;|&nbsp; "+totalRegs+" registro(s) no período</span>"+
-        "</div>"+
-        "<table style='width:100%;border-collapse:collapse;font-family:Arial,sans-serif'>"+
-          "<thead><tr style='background:#F2F1EB'>"+
-            "<th style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:left;font-weight:600'>Item</th>"+
-            "<th style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center;font-weight:600'>Frequência</th>"+
-            "<th style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center;font-weight:600'>Última realização</th>"+
-            "<th style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center;font-weight:600'>Responsável</th>"+
-            "<th style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center;font-weight:600'>Status</th>"+
-            "<th style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:left;font-weight:600'>Observações</th>"+
-          "</tr></thead>"+
-          "<tbody>"+linhas+"</tbody>"+
-        "</table>"+
-        // Espaço para assinatura do responsável
-        "<div style='margin-top:10px;display:flex;gap:40px;font-family:Arial,sans-serif;font-size:8pt;color:#6E7568'>"+
-          "<div style='flex:1'>"+
-            "<div style='border-bottom:1px solid #ccc;height:28px'></div>"+
-            "<div style='margin-top:4px'>Responsável pelo setor: "+r.setor.responsavel+"</div>"+
-          "</div>"+
-          "<div style='flex:1'>"+
-            "<div style='border-bottom:1px solid #ccc;height:28px'></div>"+
-            "<div style='margin-top:4px'>Visto / Supervisor</div>"+
-          "</div>"+
-        "</div>"+
-      "</div>";
-    });
-
-    // HTML completo do relatório
-    var html = "<!DOCTYPE html><html lang='pt-BR'><head>"+
-      "<meta charset='UTF-8'>"+
-      "<title>Relatório de Limpeza HBier — "+periodoTxt+"</title>"+
-      "<style>"+
-        "@page{size:A4;margin:18mm 15mm 18mm 15mm}"+
-        "body{font-family:Arial,sans-serif;color:#22271F;margin:0;padding:0}"+
-        ".no-print{display:none}"+
-        "h1{font-size:14pt;margin:0 0 2px}"+
-        "h2{font-size:10pt;margin:0 0 12px;color:#6E7568;font-weight:400}"+
-        "table{page-break-inside:auto}"+
-        "tr{page-break-inside:avoid;page-break-after:auto}"+
-      "</style>"+
-      "</head><body>"+
-      // Cabeçalho do documento
-      "<div style='border-bottom:3px solid #025F1D;margin-bottom:18px;padding-bottom:12px;"+
-        "display:flex;justify-content:space-between;align-items:flex-end'>"+
-        "<div>"+
-          "<div style='font-size:8pt;color:#6E7568;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px'>"+
-            "HBier Cervejaria Artesanal</div>"+
-          "<h1>Relatório de Limpeza e Higienização</h1>"+
-          "<h2>Período: "+periodoTxt+"</h2>"+
-        "</div>"+
-        "<div style='text-align:right;font-size:8pt;color:#6E7568'>"+
-          "Emitido em: "+emissaoTxt+"<br>"+
-          "Documento gerado pelo sistema interno HBier<br>"+
-          "Sujeito à supervisão do MAPA"+
-        "</div>"+
-      "</div>"+
-      setoresHTML+
-      // Rodapé
-      "<div style='margin-top:30px;border-top:1px solid #E4E1D5;padding-top:12px;"+
-        "display:flex;justify-content:space-between;font-size:8pt;color:#6E7568'>"+
-        "<div>HBier Cervejaria Artesanal · Relatório de Limpeza · "+periodoTxt+"</div>"+
-        "<div>Gerado em "+emissaoTxt+"</div>"+
-      "</div>"+
-    "</body></html>";
-
-    // Abrir em nova janela e imprimir
-    var win = window.open("","_blank","width=900,height=700");
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    setTimeout(function(){ win.print(); }, 600);
-
-    $("modalLimpExport").hidden = true;
-  } catch(e){
-    toast("Erro ao gerar relatório: "+e.message, "erro");
-  } finally {
-    $("btnLimpExportGerar").textContent = "Gerar e Imprimir / PDF";
-    $("btnLimpExportGerar").disabled = false;
-  }
-});
-
 $("btnManutSalvar").addEventListener("click", async function(){
   var equipCod = ($("manutEquipSel")||{}).value || $("manutEquip").value;
   var desc = $("manutDesc").value.trim();
@@ -4781,19 +4396,6 @@ var _progEditando = null;
 var DIAS_PROG = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 
 async function carregarProg(){
-  // Se estiver em visão mensal, recarregar o calendário e sair
-  if (_progVisao === "mensal"){
-    var naAtualMes = segProg.getFullYear()===new Date().getFullYear() &&
-                     segProg.getMonth()===new Date().getMonth();
-    $("progVoltarHoje").hidden = naAtualMes;
-    var MESES_L2 = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-      "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-    $("progMesLabel").textContent  = MESES_L2[segProg.getMonth()];
-    $("progAnoLabel").textContent  = segProg.getFullYear();
-    await carregarProgMensal();
-    return;
-  }
-
   var seg = chaveSemana(segProg);
   var fim = new Date(segProg); fim.setDate(fim.getDate()+6);
 
@@ -4864,34 +4466,19 @@ function renderResultadoEnvase(r){
   "</div>";
 }
 
-function fmtCheckEm(iso){
-  if (!iso) return "";
-  var d = new Date(iso);
-  if (isNaN(d)) return "";
-  return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+
-    " "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
-}
-
 function renderChecksBarril(it, semana){
+  // Barril tem só o check de BeerSales (transferência no sistema)
   var ch = it.checks || {};
-  var mProg = !!ch["beerSalesProg"];
-  var pProg = ch["beerSalesProg_por"] ? " @"+ch["beerSalesProg_por"] : "";
-  var mConc = !!ch["lancadoBeerSales"];
-  var pConc = ch["lancadoBeerSales_por"] ? " @"+ch["lancadoBeerSales_por"] : "";
+  var marcado = !!ch["lancadoBeerSales"];
+  var por = ch["lancadoBeerSales_por"] ? " @"+ch["lancadoBeerSales_por"] : "";
   return "<div class='checks-lancamento'>"+
-    "<button class='check-lancamento"+(mProg?" programado":"")+"'"+
-    " data-barril-check='beerSalesProg'"+
-    " data-barril-check-id='"+esc(it.id)+"'"+
-    " data-barril-check-semana='"+esc(semana)+"'>"+
-    "<span class='cl-icone'>"+(mProg?"✓":"")+"</span>"+
-    "BeerSales Prog."+(mProg?"<span style='font-size:.7rem;opacity:.75'>"+esc(pProg||"")+(ch["beerSalesProg_em"]?" · "+fmtCheckEm(ch["beerSalesProg_em"]):"")+"</span>":"")+
-    "</button>"+
-    "<button class='check-lancamento"+(mConc?" marcado":"")+"'"+
+    "<button class='check-lancamento"+(marcado?" marcado":"")+"'"+
     " data-barril-check='lancadoBeerSales'"+
     " data-barril-check-id='"+esc(it.id)+"'"+
     " data-barril-check-semana='"+esc(semana)+"'>"+
-    "<span class='cl-icone'>"+(mConc?"✓":"")+"</span>"+
-    "BeerSales Conc."+(mConc?"<span style='font-size:.7rem;opacity:.75'>"+esc(pConc||"")+(ch["lancadoBeerSales_em"]?" · "+fmtCheckEm(ch["lancadoBeerSales_em"]):"")+"</span>":"")+
+    "<span class='cl-icone'>"+(marcado?"✓":"")+"</span>"+
+    "BeerSales"+
+    (marcado&&por?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+"</span>":"")+
     "</button>"+
   "</div>";
 }
@@ -4909,26 +4496,12 @@ function renderChecksLancamento(it, semana){
       " data-prog-check-semana='"+esc(semana)+"'"+
       " title='"+(marcado?"Marcado por"+esc(por)+" — clique para desmarcar":"Marcar como lançado")+"'>"+
       "<span class='cl-icone'>"+(marcado?"✓":"")+"</span>"+
-      esc(rotulo)+(marcado?"<span style='font-size:.7rem;opacity:.75'>"+esc(por||"")+(ch[campo+"_em"]?" · "+fmtCheckEm(ch[campo+"_em"]):"")+"</span>":"")+
-      "</button>";
-  }
-
-  function btnCheckProg(campo, rotulo){
-    var marcado = !!ch[campo];
-    var por = ch[campo+"_por"] ? " @"+ch[campo+"_por"] : "";
-    return "<button class='check-lancamento"+(marcado?" programado":"")+"'"+
-      " data-prog-check='"+esc(campo)+"'"+
-      " data-prog-check-id='"+esc(it.id)+"'"+
-      " data-prog-check-semana='"+esc(semana)+"'"+
-      " title='"+(marcado?"Programado por"+esc(por)+" — clique para desmarcar":"Marcar como programado no BeerSales")+"'>"+
-      "<span class='cl-icone'>"+(marcado?"✓":"")+"</span>"+
-      esc(rotulo)+(marcado?"<span style='font-size:.7rem;opacity:.75'>"+esc(por||"")+(ch[campo+"_em"]?" · "+fmtCheckEm(ch[campo+"_em"]):"")+"</span>":"")+
+      esc(rotulo)+(marcado&&por?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+"</span>":"")+
       "</button>";
   }
 
   var botoes = "";
-  botoes += btnCheckProg("beerSalesProg",   "BeerSales Prog.");
-  botoes += btnCheck("lancadoBeerSales",    "BeerSales Conc.");
+  botoes += btnCheck("lancadoBeerSales", "BeerSales");
   if (!isEnvase) botoes += btnCheck("lancadoBeerbo", "Beerbo");
 
   return "<div class='checks-lancamento'>"+botoes+"</div>";
@@ -5057,9 +4630,8 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
           "</div>"+
           "<span class='prog-estilo' style='font-size:1rem'>"+esc(it.produto||"Barril")+"</span>"+
           "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:6px'>"+
-            (it.tanque?"<span class='item-desc'>"+esc(it.tanque)+"</span>":"")+
             (it.lote?"<span class='item-desc'>Lote: "+esc(it.lote)+"</span>":"")+
-            (it.dia?"<span class='item-desc'>"+esc(it.dia)+"</span>":"")+
+            (it.tanque?"<span class='item-desc'>"+esc(it.tanque)+"</span>":"")+
           "</div>"+
           "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center'>"+
             linhasBarrilHtml+
@@ -5091,9 +4663,8 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
       if (it.formato)      detalhe += "<span class='item-desc'>"+esc(it.formato)+"</span> ";
       if (it.qtd)          detalhe += "<span class='item-desc'>Prev: "+esc(it.qtd)+"</span>";
     } else {
-      if (it.lote)    detalhe += "<span class='item-desc'>Lote: "+esc(it.lote)+"</span> ";
-      if (it.tanque)  detalhe += "<span class='item-desc'>"+esc(it.tanque)+"</span> ";
-      if (it.volPrev) detalhe += "<span class='item-desc' style='color:var(--verde);font-weight:600'>Prev: "+esc(it.volPrev)+" L</span>";
+      if (it.tanque)   detalhe += "<span class='item-desc'>Tanque: "+esc(it.tanque)+"</span>";
+      if (it.volPrev)  detalhe += "<span class='item-desc' style='color:var(--verde);font-weight:600'>Prev: "+esc(it.volPrev)+" L</span>";
     }
 
     var resultado = isEnvase
@@ -5155,287 +4726,6 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
   $("progLista").innerHTML = htmlTotal;
 }
 
-/* ==================================================================
-   Visão mensal da programação
-   ================================================================== */
-var _progVisao = "semanal";   // "semanal" | "mensal"
-var _calDiaSel = null;        // elemento do dia selecionado no calendário
-var _calDadosMes = {};        // cache dos dados carregados do mês
-
-// Listeners do toggle semanal/mensal (não podem ficar em onclick pois estão no IIFE)
-document.addEventListener("DOMContentLoaded", function(){});  // garante DOM pronto
-setTimeout(function(){
-  var btnS = $("btnVisaoSem");
-  var btnM = $("btnVisaoMes");
-  if (btnS) btnS.addEventListener("click", function(){ progSetVisao("semanal"); carregarProg(); });
-  if (btnM) btnM.addEventListener("click", function(){ progSetVisao("mensal");  carregarProg(); });
-}, 0);
-
-function progSetVisao(v){
-  _progVisao = v;
-  $("btnVisaoSem").classList.toggle("ativo", v === "semanal");
-  $("btnVisaoMes").classList.toggle("ativo", v === "mensal");
-  $("progListaWrap").hidden  = (v === "mensal");
-  $("progMensalWrap").hidden = (v === "semanal");
-  $("progNavSem").hidden     = (v === "mensal");
-  $("progNavAno").hidden     = (v === "mensal");
-  $("progVoltarHoje").hidden = true;
-  if (v === "mensal") carregarProgMensal();
-}
-
-async function carregarProgMensal(){
-  var ano = segProg.getFullYear();
-  var mes = segProg.getMonth();   // 0-11
-
-  // Semanas que tocam o mês
-  var semanas = [];
-  var d = new Date(ano, mes, 1);
-  d.setDate(d.getDate() - ((d.getDay()+6)%7));
-  while(true){
-    var fim7 = new Date(d); fim7.setDate(fim7.getDate()+6);
-    if (d.getMonth() === mes || fim7.getMonth() === mes) semanas.push(new Date(d));
-    d.setDate(d.getDate()+7);
-    if (d.getFullYear() > ano || (d.getFullYear() === ano && d.getMonth() > mes)) break;
-  }
-
-  // Carregar todas as semanas em paralelo
-  var resultados = await Promise.all(semanas.map(function(seg){
-    var chave = seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
-    return api("/api/prog?semana="+chave).then(function(r){
-      return {seg:seg, itens:r.itens||[], barreis:r.barreis||{}};
-    }).catch(function(){ return {seg:seg, itens:[], barreis:{}}; });
-  }));
-
-  // Montar mapa dia → itens
-  var DIAS_OFF = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
-  var mapaDia = {};  // "YYYY-MM-DD" → [{tipo,nome,resultado,...}]
-  var totBrass=0, totEnv=0, totBarril=0, totVolReal=0, totVolPrev=0;
-
-  resultados.forEach(function(semR){
-    var seg = semR.seg;
-
-    // itens de prog normais
-    semR.itens.forEach(function(it){
-      var dataItem;
-      if (it.dataISO){ dataItem = it.dataISO; }
-      else if (it.dia !== undefined && it.dia !== ""){
-        var off = DIAS_OFF[it.dia];
-        if (off !== undefined){
-          var dd = new Date(seg); dd.setDate(dd.getDate()+off);
-          dataItem = dd.getFullYear()+"-"+("0"+(dd.getMonth()+1)).slice(-2)+"-"+("0"+dd.getDate()).slice(-2);
-        }
-      }
-      if (!dataItem) return;
-      // só incluir se cai no mês/ano corrente
-      var dm = new Date(dataItem+"T00:00:00");
-      if (dm.getMonth() !== mes || dm.getFullYear() !== ano) return;
-
-      if (!mapaDia[dataItem]) mapaDia[dataItem] = [];
-      mapaDia[dataItem].push(it);
-
-      if (it.tipo === "brassagem"){
-        totBrass++;
-        if (it.resultado && it.resultado.volume){
-          totVolReal += parseFloat((it.resultado.volume+"").replace(",",".")) || 0;
-        }
-        if (it.volPrev) totVolPrev += parseFloat((it.volPrev+"").replace(",",".")) || 0;
-      } else if (it.tipo === "envase"){ totEnv++; }
-    });
-
-    // barreis
-    var chSem = seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
-    var regsBarril = semR.barreis["barril-"+chSem] || [];
-    regsBarril.forEach(function(r){
-      var dataItem;
-      if (r.dataISO){ dataItem = r.dataISO; }
-      else if (r.dia && DIAS_OFF[r.dia] !== undefined){
-        var dd = new Date(seg); dd.setDate(dd.getDate()+DIAS_OFF[r.dia]);
-        dataItem = dd.getFullYear()+"-"+("0"+(dd.getMonth()+1)).slice(-2)+"-"+("0"+dd.getDate()).slice(-2);
-      }
-      if (!dataItem) return;
-      var dm = new Date(dataItem+"T00:00:00");
-      if (dm.getMonth() !== mes || dm.getFullYear() !== ano) return;
-      if (!mapaDia[dataItem]) mapaDia[dataItem] = [];
-      mapaDia[dataItem].push({tipo:"barril", produto:r.produto, total:r.total, _barrilReg:r});
-      totBarril++;
-    });
-  });
-
-  _calDadosMes = mapaDia;
-
-  // Renderizar totais
-  var metaBrass = 0;
-  try{ var mr = await api("/api/metas?ano="+ano+"&mes="+(mes+1)); metaBrass = (mr.meta&&mr.meta.brass)||0; }catch(e){}
-  var pctVol = metaBrass ? Math.min(100, Math.round(totVolReal/metaBrass*100)) : 0;
-  var brassCom = Object.values(mapaDia).reduce(function(acc,lst){
-    return acc + lst.filter(function(x){ return x.tipo==="brassagem"&&x.resultado; }).length; },0);
-  var envCom = Object.values(mapaDia).reduce(function(acc,lst){
-    return acc + lst.filter(function(x){ return x.tipo==="envase"&&x.resultado; }).length; },0);
-  var totBarrilL = Object.values(mapaDia).reduce(function(acc,lst){
-    return acc + lst.filter(function(x){ return x.tipo==="barril"; })
-      .reduce(function(a,b){ return a+(b.total||0); },0); },0);
-
-  $("progMensalTotais").innerHTML =
-    "<div class='tm-card tm-brass'>"+
-      "<span class='tm-label'>🍺 Brassagens</span>"+
-      "<span class='tm-num'>"+totBrass+"</span>"+
-      "<span class='tm-sub'>"+brassCom+" com resultado lançado</span>"+
-      "<div class='tm-barra'><div class='tm-fill' style='width:"+(totBrass?Math.round(brassCom/totBrass*100):0)+"%;background:var(--verde)'></div></div>"+
-    "</div>"+
-    "<div class='tm-card tm-env'>"+
-      "<span class='tm-label'>📦 Envases</span>"+
-      "<span class='tm-num'>"+totEnv+"</span>"+
-      "<span class='tm-sub'>"+envCom+" com resultado lançado</span>"+
-      "<div class='tm-barra'><div class='tm-fill' style='width:"+(totEnv?Math.round(envCom/totEnv*100):0)+"%;background:#003E99'></div></div>"+
-    "</div>"+
-    "<div class='tm-card tm-barril'>"+
-      "<span class='tm-label'>🛢 Barris</span>"+
-      "<span class='tm-num'>"+totBarril+"</span>"+
-      "<span class='tm-sub'>"+(totBarrilL?fmtNum(totBarrilL)+" L total":"nenhum")+"</span>"+
-      "<div class='tm-barra'><div class='tm-fill' style='width:100%;background:#7A4500'></div></div>"+
-    "</div>"+
-    "<div class='tm-card tm-vol'>"+
-      "<span class='tm-label'>Volume brassado no mês</span>"+
-      "<div class='tm-vol-linha'>"+
-        "<span class='tm-num'>"+fmtNum(totVolReal)+" L</span>"+
-        (metaBrass?"<span class='tm-vol-meta'>de "+fmtNum(metaBrass)+" L meta ("+pctVol+"%)</span>":"")+
-      "</div>"+
-      "<div class='tm-barra'><div class='tm-fill' style='width:"+pctVol+"%;background:var(--dourado)'></div></div>"+
-    "</div>";
-
-  // Renderizar calendário
-  var primeiroDia = new Date(ano, mes, 1);
-  var ultimoDia   = new Date(ano, mes+1, 0);
-  // início da grade = segunda da semana do dia 1
-  var inicioGrade = new Date(primeiroDia);
-  inicioGrade.setDate(inicioGrade.getDate() - ((inicioGrade.getDay()+6)%7));
-
-  var hojeStr = (function(){
-    var h = new Date(); h.setHours(0,0,0,0);
-    return h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);
-  })();
-
-  var html = "";
-  var cur = new Date(inicioGrade);
-  // 6 semanas no máximo
-  for (var w=0; w<6; w++){
-    var algumDoMes = false;
-    for (var d2=0; d2<7; d2++){
-      if (cur.getMonth()===mes) algumDoMes=true;
-      cur.setDate(cur.getDate()+1);
-    }
-    cur.setDate(cur.getDate()-7);
-    if (w > 4 && !algumDoMes) break;
-
-    for (var d2=0; d2<7; d2++){
-      var isoD = cur.getFullYear()+"-"+("0"+(cur.getMonth()+1)).slice(-2)+"-"+("0"+cur.getDate()).slice(-2);
-      var doMes = cur.getMonth()===mes;
-      var fimSem = d2>=5;
-      var ehHoje = isoD===hojeStr;
-      var itensD = mapaDia[isoD]||[];
-      var temItem = itensD.length>0;
-      var temRes  = itensD.some(function(x){ return x.resultado; });
-      var cls = "cal-dia-m"+(!doMes?" outro":"")+(ehHoje?" hoje-cal":"")+(fimSem?" fw-cal":"")+(temItem?" tem-cal":"");
-
-      var pills = itensD.map(function(it){
-        var tc = it.tipo==="brassagem"?"cal-cp-b":(it.tipo==="envase"?"cal-cp-e":"cal-cp-r");
-        var res = it.resultado?" res":"";
-        return "<div class='cal-cp "+tc+res+"'></div>";
-      }).join("");
-
-      html += "<div class='"+cls+"' data-iso='"+isoD+"' data-doMes='"+(doMes?"1":"0")+"'>"+
-        "<span class='cal-n-m'>"+cur.getDate()+"</span>"+
-        (pills?"<div class='cal-cpills'>"+pills+"</div>":"")+
-        (temRes?"<div class='cal-res-dot'></div>":"")+
-      "</div>";
-      cur.setDate(cur.getDate()+1);
-    }
-  }
-  $("progCalGrid").innerHTML = html;
-
-  // Detalhe: fechar e evento de clique
-  $("progDetDia").hidden = true;
-  _calDiaSel = null;
-
-  $("progCalGrid").onclick = function(ev){
-    var cel = ev.target.closest(".cal-dia-m");
-    if (!cel || cel.dataset.doMes === "0") return;
-    var iso = cel.dataset.iso;
-    var itens = _calDadosMes[iso]||[];
-    if (!itens.length) return;
-
-    if (_calDiaSel) _calDiaSel.classList.remove("sel-cal");
-    cel.classList.add("sel-cal");
-    _calDiaSel = cel;
-
-    var d = new Date(iso+"T00:00:00");
-    var NOMES_DIAS2 = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
-    $("progDetDiaLabel").textContent = NOMES_DIAS2[d.getDay()]+" — "+d.getDate()+" "+MESES[d.getMonth()];
-
-    var htmlItens = itens.map(function(it){
-      var pillCls = it.tipo==="brassagem"?"ddp-b":(it.tipo==="envase"?"ddp-e":"ddp-r");
-      var pillTxt = it.tipo==="brassagem"?"🍺 Brassagem":(it.tipo==="envase"?"📦 Envase":"🛢 Barril");
-      var nome    = esc(it.estilo||it.produto||"—");
-      var sub     = [];
-      if (it.tanque) sub.push(esc(it.tanque));
-      if (it.tanqueOrigem) sub.push(esc(it.tanqueOrigem));
-      if (it.lote) sub.push("Lote: "+esc(it.lote));
-      if (it.estilo) sub.push(esc(it.estilo));
-
-      // Previsto
-      if (it.tipo==="brassagem"){
-        if (it.volPrev) sub.push("Prev: "+esc(it.volPrev)+" L");
-      } else if (it.tipo==="envase"){
-        if (it.formato) sub.push(esc(it.formato));
-        if (it.qtd) sub.push("Prev: "+esc(it.qtd)+" un");
-      } else {
-        if (it.total) sub.push(fmtNum(it.total)+" L total");
-      }
-
-      // Realizado
-      if (it.resultado){
-        if (it.tipo==="brassagem"){
-          if (it.resultado.volume) sub.push("Real: "+esc(it.resultado.volume)+" L");
-          if (it.resultado.og)     sub.push("OG: "+esc(it.resultado.og));
-        } else if (it.tipo==="envase"){
-          if (it.resultado.qtdEnvasada) sub.push("Real: "+fmtNum(it.resultado.qtdEnvasada)+" un");
-          if (it.resultado.litrosUsados) sub.push(fmtNum(it.resultado.litrosUsados)+" L usados");
-        }
-      }
-
-      if (it.criadaPor) sub.push("por @"+esc(it.criadaPor));
-      if (it.lancadoPor) sub.push("por @"+esc(it.lancadoPor));
-      var badgeCls = it.resultado?"ddb-ok":"ddb-pend";
-      var badgeTxt = it.resultado?"✓ Resultado":"Aguardando";
-      return "<div class='det-dia-item-m'>"+
-        "<span class='det-dia-pill-m "+pillCls+"'>"+pillTxt+"</span>"+
-        "<div style='flex:1'>"+
-          "<div class='det-dia-nome-m'>"+nome+"</div>"+
-          (sub.length?"<div class='det-dia-sub-m'>"+sub.join(" · ")+"</div>":"")+
-        "</div>"+
-        "<span class='det-dia-badge-m "+badgeCls+"'>"+badgeTxt+"</span>"+
-      "</div>";
-    }).join("");
-    $("progDetDiaItens").innerHTML = htmlItens;
-    $("progDetDia").hidden = false;
-    $("progDetDia").scrollIntoView({behavior:"smooth",block:"nearest"});
-
-    // Botão "ir para semana"
-    $("btnDetDiaIrSem").onclick = function(){
-      var dataAlvo = new Date(iso+"T00:00:00");
-      segProg = segundaDe(dataAlvo);
-      progSetVisao("semanal");
-      carregarProg();
-    };
-  };
-
-  $("btnDetDiaFechar").addEventListener("click", function(){
-    if (_calDiaSel) _calDiaSel.classList.remove("sel-cal");
-    _calDiaSel = null;
-    $("progDetDia").hidden = true;
-  });
-}
-
 // Semana exibida na aba Programação — independente do checklist
 var segProg = segundaDe(new Date());
 function progNavegar(delta){
@@ -5481,65 +4771,16 @@ $("progVoltarHoje").addEventListener("click", function(){
 var _brasseditando = null;
 var _enveditando = null;
 
-function preencherDias(selectId, valorAtual){
-  // Gera todos os dias seg-sab do ano corrente, agrupados por mês
-  // Dias futuros (30 dias) marcados com ★ para referência
-  var NOMES_DIA = ["Dom","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
-  var MESES_EXT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-                   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  var MESES_C   = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
-
-  var hoje = new Date(); hoje.setHours(0,0,0,0);
-  var ano  = hoje.getFullYear();
-
-  // Janela de destaque: hoje até +30 dias
-  var limite30 = new Date(hoje); limite30.setDate(limite30.getDate()+30);
-
-  // Semana atualmente exibida na programação (para marcar com ★)
-  var segD = new Date(segProg); segD.setHours(0,0,0,0);
-  var fimD = new Date(segProg); fimD.setDate(fimD.getDate()+6); fimD.setHours(0,0,0,0);
-
-  var opcs = "<option value=''>Não definido</option>";
-  var mesCurrent = -1;
-
-  // Iterar de 1/jan até 31/dez do ano corrente
-  var d = new Date(ano, 0, 1);
-  while (d.getFullYear() === ano){
-    var dow = d.getDay();
-    if (dow >= 1 && dow <= 6){ // seg a sab
-      // Separador de mês
-      if (d.getMonth() !== mesCurrent){
-        mesCurrent = d.getMonth();
-        opcs += "<option disabled style='font-weight:700;color:#025F1D'>── "+
-                MESES_EXT[mesCurrent]+" "+ano+" ──</option>";
-      }
-      var isoD  = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
-      var nome  = NOMES_DIA[dow];
-      var dt    = d.getDate()+" "+MESES_C[d.getMonth()];
-      var label = nome+" — "+dt;
-      // marcar semana atual com ★
-      var dd = new Date(d); dd.setHours(0,0,0,0);
-      if (dd >= segD && dd <= fimD) label += " ★";
-      // marcar hoje
-      if (dd.getTime() === hoje.getTime()) label = "▶ "+label+" (hoje)";
-      opcs += "<option value='"+nome+"|"+isoD+"'>"+label+"</option>";
-    }
-    d.setDate(d.getDate()+1);
-  }
-
-  var sel = $(selectId);
-  sel.innerHTML = opcs;
-  if (valorAtual) sel.value = valorAtual;
+function preencherDias(selectId){
+  var nomes = ["Segunda","Ter\u00e7a","Quarta","Quinta","Sexta","S\u00e1bado"];
+  var opcs = "<option value=''>N\u00e3o definido</option>";
+  nomes.forEach(function(nome, i){
+    var d = new Date(segProg); d.setDate(d.getDate()+i);
+    var dt = ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2);
+    opcs += "<option value='"+nome+"'>"+nome+" \u2014 "+dt+"</option>";
+  });
+  $(selectId).innerHTML = opcs;
 }
-
-
-function parseDiaSelect(val){
-  if (!val) return {nome:"", dataISO:""};
-  var p = val.split("|");
-  return {nome: p[0]||"", dataISO: p[1]||""};
-}
-
-
 
 // ===== BRASSAGEM =====
 $("btnAddProg").addEventListener("click", function(){
@@ -5547,8 +4788,7 @@ $("btnAddProg").addEventListener("click", function(){
   $("brassFormTitulo").textContent = "\uD83C\uDF7A Nova Brassagem";
   $("brassEstilo").value = "";
   $("brassTanque").value = "";
-  $("brassLote").value   = "";
-  $("brassObs").value    = "";
+  $("brassObs").value = "";
   $("brassVolPrev").value = "";
   preencherDias("brassDia");
   $("brassDia").value = "";
@@ -5557,20 +4797,11 @@ $("btnAddProg").addEventListener("click", function(){
 });
 
 $("btnBrassSalvar").addEventListener("click", async function(){
-  var estilo   = $("brassEstilo").value.trim();
-  var brassTq  = $("brassTanque").value.trim();
-  var brassLt  = $("brassLote").value.trim();
-  var brassVol = $("brassVolPrev").value.trim();
-  var brassDv  = $("brassDia").value;
-  if (!estilo)   { toast("Informe o estilo.", "erro"); $("brassEstilo").focus(); return; }
-  if (!brassTq)  { toast("Informe o tanque destino.", "erro"); $("brassTanque").focus(); return; }
-  if (!brassLt)  { toast("Informe o lote.", "erro"); $("brassLote").focus(); return; }
-  if (!brassVol) { toast("Informe o volume previsto.", "erro"); $("brassVolPrev").focus(); return; }
-  if (!brassDv)  { toast("Selecione o dia previsto.", "erro"); $("brassDia").focus(); return; }
+  var estilo = $("brassEstilo").value.trim();
+  if (!estilo){ toast("Informe o estilo.", "erro"); return; }
   var seg = chaveSemana(segProg);
   try{
-    var _diaBrass = parseDiaSelect($("brassDia").value);
-    var diaBrass  = _diaBrass.nome;
+    var diaBrass = $("brassDia").value;
     var rBrass = await api("/api/prog", {method:"POST", body:{
       acao: _brasseditando ? "editar" : "criar",
       id:   _brasseditando ? _brasseditando.id : undefined,
@@ -5578,24 +4809,18 @@ $("btnBrassSalvar").addEventListener("click", async function(){
       tipo: "brassagem",
       estilo: estilo,
       tanque:    $("brassTanque").value.trim(),
-      lote:      $("brassLote").value.trim(),
       volPrev:   $("brassVolPrev").value.trim(),
       dia:       diaBrass,
-      dataISO:   _diaBrass.dataISO,
       obs:       $("brassObs").value.trim()
     }});
     $("modalBrassagem").hidden = true;
     var eraEdicao = !!_brasseditando;
     _brasseditando = null;
-    // Se o item foi movido para outra semana, navegar até ela
-    if (rBrass && rBrass.movido){
-      segProg = segundaDe(new Date(rBrass.movido+"T00:00:00"));
-    }
     carregarProg();
     // Só abre tarefas auto ao criar (não ao editar)
     if (!eraEdicao){
-      var dataISO = _diaBrass.dataISO;
-      if (!dataISO && diaBrass){
+      var dataISO = "";
+      if (diaBrass){
         var DIAS_ISO = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
         var d = new Date(segProg); d.setDate(d.getDate()+(DIAS_ISO[diaBrass]||0));
         dataISO = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
@@ -5620,32 +4845,16 @@ $("btnAddEnvase").addEventListener("click", function(){
   $("envObs").value = "";
   preencherDias("envDia");
   $("envDia").value = "";
-  $("envEstiloWrap").hidden = true;
-  $("envEstilo").value = "";
   $("modalEnvase").hidden = false;
   setTimeout(function(){ $("envProduto").focus(); }, 80);
 });
-$("envFormato").addEventListener("change", atualizarEnvEstilo);
 
 $("btnEnvSalvar").addEventListener("click", async function(){
-  var produto  = $("envProduto").value.trim();
-  var envLt    = $("envLote").value.trim();
-  var envTq    = $("envTanque").value.trim();
-  var envFmt   = $("envFormato").value;
-  var envQt    = $("envQtd").value.trim();
-  var envDv    = $("envDia").value;
-  var envEstiloVal = (ENV_ESTILOS[envFmt] && ENV_ESTILOS[envFmt].length) ? $("envEstilo").value : "";
-  if (!produto) { toast("Informe o produto.", "erro"); $("envProduto").focus(); return; }
-  if (!envLt)   { toast("Informe o lote.", "erro"); $("envLote").focus(); return; }
-  if (!envTq)   { toast("Informe o tanque de origem.", "erro"); $("envTanque").focus(); return; }
-  if (!envFmt)  { toast("Selecione o formato.", "erro"); $("envFormato").focus(); return; }
-  if (ENV_ESTILOS[envFmt] && !envEstiloVal) { toast("Selecione o estilo.", "erro"); $("envEstilo").focus(); return; }
-  if (!envQt)   { toast("Informe a quantidade prevista.", "erro"); $("envQtd").focus(); return; }
-  if (!envDv)   { toast("Selecione o dia previsto.", "erro"); $("envDia").focus(); return; }
+  var produto = $("envProduto").value.trim();
+  if (!produto){ toast("Informe o produto.", "erro"); return; }
   var seg = chaveSemana(segProg);
   try{
-    var _diaEnv = parseDiaSelect($("envDia").value);
-    var diaEnv  = _diaEnv.nome;
+    var diaEnv = $("envDia").value;
     var rEnv = await api("/api/prog", {method:"POST", body:{
       acao:     _enveditando ? "editar" : "criar",
       id:       _enveditando ? _enveditando.id : undefined,
@@ -5655,23 +4864,17 @@ $("btnEnvSalvar").addEventListener("click", async function(){
       lote:     $("envLote").value.trim(),
       tanqueOrigem: $("envTanque").value.trim(),
       formato:  $("envFormato").value,
-      estilo:   envEstiloVal,
       qtd:      $("envQtd").value.trim(),
       dia:      diaEnv,
-      dataISO:  _diaEnv.dataISO,
       obs:      $("envObs").value.trim()
     }});
     $("modalEnvase").hidden = true;
     var eraEdicaoEnv = !!_enveditando;
     _enveditando = null;
-    // Se o item foi movido para outra semana, navegar até ela
-    if (rEnv && rEnv.movido){
-      segProg = segundaDe(new Date(rEnv.movido+"T00:00:00"));
-    }
     carregarProg();
     if (!eraEdicaoEnv){
-      var dataISOEnv = _diaEnv.dataISO;
-      if (!dataISOEnv && diaEnv){
+      var dataISOEnv = "";
+      if (diaEnv){
         var DIAS_ISO2 = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
         var d2 = new Date(segProg); d2.setDate(d2.getDate()+(DIAS_ISO2[diaEnv]||0));
         dataISOEnv = d2.getFullYear()+"-"+("0"+(d2.getMonth()+1)).slice(-2)+"-"+("0"+d2.getDate()).slice(-2);
@@ -5701,30 +4904,21 @@ $("progLista").addEventListener("click", async function(ev){
       $("envProduto").value = it.produto||"";
       $("envLote").value    = it.lote||"";
       $("envTanque").value  = it.tanqueOrigem||"";
-      // Restaurar estilo se o formato tiver estilos definidos
-      setTimeout(function(){
-        atualizarEnvEstilo();
-        if (it.estilo) $("envEstilo").value = it.estilo;
-      }, 0);
       $("envFormato").value = it.formato||"";
       $("envQtd").value     = it.qtd||"";
       $("envObs").value     = it.obs||"";
       preencherDias("envDia");
-      if (it.dataISO) $("envDia").value = (it.dia||"")+"|"+it.dataISO;
-      else $("envDia").value = it.dia||"";
+      $("envDia").value     = it.dia||"";
       $("modalEnvase").hidden = false;
     } else {
       _brasseditando = {id: it.id, semana};
       $("brassFormTitulo").textContent = "\uD83C\uDF7A Editar Brassagem";
       $("brassEstilo").value   = it.estilo||"";
       $("brassTanque").value   = it.tanque||"";
-      $("brassLote").value     = it.lote||"";
       $("brassVolPrev").value  = it.volPrev||"";
       $("brassObs").value      = it.obs||"";
       preencherDias("brassDia");
-      // Tentar restaurar pelo dataISO, senão pelo nome do dia
-      if (it.dataISO) $("brassDia").value = (it.dia||"")+"|"+it.dataISO;
-      else $("brassDia").value = it.dia||"";
+      $("brassDia").value    = it.dia||"";
       $("modalBrassagem").hidden = false;
     }
   }
@@ -6045,8 +5239,6 @@ async function carregarMetas(){
     var r = resultados[i];
     var itens = r.itens || [];
     var semVolReal = 0, semVolPrev = 0, semQtdReal = 0, semQtdPrev = 0;
-    var semFmtReal = {};  // { "PET 500ml IPA": qtd real, ... }
-    var semFmtPrev = {};  // { "PET 500ml IPA": qtd prevista, ... }
 
     itens.forEach(function(it){
       // Filtrar pelo mês/ano da meta usando dataISO ou dia da semana
@@ -6087,44 +5279,19 @@ async function carregarMetas(){
           qtdPrevista += qp;
           semQtdPrev  += qp;
           if (qp) totalTemPrevisto = true;
-          // acumular previsto por formato/estilo na semana
-          var fmtP  = it.formato || "";
-          var estP  = (it.estilo || "").trim() || (it.produto || "").trim();
-          if (fmtP){
-            var chavePrev = estP ? fmtP+" "+estP : fmtP;
-            if (!semFmtPrev[chavePrev]) semFmtPrev[chavePrev] = 0;
-            semFmtPrev[chavePrev] += qp;
-          }
         }
         // Realizado: qtd do resultado
         if (it.resultado && it.resultado.qtdEnvasada){
           var qr = parseFloat(it.resultado.qtdEnvasada||0) || 0;
           qtdRealizada += qr;
           semQtdReal   += qr;
-          var fmt  = it.formato  || "";
-          var prod = it.produto  || "";
+          var fmt = it.formato || "";
           if (fmt && qr){
             if (!porFormato[fmt]) porFormato[fmt] = {qtd:0, litros:0};
             porFormato[fmt].qtd += qr;
             var lf = (LITROS_FORMATO[fmt]||0) * qr;
             porFormato[fmt].litros += lf;
             litrosEnvasados += lf;
-            // chave produto = "formato estilo" ex: "PET 500ml IPA"
-            // usar it.estilo se disponível, senão it.produto como fallback
-            var estiloEnv = (it.estilo || "").trim() || (prod || "").trim();
-            if (estiloEnv){
-              var chaveProd = fmt+" "+estiloEnv;
-              if (!porFormato["_prod_"+chaveProd]) porFormato["_prod_"+chaveProd] = 0;
-              porFormato["_prod_"+chaveProd] += qr;
-              // acumular por semana também
-              if (!semFmtReal[chaveProd]) semFmtReal[chaveProd] = 0;
-              semFmtReal[chaveProd] += qr;
-            } else {
-              // formato sem estilo (PET 2L) — acumular pelo próprio fmt
-              if (!semFmtReal[fmt]) semFmtReal[fmt] = 0;
-              semFmtReal[fmt] += qr;
-            }
-            // Para formatos sem estilo (PET 2L), o total já está em porFormato[fmt].qtd
           }
         }
       }
@@ -6137,8 +5304,6 @@ async function carregarMetas(){
       label:label,
       volReal: semVolReal, volPrev: semVolPrev,
       qtdReal: semQtdReal, qtdPrev: semQtdPrev,
-      fmtReal: semFmtReal,
-      fmtPrev: semFmtPrev,
       pctBrass: meta.brass ? Math.min(100, Math.round(semVolReal/meta.brass*100)) : null,
       pctEnv:   meta.envTotal ? Math.min(100, Math.round(semQtdReal/meta.envTotal*100)) : null
     });
@@ -6195,8 +5360,8 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
   // Agrupar por formato×produto — mostrar barras individuais
   var fmtsMeta = meta.formatos || {};
   var grupos = {
-    "Garrafa 355ml": ["Garrafa 355ml Helles","Garrafa 355ml Red Ale","Garrafa 355ml IPA","Garrafa 355ml Sem Álcool"],
-    "PET 500ml":     ["PET 500ml Helles","PET 500ml Red Ale","PET 500ml IPA","PET 500ml Sem Álcool"],
+    "Garrafa 355ml": ["Garrafa 355ml Helles","Garrafa 355ml Red Ale","Garrafa 355ml IPA","Garrafa 355ml Sem Alcool"],
+    "PET 500ml":     ["PET 500ml Helles","PET 500ml Red Ale","PET 500ml IPA","PET 500ml Sem Alcool"],
     "PET 1L":        ["PET 1L Helles","PET 1L Oktoberfest"],
     "PET 2L":        ["PET 2L"]
   };
@@ -6227,17 +5392,12 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
           var metaProd = fmtsMeta[prod] || 0;
           if (!metaProd) return;
           var nomeProd = prod.replace(fmt+" ",""); // ex: "Helles"
-          // Para produtos sem sufixo de estilo (ex: "PET 2L"), usar total do formato
-          var semEstilo = (nomeProd === prod); // chave igual ao fmt = sem estilo
-          var realProd = semEstilo
-            ? ((porFormato[fmt]||{}).qtd || 0)
-            : (porFormato["_prod_"+prod] || 0);
-          var pct = metaProd ? Math.round(realProd/metaProd*100) : 0;
+          var pct = Math.round(realFmt/metaProd*100); // aproximado (real do formato inteiro vs meta do produto)
           var classe = pct>=100?"acima":pct>=80?"atingida":"";
           html += "<div style='margin-bottom:6px'>"+
             "<div class='meta-barra-numeros' style='margin-bottom:3px'>"+
               "<span style='font-size:.8rem;font-weight:600;color:var(--ink)'>"+esc(nomeProd)+"</span>"+
-              "<span style='font-size:.75rem;color:var(--muted)'>"+fmtNum(realProd)+" / "+fmtNum(metaProd)+" un</span>"+
+              "<span class='meta-barra-meta'>meta: "+fmtNum(metaProd)+" un</span>"+
             "</div>"+
             "<div class='meta-barra-bg'>"+
               "<div class='meta-barra-fill "+classe+"' style='width:"+Math.min(100,pct)+"%'></div>"+
@@ -6266,162 +5426,23 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
 }
 
 function renderMetaSemanas(semanas, meta){
-  $("metaSemanas").innerHTML = semanas.map(function(sem){
-    var temBrass = sem.volReal || sem.volPrev;
-    var temEnv   = sem.qtdReal || sem.qtdPrev;
-    var temQualquer = temBrass || temEnv;
-
-    // Brassagem %
-    var pctBrass = 0;
-    if (meta.brass && sem.volReal) pctBrass = Math.min(100, Math.round(sem.volReal / meta.brass * 100));
-
-    // Envase % (vs meta mensal total)
-    var pctEnv = 0;
-    if (meta.envTotal && sem.qtdReal) pctEnv = Math.min(100, Math.round(sem.qtdReal / meta.envTotal * 100));
-
-    // Cor % brassagem
-    var corBrass = pctBrass>=100?"var(--verde)":pctBrass>=80?"var(--dourado)":"var(--muted)";
-    var corEnv   = pctEnv>=100?"var(--verde)":pctEnv>=80?"var(--dourado)":"var(--muted)";
-
-    var html = "<div class='meta-semana-linha'>";
-    // Cabeçalho com label
-    html += "<div class='meta-semana-cabec'>"+
-      "<span class='meta-semana-label'>"+esc(sem.label)+"</span>"+
-      (!temQualquer?"<span style='font-size:.72rem;color:var(--muted)'>sem lançamento</span>":"")+
-    "</div>";
-
-    // Linha brassagem
-    if (temBrass){
-      var numsBrass = [];
-      if (sem.volReal) numsBrass.push("Real: <b style='color:var(--verde)'>"+fmtNum(sem.volReal)+" L</b>");
-      if (sem.volPrev) numsBrass.push("Prev: <span style='color:#8B6914'>"+fmtNum(sem.volPrev)+" L</span>");
-      html += "<div class='meta-semana-row'>"+
-        "<span class='meta-semana-row-label' style='color:var(--verde)'>🍺 Brassagem</span>"+
-        "<span class='meta-semana-row-nums'>"+numsBrass.join(" &nbsp;·&nbsp; ")+"</span>"+
-        (pctBrass>0?"<span class='meta-semana-pct' style='color:"+corBrass+"'>"+pctBrass+"%</span>":"")+
-      "</div>";
-      html += "<div class='meta-semana-row' style='gap:6px'>"+
-        "<div style='width:80px;flex-shrink:0'></div>"+
+  $("metaSemanas").innerHTML = semanas.map(function(s){
+    var temQualquer = s.volReal||s.volPrev||s.qtdReal||s.qtdPrev;
+    return "<div class='meta-semana-linha'>"+
+      "<span class='meta-semana-label'>"+esc(s.label)+"</span>"+
+      "<span class='meta-semana-vals'>"+
+        (s.volReal?"Brassagem Realizado: "+fmtNum(s.volReal)+" L ":"")+
+        (s.volPrev?"<span style='color:#8B6914'> Brassagem Previsto: "+fmtNum(s.volPrev)+" L</span> ":"")+
+        (s.volReal&&(s.qtdReal||s.qtdPrev)?" · ":"")+
+        (s.qtdReal?"Envase Realizado: "+fmtNum(s.qtdReal)+" un ":"")+
+        (s.qtdPrev?"<span style='color:#8B6914'>Envase Previsto: "+fmtNum(s.qtdPrev)+" un</span>":"")+
+        (!temQualquer?"<span style='color:var(--muted)'>sem lançamento</span>":"")+
+      "</span>"+
+      (meta.brass&&s.volReal?
         "<div class='meta-semana-barra'>"+
-          "<div class='meta-semana-fill' style='width:"+pctBrass+"%'></div>"+
-        "</div>"+
-      "</div>";
-    }
-
-    // Linhas envase — uma por formato
-    var GRUPOS_META = {
-      "Garrafa 355ml": ["Garrafa 355ml Helles","Garrafa 355ml Red Ale","Garrafa 355ml IPA","Garrafa 355ml Sem Álcool"],
-      "PET 500ml":     ["PET 500ml Helles","PET 500ml Red Ale","PET 500ml IPA","PET 500ml Sem Álcool"],
-      "PET 1L":        ["PET 1L Helles","PET 1L Oktoberfest"],
-      "PET 2L":        ["PET 2L"]
-    };
-    var fmtsMeta = (typeof meta !== "undefined" && meta.formatos) ? meta.formatos : {};
-    var fmtReal  = sem.fmtReal || {};
-
-    // Coletar quais formatos têm dado esta semana (real OU previsto)
-    var fmtReal  = sem.fmtReal || {};
-    var fmtPrev  = sem.fmtPrev || {};
-    var todasChaves = {};
-    Object.keys(fmtReal).forEach(function(k){ todasChaves[k]=1; });
-    Object.keys(fmtPrev).forEach(function(k){ todasChaves[k]=1; });
-
-    // Agrupar por formato
-    var fmtsComDado = {};
-    Object.keys(GRUPOS_META).forEach(function(fmt){
-      var prods = GRUPOS_META[fmt];
-      prods.forEach(function(prod){
-        var chave = (prod === fmt) ? fmt : prod;
-        var real  = fmtReal[chave] || 0;
-        var prev  = fmtPrev[chave] || fmtPrev[fmt] || 0;
-        if (real > 0 || prev > 0){
-          if (!fmtsComDado[fmt]) fmtsComDado[fmt] = [];
-          fmtsComDado[fmt].push({prod:prod, chave:chave, real:real, prev:prev});
-        }
-      });
-    });
-
-    // Formatos com dado mas não mapeados no GRUPOS_META
-    Object.keys(todasChaves).forEach(function(k){
-      if (k.indexOf("_prod_")===0) return;
-      // verificar se já está coberto
-      var coberto = false;
-      Object.keys(GRUPOS_META).forEach(function(fmt){
-        if (k===fmt || k.indexOf(fmt+" ")===0) coberto=true;
-      });
-      if (!coberto && (fmtReal[k]||0)+(fmtPrev[k]||0) > 0){
-        if (!fmtsComDado[k]) fmtsComDado[k] = [];
-        fmtsComDado[k].push({prod:k, chave:k, real:fmtReal[k]||0, prev:fmtPrev[k]||0});
-      }
-    });
-
-    var temQualquerEnv = Object.keys(fmtsComDado).length > 0 || temEnv;
-    if (temQualquerEnv){
-      if (Object.keys(fmtsComDado).length === 0){
-        // Sem detalhamento — linha simples
-        var numsEnv = [];
-        if (sem.qtdReal) numsEnv.push("Real: <b style='color:#003E99'>"+fmtNum(sem.qtdReal)+" un</b>");
-        if (sem.qtdPrev) numsEnv.push("Prev: <span style='color:#8B6914'>"+fmtNum(sem.qtdPrev)+" un</span>");
-        html += "<div class='meta-semana-row'>"+
-          "<span class='meta-semana-row-label' style='color:#003E99'>📦 Envase</span>"+
-          "<span class='meta-semana-row-nums'>"+numsEnv.join(" &nbsp;·&nbsp; ")+"</span>"+
-          (pctEnv>0?"<span class='meta-semana-pct' style='color:"+corEnv+"'>"+pctEnv+"%</span>":"")+
-        "</div>";
-      } else {
-        Object.keys(fmtsComDado).forEach(function(fmt){
-          var linhas = fmtsComDado[fmt];
-          var totalReal = linhas.reduce(function(a,x){ return a+x.real; }, 0);
-          var totalPrev = linhas.reduce(function(a,x){ return a+x.prev; }, 0);
-          var pctFmtHdr = totalPrev ? Math.min(100,Math.round(totalReal/totalPrev*100)) : 0;
-          var corFmtHdr = pctFmtHdr>=100?"var(--verde)":pctFmtHdr>=80?"var(--dourado)":"var(--muted)";
-
-          html += "<div class='meta-semana-row'>"+
-            "<span class='meta-semana-row-label' style='color:#003E99;font-weight:700'>📦 "+esc(fmt)+"</span>"+
-            "<span class='meta-semana-row-nums' style='color:var(--muted)'>"+
-              (totalReal?"Real: <b style='color:#003E99'>"+fmtNum(totalReal)+" un</b> ":"")+
-              (totalPrev?" Prev: <span style='color:#8B6914'>"+fmtNum(totalPrev)+" un</span>":"")+
-            "</span>"+
-            (pctFmtHdr>0?"<span class='meta-semana-pct' style='color:"+corFmtHdr+"'>"+pctFmtHdr+"%</span>":"")+
-          "</div>";
-
-          // Sublinhas por estilo (se mais de um)
-          if (linhas.length > 1){
-            linhas.forEach(function(lp){
-              if (lp.real === 0 && lp.prev === 0) return;
-              var nomeProd = lp.prod.replace(fmt+" ","");
-              var pctP = lp.prev ? Math.min(100,Math.round(lp.real/lp.prev*100)) : 0;
-              var corP = pctP>=100?"var(--verde)":pctP>=80?"var(--dourado)":"var(--muted)";
-              html += "<div class='meta-semana-row' style='padding-left:8px'>"+
-                "<span class='meta-semana-row-label' style='color:#6B8FC9;font-size:.72rem'>"+esc(nomeProd)+"</span>"+
-                "<span class='meta-semana-row-nums'>"+
-                  (lp.real?"<b style='color:#003E99'>"+fmtNum(lp.real)+" un</b>":"")+
-                  (lp.prev?" / Prev: <span style='color:#8B6914'>"+fmtNum(lp.prev)+" un</span>":"")+
-                "</span>"+
-                (pctP>0?"<span class='meta-semana-pct' style='color:"+corP+";font-size:.72rem'>"+pctP+"%</span>":"")+
-              "</div>";
-              if (lp.prev){
-                html += "<div class='meta-semana-row' style='gap:6px;padding-left:8px'>"+
-                  "<div style='width:80px;flex-shrink:0'></div>"+
-                  "<div class='meta-semana-barra'>"+
-                    "<div class='meta-semana-fill' style='width:"+pctP+"%;background:#003E99'></div>"+
-                  "</div>"+
-                "</div>";
-              }
-            });
-          } else if (totalPrev > 0){
-            // Um único produto — barra direta
-            html += "<div class='meta-semana-row' style='gap:6px'>"+
-              "<div style='width:80px;flex-shrink:0'></div>"+
-              "<div class='meta-semana-barra'>"+
-                "<div class='meta-semana-fill' style='width:"+pctFmtHdr+"%;background:#003E99'></div>"+
-              "</div>"+
-            "</div>";
-          }
-        });
-      }
-    }
-
-    html += "</div>";
-    return html;
+          "<div class='meta-semana-fill' style='width:"+Math.min(100,s.pctBrass)+"%'></div>"+
+        "</div>":"<div class='meta-semana-barra'></div>")+
+    "</div>";
   }).join("");
 }
 
@@ -8552,42 +7573,112 @@ if ("serviceWorker" in navigator){
 });
 try{ $("tfFreq").dispatchEvent(new Event("change")); }catch(e){}
 iniciar();
+
+  // ===== EXPORTAR LIMPEZA PDF =====
+  (function(){
+    var btnExp = $("btnLimpExportar");
+    var modal  = $("modalLimpExport");
+    if (!btnExp || !modal) return;
+    function p2(n){ return ("0"+n).slice(-2); }
+    function toISO(d){ return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate()); }
+    function fmtBR(iso){
+      var d=new Date(iso);
+      return p2(d.getDate())+"/"+p2(d.getMonth()+1)+"/"+d.getFullYear()+" "+p2(d.getHours())+":"+p2(d.getMinutes());
+    }
+    function fmtCurta(iso){
+      var d=new Date(iso);
+      return p2(d.getDate())+"/"+p2(d.getMonth()+1)+"/"+d.getFullYear();
+    }
+    btnExp.addEventListener("click", function(){
+      var hoje=new Date();
+      $("limpExportDe").value  = toISO(new Date(hoje.getFullYear(),hoje.getMonth(),1));
+      $("limpExportAte").value = toISO(new Date(hoje.getFullYear(),hoje.getMonth()+1,0));
+      modal.hidden = false;
+    });
+    $("btnLimpExportFechar").addEventListener("click", function(){ modal.hidden=true; });
+    $("btnLimpExportGerar").addEventListener("click", async function(){
+      var de=$("limpExportDe").value, ate=$("limpExportAte").value;
+      if (!de||!ate){ toast("Selecione o período.","erro"); return; }
+      if (de>ate){ toast("Data inicial maior que a final.","erro"); return; }
+      var btn=$("btnLimpExportGerar");
+      btn.textContent="Carregando..."; btn.disabled=true;
+      try {
+        var res=await Promise.all(LIMP_SETORES.map(function(st){
+          return api("/api/limpeza?setor="+st.id)
+            .then(function(r){ return {setor:st,registros:r.registros||[],itens:r.itens||[]}; })
+            .catch(function(){ return {setor:st,registros:[],itens:[]}; });
+        }));
+        var deD=new Date(de+"T00:00:00"), ateD=new Date(ate+"T23:59:59");
+        var FREQ_L={semanal:"Semanal",quinzenal:"Quinzenal",mensal:"Mensal",
+                    anual:"Anual",a_cada_uso:"A cada uso",eventual:"Eventual"};
+        var periodo=fmtCurta(deD.toISOString())+" a "+fmtCurta(ateD.toISOString());
+        var emissao=fmtBR(new Date().toISOString());
+        var setoresH="";
+        res.forEach(function(r){
+          var regs=r.registros.filter(function(x){var d=new Date(x.em);return d>=deD&&d<=ateD;});
+          var ult={};
+          regs.forEach(function(x){if(!ult[x.item]||x.em>ult[x.item].em) ult[x.item]=x;});
+          var its=r.itens.length>0?r.itens:(LIMP_ITENS_POR_SETOR[r.setor.id]||[]);
+          if(!its.length&&!regs.length) return;
+          var linhas=its.map(function(item){
+            var reg=ult[item.id];
+            var sBg=reg?"#D1FAE5":"#FEE2E2",sCor=reg?"#065F46":"#991B1B";
+            return "<tr>"+
+              "<td style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>"+esc(item.nome)+"</td>"+
+              "<td style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt;text-align:center'>"+(FREQ_L[item.freq]||item.freq)+"</td>"+
+              "<td style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt;text-align:center'>"+(reg?fmtBR(reg.em):"—")+"</td>"+
+              "<td style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt;text-align:center'>"+(reg?(reg.nomeFeitoPor||reg.feitoPor||"—"):"—")+"</td>"+
+              "<td style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt;text-align:center;background:"+sBg+";color:"+sCor+";font-weight:600'>"+(reg?"Realizado":"Não registrado")+"</td>"+
+              "<td style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>"+(reg?esc(reg.obs||""):"")+"</td>"+
+            "</tr>";
+          }).join("");
+          setoresH+="<div style='margin-bottom:20px;page-break-inside:avoid'>"+
+            "<div style='background:#025F1D;color:#fff;padding:7px 12px;border-radius:6px 6px 0 0;"+
+              "font-size:9.5pt;font-weight:700;display:flex;justify-content:space-between'>"+
+              "<span>"+r.setor.icone+" "+r.setor.nome+"</span>"+
+              "<span style='font-size:8pt;font-weight:400'>Resp.: "+r.setor.responsavel+" | "+regs.length+" reg.</span>"+
+            "</div>"+
+            "<table style='width:100%;border-collapse:collapse'>"+
+              "<thead><tr style='background:#F2F1EB'>"+
+                "<th style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt;text-align:left'>Item</th>"+
+                "<th style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>Freq.</th>"+
+                "<th style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>Última realização</th>"+
+                "<th style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>Responsável</th>"+
+                "<th style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>Status</th>"+
+                "<th style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>Obs.</th>"+
+              "</tr></thead><tbody>"+linhas+"</tbody></table>"+
+            "<div style='margin-top:8px;display:flex;gap:40px;font-size:8pt;color:#6E7568'>"+
+              "<div style='flex:1'><div style='border-bottom:1px solid #ccc;height:26px'></div>"+
+              "<div style='margin-top:3px'>Responsável: "+r.setor.responsavel+"</div></div>"+
+              "<div style='flex:1'><div style='border-bottom:1px solid #ccc;height:26px'></div>"+
+              "<div style='margin-top:3px'>Visto / Supervisor</div></div></div></div>";
+        });
+        var html="<!DOCTYPE html><html lang='pt-BR'><head><meta charset='UTF-8'>"+
+          "<title>Limpeza HBier "+periodo+"</title>"+
+          "<style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;font-size:9pt;color:#22271F}"+
+          "table{border-collapse:collapse;width:100%}tr{page-break-inside:avoid}</style></head><body>"+
+          "<div style='border-bottom:3px solid #025F1D;margin-bottom:16px;padding-bottom:10px;"+
+            "display:flex;justify-content:space-between;align-items:flex-end'>"+
+            "<div><div style='font-size:7.5pt;color:#6E7568;text-transform:uppercase;letter-spacing:.08em'>HBier Cervejaria Artesanal</div>"+
+              "<div style='font-size:14pt;font-weight:700;margin:2px 0'>Relatório de Limpeza e Higienização</div>"+
+              "<div style='font-size:9pt;color:#6E7568'>Período: "+periodo+"</div></div>"+
+            "<div style='text-align:right;font-size:7.5pt;color:#6E7568'>Emitido: "+emissao+"<br>Sistema HBier · MAPA</div>"+
+          "</div>"+setoresH+
+          "<div style='margin-top:24px;border-top:1px solid #E4E1D5;padding-top:10px;"+
+            "display:flex;justify-content:space-between;font-size:7.5pt;color:#6E7568'>"+
+            "<div>HBier Cervejaria Artesanal · Relatório de Limpeza · "+periodo+"</div>"+
+            "<div>"+emissao+"</div></div></body></html>";
+        var win=window.open("","_blank","width=900,height=700");
+        if(!win){toast("Permita pop-ups para gerar o PDF.","erro");return;}
+        win.document.write(html); win.document.close();
+        win.focus(); setTimeout(function(){win.print();},600);
+        modal.hidden=true;
+      } catch(e){toast("Erro: "+e.message,"erro");}
+      finally{btn.textContent="Gerar e Imprimir / PDF";btn.disabled=false;}
+    });
+  })();
+
 })();
 </script>
 </body>
-</html>    <!-- Modal exportar limpeza PDF -->
-    <div id="modalLimpExport" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.5);
-      z-index:999;display:flex;align-items:center;justify-content:center;padding:20px">
-      <div style="background:#fff;border-radius:14px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25)">
-        <div style="background:var(--verde);color:#fff;padding:14px 16px;
-          font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;
-          text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between">
-          <span>📄 Exportar Limpeza</span>
-          <button id="btnLimpExportFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
-        </div>
-        <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-          <div>
-            <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Data inicial</label>
-            <input type="date" id="limpExportDe"
-              style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
-          </div>
-          <div>
-            <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Data final</label>
-            <input type="date" id="limpExportAte"
-              style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
-          </div>
-          <p style="font-size:.75rem;color:var(--muted);line-height:1.4">
-            Todos os 11 setores com registros no período serão incluídos.
-            O relatório abrirá para impressão/salvar como PDF.
-          </p>
-          <button id="btnLimpExportGerar"
-            style="padding:11px;border:none;border-radius:8px;background:var(--verde);color:#fff;
-            font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;
-            text-transform:uppercase;letter-spacing:.06em;cursor:pointer">
-            Gerar e Imprimir / PDF
-          </button>
-        </div>
-      </div>
-    </div>
-
-    
+</html>
