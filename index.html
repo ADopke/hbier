@@ -2531,7 +2531,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.8.0";
+var VERSAO = "2.8.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4605,6 +4605,14 @@ function renderResultadoEnvase(r){
     "</div>"+
     (r.obsReal?"<div class='pr-obs'>"+esc(r.obsReal)+"</div>":"")+
   "</div>";
+}
+
+function fmtCheckEm(iso){
+  if (!iso) return "";
+  var d = new Date(iso);
+  if (isNaN(d)) return "";
+  return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+
+    " "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
 }
 
 function renderChecksBarril(it, semana){
