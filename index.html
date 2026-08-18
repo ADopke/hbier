@@ -2556,7 +2556,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.7.0";
+var VERSAO = "2.7.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5897,12 +5897,13 @@ async function carregarMetas(){
             litrosEnvasados += lf;
             // chave produto = "formato estilo" ex: "PET 500ml IPA"
             // usar it.estilo se disponível, senão it.produto como fallback
-            var estiloEnv = it.estilo || prod;
+            var estiloEnv = (it.estilo || "").trim() || (prod || "").trim();
             if (estiloEnv){
               var chaveProd = fmt+" "+estiloEnv;
               if (!porFormato["_prod_"+chaveProd]) porFormato["_prod_"+chaveProd] = 0;
               porFormato["_prod_"+chaveProd] += qr;
             }
+            // Para formatos sem estilo (PET 2L), o total já está em porFormato[fmt].qtd
           }
         }
       }
@@ -5971,8 +5972,8 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
   // Agrupar por formato×produto — mostrar barras individuais
   var fmtsMeta = meta.formatos || {};
   var grupos = {
-    "Garrafa 355ml": ["Garrafa 355ml Helles","Garrafa 355ml Red Ale","Garrafa 355ml IPA","Garrafa 355ml Sem Alcool"],
-    "PET 500ml":     ["PET 500ml Helles","PET 500ml Red Ale","PET 500ml IPA","PET 500ml Sem Alcool"],
+    "Garrafa 355ml": ["Garrafa 355ml Helles","Garrafa 355ml Red Ale","Garrafa 355ml IPA","Garrafa 355ml Sem Álcool"],
+    "PET 500ml":     ["PET 500ml Helles","PET 500ml Red Ale","PET 500ml IPA","PET 500ml Sem Álcool"],
     "PET 1L":        ["PET 1L Helles","PET 1L Oktoberfest"],
     "PET 2L":        ["PET 2L"]
   };
@@ -6003,8 +6004,11 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
           var metaProd = fmtsMeta[prod] || 0;
           if (!metaProd) return;
           var nomeProd = prod.replace(fmt+" ",""); // ex: "Helles"
-          // realizado somente para este produto (formato + nome)
-          var realProd = porFormato["_prod_"+prod] || 0;
+          // Para produtos sem sufixo de estilo (ex: "PET 2L"), usar total do formato
+          var semEstilo = (nomeProd === prod); // chave igual ao fmt = sem estilo
+          var realProd = semEstilo
+            ? ((porFormato[fmt]||{}).qtd || 0)
+            : (porFormato["_prod_"+prod] || 0);
           var pct = metaProd ? Math.round(realProd/metaProd*100) : 0;
           var classe = pct>=100?"acima":pct>=80?"atingida":"";
           html += "<div style='margin-bottom:6px'>"+
