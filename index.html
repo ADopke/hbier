@@ -2573,7 +2573,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.7.4";
+var VERSAO = "2.7.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4561,6 +4561,193 @@ $("btnAddManut").addEventListener("click", function(){
     ("0"+(hoje.getMonth()+1)).slice(-2)+"-"+("0"+hoje.getDate()).slice(-2);
   $("manutDesc").value=""; $("manutFeitor").value=""; $("manutCusto").value="";
   $("modalManut").hidden=false; $("manutDesc").focus();
+});
+
+
+// ===== EXPORTAR LIMPEZA PDF =====
+$("btnLimpExportar").addEventListener("click", function(){
+  // Preencher datas default: primeiro e último dia do mês atual
+  var hoje = new Date();
+  var primDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  var ultDia  = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0);
+  function toISO(d){ return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
+  $("limpExportDe").value  = toISO(primDia);
+  $("limpExportAte").value = toISO(ultDia);
+  $("modalLimpExport").hidden = false;
+});
+$("btnLimpExportFechar").addEventListener("click", function(){ $("modalLimpExport").hidden = true; });
+
+$("btnLimpExportGerar").addEventListener("click", async function(){
+  var de  = $("limpExportDe").value;
+  var ate = $("limpExportAte").value;
+  if (!de || !ate){ toast("Selecione o período.", "erro"); return; }
+  if (de > ate){ toast("Data inicial maior que a final.", "erro"); return; }
+
+  $("btnLimpExportGerar").textContent = "Carregando...";
+  $("btnLimpExportGerar").disabled = true;
+
+  try {
+    // Buscar dados de todos os setores em paralelo
+    var resultados = await Promise.all(LIMP_SETORES.map(function(st){
+      return api("/api/limpeza?setor="+st.id)
+        .then(function(r){ return {setor:st, registros:r.registros||[], itens:r.itens||[]}; })
+        .catch(function(){ return {setor:st, registros:[], itens:[]}; });
+    }));
+
+    // Filtrar pelo período
+    var deD  = new Date(de+"T00:00:00");
+    var ateD = new Date(ate+"T23:59:59");
+
+    function fmtDataBR(iso){
+      var d = new Date(iso);
+      return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear()
+            +" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+    }
+    function fmtDataCurta(iso){
+      var d = new Date(iso);
+      return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();
+    }
+
+    var FREQ_LABEL = {
+      semanal:"Semanal", quinzenal:"Quinzenal", mensal:"Mensal",
+      anual:"Anual", a_cada_uso:"A cada uso", eventual:"Eventual"
+    };
+
+    // Período formatado
+    var periodoTxt = fmtDataCurta(deD.toISOString())+" a "+fmtDataCurta(ateD.toISOString());
+    var emissaoTxt = fmtDataBR(new Date().toISOString());
+
+    // Montar HTML do relatório
+    var setoresHTML = "";
+    resultados.forEach(function(r){
+      var regsFiltrados = r.registros.filter(function(reg){
+        var d = new Date(reg.em);
+        return d >= deD && d <= ateD;
+      });
+
+      // Construir tabela por item (último registro de cada item no período)
+      var ultimoPorItem = {};
+      regsFiltrados.forEach(function(reg){
+        if (!ultimoPorItem[reg.item] || reg.em > ultimoPorItem[reg.item].em){
+          ultimoPorItem[reg.item] = reg;
+        }
+      });
+
+      // Montar linhas da tabela — todos os itens do setor
+      var linhas = "";
+      var itensCadastrados = r.itens.length > 0 ? r.itens : (LIMP_ITENS_POR_SETOR[r.setor.id]||[]);
+      itensCadastrados.forEach(function(item){
+        var reg = ultimoPorItem[item.id];
+        var status    = reg ? "Realizado" : "Não registrado";
+        var dataHora  = reg ? fmtDataBR(reg.em) : "—";
+        var resp      = reg ? (reg.nomeFeitoPor||reg.feitoPor||"—") : "—";
+        var obs       = reg ? (reg.obs||"") : "";
+        var statusCor = reg ? "#065F46" : "#991B1B";
+        var statusBg  = reg ? "#D1FAE5" : "#FEE2E2";
+        linhas += "<tr>"+
+          "<td style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt'>"+item.nome+"</td>"+
+          "<td style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center'>"+
+            (FREQ_LABEL[item.freq]||item.freq)+"</td>"+
+          "<td style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center'>"+
+            dataHora+"</td>"+
+          "<td style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center'>"+
+            resp+"</td>"+
+          "<td style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center;"+
+            "background:"+statusBg+";color:"+statusCor+";font-weight:600'>"+
+            status+"</td>"+
+          "<td style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt'>"+esc(obs)+"</td>"+
+        "</tr>";
+      });
+
+      // Contar registros do setor no período
+      var totalRegs = regsFiltrados.length;
+      if (itensCadastrados.length === 0 && totalRegs === 0) return; // pular setor vazio
+
+      setoresHTML += "<div style='margin-bottom:22px;page-break-inside:avoid'>"+
+        "<div style='background:#025F1D;color:#fff;padding:8px 12px;border-radius:6px 6px 0 0;"+
+          "font-family:Arial,sans-serif;font-size:10pt;font-weight:700;"+
+          "display:flex;justify-content:space-between;align-items:center'>"+
+          "<span>"+r.setor.icone+" "+r.setor.nome+"</span>"+
+          "<span style='font-size:8.5pt;font-weight:400'>Responsável: "+r.setor.responsavel+
+          " &nbsp;|&nbsp; "+totalRegs+" registro(s) no período</span>"+
+        "</div>"+
+        "<table style='width:100%;border-collapse:collapse;font-family:Arial,sans-serif'>"+
+          "<thead><tr style='background:#F2F1EB'>"+
+            "<th style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:left;font-weight:600'>Item</th>"+
+            "<th style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center;font-weight:600'>Frequência</th>"+
+            "<th style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center;font-weight:600'>Última realização</th>"+
+            "<th style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center;font-weight:600'>Responsável</th>"+
+            "<th style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:center;font-weight:600'>Status</th>"+
+            "<th style='padding:6px 8px;border:1px solid #E4E1D5;font-size:8.5pt;text-align:left;font-weight:600'>Observações</th>"+
+          "</tr></thead>"+
+          "<tbody>"+linhas+"</tbody>"+
+        "</table>"+
+        // Espaço para assinatura do responsável
+        "<div style='margin-top:10px;display:flex;gap:40px;font-family:Arial,sans-serif;font-size:8pt;color:#6E7568'>"+
+          "<div style='flex:1'>"+
+            "<div style='border-bottom:1px solid #ccc;height:28px'></div>"+
+            "<div style='margin-top:4px'>Responsável pelo setor: "+r.setor.responsavel+"</div>"+
+          "</div>"+
+          "<div style='flex:1'>"+
+            "<div style='border-bottom:1px solid #ccc;height:28px'></div>"+
+            "<div style='margin-top:4px'>Visto / Supervisor</div>"+
+          "</div>"+
+        "</div>"+
+      "</div>";
+    });
+
+    // HTML completo do relatório
+    var html = "<!DOCTYPE html><html lang='pt-BR'><head>"+
+      "<meta charset='UTF-8'>"+
+      "<title>Relatório de Limpeza HBier — "+periodoTxt+"</title>"+
+      "<style>"+
+        "@page{size:A4;margin:18mm 15mm 18mm 15mm}"+
+        "body{font-family:Arial,sans-serif;color:#22271F;margin:0;padding:0}"+
+        ".no-print{display:none}"+
+        "h1{font-size:14pt;margin:0 0 2px}"+
+        "h2{font-size:10pt;margin:0 0 12px;color:#6E7568;font-weight:400}"+
+        "table{page-break-inside:auto}"+
+        "tr{page-break-inside:avoid;page-break-after:auto}"+
+      "</style>"+
+      "</head><body>"+
+      // Cabeçalho do documento
+      "<div style='border-bottom:3px solid #025F1D;margin-bottom:18px;padding-bottom:12px;"+
+        "display:flex;justify-content:space-between;align-items:flex-end'>"+
+        "<div>"+
+          "<div style='font-size:8pt;color:#6E7568;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px'>"+
+            "HBier Cervejaria Artesanal</div>"+
+          "<h1>Relatório de Limpeza e Higienização</h1>"+
+          "<h2>Período: "+periodoTxt+"</h2>"+
+        "</div>"+
+        "<div style='text-align:right;font-size:8pt;color:#6E7568'>"+
+          "Emitido em: "+emissaoTxt+"<br>"+
+          "Documento gerado pelo sistema interno HBier<br>"+
+          "Sujeito à supervisão do MAPA"+
+        "</div>"+
+      "</div>"+
+      setoresHTML+
+      // Rodapé
+      "<div style='margin-top:30px;border-top:1px solid #E4E1D5;padding-top:12px;"+
+        "display:flex;justify-content:space-between;font-size:8pt;color:#6E7568'>"+
+        "<div>HBier Cervejaria Artesanal · Relatório de Limpeza · "+periodoTxt+"</div>"+
+        "<div>Gerado em "+emissaoTxt+"</div>"+
+      "</div>"+
+    "</body></html>";
+
+    // Abrir em nova janela e imprimir
+    var win = window.open("","_blank","width=900,height=700");
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(function(){ win.print(); }, 600);
+
+    $("modalLimpExport").hidden = true;
+  } catch(e){
+    toast("Erro ao gerar relatório: "+e.message, "erro");
+  } finally {
+    $("btnLimpExportGerar").textContent = "Gerar e Imprimir / PDF";
+    $("btnLimpExportGerar").disabled = false;
+  }
 });
 
 $("btnManutSalvar").addEventListener("click", async function(){
@@ -8368,4 +8555,39 @@ iniciar();
 })();
 </script>
 </body>
-</html>
+</html>    <!-- Modal exportar limpeza PDF -->
+    <div id="modalLimpExport" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.5);
+      z-index:999;display:flex;align-items:center;justify-content:center;padding:20px">
+      <div style="background:#fff;border-radius:14px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25)">
+        <div style="background:var(--verde);color:#fff;padding:14px 16px;
+          font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;
+          text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between">
+          <span>📄 Exportar Limpeza</span>
+          <button id="btnLimpExportFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Data inicial</label>
+            <input type="date" id="limpExportDe"
+              style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+          </div>
+          <div>
+            <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Data final</label>
+            <input type="date" id="limpExportAte"
+              style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+          </div>
+          <p style="font-size:.75rem;color:var(--muted);line-height:1.4">
+            Todos os 11 setores com registros no período serão incluídos.
+            O relatório abrirá para impressão/salvar como PDF.
+          </p>
+          <button id="btnLimpExportGerar"
+            style="padding:11px;border:none;border-radius:8px;background:var(--verde);color:#fff;
+            font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;
+            text-transform:uppercase;letter-spacing:.06em;cursor:pointer">
+            Gerar e Imprimir / PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    
