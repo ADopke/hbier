@@ -161,6 +161,22 @@ export default protegido(async function handler(req, res) {
       }
     }
 
+    // Se dataISO cai em semana diferente, mover o item
+    if (it.dataISO) {
+      const d = new Date(it.dataISO + "T00:00:00");
+      const diffSeg = (d.getDay() + 6) % 7;
+      const seg = new Date(d); seg.setDate(seg.getDate() - diffSeg);
+      const novaChaveSem = seg.getFullYear() + "-" +
+        String(seg.getMonth() + 1).padStart(2,"0") + "-" +
+        String(seg.getDate()).padStart(2,"0");
+      if (novaChaveSem !== semana) {
+        await gravar(chave(semana), itens.filter(x => x.id !== dados.id));
+        const itensNovos = (await ler(chave(novaChaveSem))) || [];
+        itensNovos.push(it);
+        await gravar(chave(novaChaveSem), itensNovos);
+        return res.json({ ok: true, itens: itens.filter(x => x.id !== dados.id), movido: novaChaveSem });
+      }
+    }
     await gravar(chave(semana), itens);
     return res.json({ ok: true, itens });
   }
