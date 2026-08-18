@@ -2573,7 +2573,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.7.2";
+var VERSAO = "2.7.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5858,6 +5858,7 @@ async function carregarMetas(){
     var r = resultados[i];
     var itens = r.itens || [];
     var semVolReal = 0, semVolPrev = 0, semQtdReal = 0, semQtdPrev = 0;
+    var semFmtReal = {};  // { "PET 500ml IPA": qtd, "PET 1L Helles": qtd, ... }
 
     itens.forEach(function(it){
       // Filtrar pelo mês/ano da meta usando dataISO ou dia da semana
@@ -5919,6 +5920,13 @@ async function carregarMetas(){
               var chaveProd = fmt+" "+estiloEnv;
               if (!porFormato["_prod_"+chaveProd]) porFormato["_prod_"+chaveProd] = 0;
               porFormato["_prod_"+chaveProd] += qr;
+              // acumular por semana também
+              if (!semFmtReal[chaveProd]) semFmtReal[chaveProd] = 0;
+              semFmtReal[chaveProd] += qr;
+            } else {
+              // formato sem estilo (PET 2L) — acumular pelo próprio fmt
+              if (!semFmtReal[fmt]) semFmtReal[fmt] = 0;
+              semFmtReal[fmt] += qr;
             }
             // Para formatos sem estilo (PET 2L), o total já está em porFormato[fmt].qtd
           }
@@ -5933,6 +5941,7 @@ async function carregarMetas(){
       label:label,
       volReal: semVolReal, volPrev: semVolPrev,
       qtdReal: semQtdReal, qtdPrev: semQtdPrev,
+      fmtReal: semFmtReal,
       pctBrass: meta.brass ? Math.min(100, Math.round(semVolReal/meta.brass*100)) : null,
       pctEnv:   meta.envTotal ? Math.min(100, Math.round(semQtdReal/meta.envTotal*100)) : null
     });
@@ -6102,22 +6111,96 @@ function renderMetaSemanas(semanas, meta){
       "</div>";
     }
 
-    // Linha envase
-    if (temEnv){
-      var numsEnv = [];
-      if (sem.qtdReal) numsEnv.push("Real: <b style='color:#003E99'>"+fmtNum(sem.qtdReal)+" un</b>");
-      if (sem.qtdPrev) numsEnv.push("Prev: <span style='color:#8B6914'>"+fmtNum(sem.qtdPrev)+" un</span>");
-      html += "<div class='meta-semana-row'>"+
-        "<span class='meta-semana-row-label' style='color:#003E99'>📦 Envase</span>"+
-        "<span class='meta-semana-row-nums'>"+numsEnv.join(" &nbsp;·&nbsp; ")+"</span>"+
-        (pctEnv>0?"<span class='meta-semana-pct' style='color:"+corEnv+"'>"+pctEnv+"%</span>":"")+
-      "</div>";
-      html += "<div class='meta-semana-row' style='gap:6px'>"+
-        "<div style='width:80px;flex-shrink:0'></div>"+
-        "<div class='meta-semana-barra'>"+
-          "<div class='meta-semana-fill' style='width:"+pctEnv+"%;background:#003E99'></div>"+
-        "</div>"+
-      "</div>";
+    // Linhas envase — uma por formato
+    var GRUPOS_META = {
+      "Garrafa 355ml": ["Garrafa 355ml Helles","Garrafa 355ml Red Ale","Garrafa 355ml IPA","Garrafa 355ml Sem Álcool"],
+      "PET 500ml":     ["PET 500ml Helles","PET 500ml Red Ale","PET 500ml IPA","PET 500ml Sem Álcool"],
+      "PET 1L":        ["PET 1L Helles","PET 1L Oktoberfest"],
+      "PET 2L":        ["PET 2L"]
+    };
+    var fmtsMeta = (typeof meta !== "undefined" && meta.formatos) ? meta.formatos : {};
+    var fmtReal  = sem.fmtReal || {};
+
+    // Coletar quais formatos têm dado esta semana ou meta definida
+    var fmtsComDado = {};
+    Object.keys(GRUPOS_META).forEach(function(fmt){
+      var prods = GRUPOS_META[fmt];
+      prods.forEach(function(prod){
+        var real = (prod === fmt) ? (fmtReal[fmt]||0) : (fmtReal[prod]||0);
+        var metaP = fmtsMeta[prod] || 0;
+        if (real > 0 || metaP > 0){
+          if (!fmtsComDado[fmt]) fmtsComDado[fmt] = [];
+          fmtsComDado[fmt].push({prod:prod, real:real, meta:metaP});
+        }
+      });
+    });
+
+    var temQualquerEnv = Object.keys(fmtsComDado).length > 0;
+    if (temQualquerEnv || temEnv){
+      if (Object.keys(fmtsComDado).length === 0){
+        // Só tem total, sem meta por formato — mostrar linha simples
+        var numsEnv = [];
+        if (sem.qtdReal) numsEnv.push("Real: <b style='color:#003E99'>"+fmtNum(sem.qtdReal)+" un</b>");
+        if (sem.qtdPrev) numsEnv.push("Prev: <span style='color:#8B6914'>"+fmtNum(sem.qtdPrev)+" un</span>");
+        html += "<div class='meta-semana-row'>"+
+          "<span class='meta-semana-row-label' style='color:#003E99'>📦 Envase</span>"+
+          "<span class='meta-semana-row-nums'>"+numsEnv.join(" &nbsp;·&nbsp; ")+"</span>"+
+          (pctEnv>0?"<span class='meta-semana-pct' style='color:"+corEnv+"'>"+pctEnv+"%</span>":"")+
+        "</div>";
+      } else {
+        // Uma sublinha por formato
+        Object.keys(fmtsComDado).forEach(function(fmt){
+          var linhas = fmtsComDado[fmt];
+          var totalRealFmt = linhas.reduce(function(a,x){ return a+x.real; }, 0);
+          var totalMetaFmt = linhas.reduce(function(a,x){ return a+x.meta; }, 0);
+
+          // Cabeçalho do formato
+          html += "<div class='meta-semana-row'>"+
+            "<span class='meta-semana-row-label' style='color:#003E99;font-weight:700'>📦 "+esc(fmt)+"</span>"+
+            "<span class='meta-semana-row-nums' style='color:var(--muted)'>"+
+              (totalRealFmt?"Real: <b style='color:#003E99'>"+fmtNum(totalRealFmt)+" un</b>":"")+
+              (totalMetaFmt?" Meta: "+fmtNum(totalMetaFmt)+" un":"")+
+            "</span>"+
+          "</div>";
+
+          // Sublinhas por produto/estilo (se mais de um)
+          if (linhas.length > 1){
+            linhas.forEach(function(lp){
+              if (lp.real === 0 && lp.meta === 0) return;
+              var nomeProd = lp.prod.replace(fmt+" ","");
+              var pctP = lp.meta ? Math.min(100,Math.round(lp.real/lp.meta*100)) : 0;
+              var corP = pctP>=100?"var(--verde)":pctP>=80?"var(--dourado)":"var(--muted)";
+              html += "<div class='meta-semana-row' style='padding-left:8px;opacity:.9'>"+
+                "<span class='meta-semana-row-label' style='color:#6B8FC9;font-size:.72rem'>"+esc(nomeProd)+"</span>"+
+                "<span class='meta-semana-row-nums'>"+
+                  (lp.real?"<b style='color:#003E99'>"+fmtNum(lp.real)+" un</b>":"")+
+                  (lp.meta?" / "+fmtNum(lp.meta)+" un":"")+
+                "</span>"+
+                (pctP>0?"<span class='meta-semana-pct' style='color:"+corP+";font-size:.72rem'>"+pctP+"%</span>":"")+
+              "</div>";
+              if (lp.meta){
+                html += "<div class='meta-semana-row' style='gap:6px;padding-left:8px'>"+
+                  "<div style='width:80px;flex-shrink:0'></div>"+
+                  "<div class='meta-semana-barra'>"+
+                    "<div class='meta-semana-fill' style='width:"+pctP+"%;background:#003E99'></div>"+
+                  "</div>"+
+                "</div>";
+              }
+            });
+          } else if (totalMetaFmt > 0){
+            // Só um produto — mostrar barra direto
+            var pctFmt = Math.min(100,Math.round(totalRealFmt/totalMetaFmt*100));
+            var corFmt = pctFmt>=100?"var(--verde)":pctFmt>=80?"var(--dourado)":"var(--muted)";
+            html += "<div class='meta-semana-row' style='gap:6px'>"+
+              "<div style='width:80px;flex-shrink:0'></div>"+
+              "<span class='meta-semana-pct' style='color:"+corFmt+"'>"+pctFmt+"%</span>"+
+              "<div class='meta-semana-barra'>"+
+                "<div class='meta-semana-fill' style='width:"+pctFmt+"%;background:#003E99'></div>"+
+              "</div>"+
+            "</div>";
+          }
+        });
+      }
     }
 
     html += "</div>";
