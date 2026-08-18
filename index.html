@@ -2556,7 +2556,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.6.9";
+var VERSAO = "2.7.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5278,34 +5278,56 @@ var _brasseditando = null;
 var _enveditando = null;
 
 function preencherDias(selectId, valorAtual){
-  // Gera os proximos 30 dias uteis (seg a sab) a partir de hoje
+  // Gera todos os dias seg-sab do ano corrente, agrupados por mês
+  // Dias futuros (30 dias) marcados com ★ para referência
   var NOMES_DIA = ["Dom","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+  var MESES_EXT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
   var MESES_C   = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var ano  = hoje.getFullYear();
+
+  // Janela de destaque: hoje até +30 dias
+  var limite30 = new Date(hoje); limite30.setDate(limite30.getDate()+30);
+
+  // Semana atualmente exibida na programação (para marcar com ★)
+  var segD = new Date(segProg); segD.setHours(0,0,0,0);
+  var fimD = new Date(segProg); fimD.setDate(fimD.getDate()+6); fimD.setHours(0,0,0,0);
+
   var opcs = "<option value=''>Não definido</option>";
-  var base = new Date(); base.setHours(0,0,0,0);
-  var adicionados = 0;
-  var d = new Date(base);
-  while (adicionados < 30){
+  var mesCurrent = -1;
+
+  // Iterar de 1/jan até 31/dez do ano corrente
+  var d = new Date(ano, 0, 1);
+  while (d.getFullYear() === ano){
     var dow = d.getDay();
-    if (dow >= 1 && dow <= 6){
-      var nome = NOMES_DIA[dow];
-      var isoD = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
-      var dt   = d.getDate()+" "+MESES_C[d.getMonth()];
+    if (dow >= 1 && dow <= 6){ // seg a sab
+      // Separador de mês
+      if (d.getMonth() !== mesCurrent){
+        mesCurrent = d.getMonth();
+        opcs += "<option disabled style='font-weight:700;color:#025F1D'>── "+
+                MESES_EXT[mesCurrent]+" "+ano+" ──</option>";
+      }
+      var isoD  = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
+      var nome  = NOMES_DIA[dow];
+      var dt    = d.getDate()+" "+MESES_C[d.getMonth()];
       var label = nome+" — "+dt;
-      // marcar com estrela os dias da semana atualmente exibida
-      var segD = new Date(segProg); segD.setHours(0,0,0,0);
-      var fimD = new Date(segProg); fimD.setDate(fimD.getDate()+6); fimD.setHours(0,0,0,0);
-      var dd   = new Date(d);       dd.setHours(0,0,0,0);
+      // marcar semana atual com ★
+      var dd = new Date(d); dd.setHours(0,0,0,0);
       if (dd >= segD && dd <= fimD) label += " ★";
+      // marcar hoje
+      if (dd.getTime() === hoje.getTime()) label = "▶ "+label+" (hoje)";
       opcs += "<option value='"+nome+"|"+isoD+"'>"+label+"</option>";
-      adicionados++;
     }
     d.setDate(d.getDate()+1);
   }
+
   var sel = $(selectId);
   sel.innerHTML = opcs;
   if (valorAtual) sel.value = valorAtual;
 }
+
 
 function parseDiaSelect(val){
   if (!val) return {nome:"", dataISO:""};
