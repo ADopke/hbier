@@ -2656,6 +2656,27 @@ function carimboEm(est, chave){
    Utilidades
    ================================================================== */
 function $(id){ return document.getElementById(id); }
+
+var ENV_ESTILOS = {
+  "PET 500ml": ["Helles","Red Ale","IPA","Sem Álcool"],
+  "PET 1L":    ["Helles","Oktoberfest"]
+};
+
+function atualizarEnvEstilo(){
+  var fmt     = $("envFormato").value;
+  var wrap    = $("envEstiloWrap");
+  var sel     = $("envEstilo");
+  var estilos = ENV_ESTILOS[fmt] || [];
+  if (estilos.length){
+    sel.innerHTML = "<option value=''>Selecione o estilo</option>" +
+      estilos.map(function(e){ return "<option>"+e+"</option>"; }).join("");
+    wrap.hidden = false;
+  } else {
+    wrap.hidden = true;
+    sel.value = "";
+  }
+}
+
 function esc(s){
   return String(s==null?"":s).replace(/[&<>"']/g,function(c){
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
