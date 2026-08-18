@@ -273,23 +273,105 @@
   }
   .config-sugestoes-item:last-child{ border-bottom:none; }
 
+  /* ---- toggle visão semanal/mensal ---- */
+  .visao-toggle{ display:flex;gap:3px;background:var(--cinza);border-radius:8px;padding:3px; }
+  .vt-btn{ padding:4px 11px;border-radius:6px;border:none;cursor:pointer;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.76rem;
+    letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:transparent;transition:.12s; }
+  .vt-btn.ativo{ background:#fff;color:var(--verde);box-shadow:0 1px 4px rgba(0,0,0,.1); }
+
+  /* ---- totais mensais ---- */
+  .totais-mensais{ padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;border-bottom:1px solid var(--linha); }
+  .tm-card{ border-radius:8px;padding:9px 11px;display:flex;flex-direction:column;gap:2px; }
+  .tm-label{ font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted); }
+  .tm-num{ font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.35rem;line-height:1.1; }
+  .tm-sub{ font-size:.68rem;color:var(--muted); }
+  .tm-barra{ height:4px;background:rgba(0,0,0,.08);border-radius:99px;overflow:hidden;margin-top:5px; }
+  .tm-fill{ height:100%;border-radius:99px; }
+  .tm-brass{ background:var(--verde-claro);border:1px solid #A8D4B4; }
+  .tm-env{ background:#E8F0FF;border:1px solid #B3C8F5; }
+  .tm-barril{ background:#FFF3E8;border:1px solid #D4905A; }
+  .tm-vol{ background:var(--dourado-claro);border:1px solid #E6C84A;grid-column:1/-1; }
+  .tm-brass .tm-num{ color:var(--verde); }
+  .tm-env .tm-num{ color:#003E99; }
+  .tm-barril .tm-num{ color:#7A4500; }
+  .tm-vol .tm-num{ color:var(--verde);font-size:1.1rem; }
+  .tm-vol-linha{ display:flex;align-items:baseline;gap:8px; }
+  .tm-vol-meta{ font-size:.72rem;color:var(--muted); }
+
+  /* ---- legenda calendário ---- */
+  .cal-legenda{ padding:6px 14px;border-bottom:1px solid var(--linha);display:flex;gap:10px;flex-wrap:wrap;background:var(--cinza); }
+  .cal-leg-item{ display:inline-flex;align-items:center;gap:4px;font-size:.68rem;color:var(--muted); }
+  .cal-leg-dot{ width:9px;height:9px;border-radius:2px;flex-shrink:0; }
+
+  /* ---- calendário mensal ---- */
+  .cal-header-mensal{ display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--linha);background:var(--cinza); }
+  .cal-dh-m{ text-align:center;padding:5px 2px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted); }
+  .cal-dh-m.fw{ color:var(--vermelho); }
+  .cal-grid-mensal{ display:grid;grid-template-columns:repeat(7,1fr); }
+  .cal-dia-m{ border-right:1px solid var(--linha);border-bottom:1px solid var(--linha);min-height:46px;padding:4px 3px 3px;position:relative;cursor:pointer;transition:background .1s; }
+  .cal-dia-m:nth-child(7n){ border-right:none; }
+  .cal-dia-m:hover{ background:#F0EFE8; }
+  .cal-dia-m.outro{ background:var(--cinza);opacity:.6;pointer-events:none; }
+  .cal-dia-m.hoje-cal{ background:var(--dourado-claro); }
+  .cal-dia-m.hoje-cal .cal-n-m{ color:var(--dourado);font-weight:800; }
+  .cal-dia-m.sel-cal{ background:var(--verde-claro) !important; }
+  .cal-dia-m.sel-cal .cal-n-m{ color:var(--verde);font-weight:800; }
+  .cal-dia-m.fw-cal .cal-n-m{ color:var(--vermelho); }
+  .cal-n-m{ font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;color:var(--muted);display:block;margin-bottom:3px; }
+  .cal-dia-m.tem-cal .cal-n-m{ color:var(--ink); }
+  .cal-cpills{ display:flex;flex-direction:column;gap:2px; }
+  .cal-cp{ height:4px;border-radius:2px;width:100%; }
+  .cal-cp-b{ background:var(--verde); }
+  .cal-cp-e{ background:#003E99; }
+  .cal-cp-r{ background:#7A4500; }
+  .cal-cp-b.res,.cal-cp-e.res{ opacity:.45; }
+  .cal-res-dot{ position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:#34D399; }
+
+  /* ---- detalhe do dia mensal ---- */
+  .det-dia-m{ border-top:2px solid var(--verde); }
+  .det-dia-header-m{ padding:9px 14px;background:var(--verde);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.9rem;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;justify-content:space-between; }
+  .det-dia-fechar-m{ background:none;border:none;color:rgba(255,255,255,.8);font-size:1rem;cursor:pointer; }
+  .det-dia-item-m{ padding:9px 14px;border-top:1px solid var(--linha);display:flex;align-items:center;gap:9px; }
+  .det-dia-pill-m{ font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:20px;flex-shrink:0; }
+  .ddp-b{ background:var(--verde-claro);color:var(--verde); }
+  .ddp-e{ background:#E8F0FF;color:#003E99; }
+  .ddp-r{ background:#FFF3E8;color:#7A4500; }
+  .det-dia-nome-m{ font-weight:700;font-size:.87rem;flex:1; }
+  .det-dia-sub-m{ font-size:.72rem;color:var(--muted);margin-top:2px; }
+  .det-dia-badge-m{ font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;flex-shrink:0; }
+  .ddb-ok{ background:#D1FAE5;color:#065F46; }
+  .ddb-pend{ background:#FEF3C7;color:#92400E; }
+  .det-dia-ir-m{ padding:8px 14px;border-top:1px solid var(--linha);background:var(--cinza); }
+
+  /* ---- semanas de meta ---- */
+  .meta-semana-linha{ padding:10px 12px;background:#fff;border:1px solid var(--linha);border-radius:8px;font-size:.82rem;display:flex;flex-direction:column;gap:6px; }
+  .meta-semana-cabec{ display:flex;align-items:center;justify-content:space-between;margin-bottom:2px; }
+  .meta-semana-label{ font-weight:700;font-size:.85rem;color:var(--ink); }
+  .meta-semana-row{ display:flex;align-items:center;gap:8px; }
+  .meta-semana-row-label{ font-size:.75rem;font-weight:600;flex-shrink:0;min-width:80px; }
+  .meta-semana-row-nums{ flex:1;font-size:.75rem;color:var(--muted); }
+  .meta-semana-pct{ font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;min-width:36px;text-align:right;flex-shrink:0; }
+  .meta-semana-barra{ flex:1;height:5px;background:var(--cinza);border-radius:99px;overflow:hidden; }
+  .meta-semana-fill{ height:100%;background:var(--verde);border-radius:99px; }
+
   /* ---- separador de dia na programação ---- */
   .prog-dia-sep{
-    padding:10px 14px 8px;
+    padding:9px 14px 8px;
     font-family:'Barlow Condensed',sans-serif;font-weight:800;
-    font-size:1.1rem;letter-spacing:.08em;text-transform:uppercase;
+    font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;
     color:#fff;
-    background:var(--verde);
-    border-radius:0;
-    margin-top:10px;
+    background:#3D3D3D;
+    border-radius:8px;
+    margin-top:20px;
     display:flex;align-items:center;gap:10px;
   }
   .prog-dia-sep::before{
     content:'';display:inline-block;
-    width:4px;height:1.1rem;background:rgba(255,255,255,.5);border-radius:2px;
+    width:4px;height:1rem;background:rgba(255,255,255,.35);border-radius:2px;
     flex-shrink:0;
   }
-  .prog-dia-sep:first-child{ margin-top:0; }
+  .prog-dia-sep:first-child{ margin-top:4px; }
 
   /* ---- tarefas de produção ---- */
   .prod-feita{ opacity:.75; }
@@ -376,6 +458,9 @@
   .check-lancamento:hover{ border-color:var(--verde);color:var(--verde); }
   .check-lancamento.marcado{
     background:var(--verde-claro);border-color:var(--verde);color:var(--verde);
+  }
+  .check-lancamento.programado{
+    background:var(--dourado-claro);border-color:var(--dourado);color:#7A5500;
   }
   .check-lancamento .cl-icone{
     width:18px;height:18px;border-radius:5px;border:1.5px solid currentColor;
@@ -1229,8 +1314,13 @@
         <div class="sec-head" style="flex-wrap:wrap;gap:8px;align-items:flex-start">
           <span class="sec-title">🗓 Programação</span>
           <div style="display:flex;flex-direction:column;gap:6px;margin-left:auto;align-items:flex-end">
+            <!-- toggle visão -->
+            <div class="visao-toggle">
+              <button class="vt-btn ativo" id="btnVisaoSem">Semana</button>
+              <button class="vt-btn" id="btnVisaoMes">Mês</button>
+            </div>
             <!-- linha 1: ano -->
-            <div style="display:flex;align-items:center;gap:4px">
+            <div style="display:flex;align-items:center;gap:4px" id="progNavAno">
               <button class="btn-hoje-sem" id="progPrevAno" style="font-size:.7rem;padding:3px 8px">‹‹</button>
               <span id="progAnoLabel" style="font-size:.78rem;font-weight:700;color:var(--verde);
                 min-width:36px;text-align:center"></span>
@@ -1244,7 +1334,7 @@
               <button class="btn-hoje-sem" id="progNextMes" style="font-size:.8rem;padding:3px 9px">›</button>
             </div>
             <!-- linha 3: semana dentro do mês -->
-            <div style="display:flex;align-items:center;gap:4px">
+            <div style="display:flex;align-items:center;gap:4px" id="progNavSem">
               <button class="btn-hoje-sem" id="progPrevSem">‹ sem</button>
               <span id="progSemana" style="font-size:.78rem;font-weight:600;
                 color:var(--muted);white-space:nowrap;min-width:140px;text-align:center"></span>
@@ -1260,8 +1350,39 @@
           border-bottom:1px solid var(--linha);display:flex;flex-wrap:wrap;
           gap:6px;align-items:center;min-height:0"></div>
 
-        <div id="progLista" style="padding:14px"></div>
-        <div style="padding:0 14px 14px">
+        <!-- visão semanal -->
+        <div id="progListaWrap">
+          <div id="progLista" style="padding:14px"></div>
+        </div>
+        <!-- visão mensal -->
+        <div id="progMensalWrap" hidden>
+          <div class="totais-mensais" id="progMensalTotais"></div>
+          <div class="cal-legenda">
+            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--verde)"></span> Brassagem</span>
+            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#003E99"></span> Envase</span>
+            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#7A4500"></span> Barril</span>
+            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#D1FAE5;border:1px solid #34D399"></span> Com resultado</span>
+          </div>
+          <div class="cal-header-mensal">
+            <div class="cal-dh-m">Seg</div><div class="cal-dh-m">Ter</div>
+            <div class="cal-dh-m">Qua</div><div class="cal-dh-m">Qui</div>
+            <div class="cal-dh-m">Sex</div><div class="cal-dh-m fw">Sáb</div>
+            <div class="cal-dh-m fw">Dom</div>
+          </div>
+          <div class="cal-grid-mensal" id="progCalGrid"></div>
+          <div class="det-dia-m" id="progDetDia" hidden>
+            <div class="det-dia-header-m">
+              <span id="progDetDiaLabel"></span>
+              <button class="det-dia-fechar-m" id="btnDetDiaFechar">✕</button>
+            </div>
+            <div id="progDetDiaItens"></div>
+            <div class="det-dia-ir-m">
+              <button class="btn-hoje-sem" id="btnDetDiaIrSem"
+                style="font-size:.72rem;width:100%;text-align:center">→ Ver semana completa desta data</button>
+            </div>
+          </div>
+        </div>
+        <div style="padding:0 14px 14px;border-top:1px solid var(--linha)">
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn mini" id="btnAddProg">🍺 Brassagem</button>
             <button class="btn mini secundario" id="btnAddEnvase">📦 Envase</button>
@@ -2187,8 +2308,7 @@
         border-radius:14px 14px 0 0;display:flex;align-items:center;gap:10px">
         <span id="brassFormTitulo" style="font-family:'Barlow Condensed',sans-serif;
           font-weight:700;text-transform:uppercase;font-size:1rem;flex:1">&#x1F37A; Nova Brassagem</span>
-        <button onclick="$('modalBrassagem').hidden=true"
-          style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
+        <button id="btnBrassFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
       </div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
         <div>
@@ -2199,6 +2319,11 @@
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Tanque destino</label>
           <input type="text" id="brassTanque" placeholder="Ex.: TQ-03"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Lote</label>
+          <input type="text" id="brassLote" placeholder="Ex.: LOT38/26TQ03"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -2220,8 +2345,7 @@
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button onclick="$('modalBrassagem').hidden=true"
-            style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
+          <button id="btnBrassCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
           <button id="btnBrassSalvar"
             style="padding:9px 18px;border:none;border-radius:8px;background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Salvar</button>
         </div>
@@ -2237,8 +2361,7 @@
         border-radius:14px 14px 0 0;display:flex;align-items:center;gap:10px">
         <span id="envFormTitulo" style="font-family:'Barlow Condensed',sans-serif;
           font-weight:700;text-transform:uppercase;font-size:1rem;flex:1">&#x1F4E6; Novo Envase</span>
-        <button onclick="$('modalEnvase').hidden=true"
-          style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
+        <button id="btnEnvFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
       </div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
         <div>
@@ -2267,6 +2390,12 @@
               <option>PET 2L</option>
             </select>
           </div>
+          <div id="envEstiloWrap" hidden>
+            <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Estilo</label>
+            <select id="envEstilo" style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.85rem">
+              <option value="">Selecione o estilo</option>
+            </select>
+          </div>
           <div>
             <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Qtd prevista</label>
             <input type="text" id="envQtd" placeholder="Ex.: 2.000 un"
@@ -2285,8 +2414,7 @@
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button onclick="$('modalEnvase').hidden=true"
-            style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
+          <button id="btnEnvCancelar" style="padding:9px 18px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
           <button id="btnEnvSalvar"
             style="padding:9px 18px;border:none;border-radius:8px;background:#003E99;color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">Salvar</button>
         </div>
@@ -4045,6 +4173,10 @@ $("btnAddBarril").addEventListener("click", function(){
 });
 $("btnBarrilFechar").addEventListener("click", function(){$("modalBarril").hidden=true;});
 $("btnBarrilCancelar").addEventListener("click", function(){$("modalBarril").hidden=true;});
+$("btnBrassFechar").addEventListener("click", function(){$("modalBrassagem").hidden=true;});
+$("btnBrassCancelar").addEventListener("click", function(){$("modalBrassagem").hidden=true;});
+$("btnEnvFechar").addEventListener("click", function(){$("modalEnvase").hidden=true;});
+$("btnEnvCancelar").addEventListener("click", function(){$("modalEnvase").hidden=true;});
 
 $("btnBarrilSalvar").addEventListener("click", async function(){
   var resumo = calcBarril();
@@ -4396,6 +4528,15 @@ var _progEditando = null;
 var DIAS_PROG = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 
 async function carregarProg(){
+  if (_progVisao === "mensal"){
+    var MESES_L=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    $("progMesLabel").textContent = MESES_L[segProg.getMonth()];
+    $("progAnoLabel").textContent = segProg.getFullYear();
+    $("progVoltarHoje").hidden = (chaveSemana(segProg)===chaveSemana(segHoje));
+    await carregarProgMensal();
+    return;
+  }
+
   var seg = chaveSemana(segProg);
   var fim = new Date(segProg); fim.setDate(fim.getDate()+6);
 
@@ -4500,8 +4641,20 @@ function renderChecksLancamento(it, semana){
       "</button>";
   }
 
+  function btnCheckProg(campo, rotulo){
+    var marcado = !!ch[campo];
+    var por = ch[campo+"_por"] ? " @"+ch[campo+"_por"] : "";
+    var em  = ch[campo+"_em"] ? " · "+fmtCheckEm(ch[campo+"_em"]) : "";
+    return "<button class='check-lancamento"+(marcado?" programado":"")+"'"+
+      " data-prog-check='"+esc(campo)+"' data-prog-check-id='"+esc(it.id)+"'"+
+      " data-prog-check-semana='"+esc(semana)+"'>"+
+      "<span class='cl-icone'>"+(marcado?"✓":"")+"</span>"+
+      esc(rotulo)+(marcado?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+em+"</span>":"")+
+      "</button>";
+  }
   var botoes = "";
-  botoes += btnCheck("lancadoBeerSales", "BeerSales");
+  botoes += btnCheckProg("beerSalesProg",   "BeerSales Prog.");
+  botoes += btnCheck("lancadoBeerSales",    "BeerSales Conc.");
   if (!isEnvase) botoes += btnCheck("lancadoBeerbo", "Beerbo");
 
   return "<div class='checks-lancamento'>"+botoes+"</div>";
@@ -4726,6 +4879,162 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
   $("progLista").innerHTML = htmlTotal;
 }
 
+/* ================================================================
+   Visão mensal da programação
+   ================================================================ */
+var _progVisao  = "semanal";
+var _calDiaSel  = null;
+var _calDadosMes = {};
+
+function progSetVisao(v){
+  _progVisao = v;
+  var bS=$("btnVisaoSem"), bM=$("btnVisaoMes");
+  if(bS) bS.classList.toggle("ativo", v==="semanal");
+  if(bM) bM.classList.toggle("ativo", v==="mensal");
+  var lw=$("progListaWrap"), mw=$("progMensalWrap"), ns=$("progNavSem"), na=$("progNavAno");
+  if(lw) lw.hidden=(v==="mensal");
+  if(mw) mw.hidden=(v==="semanal");
+  if(ns) ns.hidden=(v==="mensal");
+  if(na) na.hidden=(v==="mensal");
+  $("progVoltarHoje").hidden=true;
+  if(v==="mensal") carregarProgMensal();
+}
+
+async function carregarProgMensal(){
+  var ano=segProg.getFullYear(), mes=segProg.getMonth();
+  var semanas=[];
+  var d=new Date(ano,mes,1);
+  d.setDate(d.getDate()-((d.getDay()+6)%7));
+  while(true){
+    var fim7=new Date(d); fim7.setDate(fim7.getDate()+6);
+    if(d.getMonth()===mes||fim7.getMonth()===mes) semanas.push(new Date(d));
+    d.setDate(d.getDate()+7);
+    if(d.getFullYear()>ano||(d.getFullYear()===ano&&d.getMonth()>mes)) break;
+  }
+  var res=await Promise.all(semanas.map(function(seg){
+    var ch=seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
+    return api("/api/prog?semana="+ch).then(function(r){ return {seg:seg,itens:r.itens||[],barreis:r.barreis||{}}; }).catch(function(){ return {seg:seg,itens:[],barreis:{}}; });
+  }));
+  var DIAS_OFF={"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
+  var mapaDia={};
+  var totBrass=0,totEnv=0,totBarril=0,totVolReal=0;
+  res.forEach(function(semR){
+    var seg=semR.seg;
+    semR.itens.forEach(function(it){
+      var di=null;
+      if(it.dataISO) di=it.dataISO;
+      else if(it.dia!==undefined&&it.dia!==""){var off=DIAS_OFF[it.dia];if(off!==undefined){var dd=new Date(seg);dd.setDate(dd.getDate()+off);di=dd.getFullYear()+"-"+("0"+(dd.getMonth()+1)).slice(-2)+"-"+("0"+dd.getDate()).slice(-2);}}
+      if(!di) return;
+      var dm=new Date(di+"T00:00:00");
+      if(dm.getMonth()!==mes||dm.getFullYear()!==ano) return;
+      if(!mapaDia[di]) mapaDia[di]=[];
+      mapaDia[di].push(it);
+      if(it.tipo==="brassagem"){totBrass++;if(it.resultado&&it.resultado.volume)totVolReal+=parseFloat((it.resultado.volume+"").replace(",","."))||0;}
+      else if(it.tipo==="envase") totEnv++;
+    });
+    var chSem=seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
+    var regsB=semR.barreis["barril-"+chSem]||[];
+    regsB.forEach(function(r){
+      var di=null;
+      if(r.dataISO) di=r.dataISO;
+      else if(r.dia&&DIAS_OFF[r.dia]!==undefined){var dd=new Date(seg);dd.setDate(dd.getDate()+DIAS_OFF[r.dia]);di=dd.getFullYear()+"-"+("0"+(dd.getMonth()+1)).slice(-2)+"-"+("0"+dd.getDate()).slice(-2);}
+      if(!di) return;
+      var dm=new Date(di+"T00:00:00");
+      if(dm.getMonth()!==mes||dm.getFullYear()!==ano) return;
+      if(!mapaDia[di]) mapaDia[di]=[];
+      mapaDia[di].push({tipo:"barril",produto:r.produto,total:r.total,_barrilReg:r});
+      totBarril++;
+    });
+  });
+  _calDadosMes=mapaDia;
+  var metaBrass=0;
+  try{var mr=await api("/api/metas?ano="+ano+"&mes="+(mes+1));metaBrass=(mr.meta&&mr.meta.brass)||0;}catch(e){}
+  var pctVol=metaBrass?Math.min(100,Math.round(totVolReal/metaBrass*100)):0;
+  var brassCom=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="brassagem"&&x.resultado;}).length;},0);
+  var envCom=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="envase"&&x.resultado;}).length;},0);
+  var totBarrilL=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="barril";}).reduce(function(a,b){return a+(b.total||0);},0);},0);
+  $("progMensalTotais").innerHTML=
+    "<div class='tm-card tm-brass'><span class='tm-label'>🍺 Brassagens</span><span class='tm-num'>"+totBrass+"</span><span class='tm-sub'>"+brassCom+" com resultado</span><div class='tm-barra'><div class='tm-fill' style='width:"+(totBrass?Math.round(brassCom/totBrass*100):0)+"%;background:var(--verde)'></div></div></div>"+
+    "<div class='tm-card tm-env'><span class='tm-label'>📦 Envases</span><span class='tm-num'>"+totEnv+"</span><span class='tm-sub'>"+envCom+" com resultado</span><div class='tm-barra'><div class='tm-fill' style='width:"+(totEnv?Math.round(envCom/totEnv*100):0)+"%;background:#003E99'></div></div></div>"+
+    "<div class='tm-card tm-barril'><span class='tm-label'>🛢 Barris</span><span class='tm-num'>"+totBarril+"</span><span class='tm-sub'>"+(totBarrilL?fmtNum(totBarrilL)+" L total":"nenhum")+"</span></div>"+
+    "<div class='tm-card tm-vol'><span class='tm-label'>Volume brassado</span><div class='tm-vol-linha'><span class='tm-num'>"+fmtNum(totVolReal)+" L</span>"+(metaBrass?"<span class='tm-vol-meta'>de "+fmtNum(metaBrass)+" L meta ("+pctVol+"%)</span>":"")+"</div><div class='tm-barra'><div class='tm-fill' style='width:"+pctVol+"%;background:var(--dourado)'></div></div></div>";
+  // Calendário
+  var hojeStr=(function(){var h=new Date();h.setHours(0,0,0,0);return h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);})();
+  var ini=new Date(ano,mes,1);
+  ini.setDate(ini.getDate()-((ini.getDay()+6)%7));
+  var html=""; var cur=new Date(ini);
+  for(var w=0;w<6;w++){
+    var algum=false;
+    for(var d2=0;d2<7;d2++){if(cur.getMonth()===mes)algum=true;cur.setDate(cur.getDate()+1);}
+    cur.setDate(cur.getDate()-7);
+    if(w>4&&!algum) break;
+    for(var d2=0;d2<7;d2++){
+      var isoD=cur.getFullYear()+"-"+("0"+(cur.getMonth()+1)).slice(-2)+"-"+("0"+cur.getDate()).slice(-2);
+      var doMes=cur.getMonth()===mes;
+      var fimSem=d2>=5;
+      var ehHoje=isoD===hojeStr;
+      var its=mapaDia[isoD]||[];
+      var temRes=its.some(function(x){return x.resultado;});
+      var cls="cal-dia-m"+(!doMes?" outro":"")+(ehHoje?" hoje-cal":"")+(fimSem?" fw-cal":"")+(its.length?" tem-cal":"");
+      var pills=its.map(function(it){
+        var tc=it.tipo==="brassagem"?"cal-cp-b":(it.tipo==="envase"?"cal-cp-e":"cal-cp-r");
+        return "<div class='cal-cp "+tc+(it.resultado?" res":"")+"'></div>";
+      }).join("");
+      html+="<div class='"+cls+"' data-iso='"+isoD+"' data-dom='"+(doMes?"1":"0")+"'>"+
+        "<span class='cal-n-m'>"+cur.getDate()+"</span>"+
+        (pills?"<div class='cal-cpills'>"+pills+"</div>":"")+
+        (temRes?"<div class='cal-res-dot'></div>":"")+
+      "</div>";
+      cur.setDate(cur.getDate()+1);
+    }
+  }
+  $("progCalGrid").innerHTML=html;
+  $("progDetDia").hidden=true; _calDiaSel=null;
+  $("progCalGrid").onclick=function(ev){
+    var cel=ev.target.closest(".cal-dia-m");
+    if(!cel||cel.dataset.dom==="0") return;
+    var iso=cel.dataset.iso;
+    var its=_calDadosMes[iso]||[];
+    if(!its.length) return;
+    if(_calDiaSel) _calDiaSel.classList.remove("sel-cal");
+    cel.classList.add("sel-cal"); _calDiaSel=cel;
+    var dt=new Date(iso+"T00:00:00");
+    var NDS=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+    var MC=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+    $("progDetDiaLabel").textContent=NDS[dt.getDay()]+" — "+dt.getDate()+" "+MC[dt.getMonth()];
+    $("progDetDiaItens").innerHTML=its.map(function(it){
+      var pc=it.tipo==="brassagem"?"ddp-b":(it.tipo==="envase"?"ddp-e":"ddp-r");
+      var pt=it.tipo==="brassagem"?"🍺 Brassagem":(it.tipo==="envase"?"📦 Envase":"🛢 Barril");
+      var nome=esc(it.estilo||it.produto||"—");
+      var sub=[];
+      if(it.tanque) sub.push(esc(it.tanque));
+      if(it.tanqueOrigem) sub.push(esc(it.tanqueOrigem));
+      if(it.lote) sub.push("Lote: "+esc(it.lote));
+      if(it.tipo==="brassagem"){if(it.volPrev)sub.push("Prev: "+esc(it.volPrev)+" L");if(it.resultado&&it.resultado.volume)sub.push("Real: "+esc(it.resultado.volume)+" L");if(it.resultado&&it.resultado.og)sub.push("OG: "+esc(it.resultado.og));}
+      else if(it.tipo==="envase"){if(it.formato)sub.push(esc(it.formato));if(it.qtd)sub.push("Prev: "+esc(it.qtd)+" un");if(it.resultado&&it.resultado.qtdEnvasada)sub.push("Real: "+fmtNum(it.resultado.qtdEnvasada)+" un");}
+      else{if(it.total)sub.push(fmtNum(it.total)+" L total");}
+      if(it.criadaPor)sub.push("por @"+esc(it.criadaPor));
+      var bc=it.resultado?"ddb-ok":"ddb-pend";
+      var bt=it.resultado?"✓ Resultado":"Aguardando";
+      return "<div class='det-dia-item-m'>"+
+        "<span class='det-dia-pill-m "+pc+"'>"+pt+"</span>"+
+        "<div style='flex:1'><div class='det-dia-nome-m'>"+nome+"</div>"+
+        (sub.length?"<div class='det-dia-sub-m'>"+sub.join(" · ")+"</div>":"")+
+        "</div><span class='det-dia-badge-m "+bc+"'>"+bt+"</span></div>";
+    }).join("");
+    $("progDetDia").hidden=false;
+    $("progDetDia").scrollIntoView({behavior:"smooth",block:"nearest"});
+    $("btnDetDiaIrSem").onclick=function(){
+      segProg=segundaDe(new Date(iso+"T00:00:00"));
+      progSetVisao("semanal"); carregarProg();
+    };
+  };
+  $("btnDetDiaFechar").addEventListener("click",function(){
+    if(_calDiaSel) _calDiaSel.classList.remove("sel-cal");
+    _calDiaSel=null; $("progDetDia").hidden=true;
+  });
+}
+
 // Semana exibida na aba Programação — independente do checklist
 var segProg = segundaDe(new Date());
 function progNavegar(delta){
@@ -4771,24 +5080,53 @@ $("progVoltarHoje").addEventListener("click", function(){
 var _brasseditando = null;
 var _enveditando = null;
 
-function preencherDias(selectId){
-  var nomes = ["Segunda","Ter\u00e7a","Quarta","Quinta","Sexta","S\u00e1bado"];
-  var opcs = "<option value=''>N\u00e3o definido</option>";
-  nomes.forEach(function(nome, i){
-    var d = new Date(segProg); d.setDate(d.getDate()+i);
-    var dt = ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2);
-    opcs += "<option value='"+nome+"'>"+nome+" \u2014 "+dt+"</option>";
-  });
-  $(selectId).innerHTML = opcs;
+function preencherDias(selectId, valorAtual){
+  var NOMES_DIA = ["Dom","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+  var MESES_EXT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  var MESES_C   = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var ano  = hoje.getFullYear();
+  var segD = new Date(segProg); segD.setHours(0,0,0,0);
+  var fimD = new Date(segProg); fimD.setDate(fimD.getDate()+6); fimD.setHours(0,0,0,0);
+  var opcs = "<option value=''>Não definido</option>";
+  var mesCur = -1;
+  var d = new Date(ano, 0, 1);
+  while (d.getFullYear() === ano){
+    var dow = d.getDay();
+    if (dow >= 1 && dow <= 6){
+      if (d.getMonth() !== mesCur){
+        mesCur = d.getMonth();
+        opcs += "<option disabled style='font-weight:700;color:#025F1D'>── "+MESES_EXT[mesCur]+" "+ano+" ──</option>";
+      }
+      var isoD = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
+      var nome  = NOMES_DIA[dow];
+      var label = nome+" — "+d.getDate()+" "+MESES_C[d.getMonth()];
+      var dd = new Date(d); dd.setHours(0,0,0,0);
+      if (dd.getTime()===hoje.getTime()) label = "▶ "+label+" (hoje)";
+      else if (dd>=segD&&dd<=fimD) label += " ★";
+      opcs += "<option value='"+nome+"|"+isoD+"'>"+label+"</option>";
+    }
+    d.setDate(d.getDate()+1);
+  }
+  var sel = $(selectId);
+  sel.innerHTML = opcs;
+  if (valorAtual) sel.value = valorAtual;
 }
+function parseDiaSelect(val){
+  if (!val) return {nome:"", dataISO:""};
+  var p = val.split("|");
+  return {nome: p[0]||"", dataISO: p[1]||""};
+}
+
 
 // ===== BRASSAGEM =====
 $("btnAddProg").addEventListener("click", function(){
   _brasseditando = null;
   $("brassFormTitulo").textContent = "\uD83C\uDF7A Nova Brassagem";
-  $("brassEstilo").value = "";
-  $("brassTanque").value = "";
-  $("brassObs").value = "";
+  $("brassEstilo").value  = "";
+  $("brassTanque").value  = "";
+  $("brassLote").value    = "";
+  $("brassObs").value     = "";
   $("brassVolPrev").value = "";
   preencherDias("brassDia");
   $("brassDia").value = "";
@@ -4797,11 +5135,20 @@ $("btnAddProg").addEventListener("click", function(){
 });
 
 $("btnBrassSalvar").addEventListener("click", async function(){
-  var estilo = $("brassEstilo").value.trim();
-  if (!estilo){ toast("Informe o estilo.", "erro"); return; }
+  var estilo   = $("brassEstilo").value.trim();
+  var brassTq  = $("brassTanque").value.trim();
+  var brassLt  = $("brassLote").value.trim();
+  var brassVol = $("brassVolPrev").value.trim();
+  var brassDv  = $("brassDia").value;
+  if (!estilo)   { toast("Informe o estilo.","erro"); $("brassEstilo").focus(); return; }
+  if (!brassTq)  { toast("Informe o tanque.","erro"); $("brassTanque").focus(); return; }
+  if (!brassLt)  { toast("Informe o lote.","erro"); $("brassLote").focus(); return; }
+  if (!brassVol) { toast("Informe o volume previsto.","erro"); $("brassVolPrev").focus(); return; }
+  if (!brassDv)  { toast("Selecione o dia previsto.","erro"); $("brassDia").focus(); return; }
   var seg = chaveSemana(segProg);
   try{
-    var diaBrass = $("brassDia").value;
+    var _db = parseDiaSelect($("brassDia").value);
+    var diaBrass = _db.nome;
     var rBrass = await api("/api/prog", {method:"POST", body:{
       acao: _brasseditando ? "editar" : "criar",
       id:   _brasseditando ? _brasseditando.id : undefined,
@@ -4809,13 +5156,16 @@ $("btnBrassSalvar").addEventListener("click", async function(){
       tipo: "brassagem",
       estilo: estilo,
       tanque:    $("brassTanque").value.trim(),
+      lote:      $("brassLote").value.trim(),
       volPrev:   $("brassVolPrev").value.trim(),
       dia:       diaBrass,
+      dataISO:   _db.dataISO,
       obs:       $("brassObs").value.trim()
     }});
     $("modalBrassagem").hidden = true;
     var eraEdicao = !!_brasseditando;
     _brasseditando = null;
+    if (rBrass && rBrass.movido){ segProg = segundaDe(new Date(rBrass.movido+"T00:00:00")); }
     carregarProg();
     // Só abre tarefas auto ao criar (não ao editar)
     if (!eraEdicao){
@@ -4845,16 +5195,32 @@ $("btnAddEnvase").addEventListener("click", function(){
   $("envObs").value = "";
   preencherDias("envDia");
   $("envDia").value = "";
+  $("envEstiloWrap").hidden = true;
+  $("envEstilo").value = "";
   $("modalEnvase").hidden = false;
   setTimeout(function(){ $("envProduto").focus(); }, 80);
 });
+$("envFormato").addEventListener("change", atualizarEnvEstilo);
 
 $("btnEnvSalvar").addEventListener("click", async function(){
-  var produto = $("envProduto").value.trim();
-  if (!produto){ toast("Informe o produto.", "erro"); return; }
+  var produto  = $("envProduto").value.trim();
+  var envLt    = $("envLote").value.trim();
+  var envTq    = $("envTanque").value.trim();
+  var envFmt   = $("envFormato").value;
+  var envQt    = $("envQtd").value.trim();
+  var envDv    = $("envDia").value;
+  var envEstiloVal = (ENV_ESTILOS[envFmt]&&ENV_ESTILOS[envFmt].length) ? $("envEstilo").value : "";
+  if (!produto) { toast("Informe o produto.","erro"); $("envProduto").focus(); return; }
+  if (!envLt)   { toast("Informe o lote.","erro"); $("envLote").focus(); return; }
+  if (!envTq)   { toast("Informe o tanque.","erro"); $("envTanque").focus(); return; }
+  if (!envFmt)  { toast("Selecione o formato.","erro"); $("envFormato").focus(); return; }
+  if (ENV_ESTILOS[envFmt]&&!envEstiloVal){ toast("Selecione o estilo.","erro"); $("envEstilo").focus(); return; }
+  if (!envQt)   { toast("Informe a qtd prevista.","erro"); $("envQtd").focus(); return; }
+  if (!envDv)   { toast("Selecione o dia previsto.","erro"); $("envDia").focus(); return; }
   var seg = chaveSemana(segProg);
   try{
-    var diaEnv = $("envDia").value;
+    var _de = parseDiaSelect($("envDia").value);
+    var diaEnv = _de.nome;
     var rEnv = await api("/api/prog", {method:"POST", body:{
       acao:     _enveditando ? "editar" : "criar",
       id:       _enveditando ? _enveditando.id : undefined,
@@ -4863,14 +5229,17 @@ $("btnEnvSalvar").addEventListener("click", async function(){
       produto:  produto,
       lote:     $("envLote").value.trim(),
       tanqueOrigem: $("envTanque").value.trim(),
-      formato:  $("envFormato").value,
-      qtd:      $("envQtd").value.trim(),
+      formato:  envFmt,
+      estilo:   envEstiloVal,
+      qtd:      envQt,
       dia:      diaEnv,
+      dataISO:  _de.dataISO,
       obs:      $("envObs").value.trim()
     }});
     $("modalEnvase").hidden = true;
     var eraEdicaoEnv = !!_enveditando;
     _enveditando = null;
+    if (rEnv && rEnv.movido){ segProg = segundaDe(new Date(rEnv.movido+"T00:00:00")); }
     carregarProg();
     if (!eraEdicaoEnv){
       var dataISOEnv = "";
@@ -4908,17 +5277,19 @@ $("progLista").addEventListener("click", async function(ev){
       $("envQtd").value     = it.qtd||"";
       $("envObs").value     = it.obs||"";
       preencherDias("envDia");
-      $("envDia").value     = it.dia||"";
+      if (it.dataISO) $("envDia").value=(it.dia||"")+"|"+it.dataISO; else $("envDia").value=it.dia||"";
+      setTimeout(function(){ atualizarEnvEstilo(); if(it.estilo) $("envEstilo").value=it.estilo; },0);
       $("modalEnvase").hidden = false;
     } else {
       _brasseditando = {id: it.id, semana};
       $("brassFormTitulo").textContent = "\uD83C\uDF7A Editar Brassagem";
       $("brassEstilo").value   = it.estilo||"";
       $("brassTanque").value   = it.tanque||"";
+      $("brassLote").value     = it.lote||"";
       $("brassVolPrev").value  = it.volPrev||"";
       $("brassObs").value      = it.obs||"";
       preencherDias("brassDia");
-      $("brassDia").value    = it.dia||"";
+      if (it.dataISO) $("brassDia").value=(it.dia||"")+"|"+it.dataISO; else $("brassDia").value=it.dia||"";
       $("modalBrassagem").hidden = false;
     }
   }
@@ -5280,18 +5651,32 @@ async function carregarMetas(){
           semQtdPrev  += qp;
           if (qp) totalTemPrevisto = true;
         }
+        // Previsto por formato na semana
+        if (it.qtd){
+          var qpFmt=parseFloat((it.qtd+"").replace(",","."))||0;
+          if(qpFmt){var fmtPv=it.formato||"";var estPv=(it.estilo||"").trim()||(it.produto||"").trim();
+            if(fmtPv){var cpv=estPv?fmtPv+" "+estPv:fmtPv;if(!semFmtPrev[cpv])semFmtPrev[cpv]=0;semFmtPrev[cpv]+=qpFmt;}}
+        }
         // Realizado: qtd do resultado
         if (it.resultado && it.resultado.qtdEnvasada){
           var qr = parseFloat(it.resultado.qtdEnvasada||0) || 0;
           qtdRealizada += qr;
           semQtdReal   += qr;
           var fmt = it.formato || "";
+          var prod = it.produto || "";
           if (fmt && qr){
             if (!porFormato[fmt]) porFormato[fmt] = {qtd:0, litros:0};
             porFormato[fmt].qtd += qr;
             var lf = (LITROS_FORMATO[fmt]||0) * qr;
             porFormato[fmt].litros += lf;
             litrosEnvasados += lf;
+            var estiloEnv=(it.estilo||"").trim()||(prod||"").trim();
+            if(estiloEnv){
+              var chaveProd=fmt+" "+estiloEnv;
+              if(!porFormato["_prod_"+chaveProd])porFormato["_prod_"+chaveProd]=0;
+              porFormato["_prod_"+chaveProd]+=qr;
+              if(!semFmtReal[chaveProd])semFmtReal[chaveProd]=0;semFmtReal[chaveProd]+=qr;
+            } else {if(!semFmtReal[fmt])semFmtReal[fmt]=0;semFmtReal[fmt]+=qr;}
           }
         }
       }
@@ -5302,8 +5687,9 @@ async function carregarMetas(){
                 fim.getDate()+" "+MESES_CURTO[fim.getMonth()];
     detalhesSemanas.push({
       label:label,
-      volReal: semVolReal, volPrev: semVolPrev,
-      qtdReal: semQtdReal, qtdPrev: semQtdPrev,
+      volReal:semVolReal, volPrev:semVolPrev,
+      qtdReal:semQtdReal, qtdPrev:semQtdPrev,
+      fmtReal:semFmtReal, fmtPrev:semFmtPrev,
       pctBrass: meta.brass ? Math.min(100, Math.round(semVolReal/meta.brass*100)) : null,
       pctEnv:   meta.envTotal ? Math.min(100, Math.round(semQtdReal/meta.envTotal*100)) : null
     });
@@ -5392,15 +5778,17 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
           var metaProd = fmtsMeta[prod] || 0;
           if (!metaProd) return;
           var nomeProd = prod.replace(fmt+" ",""); // ex: "Helles"
-          var pct = Math.round(realFmt/metaProd*100); // aproximado (real do formato inteiro vs meta do produto)
+          var semEstilo = (nomeProd === prod);
+          var realProd  = semEstilo ? ((porFormato[fmt]||{}).qtd||0) : (porFormato["_prod_"+prod]||0);
+          var pct = metaProd ? Math.min(100, Math.round(realProd/metaProd*100)) : 0;
           var classe = pct>=100?"acima":pct>=80?"atingida":"";
           html += "<div style='margin-bottom:6px'>"+
             "<div class='meta-barra-numeros' style='margin-bottom:3px'>"+
               "<span style='font-size:.8rem;font-weight:600;color:var(--ink)'>"+esc(nomeProd)+"</span>"+
-              "<span class='meta-barra-meta'>meta: "+fmtNum(metaProd)+" un</span>"+
+              "<span style='font-size:.75rem;color:var(--muted)'>"+fmtNum(realProd)+" / "+fmtNum(metaProd)+" un</span>"+
             "</div>"+
             "<div class='meta-barra-bg'>"+
-              "<div class='meta-barra-fill "+classe+"' style='width:"+Math.min(100,pct)+"%'></div>"+
+              "<div class='meta-barra-fill "+classe+"' style='width:"+pct+"%'></div>"+
             "</div>"+
           "</div>";
         });
@@ -5425,24 +5813,97 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
   $("metaBarraEnv").innerHTML = html;
 }
 
+
+
 function renderMetaSemanas(semanas, meta){
-  $("metaSemanas").innerHTML = semanas.map(function(s){
-    var temQualquer = s.volReal||s.volPrev||s.qtdReal||s.qtdPrev;
-    return "<div class='meta-semana-linha'>"+
-      "<span class='meta-semana-label'>"+esc(s.label)+"</span>"+
-      "<span class='meta-semana-vals'>"+
-        (s.volReal?"Brassagem Realizado: "+fmtNum(s.volReal)+" L ":"")+
-        (s.volPrev?"<span style='color:#8B6914'> Brassagem Previsto: "+fmtNum(s.volPrev)+" L</span> ":"")+
-        (s.volReal&&(s.qtdReal||s.qtdPrev)?" · ":"")+
-        (s.qtdReal?"Envase Realizado: "+fmtNum(s.qtdReal)+" un ":"")+
-        (s.qtdPrev?"<span style='color:#8B6914'>Envase Previsto: "+fmtNum(s.qtdPrev)+" un</span>":"")+
-        (!temQualquer?"<span style='color:var(--muted)'>sem lançamento</span>":"")+
-      "</span>"+
-      (meta.brass&&s.volReal?
-        "<div class='meta-semana-barra'>"+
-          "<div class='meta-semana-fill' style='width:"+Math.min(100,s.pctBrass)+"%'></div>"+
-        "</div>":"<div class='meta-semana-barra'></div>")+
+  var GRUPOS_META={
+    "Garrafa 355ml":["Garrafa 355ml Helles","Garrafa 355ml Red Ale","Garrafa 355ml IPA","Garrafa 355ml Sem Álcool"],
+    "PET 500ml":["PET 500ml Helles","PET 500ml Red Ale","PET 500ml IPA","PET 500ml Sem Álcool"],
+    "PET 1L":["PET 1L Helles","PET 1L Oktoberfest"],
+    "PET 2L":["PET 2L"]
+  };
+  $("metaSemanas").innerHTML = semanas.map(function(sem){
+    var temBrass=sem.volReal||sem.volPrev;
+    var temEnv=sem.qtdReal||sem.qtdPrev;
+    var pctBrass=0; if(meta.brass&&sem.volReal) pctBrass=Math.min(100,Math.round(sem.volReal/meta.brass*100));
+    var pctEnv=0;   if(meta.envTotal&&sem.qtdReal) pctEnv=Math.min(100,Math.round(sem.qtdReal/meta.envTotal*100));
+    function corPct(p){ return p>=100?"var(--verde)":p>=80?"var(--dourado)":"var(--muted)"; }
+    var html="<div class='meta-semana-linha'>";
+    html+="<div class='meta-semana-cabec'><span class='meta-semana-label'>"+esc(sem.label)+"</span>"+
+      (!temBrass&&!temEnv?"<span style='font-size:.72rem;color:var(--muted)'>sem lançamento</span>":"")+
     "</div>";
+    if(temBrass){
+      var nb=[];
+      if(sem.volReal) nb.push("Real: <b style='color:var(--verde)'>"+fmtNum(sem.volReal)+" L</b>");
+      if(sem.volPrev) nb.push("Prev: <span style='color:#8B6914'>"+fmtNum(sem.volPrev)+" L</span>");
+      html+="<div class='meta-semana-row'>"+
+        "<span class='meta-semana-row-label' style='color:var(--verde)'>🍺 Brassagem</span>"+
+        "<span class='meta-semana-row-nums'>"+nb.join(" &nbsp;·&nbsp; ")+"</span>"+
+        (pctBrass>0?"<span class='meta-semana-pct' style='color:"+corPct(pctBrass)+"'>"+pctBrass+"%</span>":"")+
+      "</div>"+
+      "<div class='meta-semana-row' style='gap:6px'>"+
+        "<div style='width:80px;flex-shrink:0'></div>"+
+        "<div class='meta-semana-barra'><div class='meta-semana-fill' style='width:"+pctBrass+"%'></div></div>"+
+      "</div>";
+    }
+    var fmtReal=sem.fmtReal||{}, fmtPrev=sem.fmtPrev||{};
+    var fmtsComDado={};
+    Object.keys(GRUPOS_META).forEach(function(fmt){
+      GRUPOS_META[fmt].forEach(function(prod){
+        var chave=(prod===fmt)?fmt:prod;
+        var real=fmtReal[chave]||0, prev=fmtPrev[chave]||fmtPrev[fmt]||0;
+        if(real>0||prev>0){if(!fmtsComDado[fmt])fmtsComDado[fmt]=[];fmtsComDado[fmt].push({prod:prod,chave:chave,real:real,prev:prev});}
+      });
+    });
+    var temQualquerEnv=Object.keys(fmtsComDado).length>0||temEnv;
+    if(temQualquerEnv){
+      if(Object.keys(fmtsComDado).length===0){
+        var ne=[];
+        if(sem.qtdReal) ne.push("Real: <b style='color:#003E99'>"+fmtNum(sem.qtdReal)+" un</b>");
+        if(sem.qtdPrev) ne.push("Prev: <span style='color:#8B6914'>"+fmtNum(sem.qtdPrev)+" un</span>");
+        html+="<div class='meta-semana-row'><span class='meta-semana-row-label' style='color:#003E99'>📦 Envase</span><span class='meta-semana-row-nums'>"+ne.join(" &nbsp;·&nbsp; ")+"</span></div>";
+      } else {
+        Object.keys(fmtsComDado).forEach(function(fmt){
+          var linhas=fmtsComDado[fmt];
+          var totR=linhas.reduce(function(a,x){return a+x.real;},0);
+          var totP=linhas.reduce(function(a,x){return a+x.prev;},0);
+          var pctF=totP?Math.min(100,Math.round(totR/totP*100)):0;
+          html+="<div class='meta-semana-row'>"+
+            "<span class='meta-semana-row-label' style='color:#003E99;font-weight:700'>📦 "+esc(fmt)+"</span>"+
+            "<span class='meta-semana-row-nums' style='color:var(--muted)'>"+
+              (totR?"Real: <b style='color:#003E99'>"+fmtNum(totR)+" un</b> ":"")+
+              (totP?" Prev: <span style='color:#8B6914'>"+fmtNum(totP)+" un</span>":"")+
+            "</span>"+
+            (pctF>0?"<span class='meta-semana-pct' style='color:"+corPct(pctF)+"'>"+pctF+"%</span>":"")+
+          "</div>";
+          if(linhas.length>1){
+            linhas.forEach(function(lp){
+              if(!lp.real&&!lp.prev) return;
+              var np=lp.prod.replace(fmt+" ","");
+              var pctP=lp.prev?Math.min(100,Math.round(lp.real/lp.prev*100)):0;
+              html+="<div class='meta-semana-row' style='padding-left:8px'>"+
+                "<span class='meta-semana-row-label' style='color:#6B8FC9;font-size:.72rem'>"+esc(np)+"</span>"+
+                "<span class='meta-semana-row-nums'>"+
+                  (lp.real?"<b style='color:#003E99'>"+fmtNum(lp.real)+" un</b>":"")+
+                  (lp.prev?" / Prev: <span style='color:#8B6914'>"+fmtNum(lp.prev)+" un</span>":"")+
+                "</span>"+
+                (pctP>0?"<span class='meta-semana-pct' style='color:"+corPct(pctP)+";font-size:.72rem'>"+pctP+"%</span>":"")+
+              "</div>";
+              if(lp.prev) html+="<div class='meta-semana-row' style='gap:6px;padding-left:8px'>"+
+                "<div style='width:80px;flex-shrink:0'></div>"+
+                "<div class='meta-semana-barra'><div class='meta-semana-fill' style='width:"+pctP+"%;background:#003E99'></div></div>"+
+              "</div>";
+            });
+          } else if(totP>0){
+            html+="<div class='meta-semana-row' style='gap:6px'>"+
+              "<div style='width:80px;flex-shrink:0'></div>"+
+              "<div class='meta-semana-barra'><div class='meta-semana-fill' style='width:"+pctF+"%;background:#003E99'></div></div>"+
+            "</div>";
+          }
+        });
+      }
+    }
+    html+="</div>"; return html;
   }).join("");
 }
 
@@ -7677,6 +8138,14 @@ iniciar();
       finally{btn.textContent="Gerar e Imprimir / PDF";btn.disabled=false;}
     });
   })();
+
+
+  // Toggle visão semanal/mensal
+  setTimeout(function(){
+    var bS=$("btnVisaoSem"), bM=$("btnVisaoMes");
+    if(bS) bS.addEventListener("click",function(){ progSetVisao("semanal"); carregarProg(); });
+    if(bM) bM.addEventListener("click",function(){ progSetVisao("mensal");  carregarProg(); });
+  }, 0);
 
 })();
 </script>
