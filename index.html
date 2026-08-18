@@ -2531,7 +2531,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.7.8";
+var VERSAO = "2.7.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5841,7 +5841,7 @@ function renderMetaSemanas(semanas, meta){
   $("metaSemanas").innerHTML = semanas.map(function(sem){
     var temBrass=sem.volReal||sem.volPrev;
     var temEnv=sem.qtdReal||sem.qtdPrev;
-    var pctBrass=0; if(meta.brass&&sem.volReal) pctBrass=Math.min(100,Math.round(sem.volReal/meta.brass*100));
+    var pctBrass=0; if(sem.volPrev&&sem.volReal) pctBrass=Math.min(100,Math.round(sem.volReal/sem.volPrev*100));
     var pctEnv=0;   if(meta.envTotal&&sem.qtdReal) pctEnv=Math.min(100,Math.round(sem.qtdReal/meta.envTotal*100));
     function corPct(p){ return p>=100?"var(--verde)":p>=80?"var(--dourado)":"var(--muted)"; }
     var html="<div class='meta-semana-linha'>";
