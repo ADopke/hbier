@@ -638,14 +638,31 @@
   .meta-formato-realizado{ font-weight:700;text-align:right; }
   .meta-formato-meta{ color:var(--muted);text-align:right;font-size:.75rem; }
   .meta-semana-linha{
-    display:flex;align-items:center;gap:8px;padding:8px 10px;
+    padding:10px 12px;
     background:#fff;border:1px solid var(--linha);border-radius:8px;
-    font-size:.82rem;
+    font-size:.82rem;display:flex;flex-direction:column;gap:6px;
   }
-  .meta-semana-label{ font-weight:600;flex-shrink:0;min-width:80px; }
+  .meta-semana-cabec{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:2px;
+  }
+  .meta-semana-label{ font-weight:700;font-size:.85rem;color:var(--ink); }
   .meta-semana-vals{ flex:1;color:var(--muted); }
+  .meta-semana-row{
+    display:flex;align-items:center;gap:8px;
+  }
+  .meta-semana-row-label{
+    font-size:.75rem;font-weight:600;flex-shrink:0;min-width:80px;
+  }
+  .meta-semana-row-nums{
+    flex:1;font-size:.75rem;color:var(--muted);
+  }
+  .meta-semana-pct{
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.8rem;min-width:36px;text-align:right;flex-shrink:0;
+  }
   .meta-semana-barra{
-    width:80px;height:6px;background:var(--cinza);border-radius:99px;overflow:hidden;flex-shrink:0;
+    flex:1;height:5px;background:var(--cinza);border-radius:99px;overflow:hidden;
   }
   .meta-semana-fill{ height:100%;background:var(--verde);border-radius:99px; }
 
@@ -2556,7 +2573,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.7.1";
+var VERSAO = "2.7.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6043,23 +6060,68 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
 }
 
 function renderMetaSemanas(semanas, meta){
-  $("metaSemanas").innerHTML = semanas.map(function(s){
-    var temQualquer = s.volReal||s.volPrev||s.qtdReal||s.qtdPrev;
-    return "<div class='meta-semana-linha'>"+
-      "<span class='meta-semana-label'>"+esc(s.label)+"</span>"+
-      "<span class='meta-semana-vals'>"+
-        (s.volReal?"Brassagem Realizado: "+fmtNum(s.volReal)+" L ":"")+
-        (s.volPrev?"<span style='color:#8B6914'> Brassagem Previsto: "+fmtNum(s.volPrev)+" L</span> ":"")+
-        (s.volReal&&(s.qtdReal||s.qtdPrev)?" · ":"")+
-        (s.qtdReal?"Envase Realizado: "+fmtNum(s.qtdReal)+" un ":"")+
-        (s.qtdPrev?"<span style='color:#8B6914'>Envase Previsto: "+fmtNum(s.qtdPrev)+" un</span>":"")+
-        (!temQualquer?"<span style='color:var(--muted)'>sem lançamento</span>":"")+
-      "</span>"+
-      (meta.brass&&s.volReal?
-        "<div class='meta-semana-barra'>"+
-          "<div class='meta-semana-fill' style='width:"+Math.min(100,s.pctBrass)+"%'></div>"+
-        "</div>":"<div class='meta-semana-barra'></div>")+
+  $("metaSemanas").innerHTML = semanas.map(function(sem){
+    var temBrass = sem.volReal || sem.volPrev;
+    var temEnv   = sem.qtdReal || sem.qtdPrev;
+    var temQualquer = temBrass || temEnv;
+
+    // Brassagem %
+    var pctBrass = 0;
+    if (meta.brass && sem.volReal) pctBrass = Math.min(100, Math.round(sem.volReal / meta.brass * 100));
+
+    // Envase % (vs meta mensal total)
+    var pctEnv = 0;
+    if (meta.envTotal && sem.qtdReal) pctEnv = Math.min(100, Math.round(sem.qtdReal / meta.envTotal * 100));
+
+    // Cor % brassagem
+    var corBrass = pctBrass>=100?"var(--verde)":pctBrass>=80?"var(--dourado)":"var(--muted)";
+    var corEnv   = pctEnv>=100?"var(--verde)":pctEnv>=80?"var(--dourado)":"var(--muted)";
+
+    var html = "<div class='meta-semana-linha'>";
+    // Cabeçalho com label
+    html += "<div class='meta-semana-cabec'>"+
+      "<span class='meta-semana-label'>"+esc(sem.label)+"</span>"+
+      (!temQualquer?"<span style='font-size:.72rem;color:var(--muted)'>sem lançamento</span>":"")+
     "</div>";
+
+    // Linha brassagem
+    if (temBrass){
+      var numsBrass = [];
+      if (sem.volReal) numsBrass.push("Real: <b style='color:var(--verde)'>"+fmtNum(sem.volReal)+" L</b>");
+      if (sem.volPrev) numsBrass.push("Prev: <span style='color:#8B6914'>"+fmtNum(sem.volPrev)+" L</span>");
+      html += "<div class='meta-semana-row'>"+
+        "<span class='meta-semana-row-label' style='color:var(--verde)'>🍺 Brassagem</span>"+
+        "<span class='meta-semana-row-nums'>"+numsBrass.join(" &nbsp;·&nbsp; ")+"</span>"+
+        (pctBrass>0?"<span class='meta-semana-pct' style='color:"+corBrass+"'>"+pctBrass+"%</span>":"")+
+      "</div>";
+      html += "<div class='meta-semana-row' style='gap:6px'>"+
+        "<div style='width:80px;flex-shrink:0'></div>"+
+        "<div class='meta-semana-barra'>"+
+          "<div class='meta-semana-fill' style='width:"+pctBrass+"%'></div>"+
+        "</div>"+
+      "</div>";
+    }
+
+    // Linha envase
+    if (temEnv){
+      var numsEnv = [];
+      if (sem.qtdReal) numsEnv.push("Real: <b style='color:#003E99'>"+fmtNum(sem.qtdReal)+" un</b>");
+      if (sem.qtdPrev) numsEnv.push("Prev: <span style='color:#8B6914'>"+fmtNum(sem.qtdPrev)+" un</span>");
+      html += "<div class='meta-semana-row'>"+
+        "<span class='meta-semana-row-label' style='color:#003E99'>📦 Envase</span>"+
+        "<span class='meta-semana-row-nums'>"+numsEnv.join(" &nbsp;·&nbsp; ")+"</span>"+
+        (pctEnv>0?"<span class='meta-semana-pct' style='color:"+corEnv+"'>"+pctEnv+"%</span>":"")+
+      "</div>";
+      html += "<div class='meta-semana-row' style='gap:6px'>"+
+        "<div style='width:80px;flex-shrink:0'></div>"+
+        "<div class='meta-semana-barra'>"+
+          "<div class='meta-semana-fill' style='width:"+pctEnv+"%;background:#003E99'></div>"+
+        "</div>"+
+      "</div>";
+    }
+
+    html += "</div>";
+    return html;
   }).join("");
 }
 
