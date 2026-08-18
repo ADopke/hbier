@@ -2531,7 +2531,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.7.7";
+var VERSAO = "2.7.8";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5625,6 +5625,7 @@ async function carregarMetas(){
     var r = resultados[i];
     var itens = r.itens || [];
     var semVolReal = 0, semVolPrev = 0, semQtdReal = 0, semQtdPrev = 0;
+    var semFmtReal = {}; var semFmtPrev = {};
 
     itens.forEach(function(it){
       // Filtrar pelo mês/ano da meta usando dataISO ou dia da semana
