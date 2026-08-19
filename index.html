@@ -736,8 +736,11 @@
   }
   .limp-item-feito-btn:disabled{ opacity:.5;cursor:default; }
   .limp-item-feito-btn.ja-feito{
-    background:var(--cinza);color:var(--muted);
-    border:1.5px solid var(--linha);
+    background:var(--verde-claro);color:var(--verde);
+    border:1.5px solid var(--verde);
+  }
+  .limp-item-feito-btn.ja-feito:hover{
+    background:#FEE2E2;color:var(--vermelho);border-color:#FECACA;
   }
   .limp-item-badge{
     padding:3px 10px;border-radius:6px;font-size:.72rem;
@@ -2661,7 +2664,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.9.3";
+var VERSAO = "2.9.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6693,7 +6696,7 @@ async function carregarLimpezaSetor(setorId){
           " data-limp-feito='"+it.id+"'"+
           " data-limp-feito-setor='"+setorId+"'"+
           " data-limp-feito-freq='"+it.freq+"'"+
-          " data-limp-feito-resp='"+resp_login+"'>"+
+          " data-limp-feito-reg='"+(ultimo?esc(ultimo.id):"")+"' data-limp-feito-resp='"+resp_login+"'>"+
           (feito_hoje ? "✓ Feito hoje" : "✓ Feito")+
         "</button>"+
         "<span class='limp-item-badge "+status+"' style='display:none'></span>"+
@@ -6762,7 +6765,30 @@ document.addEventListener("click", function(ev){
     var itemId   = btnFeito.dataset.limpFeito;
     var setorId  = btnFeito.dataset.limpFeitoSetor;
     var freq     = btnFeito.dataset.limpFeitoFreq;
+    var regId    = btnFeito.dataset.limpFeitoReg;
     var respLogin= btnFeito.dataset.limpFeitoResp || sessao.login;
+    var jaFeito  = btnFeito.classList.contains("ja-feito");
+
+    if (jaFeito && regId){
+      // Desmarcar com confirmação
+      if (!confirm("Remover este registro de limpeza?")) return;
+      btnFeito.disabled = true;
+      btnFeito.textContent = "Removendo...";
+      api("/api/limpeza",{method:"POST",body:{
+        acao:  "remover",
+        setor: setorId,
+        id:    regId
+      }}).then(function(){
+        toast("Registro removido.");
+        carregarLimpezaSetor(setorId);
+      }).catch(function(e){
+        toast("Erro: "+e.message,"erro");
+        btnFeito.disabled=false;
+        btnFeito.textContent="✓ Feito hoje";
+      });
+      return;
+    }
+
     btnFeito.disabled = true;
     btnFeito.textContent = "Salvando...";
     api("/api/limpeza",{method:"POST",body:{
