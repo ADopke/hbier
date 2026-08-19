@@ -412,6 +412,44 @@
   .hpb-editar{ background:var(--dourado);color:#3A2D00; }
   .hpb-checks{ display:flex;gap:5px;flex-wrap:wrap;margin-top:2px; }
 
+  /* ---- minha limpeza (visão do operador) ---- */
+  .minha-limp-secao{ margin-bottom:14px; }
+  .minha-limp-grupo{
+    margin:0 14px 10px;border-radius:10px;overflow:hidden;
+    border:1.5px solid var(--linha);
+  }
+  .minha-limp-grupo-header{
+    padding:8px 12px;display:flex;align-items:center;gap:8px;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;
+  }
+  .mlg-vencido  { background:#FEE2E2;color:#991B1B; }
+  .mlg-hoje     { background:var(--dourado-claro);color:#7A5500; }
+  .mlg-semana   { background:var(--verde-claro);color:var(--verde); }
+  .mlg-ok       { background:var(--cinza);color:var(--muted); }
+  .minha-limp-item{
+    padding:10px 12px;border-top:1px solid var(--linha);background:#fff;
+    display:flex;align-items:center;gap:10px;
+  }
+  .minha-limp-item:first-of-type{ border-top:none; }
+  .mli-setor{
+    font-size:.65rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--muted);flex-shrink:0;min-width:70px;
+  }
+  .mli-nome{ flex:1;font-size:.88rem;font-weight:600; }
+  .mli-prazo{ font-size:.72rem;color:var(--muted);flex-shrink:0;text-align:right; }
+  .mli-btn{
+    padding:5px 12px;border:none;border-radius:7px;
+    background:var(--verde);color:#fff;cursor:pointer;flex-shrink:0;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;
+  }
+  .mli-btn.feito{
+    background:var(--verde-claro);color:var(--verde);
+    border:1.5px solid var(--verde);
+  }
+  .mli-btn.feito:hover{ background:#FEE2E2;color:var(--vermelho);border-color:#FECACA; }
+
   /* ---- limpeza rápida ---- */
   .limp-rapida-setor{
     padding:10px 14px;border-bottom:1px solid var(--linha);
@@ -1651,6 +1689,8 @@
             style="font-size:.78rem;padding:5px 11px">📄 Exportar PDF</button>
         </div>
         <div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:10px">
+          <!-- minha limpeza (visão do operador) -->
+          <div id="minhaLimpSecao" class="minha-limp-secao" hidden></div>
           <!-- seletor de setor -->
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="limpSetorGrid">
             <!-- preenchido por JS -->
@@ -2664,7 +2704,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.9.4";
+var VERSAO = "2.9.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
