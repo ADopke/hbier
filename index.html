@@ -6504,6 +6504,15 @@ $("btnLimpProgSalvar").addEventListener("click", async function(){
    ================================================================== */
 
 // Setores e itens conforme Checklist_Limpeza_Setores_HBier.xlsx
+var LIMP_LIMITE_DIAS = {
+  semanal:7, quinzenal:15, mensal:30, anual:365, a_cada_uso:3, eventual:30, diaria:1
+};
+
+var LIMP_PERIODOS = {
+  semanal:"Semanal", quinzenal:"Quinzenal", mensal:"Mensal",
+  anual:"Anual", a_cada_uso:"A cada uso", eventual:"Eventual/CIP", diaria:"Diária"
+};
+
 var LIMP_SETORES = [
   {id:"sala_malte",        nome:"Sala de Malte",             icone:"🌾", responsavel:"Matheus"},
   {id:"deposito_chopeiras",nome:"Dep. Chopeiras/Cilindros",  icone:"🍺", responsavel:"Jefferson"},
