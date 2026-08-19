@@ -1679,6 +1679,8 @@
                 border:1.5px solid var(--linha);border-radius:7px;font-size:.85rem">
                 <option value="diaria">Diária</option>
                 <option value="semanal">Semanal</option>
+                <option value="quinzenal">Quinzenal</option>
+                <option value="mensal">Mensal</option>
                 <option value="eventual">Eventual / CIP</option>
               </select>
             </div>
@@ -2647,7 +2649,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.8.6";
+var VERSAO = "2.8.7";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8703,7 +8705,7 @@ iniciar();
 
     function FREQ_LABEL_LR(f){
       var m={semanal:"Semanal",quinzenal:"Quinzenal",mensal:"Mensal",
-             anual:"Anual",a_cada_uso:"A cada uso",eventual:"Eventual"};
+             anual:"Anual",a_cada_uso:"A cada uso",eventual:"Eventual",diaria:"Diária"};
       return m[f]||f;
     }
 
