@@ -727,6 +727,18 @@
   }
   .limp-item-nome{ font-weight:700;font-size:.9rem; }
   .limp-item-ultima{ font-size:.75rem;color:var(--muted); }
+  .limp-item-feito-btn{
+    padding:6px 14px;border:none;border-radius:7px;
+    background:var(--verde);color:#fff;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;
+    cursor:pointer;flex-shrink:0;white-space:nowrap;
+  }
+  .limp-item-feito-btn:disabled{ opacity:.5;cursor:default; }
+  .limp-item-feito-btn.ja-feito{
+    background:var(--cinza);color:var(--muted);
+    border:1.5px solid var(--linha);
+  }
   .limp-item-badge{
     padding:3px 10px;border-radius:6px;font-size:.72rem;
     font-weight:700;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0;
@@ -2649,7 +2661,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.8.9";
+var VERSAO = "2.9.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6558,12 +6570,14 @@ function limpStatusLabel(dias){
 }
 
 async function carregarLimpeza(){
-  // Carregar resumo de todos os setores
+  // Renderizar imediatamente com o que temos (evita aba vazia)
+  renderLimpSetores();
+  // Depois buscar resumo e atualizar
   try{
     var r = await api("/api/limpeza?resumo=1");
     _limpResumo = r.resumo || {};
+    renderLimpSetores();
   }catch(e){ _limpResumo = {}; }
-  renderLimpSetores();
   if (_limpSetorAtivo) await carregarLimpezaSetor(_limpSetorAtivo);
 }
 
@@ -6635,19 +6649,40 @@ async function carregarLimpezaSetor(setorId){
     var status = limpStatusDias(dias, it.freq);
     var label  = limpStatusLabel(dias);
     var labelPeriodo = ultimo ? " · "+LIMP_PERIODOS[ultimo.periodicidade] : "";
+    // Verificar se já foi feito hoje
+    var feito_hoje = ultimo && limpDiasDesde(ultimo.em) === 0;
+    var resp_login = "";
+    var stObj2 = LIMP_SETORES.find(function(x){ return x.id===setorId; });
+    if (stObj2){
+      var memResp2 = equipe.find(function(u){
+        return (u.nome||u.login).toLowerCase().indexOf((stObj2.responsavel||"").toLowerCase()) >= 0
+            || (stObj2.responsavel||"").toLowerCase().indexOf((u.nome||u.login).toLowerCase()) >= 0;
+      });
+      if (memResp2) resp_login = memResp2.login;
+    }
+    var resp_nome = stObj2 ? stObj2.responsavel : "";
     htmlItens += "<div class='limp-item-card'>"+
-      "<div class='limp-item-header' data-limp-item='"+it.id+"'>"+
-        "<div>"+
+      "<div style='display:flex;align-items:center;gap:10px;padding:2px 0'>"+
+        "<div style='flex:1'>"+
           "<div class='limp-item-nome'>"+esc(it.nome)+"</div>"+
           "<div class='limp-item-ultima'>"+
             "<span style='background:var(--cinza);border-radius:4px;padding:1px 6px;font-size:.7rem;margin-right:4px'>"+esc(LIMP_PERIODOS[it.freq]||it.freq)+"</span>"+
+            "<span style='font-size:.7rem;color:var(--muted)'>Resp.: "+esc(resp_nome)+"</span> "+
             (ultimo
-              ? "Última: "+esc(fmtDia(new Date(ultimo.em)))+" por @"+esc(ultimo.nomeFeitoPor||ultimo.feitoPor)
-              : "Nunca registrada")+
-            (ultimo&&ultimo.obs ? " · "+esc(ultimo.obs.substring(0,40)) : "")+
+              ? " · Última: "+esc(fmtDia(new Date(ultimo.em)))+" por @"+esc(ultimo.nomeFeitoPor||ultimo.feitoPor)
+              : " · Nunca registrada")+
           "</div>"+
         "</div>"+
         "<span class='limp-item-badge "+status+"'>"+esc(label)+"</span>"+
+        "<button class='limp-item-feito-btn"+(feito_hoje?" ja-feito":"")+"'"+
+          " data-limp-feito='"+it.id+"'"+
+          " data-limp-feito-setor='"+setorId+"'"+
+          " data-limp-feito-freq='"+it.freq+"'"+
+          " data-limp-feito-resp='"+resp_login+"'>"+
+          (feito_hoje ? "✓ Feito hoje" : "✓ Feito")+
+        "</button>"+
+        "<span class='limp-item-badge "+status+"' style='display:none'></span>"+
+        "<span data-limp-item='"+it.id+"' style='display:none'></span>"+
       "</div>"+
     "</div>";
   });
@@ -6706,6 +6741,33 @@ document.addEventListener("click", function(ev){
     return;
   }
   // abrir modal de registro ao clicar no item
+  // Botão "Feito" — registrar direto sem modal
+  var btnFeito = ev.target.closest("[data-limp-feito]");
+  if (btnFeito && !btnFeito.disabled){
+    var itemId   = btnFeito.dataset.limpFeito;
+    var setorId  = btnFeito.dataset.limpFeitoSetor;
+    var freq     = btnFeito.dataset.limpFeitoFreq;
+    var respLogin= btnFeito.dataset.limpFeitoResp || sessao.login;
+    btnFeito.disabled = true;
+    btnFeito.textContent = "Salvando...";
+    api("/api/limpeza",{method:"POST",body:{
+      acao:          "registrar",
+      setor:         setorId,
+      item:          itemId,
+      periodicidade: freq,
+      feitoPor:      respLogin,
+      obs:           ""
+    }}).then(function(){
+      toast("Limpeza registrada ✓","ok");
+      carregarLimpezaSetor(setorId);
+    }).catch(function(e){
+      toast("Erro: "+e.message,"erro");
+      btnFeito.disabled=false;
+      btnFeito.textContent="✓ Feito";
+    });
+    return;
+  }
+
   var btnItem = ev.target.closest("[data-limp-item]");
   if (btnItem && $("painelLimpeza") && !$("painelLimpeza").hidden){
     _limpItemAtivo = btnItem.dataset.limpItem;
