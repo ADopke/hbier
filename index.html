@@ -2549,7 +2549,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.8.2";
+var VERSAO = "2.8.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5161,8 +5161,9 @@ async function carregarProgMensal(){
       var toggles = $("progDetDiaItens").querySelectorAll("[data-ddep-toggle]");
       toggles.forEach(function(el){
         el.addEventListener("click", function(e){
-          // Ignorar cliques em botões internos
+          // Ignorar cliques em botões ou inputs internos (painel de edição)
           if(e.target.closest("button")) return;
+          if(e.target.closest(".det-dia-edit-panel")) return;
           var id=el.dataset.ddepToggle;
           _detExpandidoId=(_detExpandidoId===id)?null:id;
           _atualizarDetDia();
