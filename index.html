@@ -346,6 +346,12 @@
     font-size:.85rem;background:#fff;min-width:80px;
   }
   .ddep-checks{ display:flex;gap:6px;flex-wrap:wrap;margin-top:2px; }
+  .ddep-btn-excluir{
+    padding:6px 14px;border:none;border-radius:7px;background:#FFF5F5;color:var(--vermelho);
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;
+    text-transform:uppercase;letter-spacing:.05em;cursor:pointer;
+    border:1.5px solid #FECACA;
+  }
   .ddep-btn-salvar{
     padding:6px 14px;border:none;border-radius:7px;background:var(--verde);color:#fff;
     font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;
@@ -2549,7 +2555,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.8.3";
+var VERSAO = "2.8.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5120,9 +5126,13 @@ async function carregarProgMensal(){
             (isEnvIt?"":chkBtn("lancadoBeerbo","Beerbo","marcado"))+
           "</div>";
 
+          var btnExcluir="<button class='ddep-btn-excluir' data-ddep-excluir='"+esc(it.id)+"' data-ddep-semana='"+esc(_detSemana(it))+"' data-ddep-tipo='"+esc(it.tipo)+"'>🗑 Excluir</button>";
           painelEdit="<div class='det-dia-edit-panel'>"+
             camposHtml+
-            (it.tipo!=="barril"?"<button class='ddep-btn-salvar' data-ddep-salvar='"+esc(it.id)+"' data-ddep-semana='"+esc(_detSemana(it))+"' data-ddep-tipo='"+esc(it.tipo)+"'>Salvar</button>":"")+
+            "<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap'>"+
+              (it.tipo!=="barril"?"<button class='ddep-btn-salvar' data-ddep-salvar='"+esc(it.id)+"' data-ddep-semana='"+esc(_detSemana(it))+"' data-ddep-tipo='"+esc(it.tipo)+"'>Salvar</button>":"")+
+              btnExcluir+
+            "</div>"+
             checksHtml+
           "</div>";
         }
@@ -5208,6 +5218,44 @@ async function carregarProgMensal(){
             _atualizarDetDia();
           }catch(e){ toast("Erro: "+e.message,"erro"); }
           finally{ try{btn.textContent="Salvar";btn.disabled=false;}catch(e2){} }
+        });
+      });
+
+      // Excluir item
+      var excluires = $("progDetDiaItens").querySelectorAll("[data-ddep-excluir]");
+      excluires.forEach(function(btn){
+        btn.addEventListener("click", async function(e){
+          e.stopPropagation();
+          if(!confirm("Remover este item da programação?")) return;
+          var id  = btn.dataset.ddepExcluir;
+          var sem = btn.dataset.ddepSemana;
+          var tipo = btn.dataset.ddepTipo;
+          try{
+            btn.textContent="Removendo..."; btn.disabled=true;
+            var acao = tipo==="barril" ? "barril_del" : "remover";
+            var body = {acao:acao, id:id, semana:sem};
+            if(tipo==="barril"){
+              // progId para barril independente
+              body.progId = "barril-"+sem;
+            }
+            await api("/api/prog",{method:"POST",body:body});
+            // Remover do array local e fechar painel se era o expandido
+            _detDiaItens = _detDiaItens.filter(function(x){ return x.id !== id; });
+            if(_detExpandidoId === id) _detExpandidoId = null;
+            if(_detDiaItens.length === 0){
+              // Dia ficou vazio — fechar o painel
+              $("progDetDia").hidden = true;
+              if(_calDiaSel) _calDiaSel.classList.remove("sel-cal");
+              _calDiaSel = null;
+              // Remover do mapa de dias
+              delete _calDadosMes[_detDiaIso];
+              // Atualizar o calendário
+              carregarProgMensal();
+            } else {
+              _atualizarDetDia();
+            }
+            toast("Removido.");
+          } catch(e){ toast("Erro: "+e.message,"erro"); }
         });
       });
 
