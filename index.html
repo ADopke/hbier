@@ -2647,7 +2647,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.8.5";
+var VERSAO = "2.8.6";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6918,8 +6918,8 @@ async function verificarAlertasTanque(){
     return api("/api/prog?semana="+chSem).then(function(r){
       (r.itens||[]).forEach(function(it){
         if (it.tipo !== "brassagem" || !it.resultado || !it.resultado.em) return;
-        // Só alertar se não tem envase vinculado (tanque ainda cheio)
-        // Critério simples: brassagem sem resultado de envase do mesmo tanque
+        // Não alertar se o tanque foi marcado como finalizado
+        if (it.resultado.tanqueFinalizado) return;
         var dias = diasNoTanque(it.resultado.em);
         if (dias === null || dias < DIAS_AVISO) return;
         alertas.push({
