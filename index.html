@@ -2661,7 +2661,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.9.0";
+var VERSAO = "2.9.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6569,17 +6569,6 @@ function limpStatusLabel(dias){
   return dias+" dias";
 }
 
-async function carregarLimpeza(){
-  // Renderizar imediatamente com o que temos (evita aba vazia)
-  renderLimpSetores();
-  // Depois buscar resumo e atualizar
-  try{
-    var r = await api("/api/limpeza?resumo=1");
-    _limpResumo = r.resumo || {};
-    renderLimpSetores();
-  }catch(e){ _limpResumo = {}; }
-  if (_limpSetorAtivo) await carregarLimpezaSetor(_limpSetorAtivo);
-}
 
 function renderLimpSetores(){
   var html = "";
@@ -6606,6 +6595,18 @@ function renderLimpSetores(){
     "</button>";
   });
   $("limpSetorGrid").innerHTML = html;
+}
+
+async function carregarLimpeza(){
+  // Renderizar imediatamente com o que temos (evita aba vazia)
+  renderLimpSetores();
+  // Depois buscar resumo e atualizar
+  try{
+    var r = await api("/api/limpeza?resumo=1");
+    _limpResumo = r.resumo || {};
+    renderLimpSetores();
+  }catch(e){ _limpResumo = {}; }
+  if (_limpSetorAtivo) await carregarLimpezaSetor(_limpSetorAtivo);
 }
 
 async function carregarLimpezaSetor(setorId){
