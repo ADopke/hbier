@@ -478,6 +478,45 @@
   .lri-freq{ font-size:.68rem;color:var(--muted);flex-shrink:0; }
   .limp-rapida-item.feito .lri-nome{ color:var(--verde);font-weight:600; }
 
+  /* ---- aba limpeza nova ---- */
+  .limp-freq-btn{ transition:.15s; }
+  .limp-freq-btn.ativo{
+    color:var(--verde) !important;
+    border-bottom-color:var(--verde) !important;
+    border-bottom-width:2px !important;
+  }
+  .limp-card{
+    background:#fff;border:1.5px solid var(--linha);border-radius:10px;
+    padding:12px 14px;margin-bottom:8px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .limp-card.ok{ background:var(--verde-claro);border-color:var(--verde); }
+  .limp-card.vencido{ background:#FFF5F5;border-color:#FECACA; }
+  .limp-card.aviso{ background:var(--dourado-claro);border-color:var(--dourado); }
+  .limp-card-info{ flex:1;display:flex;flex-direction:column;gap:2px; }
+  .limp-card-nome{ font-weight:700;font-size:.9rem; }
+  .limp-card-detalhe{ font-size:.73rem;color:var(--muted); }
+  .limp-card.ok .limp-card-detalhe{ color:var(--verde); }
+  .limp-card.vencido .limp-card-detalhe{ color:var(--vermelho); }
+  .limp-card.aviso .limp-card-detalhe{ color:#7A5500; }
+  .limp-card-btn{
+    padding:7px 14px;border:none;border-radius:8px;cursor:pointer;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;
+    background:var(--verde);color:#fff;flex-shrink:0;
+  }
+  .limp-card-btn.feito{
+    background:var(--verde-claro);color:var(--verde);
+    border:1.5px solid var(--verde);
+  }
+  .limp-card-btn.feito:hover{
+    background:#FEE2E2;color:var(--vermelho);border-color:#FECACA;
+  }
+  .limp-vazio{
+    text-align:center;padding:32px 16px;color:var(--muted);
+    font-size:.88rem;line-height:1.5;
+  }
+
   /* ---- separador de dia na programação ---- */
   .prog-dia-sep{
     padding:9px 14px 8px;
@@ -1679,105 +1718,48 @@
     <!-- ---------- ABA LIMPEZA ---------- -->
     <div id="painelLimpeza" hidden>
 
-      <!-- cabeçalho com seletor de setor -->
       <section>
         <div class="sec-head">
           <span class="sec-title">🧹 Limpeza</span>
-          <button class="btn-hoje-sem" id="btnLimpRapida"
-            style="font-size:.78rem;padding:5px 11px">⚡ Limpeza rápida</button>
+          <!-- admin/gestor: seletor de setor -->
+          <select id="limpSetorSel" hidden
+            style="font-size:.8rem;padding:5px 8px;border:1.5px solid var(--linha);
+            border-radius:8px;background:#fff;cursor:pointer;max-width:160px">
+          </select>
           <button class="btn-hoje-sem" id="btnLimpExportar"
-            style="font-size:.78rem;padding:5px 11px">📄 Exportar PDF</button>
-        </div>
-        <div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:10px">
-          <!-- minha limpeza (visão do operador) -->
-          <div id="minhaLimpSecao" class="minha-limp-secao" hidden></div>
-          <!-- seletor de setor -->
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="limpSetorGrid">
-            <!-- preenchido por JS -->
-          </div>
-        </div>
-      </section>
-
-      <!-- painel do setor selecionado -->
-      <section id="limpSecSetor" hidden>
-        <div class="sec-head">
-          <span class="sec-title" id="limpSetorTitulo"></span>
-          <span class="sec-sub" id="limpSetorStatus"></span>
+            style="font-size:.78rem;padding:5px 11px">📄 PDF</button>
         </div>
 
-        <!-- Itens de limpeza para marcar -->
-        <div style="padding:10px 14px;display:flex;flex-direction:column;gap:10px" id="limpItensLista">
-          <!-- preenchido por JS -->
+        <!-- abas de frequência -->
+        <div style="display:flex;border-bottom:2px solid var(--linha);margin:0 14px">
+          <button class="limp-freq-btn ativo" data-freq="semanal"
+            style="flex:1;padding:9px 4px;border:none;background:none;cursor:pointer;
+            font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;
+            text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px">
+            Semanal
+          </button>
+          <button class="limp-freq-btn" data-freq="quinzenal"
+            style="flex:1;padding:9px 4px;border:none;background:none;cursor:pointer;
+            font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;
+            text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px">
+            Quinzenal
+          </button>
+          <button class="limp-freq-btn" data-freq="mensal"
+            style="flex:1;padding:9px 4px;border:none;background:none;cursor:pointer;
+            font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;
+            text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px">
+            Mensal
+          </button>
+          <button class="limp-freq-btn" data-freq="anual"
+            style="flex:1;padding:9px 4px;border:none;background:none;cursor:pointer;
+            font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;
+            text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px">
+            Anual
+          </button>
         </div>
 
-        <!-- Modal de registro de limpeza -->
-        <div id="limpModalReg" hidden style="margin:0 14px 14px;padding:14px;
-          background:#F0FAF2;border:1.5px solid var(--verde);border-radius:12px">
-          <div style="font-weight:700;font-size:.9rem;color:var(--verde);margin-bottom:10px"
-            id="limpModalTitulo">Atribuir tarefa de limpeza</div>
-
-          <!-- Atribuir a um operador -->
-          <div style="margin-bottom:10px">
-            <label style="font-size:.78rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">
-              👤 Atribuir para</label>
-            <select id="limpFeitoPor" style="width:100%;padding:9px;
-              border:1.5px solid var(--verde);border-radius:7px;font-size:.88rem;font-weight:600">
-              <!-- preenchido por JS -->
-            </select>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-            <div>
-              <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">
-                Periodicidade</label>
-              <select id="limpPeriodicidade" style="width:100%;padding:8px;
-                border:1.5px solid var(--linha);border-radius:7px;font-size:.85rem">
-                <option value="diaria">Diária</option>
-                <option value="semanal">Semanal</option>
-                <option value="quinzenal">Quinzenal</option>
-                <option value="mensal">Mensal</option>
-                <option value="eventual">Eventual / CIP</option>
-              </select>
-            </div>
-            <div>
-              <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">
-                Data prevista</label>
-              <input type="date" id="limpData"
-                style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.85rem">
-            </div>
-          </div>
-
-          <div style="margin-bottom:12px">
-            <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">
-              Observações (opcional)</label>
-            <input type="text" id="limpObs" placeholder="Ex.: limpeza profunda pós-brassagem, CIP do TQ-03…"
-              style="width:100%;padding:8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.85rem">
-          </div>
-
-          <div style="background:#fff;border:1px solid var(--linha);border-radius:8px;
-            padding:8px 12px;margin-bottom:12px;font-size:.78rem;color:var(--muted)">
-            💡 A tarefa aparecerá na seção <b>🏭 Produção</b> do checklist do operador selecionado.
-            Quando concluída, ficará registrada com data/hora e nome.
-          </div>
-
-          <div style="display:flex;gap:8px;justify-content:flex-end">
-            <button id="btnLimpCancelar" style="padding:9px 16px;border:1.5px solid var(--linha);
-              border-radius:8px;background:#fff;cursor:pointer;font-size:.85rem;font-weight:600">
-              Cancelar</button>
-            <button id="btnLimpConfirmar" style="padding:9px 16px;border:none;border-radius:8px;
-              background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.88rem;
-              font-family:'Barlow Condensed',sans-serif;text-transform:uppercase">
-              ➤ Criar tarefa</button>
-          </div>
-        </div>
-
-        <!-- Histórico do setor -->
-        <div style="padding:0 14px 14px">
-          <div style="font-size:.75rem;font-weight:700;color:var(--muted);
-            text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">
-            Histórico recente</div>
-          <div id="limpHistorico"></div>
-        </div>
+        <!-- lista de itens -->
+        <div id="limpItensNova" style="padding:8px 14px 14px"></div>
       </section>
 
     </div>
@@ -6765,2259 +6747,197 @@ function renderMinhaLimpeza(resumo){
 }
 
 async function carregarLimpeza(){
-  // Garantir que o grid existe antes de renderizar
-  var grid = $("limpSetorGrid");
-  if (!grid){ return; }
-  // Renderizar imediatamente com o que temos
-  renderLimpSetores();
-  renderMinhaLimpeza(_limpResumo);
-  // Depois buscar resumo e atualizar badges de status
-  try{
-    var r = await api("/api/limpeza?resumo=1");
-    _limpResumo = r.resumo || {};
-    renderLimpSetores();
-    renderMinhaLimpeza(_limpResumo);
-  }catch(e){ _limpResumo = {}; renderLimpSetores(); renderMinhaLimpeza({}); }
-  if (_limpSetorAtivo) await carregarLimpezaSetor(_limpSetorAtivo);
-}
+  var grid = $("limpItensNova");
+  if (!grid) return;
 
-async function carregarLimpezaSetor(setorId){
-  _limpSetorAtivo = setorId;
-  var st = LIMP_SETORES.find(function(x){ return x.id===setorId; });
-  if (!st) return;
-
-  $("limpSetorTitulo").textContent = st.icone+" "+st.nome;
-  $("limpSecSetor").hidden = false;
-  $("limpModalReg").hidden = true;
-  _limpItemAtivo = null;
-
-  // Preencher select de operadores
-  var memOpts = "<option value='"+esc(sessao.login)+"'>Eu mesmo (@"+esc(sessao.login)+")</option>";
-  equipe.forEach(function(u){
-    if (u.login !== sessao.login)
-      memOpts += "<option value='"+esc(u.login)+"'>"+esc(u.nome||u.login)+"</option>";
-  });
-  $("limpFeitoPor").innerHTML = memOpts;
-
-  // Buscar histórico detalhado do setor
-  var registros = [];
-  try{
-    var r = await api("/api/limpeza?setor="+setorId);
-    registros = r.registros || [];
-  }catch(e){}
-
-  // Último registro por item
-  var ultimoPorItem = {};
-  registros.forEach(function(r){
-    if (!ultimoPorItem[r.item] || r.em > ultimoPorItem[r.item].em)
-      ultimoPorItem[r.item] = r;
-  });
-
-  // Renderizar cards de itens do setor
-  var htmlItens = "";
-  var itensDoSetor = LIMP_ITENS_POR_SETOR[setorId] || [];
-  itensDoSetor.forEach(function(it){
-    var ultimo = ultimoPorItem[it.id];
-    var dias   = ultimo ? limpDiasDesde(ultimo.em) : null;
-    var status = limpStatusDias(dias, it.freq);
-    var label  = limpStatusLabel(dias);
-    var labelPeriodo = ultimo ? " · "+LIMP_PERIODOS[ultimo.periodicidade] : "";
-    // Verificar se já foi feito hoje
-    var feito_hoje = ultimo && limpDiasDesde(ultimo.em) === 0;
-    var resp_login = "";
-    var stObj2 = LIMP_SETORES.find(function(x){ return x.id===setorId; });
-    if (stObj2){
-      var memResp2 = equipe.find(function(u){
-        return (u.nome||u.login).toLowerCase().indexOf((stObj2.responsavel||"").toLowerCase()) >= 0
-            || (stObj2.responsavel||"").toLowerCase().indexOf((u.nome||u.login).toLowerCase()) >= 0;
-      });
-      if (memResp2) resp_login = memResp2.login;
-    }
-    var resp_nome = stObj2 ? stObj2.responsavel : "";
-    htmlItens += "<div class='limp-item-card'>"+
-      "<div style='display:flex;align-items:center;gap:10px;padding:2px 0'>"+
-        "<div style='flex:1'>"+
-          "<div class='limp-item-nome'>"+esc(it.nome)+"</div>"+
-          "<div class='limp-item-ultima'>"+
-            "<span style='background:var(--cinza);border-radius:4px;padding:1px 6px;font-size:.7rem;margin-right:4px'>"+esc(LIMP_PERIODOS[it.freq]||it.freq)+"</span>"+
-            "<span style='font-size:.7rem;color:var(--muted)'>Resp.: "+esc(resp_nome)+"</span> "+
-            (ultimo
-              ? " · Última: "+esc(fmtDia(new Date(ultimo.em)))+" por @"+esc(ultimo.nomeFeitoPor||ultimo.feitoPor)
-              : " · Nunca registrada")+
-          "</div>"+
-        "</div>"+
-        "<span class='limp-item-badge "+status+"'>"+esc(label)+"</span>"+
-        "<button class='limp-item-feito-btn"+(feito_hoje?" ja-feito":"")+"'"+
-          " data-limp-feito='"+it.id+"'"+
-          " data-limp-feito-setor='"+setorId+"'"+
-          " data-limp-feito-freq='"+it.freq+"'"+
-          " data-limp-feito-reg='"+(ultimo?esc(ultimo.id):"")+"' data-limp-feito-resp='"+resp_login+"'>"+
-          (feito_hoje ? "✓ Feito hoje" : "✓ Feito")+
-        "</button>"+
-        "<span class='limp-item-badge "+status+"' style='display:none'></span>"+
-        "<span data-limp-item='"+it.id+"' style='display:none'></span>"+
-      "</div>"+
-    "</div>";
-  });
-  $("limpItensLista").innerHTML = htmlItens;
-
-  // Renderizar histórico (últimos 20 registros)
-  var htmlHist = "";
-  if (!registros.length){
-    htmlHist = "<div class='vazio'>Nenhum registro ainda.</div>";
-  } else {
-    var top20 = registros.slice(0,20);
-    top20.forEach(function(r){
-      var itemObj = limpAcharItem(r.item, setorId);
-      var dt = new Date(r.em);
-      var carimbo = ("0"+dt.getDate()).slice(-2)+"/"+("0"+(dt.getMonth()+1)).slice(-2)+
-        " "+("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2);
-      var podeRemover = ["admin","gestor"].includes(sessao.papel);
-      htmlHist += "<div class='limp-hist-item'>"+
-        "<div class='limp-hist-check'>✓</div>"+
-        "<div class='limp-hist-info'>"+
-          "<div class='limp-hist-titulo'>"+(itemObj?esc(itemObj.nome):esc(r.item))+" · "+esc(LIMP_PERIODOS[r.periodicidade]||r.periodicidade)+"</div>"+
-          "<div class='limp-hist-sub'>"+carimbo+" por @"+esc(r.nomeFeitoPor||r.feitoPor)+
-            (r.obs?" · "+esc(r.obs.substring(0,50)):"")+"</div>"+
-        "</div>"+
-        (podeRemover?"<button class='ptv-del' data-limp-del='"+esc(r.id)+"' data-limp-del-setor='"+esc(r.setor)+"' title='Remover'>×</button>":"")+
-      "</div>";
-    });
-  }
-  $("limpHistorico").innerHTML = htmlHist;
-
-  // Status geral no cabeçalho
-  var piorDias = null;
-  (LIMP_ITENS_POR_SETOR[setorId]||[]).forEach(function(it){
-    var reg = ultimoPorItem[it.id];
-    var d = reg ? limpDiasDesde(reg.em) : null;
-    var lim = LIMP_LIMITE_DIAS[it.freq]||7;
-    var norm = d===null?999:d/lim;
-    if (piorDias===null||norm>piorDias) piorDias=norm;
-  });
-  var stLabel = piorDias===null||piorDias>=999?"neutro":piorDias<=0.7?"ok":piorDias<=1?"aviso":"critico";
-  var cores = {ok:"var(--verde)",aviso:"#E6A817",critico:"#DC2626",neutro:"var(--muted)"};
-  $("limpSetorStatus").textContent = stLabel === "neutro" ? "sem registros" :
-    stLabel === "ok" ? "✓ em dia" :
-    stLabel === "aviso" ? "⚠ verificar" : "🚨 atenção";
-  $("limpSetorStatus").style.color = cores[stLabel]||"";
-
-  renderLimpSetores(); // atualizar badges dos botões
-}
-
-// Listeners da aba Limpeza
-document.addEventListener("click", function(ev){
-  // selecionar setor
-  var btnSetor = ev.target.closest("[data-limp-setor]");
-  if (btnSetor && $("painelLimpeza") && !$("painelLimpeza").hidden){
-    carregarLimpezaSetor(btnSetor.dataset.limpSetor);
-    return;
-  }
-  // abrir modal de registro ao clicar no item
-  // Botão "Feito" — registrar direto sem modal
-  var btnFeito = ev.target.closest("[data-limp-feito]");
-  if (btnFeito && !btnFeito.disabled){
-    var itemId   = btnFeito.dataset.limpFeito;
-    var setorId  = btnFeito.dataset.limpFeitoSetor;
-    var freq     = btnFeito.dataset.limpFeitoFreq;
-    var regId    = btnFeito.dataset.limpFeitoReg;
-    var respLogin= btnFeito.dataset.limpFeitoResp || sessao.login;
-    var jaFeito  = btnFeito.classList.contains("ja-feito");
-
-    if (jaFeito && regId){
-      // Desmarcar com confirmação
-      if (!confirm("Remover este registro de limpeza?")) return;
-      btnFeito.disabled = true;
-      btnFeito.textContent = "Removendo...";
-      api("/api/limpeza",{method:"POST",body:{
-        acao:  "remover",
-        setor: setorId,
-        id:    regId
-      }}).then(function(){
-        toast("Registro removido.");
-        carregarLimpezaSetor(setorId);
-      }).catch(function(e){
-        toast("Erro: "+e.message,"erro");
-        btnFeito.disabled=false;
-        btnFeito.textContent="✓ Feito hoje";
-      });
-      return;
-    }
-
-    btnFeito.disabled = true;
-    btnFeito.textContent = "Salvando...";
-    api("/api/limpeza",{method:"POST",body:{
-      acao:          "registrar",
-      setor:         setorId,
-      item:          itemId,
-      periodicidade: freq,
-      feitoPor:      respLogin,
-      obs:           ""
-    }}).then(function(){
-      toast("Limpeza registrada ✓","ok");
-      carregarLimpezaSetor(setorId);
-    }).catch(function(e){
-      toast("Erro: "+e.message,"erro");
-      btnFeito.disabled=false;
-      btnFeito.textContent="✓ Feito";
-    });
-    return;
+  // Definir setor inicial
+  if (!_limpSetorAtual){
+    var meu = _limpMeuSetor();
+    _limpSetorAtual = meu ? meu.id : (LIMP_SETORES[0] && LIMP_SETORES[0].id);
   }
 
-  var btnItem = ev.target.closest("[data-limp-item]");
-  if (btnItem && $("painelLimpeza") && !$("painelLimpeza").hidden){
-    _limpItemAtivo = btnItem.dataset.limpItem;
-    var itemObj = limpAcharItem(_limpItemAtivo, _limpSetorAtivo);
-    $("limpModalTitulo").textContent = "Registrar limpeza: "+(itemObj?itemObj.nome:_limpItemAtivo);
-    $("limpObs").value = "";
-    // data padrão = hoje
-    var hoje = new Date();
-    $("limpData").value = hoje.getFullYear()+"-"+("0"+(hoje.getMonth()+1)).slice(-2)+"-"+("0"+hoje.getDate()).slice(-2);
-    // Pré-selecionar responsável do setor
-    var stObj = LIMP_SETORES.find(function(x){ return x.id===_limpSetorAtivo; });
-    if (stObj && stObj.responsavel){
-      // Encontrar o login do responsável (pelo nome ou nome parcial)
-      var memResp = equipe.find(function(u){
-        return (u.nome||u.login).toLowerCase().indexOf(stObj.responsavel.toLowerCase()) >= 0
-            || stObj.responsavel.toLowerCase().indexOf((u.nome||u.login).toLowerCase()) >= 0;
-      });
-      if (memResp) $("limpFeitoPor").value = memResp.login;
-    }
-    // Pré-selecionar periodicidade do item
-    if (itemObj && itemObj.freq){
-      $("limpPeriodicidade").value = itemObj.freq;
-    }
-    $("limpModalReg").hidden = false;
-    $("limpModalReg").scrollIntoView({behavior:"smooth",block:"nearest"});
-    return;
-  }
-  // remover registro
-  var btnDel = ev.target.closest("[data-limp-del]");
-  if (btnDel){
-    if (!confirm("Remover este registro de limpeza?")) return;
-    api("/api/limpeza",{method:"POST",body:{
-      acao:"remover", id:btnDel.dataset.limpDel, setor:btnDel.dataset.limpDelSetor
-    }}).then(function(){
-      carregarLimpezaSetor(_limpSetorAtivo);
-      toast("Registro removido.");
-    }).catch(function(e){ toast(e.message,"erro"); });
-    return;
-  }
-});
-
-$("btnLimpCancelar").addEventListener("click", function(){
-  $("limpModalReg").hidden = true;
-  _limpItemAtivo = null;
-});
-
-$("btnLimpConfirmar").addEventListener("click", async function(){
-  if (!_limpItemAtivo || !_limpSetorAtivo){ toast("Selecione um item.","erro"); return; }
-
-  var para        = $("limpFeitoPor").value;
-  var periodo     = $("limpPeriodicidade").value;
-  var obs         = $("limpObs").value.trim();
-  var dataISO     = $("limpData").value;  // AAAA-MM-DD
-
-  // Buscar nomes dos objetos para montar o nome da tarefa
-  var setorObj = LIMP_SETORES.find(function(x){ return x.id===_limpSetorAtivo; });
-  var itemObj  = limpAcharItem(_limpItemAtivo, _limpSetorAtivo);
-  var nomeSetor = setorObj ? setorObj.nome : _limpSetorAtivo;
-  var nomeItem  = itemObj  ? itemObj.nome  : _limpItemAtivo;
-  var periodoLabel = {diaria:"Diária",semanal:"Semanal",eventual:"Eventual/CIP"}[periodo]||periodo;
-
-  // Nome da tarefa: "🧹 Limpeza · Piso — Brassagem (Semanal)"
-  var nomeTarefa = "🧹 Limpeza · "+nomeItem+" — "+nomeSetor+" ("+periodoLabel+")";
-  var descTarefa = obs || "";
-
-  if (!para){ toast("Selecione o operador.","erro"); return; }
-
-  try{
-    // Criar tarefa de produção no checklist do operador
-    await api("/api/tasks",{method:"POST",body:{
-      acao:       "criar",
-      para:       para,
-      nome:       nomeTarefa,
-      desc:       descTarefa,
-      freq:       "limpeza",
-      data:       dataISO,
-      lembrete:   "",
-      critica:    false,
-      prioridade: false,
-      progId:     "limpeza-"+_limpSetorAtivo  // vínculo com o setor
-    }});
-
-    // Registrar também no histórico de limpeza
-    await api("/api/limpeza",{method:"POST",body:{
-      acao:          "registrar",
-      setor:         _limpSetorAtivo,
-      item:          _limpItemAtivo,
-      periodicidade: periodo,
-      feitoPor:      para,
-      obs:           "[TAREFA CRIADA] "+obs
-    }});
-
-    $("limpModalReg").hidden = true;
-    _limpItemAtivo = null;
-
-    var memObj = equipe.find(function(u){ return u.login===para; });
-    var nomeOp = memObj ? (memObj.nome||memObj.login) : para;
-    toast("Tarefa criada para @"+nomeOp+" ✓","ok");
-    carregarLimpezaSetor(_limpSetorAtivo);
-    atualizarLimpezaProg();
-  }catch(e){ toast(e.message,"erro"); }
-});
-
-// Status rápido de limpeza na aba Programação
-async function atualizarLimpezaProg(){
-  var elProg = $("progLimpStatus");
-  if (!elProg) return;
-  try{
-    var r = await api("/api/limpeza?resumo=1");
-    var resumo = r.resumo || {};
-    var chips = "";
-    LIMP_SETORES.forEach(function(st){
-      var resumoSetor = resumo[st.id]||{};
-      var piorDias = null;
-      var itensS = LIMP_ITENS_POR_SETOR[st.id]||[];
-      var piorN = null;
-      itensS.forEach(function(it){
-        var reg = resumoSetor[it.id];
-        var dias = reg?limpDiasDesde(reg.em):null;
-        var lim = LIMP_LIMITE_DIAS[it.freq]||7;
-        var norm = dias===null?999:dias/lim;
-        if (piorN===null||norm>piorN) piorN=norm;
-      });
-      var status = piorN===null||piorN>=999?"neutro":piorN<=0.7?"ok":piorN<=1?"aviso":"critico";
-      chips += "<span class='prog-limp-chip "+status+"' data-limp-setor='"+st.id+"' "+
-        "title='"+esc(st.nome)+"'>"+st.icone+" "+limpStatusLabel(piorDias)+"</span>";
-    });
-    elProg.innerHTML = "<span style='font-size:.75rem;font-weight:700;color:var(--muted);margin-right:4px'>🧹</span>"+chips;
-  }catch(e){ elProg.innerHTML = ""; }
-}
-
-/* ==================================================================
-   Alertas de tempo no tanque (brassagem)
-   ================================================================== */
-
-var DIAS_AVISO   = 12;   // amarelo
-var DIAS_CRITICO = 15;   // vermelho
-
-function diasNoTanque(isoStr){
-  if (!isoStr) return null;
-  var lancado = new Date(isoStr);
-  var hoje    = new Date();
-  // zerar horas para comparar só datas
-  lancado.setHours(0,0,0,0);
-  hoje.setHours(0,0,0,0);
-  return Math.floor((hoje - lancado) / 86400000);
-}
-
-// Busca brassagens com resultado nas últimas 6 semanas e calcula dias no tanque
-async function verificarAlertasTanque(){
-  var alertas = [];
-  var semanas = [];
-  // buscar 6 semanas para trás a partir da semana atual
-  for (var i = 0; i < 6; i++){
-    var seg = new Date(segHoje);
-    seg.setDate(seg.getDate() - i*7);
-    semanas.push(seg);
-  }
-
-  await Promise.all(semanas.map(function(seg){
-    var chSem = seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
-    return api("/api/prog?semana="+chSem).then(function(r){
-      (r.itens||[]).forEach(function(it){
-        if (it.tipo !== "brassagem" || !it.resultado || !it.resultado.em) return;
-        // Não alertar se o tanque foi marcado como finalizado
-        if (it.resultado.tanqueFinalizado) return;
-        var dias = diasNoTanque(it.resultado.em);
-        if (dias === null || dias < DIAS_AVISO) return;
-        alertas.push({
-          estilo:  it.estilo || "Brassagem",
-          tanque:  it.tanque || "",
-          dia:     it.dia || "",
-          dias:    dias,
-          nivel:   dias >= DIAS_CRITICO ? "vermelho" : "amarelo",
-          semana:  chSem
-        });
-      });
-    }).catch(function(){ return; });
-  }));
-
-  // ordenar do mais crítico para o menos
-  alertas.sort(function(a,b){ return b.dias - a.dias; });
-  return alertas;
-}
-
-function renderAlertasTanque(alertas, destino){
-  var el = $(destino);
-  if (!el) return;
-  if (!alertas || !alertas.length){ el.innerHTML = ""; return; }
-
-  var html = "<div class='alerta-tanque-wrap'>";
-  alertas.forEach(function(a){
-    var icone   = a.nivel === "vermelho" ? "🚨" : "⚠️";
-    var sufixo  = a.dias === 1 ? "dia" : "dias";
-    var msg     = a.nivel === "vermelho"
-      ? "Limite ultrapassado! Verificar urgente."
-      : "Próximo do limite de 15 dias.";
-    html += "<div class='alerta-tanque "+a.nivel+"'>"+
-      "<span class='at-icone'>"+icone+"</span>"+
-      "<div class='at-body'>"+
-        "<div class='at-titulo'>"+esc(a.estilo)+(a.tanque?" — "+esc(a.tanque):"")+"</div>"+
-        "<div class='at-sub'>"+msg+"</div>"+
-      "</div>"+
-      "<div class='at-dias'>"+a.dias+" "+sufixo+"</div>"+
-    "</div>";
-  });
-  html += "</div>";
-  el.innerHTML = html;
-}
-
-// Inserir badge no card de brassagem na programação
-function badgeTempoTanque(resultado){
-  if (!resultado || !resultado.em) return "";
-  var dias = diasNoTanque(resultado.em);
-  if (dias === null || dias < DIAS_AVISO) return "";
-  var nivel = dias >= DIAS_CRITICO ? "vermelho" : "amarelo";
-  var cor   = nivel === "vermelho" ? "#DC2626" : "#E6A817";
-  var bg    = nivel === "vermelho" ? "#FEF2F2" : "#FFFBEA";
-  return "<span style='display:inline-flex;align-items:center;gap:4px;"+
-    "background:"+bg+";color:"+cor+";border:1px solid "+cor+";"+
-    "border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:700;margin-top:6px'>"+
-    (nivel==="vermelho"?"🚨":"⚠️")+" "+dias+" dias no tanque</span>";
-}
-
-/* ==================================================================
-   Status dos tanques
-   ================================================================== */
-async function carregarTanques(){
-  $("tanquesLista").innerHTML = "<div class='vazio'>Carregando…</div>";
-  try{
-    if (!baseCarregada) await carregarBase();
-    var tab = baseTabelas["Tanques"];
-    if (!tab || !tab.linhas.length){
-      $("tanquesLista").innerHTML =
-        "<div class='vazio'>A aba Tanques não está publicada na base de referência.</div>";
-      return;
-    }
-    var cols = tab.colunas;
-    var iCod  = cols.indexOf("Código");
-    var iNome = cols.indexOf("Nome / Identificação");
-    var iTipo = cols.indexOf("Tipo");
-    var iCap  = cols.indexOf("Capacidade (L)");
-    var iSit  = cols.indexOf("Situação");
-    var iProd = cols.indexOf("Produto atual");
-    var iLote = cols.indexOf("Lote atual");
-    var iObs  = cols.indexOf("Observações");
-
-    var agora = new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
-    $("tanquesAtual").textContent = "atualizado "+agora;
-
-    var COR_SIT = {
-      "Em uso":      "#E9F3EB",
-      "em uso":      "#E9F3EB",
-      "Disponível":  "#FFF6DE",
-      "disponível":  "#FFF6DE",
-      "Vazio":       "#F2F1EB",
-      "vazio":       "#F2F1EB",
-      "Manutenção":  "#FDECEB",
-      "manutenção":  "#FDECEB",
-    };
-
-    var html = tab.linhas.map(function(l){
-      var cod  = iCod>-1  ? (l[iCod]||"")  : "";
-      var nome = iNome>-1 ? (l[iNome]||"") : "";
-      var tipo = iTipo>-1 ? (l[iTipo]||"") : "";
-      var cap  = iCap>-1  ? (l[iCap]||"")  : "";
-      var sit  = iSit>-1  ? (l[iSit]||"")  : "";
-      var prod = iProd>-1 ? (l[iProd]||"") : "";
-      var lote = iLote>-1 ? (l[iLote]||"") : "";
-      var obs  = iObs>-1  ? (l[iObs]||"")  : "";
-      if (!cod && !nome) return "";
-      var bg = COR_SIT[sit] || "#F2F1EB";
-      return "<div class='tanque-card' style='background:"+bg+"'>"+
-        "<div class='tq-topo'>"+
-          "<span class='tq-cod'>"+esc(cod)+"</span>"+
-          "<span class='tq-nome'>"+esc(nome)+"</span>"+
-          (sit?"<span class='tq-sit'>"+esc(sit)+"</span>":"")+
-        "</div>"+
-        (prod?"<div class='tq-prod'>🍺 "+esc(prod)+(lote?" · Lote: "+esc(lote):"")+"</div>":"")+
-        (tipo||cap?"<div class='tq-info'>"+esc(tipo)+(tipo&&cap?" · ":"")+
-          (cap?esc(cap)+" L":"")+"</div>":"")+
-        (obs?"<div class='tq-obs'>"+esc(obs)+"</div>":"")+
-      "</div>";
-    }).join("");
-
-    $("tanquesLista").innerHTML = "<div class='tanques-grid'>"+html+"</div>" ||
-      "<div class='vazio'>Nenhum tanque cadastrado.</div>";
-  }catch(e){
-    $("tanquesLista").innerHTML = "<div class='vazio'>"+esc(e.message)+"</div>";
-  }
-}
-
-$("btnAtualizarTanques").addEventListener("click", function(){
-  baseCarregada = false; carregarTanques();
-});
-
-/* ==================================================================
-   Acompanhamento e relatórios
-   ================================================================== */
-var relCarregado = false;
-var acompCarregado = false;
-var dadosRel = null;      // resposta crua de /api/report
-var semanaAcomp = null;   // dados da semana atual, para o resumo
-
-/* Devolve as chaves das últimas N semanas, da mais recente para a mais antiga */
-function ultimasSemanas(n){
-  var lista = [], base = new Date(segHoje);
-  for (var i = 0; i < n; i++){
-    lista.push(chaveSemana(base));
-    base.setDate(base.getDate() - 7);
-  }
-  return lista;
-}
-
-function faixa(pct){
-  if (pct === null) return "";
-  if (pct >= 80) return "alto";
-  if (pct >= 50) return "medio";
-  return "baixo";
-}
-
-async function buscarRelatorio(n){
-  var semanas = ultimasSemanas(n);
-  return api("/api/report?semanas=" + semanas.join(","));
-}
-
-/* ---------- acompanhamento da semana (aba Equipe) ---------- */
-async function carregarAcompanhamento(){
-  acompCarregado = true;
-  $("acompLista").innerHTML = "<div class='vazio'>Carregando…</div>";
-  try{
-    var r = await buscarRelatorio(1);
-    var chave = r.semanas[0];
-    var fim = new Date(segHoje); fim.setDate(fim.getDate() + 6);
-    $("acompSemana").textContent = fmtDia(segHoje) + " a " + fmtDia(fim);
-
-    var seg = new Date(chave + "T00:00:00");
-    semanaAcomp = r.usuarios.map(function(u){
-      return {
-        nome: u.nome, login: u.login,
-        calc: calcular(u.tarefas, u.estados[chave], u.ciclos, seg),
-        tarefas: u.tarefas, estado: u.estados[chave], ciclos: u.ciclos
-      };
-    });
-
-    var html = "";
-    semanaAcomp.forEach(function(p){
-      var f = faixa(p.calc.pct);
-      var pct = p.calc.pct === null ? "—" : p.calc.pct + "%";
-      html += "<div class='pessoa-linha'><div class='pl-topo'>"+
-        "<span class='pl-nome'>"+esc(p.nome)+"</span>"+
-        "<span class='pl-pct v-"+f+"'>"+pct+"</span></div>"+
-        "<div class='pl-barra'><i class='b-"+f+"' style='width:"+
-        (p.calc.pct||0)+"%'></i></div>";
-      if (!p.calc.total){
-        html += "<div class='pl-pend'>sem tarefas cadastradas</div>";
-      } else if (p.calc.pendentes.length){
-        html += "<div class='pl-pend'><b>"+p.calc.pendentes.length+
-          " em aberto:</b> "+esc(p.calc.pendentes.slice(0,4).join(" · "))+
-          (p.calc.pendentes.length > 4 ? " …" : "")+"</div>";
-      } else {
-        html += "<div class='pl-pend'>✅ tudo em dia</div>";
-      }
-      if (p.calc.total){
-        html += "<button class='btn-mini' data-detalhe='"+esc(p.login)+"' "+
-          "style='margin-top:8px'>ver todas as tarefas</button>"+
-          "<div class='detalhe-op' id='det-"+esc(p.login)+"' hidden></div>";
-      }
-      html += "</div>";
-    });
-    $("acompLista").innerHTML = html || "<div class='vazio'>Nenhuma pessoa cadastrada.</div>";
-  }catch(e){
-    $("acompLista").innerHTML = "<div class='vazio'>"+esc(e.message)+"</div>";
-  }
-}
-
-/* Visão ampla de um operador: TODAS as tarefas da semana, feitas e por fazer,
-   com o dia e a hora de cada marcação. É a diferença entre saber o percentual
-   e saber o que exatamente está parado. */
-function detalheOperador(p){
-  var seg = new Date(chaveSemana(segHoje) + "T00:00:00");
-  var est = p.estado || {}, cic = p.ciclos || {};
-  var d = est.d || {}, w = est.w || {}, c = est.c || {}, m = est.m || {};
-  var grupos = [
-    {titulo:"Diárias", freq:"diaria"},
-    {titulo:"Semanais", freq:"semanal"},
-    {titulo:"Quinzenais", freq:"quinzenal"},
-    {titulo:"Sob demanda", freq:"demanda"},
-    {titulo:"Lembretes", freq:"lembrete"}
-  ];
-  var html = "";
-
-  grupos.forEach(function(g){
-    var lista = (p.tarefas || []).filter(function(t){ return t.freq === g.freq; });
-    if (!lista.length) return;
-    html += "<div class='det-grupo'>"+g.titulo+"</div>";
-
-    lista.forEach(function(t){
-      var crit = (t.prioridade ? "<span class='tag crit'>Prioritária</span>" : "") +
-                 (t.critica ? "<span class='tag crit'>Crítica</span>" : "");
-
-      if (g.freq === "diaria"){
-        var celulas = DIAS.map(function(dia){
-          var feito = d[t.id] && d[t.id][dia];
-          var car = feito ? carimboEm(est, t.id+"|"+dia) : "";
-          var leitura = m[t.id+"|"+dia];
-          return "<span class='det-dia "+(feito?"ok":"nao")+"' title='"+
-            (car ? "marcada "+car : "não marcada")+"'>"+
-            NOMES[dia]+"<b>"+(feito ? (leitura ? esc(leitura) : "✓") : "—")+"</b>"+
-            (car ? "<i>"+esc(car.split(" ")[1] || "")+"</i>" : "")+"</span>";
-        }).join("");
-        html += "<div class='det-item'><div class='det-nome'>"+esc(t.nome)+crit+"</div>"+
-          "<div class='det-dias'>"+celulas+"</div></div>";
-        return;
-      }
-
-      var feito, car = "", extra = "";
-      if (g.freq === "semanal"){ feito = !!w[t.id]; }
-      else if (g.freq === "quinzenal"){
-        feito = cic[t.id] === chaveSemana(segHoje);
-        if (!feito && !venceuEm(cic[t.id], seg)) extra = " (em dia, não vence esta semana)";
-      }
-      else if (g.freq === "demanda"){
-        var regsD = lerRegistros(t.id);
-        html += "<div class='det-item' style='flex-direction:column;align-items:flex-start;gap:4px'>"+
-          "<div class='det-nome'>"+esc(t.nome)+crit+"</div>"+
-          (regsD.length
-            ? "<ul class='dem-regs' style='width:100%'>"+regsD.map(function(r){
-                return "<li class='dem-reg'>"+
-                  "<span class='dem-data'>"+esc(fmtRegistro(r))+"</span>"+
-                  "<span class='dem-acoes'></span>"+
-                "</li>";
-              }).join("")+"</ul>"
-            : "<div class='det-status nao'>nenhum registro</div>")+
-          "</div>";
-        return;
-      }
-      else { feito = !!cic[t.id]; }
-
-      if (feito) car = carimboEm(est, t.id);
-      var leituraW = m[t.id];
-      html += "<div class='det-item'><div class='det-nome'>"+esc(t.nome)+crit+"</div>"+
-        "<div class='det-status "+(feito?"ok":"nao")+"'>"+
-        (feito
-          ? "✓ " + (leituraW ? esc(leituraW)+" · " : "") + (car || "marcada")
-          : "em aberto" + extra)+
-        "</div></div>";
-    });
-  });
-
-  return html || "<div class='item-desc'>Sem tarefas.</div>";
-}
-
-$("acompLista").addEventListener("click", function(ev){
-  var b = ev.target.closest("button[data-detalhe]");
-  if (!b) return;
-  var login = b.dataset.detalhe;
-  var caixa = $("det-" + login);
-  if (!caixa) return;
-  if (!caixa.hidden){ caixa.hidden = true; b.textContent = "ver todas as tarefas"; return; }
-  var p = (semanaAcomp || []).filter(function(x){ return x.login === login; })[0];
-  if (!p) return;
-  caixa.innerHTML = detalheOperador(p);
-  caixa.hidden = false;
-  b.textContent = "ocultar";
-});
-
-$("btnAtualizarAcomp").addEventListener("click", function(){
-  acompCarregado = false; carregarAcompanhamento();
-});
-
-/* ---------- resumo em texto (para colar no WhatsApp) ---------- */
-$("btnResumo").addEventListener("click", function(){
-  if (!semanaAcomp){ toast("Aguarde o acompanhamento carregar.", "erro"); return; }
-  var fim = new Date(segHoje); fim.setDate(fim.getDate() + 6);
-  var txt = "📋 Rotina HBier — semana de " + fmtDia(segHoje) + " a " + fmtDia(fim) + "\n\n";
-  semanaAcomp.forEach(function(p){
-    if (!p.calc.total){ txt += p.nome + ": sem tarefas\n"; return; }
-    txt += p.nome + ": " + p.calc.pct + "%";
-    txt += p.calc.pendentes.length
-      ? " (" + p.calc.pendentes.length + " em aberto)\n"
-      : " ✅\n";
-    p.calc.pendentes.slice(0, 6).forEach(function(nome){
-      txt += "   • " + nome + "\n";
-    });
-    txt += "\n";
-  });
-  $("txtResumo").value = txt.trim();
-  $("caixaResumo").hidden = false;
-});
-
-$("btnCopiarResumo").addEventListener("click", async function(){
-  var campo = $("txtResumo");
-  try{
-    await navigator.clipboard.writeText(campo.value);
-    toast("Resumo copiado.");
-  }catch(e){
-    // navegadores mais antigos ou sem permissão: seleciona para copiar à mão
-    campo.removeAttribute("readonly");
-    campo.select();
-    toast("Selecionado — use Ctrl+C para copiar.");
-    campo.setAttribute("readonly", "readonly");
-  }
-});
-
-$("btnFecharResumo").addEventListener("click", function(){
-  $("caixaResumo").hidden = true;
-});
-
-/* ---------- relatórios ---------- */
-async function carregarRelatorio(){
-  if (sessao.papel !== "admin") return;   // relatórios são só do administrador
-  relCarregado = true;
-  $("tabelaRel").innerHTML = "";
-  try{
-    var n = parseInt($("relSemanas").value, 10) || 8;
-    dadosRel = await buscarRelatorio(n);
-    renderRelatorio();
-  }catch(e){ toast(e.message, "erro"); }
-}
-
-function renderRelatorio(){
-  if (!dadosRel) return;
-  var semanas = dadosRel.semanas;           // recente → antiga
-  var ordem = semanas.slice().reverse();    // antiga → recente, para ler natural
-
-  var ini = new Date(ordem[0] + "T00:00:00");
-  var fimSem = new Date(ordem[ordem.length-1] + "T00:00:00");
-  fimSem.setDate(fimSem.getDate() + 6);
-  $("relPeriodo").textContent = fmtDia(ini) + " a " + fmtDia(fimSem);
-
-  var html = "<thead><tr><th class='rel-nome' style='text-align:left'>Pessoa</th>";
-  ordem.forEach(function(s){
-    var d = new Date(s + "T00:00:00");
-    html += "<th>"+d.getDate()+"/"+(d.getMonth()+1)+"</th>";
-  });
-  html += "<th class='rel-media'>Média</th></tr></thead><tbody>";
-
-  var falhas = {};
-
-  dadosRel.usuarios.forEach(function(u){
-    html += "<tr><td class='rel-nome'>"+esc(u.nome)+"</td>";
-    var soma = 0, conta = 0;
-    ordem.forEach(function(s){
-      var seg = new Date(s + "T00:00:00");
-      var c = calcular(u.tarefas, u.estados[s], u.ciclos, seg);
-      if (c.pct === null){
-        html += "<td class='rel-cel' style='color:var(--muted)'>—</td>";
-      } else {
-        soma += c.pct; conta++;
-        html += "<td class='rel-cel v-"+faixa(c.pct)+"'>"+c.pct+"%</td>";
-        c.pendentes.forEach(function(nome){
-          var limpo = nome.replace(/ \(\d+ dias?\)$/, "");
-          falhas[limpo] = (falhas[limpo] || 0) + 1;
-        });
-      }
-    });
-    var media = conta ? Math.round(soma/conta) : null;
-    html += "<td class='rel-cel rel-media "+(media===null?"":"v-"+faixa(media))+"'>"+
-      (media === null ? "—" : media+"%")+"</td></tr>";
-  });
-
-  $("tabelaRel").innerHTML = html + "</tbody>";
-
-  // ranking das tarefas que mais ficam em aberto
-  var lista = Object.keys(falhas).map(function(k){
-    return { nome: k, n: falhas[k] };
-  }).sort(function(a,b){ return b.n - a.n; }).slice(0, 8);
-
-  $("secTarefasFalhas").hidden = !lista.length;
-  $("listaFalhas").innerHTML = lista.map(function(f){
-    return "<li class='item'><div class='item-info'>"+
-      "<div class='item-nome'>"+esc(f.nome)+"</div></div>"+
-      "<div class='contador'><span class='num tem'>"+f.n+"</span></div></li>";
-  }).join("");
-}
-
-$("btnAtualizarRel").addEventListener("click", carregarRelatorio);
-$("relSemanas").addEventListener("change", carregarRelatorio);
-
-$("btnExportCSV").addEventListener("click", function(){
-  if (!dadosRel){ toast("Carregue o relatório primeiro.", "erro"); return; }
-  var linhas = [["Pessoa"].concat(dadosRel.semanas.map(function(s){
-    var d=new Date(s+"T00:00:00");
-    return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2);
-  })).concat(["Média"])];
-  dadosRel.usuarios.forEach(function(u){
-    var seg0=new Date(dadosRel.semanas[dadosRel.semanas.length-1]+"T00:00:00");
-    var soma=0,conta=0;
-    var vals=dadosRel.semanas.slice().reverse().map(function(s){
-      var seg=new Date(s+"T00:00:00");
-      var c=calcular(u.tarefas,u.estados[s],u.ciclos,seg);
-      if(c.pct!==null){soma+=c.pct;conta++;}
-      return c.pct===null?"—":c.pct+"%";
-    });
-    var media=conta?Math.round(soma/conta)+"%":"—";
-    linhas.push([u.nome].concat(vals).concat([media]));
-  });
-  var csv=linhas.map(function(r){
-    return r.map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(",");
-  }).join("\n");
-  var blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement("a");
-  a.href=url; a.download="relatorio-hbier-"+new Date().toISOString().slice(0,10)+".csv";
-  a.click(); URL.revokeObjectURL(url);
-  toast("CSV baixado.");
-});
-
-$("btnExportPrint").addEventListener("click", function(){
-  if (!dadosRel){ toast("Carregue o relatório primeiro.", "erro"); return; }
-  var tabela=$("tabelaRel").outerHTML;
-  var w=window.open("","_blank","width=900,height=700");
-  w.document.write("<html><head><title>Relatório HBier</title>"+
-    "<style>body{font-family:Arial,sans-serif;padding:24px}"+
-    "table{border-collapse:collapse;width:100%}"+
-    "th,td{border:1px solid #ddd;padding:8px 10px;text-align:center}"+
-    "th{background:#025F1D;color:#fff}"+
-    "tr:nth-child(even){background:#f5f5f0}"+
-    "@media print{button{display:none}}</style></head><body>"+
-    "<h2 style='color:#025F1D'>Relatório HBier · Cumprimento por semana</h2>"+
-    "<p style='color:#666;margin-bottom:16px'>Gerado em "+
-    new Date().toLocaleDateString("pt-BR")+"</p>"+
-    tabela+
-    "<div style='margin-top:20px;text-align:right'>"+
-    "<button onclick='window.print()' style='padding:8px 18px;background:#025F1D;"+
-    "color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px'>"+
-    "🖨 Imprimir</button></div></body></html>");
-  w.document.close();
-});
-
-/* ==================================================================
-   Importar tarefas da planilha
-   ================================================================== */
-var importCandidatas = [];
-
-var MAPA_FREQ = {
-  "diaria":"diaria", "diária":"diaria",
-  "semanal":"semanal",
-  "quinzenal":"quinzenal",
-  "conforme demanda":"demanda", "demanda":"demanda",
-  "producao":"producao",
-  "limpeza":"limpeza",
-  "lembrete":"lembrete", "lembrete programado":"lembrete"
-};
-var MAPA_DIA = {
-  "segunda":"seg","segunda-feira":"seg","terca":"ter","terça":"ter",
-  "terça-feira":"ter","quarta":"qua","quarta-feira":"qua",
-  "quinta":"qui","quinta-feira":"qui","sexta":"sex","sexta-feira":"sex",
-  "sabado":"sab","sábado":"sab"
-};
-
-function limpa(s){ return String(s||"").trim().toLowerCase(); }
-
-$("btnBuscarImport").addEventListener("click", async function(){
-  var b = this; b.disabled = true;
-  try{
-    if (!baseCarregada) await carregarBase();
-    var tab = baseTabelas["Tarefas Padrão"] || baseTabelas["Tarefas Padrao"];
-    if (!tab){
-      toast("A aba “Tarefas Padrão” não está publicada na base.", "erro");
-      b.disabled = false; return;
-    }
-
-    var iCod  = tab.colunas.indexOf("Código");
-    var iNome = tab.colunas.indexOf("Tarefa");
-    var iDesc = tab.colunas.indexOf("Descrição");
-    var iFreq = tab.colunas.indexOf("Frequência");
-    var iDia  = tab.colunas.indexOf("Dia fixo");
-    var iLemb = tab.colunas.indexOf("Lembrete ao executar");
-    var iMed  = tab.colunas.indexOf("Medição");
-    var iPop  = tab.colunas.indexOf("Procedimento");
-    var iPar  = tab.colunas.indexOf("Código do parâmetro");
-    var iUni  = tab.colunas.indexOf("Unidade");
-    if (iNome < 0 || iFreq < 0){
-      toast("A planilha precisa ter as colunas “Tarefa” e “Frequência”.", "erro");
-      b.disabled = false; return;
-    }
-
-    importCandidatas = [];
-    tab.linhas.forEach(function(l){
-      var nome = (l[iNome]||"").trim();
-      var freq = MAPA_FREQ[limpa(l[iFreq])];
-      if (!nome || !freq) return;
-      importCandidatas.push({
-        codigoBase: iCod > -1 ? (l[iCod]||"").trim() : "",
-        nome: nome,
-        desc: iDesc > -1 ? (l[iDesc]||"").trim() : "",
-        freq: freq,
-        dia: iDia > -1 ? (MAPA_DIA[limpa(l[iDia])] || "") : "",
-        data: freq === "lembrete" ? "2027-02" : "",
-        lembrete: iLemb > -1 ? (l[iLemb]||"").trim() : "",
-        medicao: iMed > -1 ? /^(sim|s|x|1|true)$/i.test(limpa(l[iMed]||"")) : false,
-        pop: iPop > -1 ? (l[iPop]||"").trim() : "",
-        paramCodigo: iPar > -1 ? (l[iPar]||"").trim() : "",
-        unidade: iUni > -1 ? (l[iUni]||"").trim() : ""
-      });
-    });
-
-    if (!importCandidatas.length){
-      toast("Nenhuma linha válida encontrada na aba.", "erro");
-      b.disabled = false; return;
-    }
-
-    var existentes = {};        // chave → true
-    var existentesCod = {};     // código → true (mais confiável que nome)
-    (donoAtual === sessao.login ? tarefas : tarefasGerenciadas)
-      .forEach(function(t){
-        existentes[limpa(t.nome)] = true;
-        if (t.codigoBase) existentesCod[limpa(t.codigoBase)] = true;
-      });
-
-    $("impLista").innerHTML = importCandidatas.map(function(t, i){
-      // Se a tarefa da planilha TEM código: só o código decide (evita falso
-      // positivo quando dois itens têm o mesmo nome mas são coisas diferentes).
-      // Se NÃO tem código: cai para o nome como critério.
-      var repetida = t.codigoBase
-        ? !!existentesCod[limpa(t.codigoBase)]
-        : !!existentes[limpa(t.nome)];
-
-      // nome real no app (pode diferir do nome na planilha)
-      var nomeNoApp = null;
-      if (repetida && t.codigoBase && existentesCod[limpa(t.codigoBase)]){
-        var tApp = (donoAtual === sessao.login ? tarefas : tarefasGerenciadas)
-          .filter(function(x){ return limpa(x.codigoBase||"") === limpa(t.codigoBase); })[0];
-        if (tApp && limpa(tApp.nome) !== limpa(t.nome)) nomeNoApp = tApp.nome;
-      }
-      return "<label class='imp-item'>"+
-        "<input type='checkbox' data-imp='"+i+"'>"+
-        "<span>"+esc(t.nome)+
-        (repetida ? " <span class='tag cinza'>já existe</span>" : "")+
-        (nomeNoApp ? "<span class='item-desc' style='color:var(--muted);font-size:.72rem'>"+
-          "no app: \""+esc(nomeNoApp)+"\"</span>" : "")+
-        "<small>"+esc(t.freq)+(t.desc ? " · "+esc(t.desc) : "")+"</small></span></label>";
-    }).join("");
-    $("impResultado").hidden = false;
-    atualizaContagemImport();
-  }catch(e){ toast(e.message, "erro"); }
-  b.disabled = false;
-});
-
-function atualizaContagemImport(){
-  var n = $("impLista").querySelectorAll("input:checked").length;
-  $("impContagem").textContent = n + (n === 1 ? " selecionada" : " selecionadas");
-}
-$("impLista").addEventListener("change", atualizaContagemImport);
-
-$("btnCancelarImport").addEventListener("click", function(){
-  $("impResultado").hidden = true;
-});
-
-$("btnConfirmarImport").addEventListener("click", async function(){
-  var b = this; b.disabled = true;
-  var escolhidas = [];
-  $("impLista").querySelectorAll("input:checked").forEach(function(el){
-    escolhidas.push(importCandidatas[parseInt(el.dataset.imp, 10)]);
-  });
-  if (!escolhidas.length){
-    toast("Selecione ao menos uma tarefa.", "erro"); b.disabled = false; return;
-  }
-  try{
-    var r = await api("/api/tasks", {method:"POST", body:{
-      acao:"importar", usuario: donoAtual, tarefas: escolhidas
-    }});
-    toast(r.criadas + " tarefa(s) importada(s)" +
-      (r.ignoradas && r.ignoradas.length ? " · " + r.ignoradas.length + " ignorada(s)" : "") + ".");
-    $("impResultado").hidden = true;
-    await recarregarGerenciar();
-    if (donoAtual === sessao.login) await carregarSemana();
-  }catch(e){ toast(e.message, "erro"); }
-  b.disabled = false;
-});
-
-/* ==================================================================
-   Sincronização com a planilha
-   ================================================================== */
-
-/* Roda sozinha ao abrir o app: se o gestor alterou algo na planilha,
-   a pessoa já entra com a versão atual. Falha em silêncio — sem planilha
-   ou sem rede, o app continua funcionando normalmente. */
-/* Guarda o resultado da última sincronização automática para o painel de
-   diagnóstico. Antes o erro era engolido e não havia como saber o motivo. */
-var ultimoSync = null;
-
-async function sincronizarSilencioso(){
-  if (!navigator.onLine) return;
-  try{
-    // admin sincroniza a equipe inteira; colaborador, só a si mesmo
-    var corpoReq = sessao.papel === "admin" ? {usuario:"__todos__"} : {};
-    var r = await api("/api/sync", {method:"POST", body:corpoReq});
-    ultimoSync = r;
-
-    if (!r.configurado || r.ok === false){ renderDiagnosticoSync(); return; }
-
-    var meu = (r.resultados || []).filter(function(p){
-      return p.login === sessao.login;
-    })[0];
-    if (meu && meu.atualizadas && meu.atualizadas.length){
-      await carregarSemana();
-      toast(meu.atualizadas.length +
-        (meu.atualizadas.length === 1
-          ? " tarefa foi atualizada pela planilha."
-          : " tarefas foram atualizadas pela planilha."));
-    }
-    renderDiagnosticoSync();
-  }catch(e){
-    ultimoSync = {erroRede: e.message};
-    renderDiagnosticoSync();
-  }
-}
-
-/* Mostra, em português claro, por que a sincronização não está funcionando. */
-function renderDiagnosticoSync(){
-  var el = $("syncDiagnostico");
-  if (!el || sessao.papel !== "admin") return;
-  var r = ultimoSync;
-  if (!r){ el.hidden = true; return; }
-
-  if (r.erroRede){
-    el.hidden = false;
-    el.innerHTML = "<div class='aviso'>Não consegui falar com o servidor: "+
-      esc(r.erroRede)+"</div>";
-    return;
-  }
-  if (!r.configurado){
-    el.hidden = false;
-    el.innerHTML = "<div class='aviso'>A planilha não está conectada. "+
-      "Falta a variável <b>BASE_CSV_URLS</b> na Vercel.</div>";
-    return;
-  }
-  if (r.ok === false){
-    var d = r.diagnostico || {};
-    el.hidden = false;
-    el.innerHTML = "<div class='aviso'><b>A sincronização não está rodando.</b><br>"+
-      esc(d.problema || "")+
-      "<br><br>Abas publicadas hoje: <b>"+
-      esc((d.abasPublicadas || []).join(", ") || "nenhuma")+"</b></div>";
-    return;
-  }
-
-  // funcionando: mostra o essencial e alerta sobre o risco de renomear
-  var d = r.diagnostico || {};
-  var vinc = 0, tot = 0, semPar = 0;
-  (r.resultados || []).forEach(function(p){
-    vinc += p.vinculadas || 0; tot += p.total || 0;
-    semPar += (p.semPar || []).length;
-  });
-
-  var html = "<div class='lembrete-box ok'><label>"+
-    "<b>Sincronização ativa.</b> Aba <b>"+esc(d.abaTarefas)+"</b> com "+
-    r.linhasNaPlanilha+" linha(s), "+(d.comCodigo||0)+" com código. "+
-    vinc+" de "+tot+" tarefas da equipe estão vinculadas à planilha.</label></div>";
-
-  if (semPar > 0){
-    html += "<div class='lembrete-box' style='margin-top:8px'><label>"+
-      "<b>"+semPar+" tarefa(s) sem par na planilha.</b><br>"+
-      "Clique em <i>Ver o que mudaria</i>: lá dá para religar cada uma à linha "+
-      "correta, e o vínculo passa a ser pelo código.</label></div>";
-  }
-  // deixa explícito o que a planilha manda e o que fica por conta do app
-  var ROTULO_CAMPO = {
-    nome:"nome", freq:"frequência", desc:"descrição", dia:"dia fixo",
-    data:"mês do lembrete", lembrete:"lembrete", vinculo:"vínculo",
-    vinculoCampo:"coluna do vínculo", medicao:"medição", unidade:"unidade",
-    paramCodigo:"código do parâmetro", pop:"procedimento",
-    critica:"criticidade", prioridade:"prioridade"
-  };
-  var gov = d.camposGovernados || [];
-  var soApp = Object.keys(ROTULO_CAMPO).filter(function(c){
-    return gov.indexOf(c) < 0;
-  });
-  if (soApp.length){
-    html += "<div class='lembrete-box' style='margin-top:8px'><label>"+
-      "<b>Definidos só no app:</b> "+
-      esc(soApp.map(function(c){ return ROTULO_CAMPO[c]; }).join(" · "))+
-      "<br><span style='color:var(--muted)'>A planilha não tem estas colunas, "+
-      "então não mexe nesses campos — o que você configurar no app fica. "+
-      "Para passar a controlá-los pela planilha, crie a coluna correspondente."+
-      "</span></label></div>";
-  }
-
-  if (!d.temCodigo){
-    html += "<div class='lembrete-box' style='margin-top:8px'><label>"+
-      "<b>A aba não tem coluna “Código”.</b> Sem ela, o pareamento é feito pelo "+
-      "nome da tarefa — e <b>renomear na planilha quebra o vínculo</b>. "+
-      "Acrescente a coluna e o problema acaba.</label></div>";
-  }
-  el.hidden = false;
-  el.innerHTML = html;
-}
-
-/* Mantém a sincronização acontecendo sem a pessoa precisar reabrir o app:
-   ao voltar para a aba e a cada 4 minutos com o app aberto. */
-function agendarSync(){
-  document.addEventListener("visibilitychange", function(){
-    if (document.visibilityState === "visible") sincronizarSilencioso();
-  });
-  window.addEventListener("focus", function(){ sincronizarSilencioso(); });
-  setInterval(function(){
-    if (document.visibilityState === "visible") sincronizarSilencioso();
-  }, 4 * 60000);
-}
-
-async function rodarSync(simular){
-  var btn = simular ? $("btnPreverSync") : $("btnAplicarSync");
-  btn.disabled = true;
-  var caixa = $("syncRelatorio");
-  caixa.hidden = false;
-  caixa.innerHTML = "<div class='item-desc'>Consultando a planilha…</div>";
-  try{
-    var r = simular
-      ? await api("/api/sync?usuario=__todos__&atualizar=1")
-      : await api("/api/sync?atualizar=1", {method:"POST", body:{usuario:"__todos__"}});
-
-    if (!r.configurado){
-      caixa.innerHTML = "<div class='aviso'>A planilha ainda não foi conectada "+
-        "(variável BASE_CSV_URLS).</div>";
-      btn.disabled = false; return;
-    }
-    caixa.innerHTML = montaRelatorioSync(r, simular);
-    if (!simular){
-      await carregarSemana();
-      await carregarAcompanhamento();
-    }
-  }catch(e){
-    caixa.innerHTML = "<div class='aviso'>"+esc(e.message)+"</div>";
-  }
-  btn.disabled = false;
-}
-
-function montaRelatorioSync(r, simular){
-  var totalAtu = 0, novas = [], semPar = [];
-  var linhas = "";
-
-  (r.resultados || []).forEach(function(p){
-    totalAtu += p.atualizadas.length;
-    (p.novas || []).forEach(function(n){
-      if (!novas.some(function(x){ return x.chave === n.chave; })) novas.push(n);
-    });
-    (p.semPar || []).forEach(function(sp){
-      semPar.push({login:p.login, pessoa:p.nome, id:sp.id, nome:sp.nome, motivo:sp.motivo});
-    });
-    if (!p.atualizadas.length) return;
-    linhas += "<li class='item'><div class='item-info'>"+
-      "<div class='item-nome'>"+esc(p.nome)+"</div>"+
-      p.atualizadas.map(function(a){
-        return "<div class='item-desc'>• "+esc(a.nome)+
-          " <span class='tag cinza'>"+esc(a.campos.join(", "))+"</span></div>";
-      }).join("")+"</div></li>";
-  });
-
-  var topo = totalAtu
-    ? "<b>"+totalAtu+" tarefa(s)</b> "+(simular ? "seriam atualizadas" : "atualizadas")+":"
-    : "Nenhuma tarefa precisou de atualização.";
-
-  var html = "<div style='font-size:.86rem;line-height:1.6'>"+topo+"</div>";
-  if (linhas) html += "<ul class='lista' style='margin-top:8px;border:1px solid "+
-    "var(--linha);border-radius:8px'>"+linhas+"</ul>";
-
-  // Tarefas sem par: aqui é onde a religação manual acontece. Quando a tarefa
-  // perdeu o vínculo E o nome já mudou na planilha, não sobra chave em comum —
-  // só uma escolha humana resolve.
-  if (semPar.length){
-    var opcoes = novas.map(function(n){
-      return "<option value='"+esc(n.chave)+"'>"+esc(n.rotulo)+"</option>";
-    }).join("");
-    html += "<div class='lembrete-box' style='margin-top:10px;display:block'>"+
-      "<b>"+semPar.length+" tarefa(s) sem par na planilha.</b>"+
-      "<div style='font-size:.79rem;color:var(--muted);margin:4px 0 8px'>"+
-      "Acontece quando o nome foi alterado na planilha depois da atribuição. "+
-      "Escolha a linha correspondente e religue — o vínculo passa a ser pelo "+
-      "código e renomear deixa de quebrar.</div>";
-    semPar.forEach(function(sp){
-      html += "<div style='display:flex;gap:6px;align-items:center;flex-wrap:wrap;"+
-        "padding:7px 0;border-top:1px solid var(--linha)'>"+
-        "<span style='flex:1;min-width:150px;font-size:.83rem'><b>"+esc(sp.nome)+"</b>"+
-        "<br><span style='color:var(--muted)'>"+esc(sp.pessoa)+" · "+esc(sp.motivo)+"</span></span>"+
-        (opcoes && sp.id
-          ? "<select data-relig-linha style='flex:1;min-width:150px;padding:6px'>"+
-            "<option value=''>— escolher linha —</option>"+opcoes+"</select>"+
-            "<button class='btn-mini' data-relig='"+esc(sp.id)+"' "+
-            "data-relig-user='"+esc(sp.login)+"'>religar</button>"
-          : "<span class='item-desc'>nenhuma linha livre para vincular</span>")+
-        "</div>";
-    });
-    html += "</div>";
-  }
-
-  if (novas.length){
-    html += "<div class='lembrete-box' style='margin-top:10px'><label>"+
-      "<b>Na planilha, sem par no app ("+novas.length+"):</b><br>"+
-      esc(novas.slice(0,8).map(function(n){ return n.rotulo; }).join(" · "))+
-      (novas.length>8?" …":"")+
-      "<br><span style='color:var(--muted)'>Se forem tarefas novas, distribua "+
-      "pela importação, na aba Minhas tarefas.</span></label></div>";
-  }
-  return html;
-}
-
-/* Religa uma tarefa a uma linha escolhida à mão. */
-$("syncRelatorio").addEventListener("click", async function(ev){
-  var b = ev.target.closest("button[data-relig]");
-  if (!b) return;
-  var sel = b.parentNode.querySelector("select[data-relig-linha]");
-  if (!sel || !sel.value){ toast("Escolha a linha da planilha.", "erro"); return; }
-  b.disabled = true;
-  try{
-    var r = await api("/api/sync", {method:"POST", body:{
-      acao: "vincular",
-      usuario: b.dataset.religUser,
-      tarefaId: b.dataset.relig,
-      chave: sel.value
-    }});
-    toast("Religada: " + r.vinculou.tarefa +
-      (r.vinculou.codigo ? " → " + r.vinculou.codigo : ""));
-    await rodarSync(true);
-    await carregarSemana();
-  }catch(e){ toast(e.message, "erro"); b.disabled = false; }
-});
-
-$("btnAdotar").addEventListener("click", async function(){
-  if (!confirm("Vincular à planilha as tarefas antigas que ainda não têm origem "+
-               "registrada? Só afeta tarefas cujo nome bate com uma linha da planilha.")) return;
-  var b = this; b.disabled = true;
-  try{
-    var r = await api("/api/sync?atualizar=1", {method:"POST",
-      body:{usuario:"__todos__", adotar:true}});
-    var n = 0;
-    (r.resultados||[]).forEach(function(p){ n += (p.adotadas||[]).length; });
-    toast(n ? n+" tarefa(s) vinculada(s) à planilha." : "Nenhuma tarefa antiga para vincular.");
-    ultimoSync = r; renderDiagnosticoSync();
-    $("syncRelatorio").hidden = false;
-    $("syncRelatorio").innerHTML = montaRelatorioSync(r, false);
-    await carregarSemana();
-  }catch(e){ toast(e.message, "erro"); }
-  b.disabled = false;
-});
-
-$("btnPreverSync").addEventListener("click", function(){ rodarSync(true); });
-$("btnAplicarSync").addEventListener("click", function(){
-  if (!confirm("Levar as alterações da planilha para toda a equipe?")) return;
-  rodarSync(false);
-});
-
-/* ==================================================================
-   Leitura numérica (medição)
-   ================================================================== */
-/* Chave da medição: diária guarda um valor por dia; as demais, um só. */
-function chaveMed(t, dia){ return dia ? t.id + "|" + dia : t.id; }
-
-/* Faixa aceitável, buscada na aba Parâmetros de Processo pelo código. */
-function faixaDoParametro(codigo){
-  if (!codigo) return null;
-  var tab = baseTabelas["Parâmetros de Processo"] || baseTabelas["Parametros de Processo"];
-  if (!tab) return null;
-  var iCod = tab.colunas.indexOf("Código");
-  var iMin = tab.colunas.indexOf("Mínimo");
-  var iMax = tab.colunas.indexOf("Máximo");
-  var iUni = tab.colunas.indexOf("Unidade");
-  if (iCod < 0) return null;
-  var alvo = String(codigo).trim().toLowerCase();
-  for (var i = 0; i < tab.linhas.length; i++){
-    if (String(tab.linhas[i][iCod] || "").trim().toLowerCase() === alvo){
-      var l = tab.linhas[i];
-      return {
-        min: num(iMin > -1 ? l[iMin] : ""),
-        max: num(iMax > -1 ? l[iMax] : ""),
-        unidade: iUni > -1 ? l[iUni] : ""
-      };
-    }
-  }
-  return null;
-}
-function num(v){
-  if (v === "" || v === null || v === undefined) return null;
-  var n = parseFloat(String(v).replace(",", "."));
-  return isNaN(n) ? null : n;
-}
-
-function caixaMedicao(t, dia){
-  if (!t.medicao) return "";
-  var k = chaveMed(t, dia);
-  var val = (estado.m || {})[k];
-  var faixa = faixaDoParametro(t.paramCodigo);
-  var un = t.unidade || (faixa && faixa.unidade) || "";
-
-  var html = "<div class='medicao-box'>"+
-    "<label for='md"+k+"'>Leitura:</label>"+
-    "<input type='number' step='any' inputmode='decimal' id='md"+k+"' "+
-    "data-med='"+esc(k)+"' value='"+esc(val === undefined ? "" : val)+"' "+
-    "placeholder='—'>"+
-    (un ? "<span class='medicao-un'>"+esc(un)+"</span>" : "");
-
-  if (faixa && (faixa.min !== null || faixa.max !== null)){
-    var txt = faixa.min !== null && faixa.max !== null
-      ? "faixa aceitável: " + faixa.min + " a " + faixa.max
-      : (faixa.min !== null ? "mínimo: " + faixa.min : "máximo: " + faixa.max);
-    html += "<span class='medicao-faixa'>"+esc(txt)+
-      (t.paramCodigo ? " · " + esc(t.paramCodigo) : "")+"</span>";
-  }
-
-  var n = num(val);
-  if (n !== null && faixa){
-    var fora = (faixa.min !== null && n < faixa.min) ||
-               (faixa.max !== null && n > faixa.max);
-    html += fora
-      ? "<div class='medicao-fora'>⚠ FORA DA FAIXA — não seguir sem corrigir</div>"
-      : "<div class='medicao-ok'>✓ dentro da faixa</div>";
-  }
-  return html + "</div>";
-}
-
-/* ==================================================================
-   Procedimento (POP) dentro da tarefa
-   ================================================================== */
-function botaoPop(t){
-  if (!t.pop) return "";
-  return "<button class='btn-pop' data-pop='"+esc(t.pop)+"'>📋 Ver procedimento</button>";
-}
-
-function abrirPop(nome){
-  $("popTitulo").textContent = nome;
-  $("popCorpo").innerHTML = "<div class='vazio'>Carregando…</div>";
-  $("folhaPop").hidden = false;
-
-  // garante que a base esteja carregada antes de tentar abrir o procedimento
-  var abrir = function(){
-    var tab = baseTabelas["Procedimentos"];
-    if (!tab){
-      $("popCorpo").innerHTML = "<div class='vazio'>A aba Procedimentos não está "+
-        "publicada na base de referência. Acesse a aba Banco de dados e "+
-        "clique em Atualizar para conectar.</div>";
-      return;
-    }
-  var iProc = tab.colunas.indexOf("Procedimento");
-  var iSec  = tab.colunas.indexOf("Seção");
-  var iOrd  = tab.colunas.indexOf("Ordem");
-  var iInst = tab.colunas.indexOf("Instrução");
-  var iCrit = tab.colunas.indexOf("Criticidade");
-
-  var linhas = tab.linhas.filter(function(l){
-    return String(l[iProc] || "").trim().toLowerCase() === nome.trim().toLowerCase();
-  });
-  linhas.sort(function(a,b){
-    return (parseInt(a[iOrd],10) || 0) - (parseInt(b[iOrd],10) || 0);
-  });
-
-  if (!linhas.length){
-    $("popCorpo").innerHTML = "<div class='vazio'>Nenhum passo encontrado para “"+
-      esc(nome)+"”.</div>";
-    $("folhaPop").hidden = false; return;
-  }
-
-  var html = "", secaoAtual = null;
-  linhas.forEach(function(l){
-    var sec = iSec > -1 ? (l[iSec] || "") : "";
-    if (sec !== secaoAtual){
-      secaoAtual = sec;
-      if (sec) html += "<div class='pop-secao'>"+esc(sec)+"</div>";
-    }
-    var crit = iCrit > -1 ? (l[iCrit] || "") : "";
-    html += "<div class='pop-passo"+(crit ? " crit" : "")+"'>"+
-      "<span class='pop-num'>"+esc(l[iOrd] || "•")+"</span><span>"+
-      (crit ? "<span class='pop-crit-tag'>"+esc(crit)+"</span>" : "")+
-      esc(iInst > -1 ? l[iInst] : "")+"</span></div>";
-  });
-  $("popCorpo").innerHTML = html;
-    $("folhaPop").hidden = false;
-  };
-
-  if (!baseCarregada){
-    carregarBase().then(abrir).catch(function(){
-      $("popCorpo").innerHTML = "<div class='vazio'>Não foi possível carregar a base. Verifique a conexão e tente novamente.</div>";
-    });
-  } else {
-    abrir();
-  }
-}
-
-$("popFechar").addEventListener("click", function(){ $("folhaPop").hidden = true; });
-$("folhaPop").addEventListener("click", function(ev){
-  if (ev.target === this) this.hidden = true;   // clicar fora fecha
-});
-document.addEventListener("keydown", function(ev){
-  if (ev.key === "Escape") $("folhaPop").hidden = true;
-});
-
-/* ==================================================================
-   Tela "Hoje"
-   ================================================================== */
-var NOMES_LONGOS = ["Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira",
-                    "Sexta-feira","Sábado","Domingo"];
-
-/* ================================================================
-   Programação de hoje — melhoria 1
-   ================================================================ */
-async function renderHojePrograma(){
-  var sec = $("hojeProgSec");
-  if (!sec) return;
-
-  var hojeStr = (function(){
-    var h = new Date(); h.setHours(0,0,0,0);
-    return h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);
-  })();
-
-  // Buscar semana atual
-  var seg = chaveSemana(segHoje);
-  var r;
-  try { r = await api("/api/prog?semana="+seg+"&tarefas=1"); }
-  catch(e){ sec.hidden=true; return; }
-
-  var itens = (r.itens||[]).filter(function(it){
-    if (it.dataISO) return it.dataISO === hojeStr;
-    // fallback: calcular pelo nome do dia
-    var DIAS_OFF = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
-    if (it.dia === undefined || it.dia === "") return false;
-    var off = DIAS_OFF[it.dia];
-    if (off === undefined) return false;
-    var d = new Date(segHoje); d.setDate(d.getDate()+off);
-    var dStr = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
-    return dStr === hojeStr;
-  });
-
-  // Barreis do dia
-  var chSem = seg;
-  var barreis = r.barreis||{};
-  var regsBarril = (barreis["barril-"+chSem]||[]).filter(function(rb){
-    if (rb.dataISO) return rb.dataISO === hojeStr;
-    var DIAS_OFF2 = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
-    if (!rb.dia) return false;
-    var off = DIAS_OFF2[rb.dia];
-    if (off === undefined) return false;
-    var d = new Date(segHoje); d.setDate(d.getDate()+off);
-    var dStr = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
-    return dStr === hojeStr;
-  });
-  regsBarril.forEach(function(rb){ itens.push({tipo:"barril", id:rb.id, produto:rb.produto, total:rb.total, lancadoPor:rb.lancadoPor, checks:rb.checks||{}, _semana:seg}); });
-
-  if (!itens.length){ sec.hidden=true; return; }
-
-  $("hojeProgResumo").textContent = itens.length+" item(s)";
-  sec.hidden = false;
-
-  var FREQ_LABEL_CHECKS = {beerSalesProg:"BeerSales Prog.",lancadoBeerSales:"BeerSales Conc.",lancadoBeerbo:"Beerbo"};
-
-  $("hojeProgLista").innerHTML = itens.map(function(it){
-    var pc = it.tipo==="brassagem"?"hpp-b":(it.tipo==="envase"?"hpp-e":"hpp-r");
-    var pt = it.tipo==="brassagem"?"🍺 Brassagem":(it.tipo==="envase"?"📦 Envase":"🛢 Barril");
-    var nome = esc(it.estilo||it.produto||"—");
-    var sub = [];
-    if(it.tanque) sub.push(esc(it.tanque));
-    if(it.tanqueOrigem) sub.push(esc(it.tanqueOrigem));
-    if(it.lote) sub.push("Lote: "+esc(it.lote));
-    if(it.tipo==="brassagem"&&it.volPrev) sub.push("Prev: "+esc(it.volPrev)+" L");
-    if(it.tipo==="envase"&&it.qtd) sub.push("Prev: "+esc(it.qtd)+" un");
-    if(it.tipo==="barril"&&it.total) sub.push(fmtNum(it.total)+" L");
-    var temRes = !!(it.resultado);
-    var badgeCls = temRes?"hpb-ok":"hpb-pend";
-    var badgeTxt = temRes?"✓ Resultado":"Aguardando";
-    var semIt = it._semana||seg;
-
-    // Botões de ação rápida
-    var acoes = "";
-    if(it.tipo!=="barril"){
-      if(!temRes){
-        var btnCls = it.tipo==="envase"?"hpb-lancr-env":"hpb-lancr";
-        acoes += "<button class='hoje-prog-btn "+btnCls+"' data-hprog-res='"+esc(it.id)+"' data-hprog-semana='"+esc(semIt)+"' data-hprog-tipo='"+esc(it.tipo)+"'>📋 Lançar resultado</button>";
-      } else {
-        acoes += "<button class='hoje-prog-btn hpb-editar' data-hprog-res='"+esc(it.id)+"' data-hprog-semana='"+esc(semIt)+"' data-hprog-tipo='"+esc(it.tipo)+"'>✏ Editar resultado</button>";
-      }
-    }
-
-    // Checks rápidos
-    var ch = it.checks||{};
-    var camposCheck = ["beerSalesProg","lancadoBeerSales"];
-    if(it.tipo==="brassagem"||it.tipo==="barril") camposCheck.push("lancadoBeerbo");
-    var checks = camposCheck.map(function(campo){
-      if(it.tipo==="barril"&&campo==="lancadoBeerbo") return "";
-      var marc = !!ch[campo];
-      var por  = ch[campo+"_por"]?" @"+ch[campo+"_por"]:"";
-      var em   = ch[campo+"_em"]?" · "+fmtCheckEm(ch[campo+"_em"]):"";
-      var cls  = campo==="beerSalesProg"?(marc?"programado":""):(marc?"marcado":"");
-      var dataAttr = it.tipo==="barril"
-        ? "data-hprog-bcheck='"+campo+"' data-hprog-bid='"+esc(it.id)+"' data-hprog-bsem='"+esc(semIt)+"'"
-        : "data-hprog-check='"+campo+"' data-hprog-cid='"+esc(it.id)+"' data-hprog-csem='"+esc(semIt)+"'";
-      return "<button class='check-lancamento"+(cls?" "+cls:"")+"' "+dataAttr+">"+
-        "<span class='cl-icone'>"+(marc?"✓":"")+"</span>"+
-        (FREQ_LABEL_CHECKS[campo]||campo)+
-        (marc?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+em+"</span>":"")+
-      "</button>";
-    }).join("");
-
-    return "<div class='hoje-prog-item'>"+
-      "<div class='hoje-prog-row'>"+
-        "<span class='hoje-prog-pill "+pc+"'>"+pt+"</span>"+
-        "<span class='hoje-prog-nome'>"+nome+"</span>"+
-        "<span class='hoje-prog-badge "+badgeCls+"'>"+badgeTxt+"</span>"+
-      "</div>"+
-      (sub.length?"<div class='hoje-prog-sub'>"+sub.join(" · ")+"</div>":"")+
-      (acoes?"<div class='hoje-prog-acoes'>"+acoes+"</div>":"")+
-      (checks?"<div class='hpb-checks'>"+checks+"</div>":"")+
-    "</div>";
-  }).join("");
-
-  // Listeners dos botões de resultado
-  $("hojeProgLista").querySelectorAll("[data-hprog-res]").forEach(function(btn){
-    btn.addEventListener("click", function(){
-      var id   = btn.dataset.hprogRes;
-      var sem  = btn.dataset.hprogSemana;
-      var tipo = btn.dataset.hprogTipo;
-      // Navegar para a semana e abrir modal de resultado
-      segProg = segundaDe(new Date(hojeStr+"T00:00:00"));
-      mudarAba("prog");
-      progSetVisao("semanal");
-      setTimeout(function(){
-        carregarProg().then(function(){
-          // Simular clique no botão de resultado
-          var btnRes = document.querySelector("[data-prog-res='"+id+"']");
-          if(btnRes) btnRes.click();
-        });
-      }, 500);
-    });
-  });
-
-  // Checks de brassagem/envase
-  $("hojeProgLista").querySelectorAll("[data-hprog-check]").forEach(function(btn){
-    btn.addEventListener("click", async function(){
-      var campo = btn.dataset.hprogCheck;
-      var id    = btn.dataset.hprogCid;
-      var sem   = btn.dataset.hprogCsem;
-      try{
-        var r2 = await api("/api/prog",{method:"POST",body:{acao:"check",id:id,semana:sem,campo:campo}});
-        // Atualizar local
-        var it = itens.find(function(x){ return x.id===id; });
-        if(it&&r2.item){ it.checks=r2.item.checks||{}; }
-        renderHojePrograma();
-      } catch(e){ toast("Erro: "+e.message,"erro"); }
-    });
-  });
-
-  // Checks de barril
-  $("hojeProgLista").querySelectorAll("[data-hprog-bcheck]").forEach(function(btn){
-    btn.addEventListener("click", async function(){
-      var campo = btn.dataset.hprogBcheck;
-      var id    = btn.dataset.hprogBid;
-      var sem   = btn.dataset.hprogBsem;
-      try{
-        var r2 = await api("/api/prog",{method:"POST",body:{acao:"barril_check",id:id,semana:sem,campo:campo,progId:"barril-"+sem}});
-        var it = itens.find(function(x){ return x.id===id; });
-        if(it&&r2.reg){ it.checks=r2.reg.checks||{}; }
-        renderHojePrograma();
-      } catch(e){ toast("Erro: "+e.message,"erro"); }
-    });
-  });
-}
-
-function renderHoje(){
-  var ih = idxHoje();
-  var hojeReal = chaveSemana(segAtual) === chaveSemana(segHoje);
-  var d = hojeReal ? hoje() : segAtual;
-  $("hojeData").textContent = (hojeReal ? NOMES_LONGOS[(d.getDay()+6)%7] : "Semana de " + fmtDia(segAtual)) +
-    " · " + d.getDate() + " de " + MESES[d.getMonth()];
-
-  var dia = ih > -1 && ih < DIAS.length ? DIAS[ih] : null;
-  var itens = [];
-
-  if (dia){
-    porFreq("diaria").forEach(function(t){
-      itens.push({t:t, dia:dia, feito: !!(estado.d[t.id] && estado.d[t.id][dia])});
-    });
-  }
-  porFreq("semanal").forEach(function(t){
-    if (t.dia && dia && t.dia !== dia && !estado.w[t.id]) return;  // ainda não é o dia
-    itens.push({t:t, dia:null, feito: !!estado.w[t.id], tipo:"w"});
-  });
-  porFreq("quinzenal").forEach(function(t){
-    var agora = ciclos[t.id] === chaveSemana(segAtual);
-    if (!agora && !venceu(t.id)) return;   // em dia, não precisa aparecer
-    itens.push({t:t, dia:null, feito: agora, tipo:"q"});
-  });
-  porFreq("lembrete").forEach(function(t){
-    var partes = (t.data||"2099-01").split("-");
-    var alvo = new Date(parseInt(partes[0],10), parseInt(partes[1],10)-1, 1);
-    if (hoje() < alvo || ciclos[t.id]) return;
-    itens.push({t:t, dia:null, feito:false, tipo:"r"});
-  });
-
-  var pendentes = itens.filter(function(i){ return !i.feito; }).length;
-  $("hojeResumo").textContent = itens.length
-    ? (pendentes ? pendentes + " em aberto" : "tudo feito")
-    : "";
-
-  if (!itens.length){
-    $("hojeLista").innerHTML = "<div class='hoje-tudo'><span>🍺</span>"+
-      "Nenhuma tarefa para hoje.</div>";
-  } else if (!pendentes){
-    $("hojeLista").innerHTML = "<div class='hoje-tudo'><span>🍺</span>"+
-      "Tudo em dia por hoje.<br>Bom trabalho!</div>" + itens.map(itemHoje).join("");
-  } else {
-    // pendentes primeiro; entre elas, prioritárias no topo, depois críticas
-    itens.sort(function(a,b){
-      if (a.feito !== b.feito) return a.feito ? 1 : -1;
-      var p = (b.t.prioridade?1:0) - (a.t.prioridade?1:0);
-      if (p) return p;
-      var c = (b.t.critica?1:0) - (a.t.critica?1:0);
-      if (c) return c;
-      return ordemAZ
-        ? String(a.t.nome||"").localeCompare(String(b.t.nome||""), "pt-BR",
-            {sensitivity:"base"})
-        : 0;
-    });
-    $("hojeLista").innerHTML = itens.map(itemHoje).join("");
-  }
-
-  renderAtrasadas(ih);
-  renderAlertaCriticos();
-}
-
-function itemHoje(i){
-  var t = i.t;
-  var cls = i.feito ? "feito" : "";
-  var attr = i.dia
-    ? "data-hj-d='"+t.id+"' data-hj-dia='"+i.dia+"'"
-    : (i.tipo === "q" ? "data-hj-q='"+t.id+"'"
-      : i.tipo === "r" ? "data-hj-r='"+t.id+"'" : "data-hj-w='"+t.id+"'");
-  var etiquetas =
-    (t.critica ? "<span class='tag crit'>Crítica</span>" : "") +
-    (i.tipo === "q" ? "<span class='tag ouro'>Quinzenal</span>" : "") +
-    (i.tipo === "r" ? "<span class='tag ouro'>Lembrete</span>" : "") +
-    (i.tipo === "w" ? "<span class='tag'>Semanal</span>" : "");
-  return "<div class='hoje-item"+(i.feito?" done":"")+(t.prioridade?" pri":"")+"'>"+
-    "<button class='hoje-check "+cls+"' "+attr+">✓</button>"+
-    "<div class='item-info'><div class='hoje-nome'>"+
-    (t.prioridade ? "<span class='ponto-pri'></span>" : "")+esc(t.nome)+etiquetas+"</div>"+
-    (t.desc ? "<div class='hoje-desc'>"+esc(t.desc)+"</div>" : "")+
-    caixaMedicao(t, i.dia)+
-    caixaVinculo(t, i.feito)+
-    botaoPop(t)+
-    (i.feito ? "<div class='carimbo'>✓ marcada em "+
-       carimboDe(i.dia ? t.id+"|"+i.dia : t.id)+
-       btnObs(t.id, i.dia||null, t.nome)+"</div>" : "")+
-    "</div></div>";
-}
-
-/* Dias anteriores da semana que ficaram sem marcação */
-function renderAtrasadas(ih){
-  if (ih < 1){ $("hojeAtrasadasSec").hidden = true; return; }
-  var html = "";
-  porFreq("diaria").forEach(function(t){
-    for (var i = 0; i < ih && i < DIAS.length; i++){
-      var dia = DIAS[i];
-      if (estado.d[t.id] && estado.d[t.id][dia]) continue;
-      html += "<div class='hoje-item'>"+
-        "<button class='hoje-check aberto' data-hj-d='"+t.id+"' data-hj-dia='"+dia+"'>!</button>"+
-        "<div class='item-info'><div class='hoje-nome'>"+esc(t.nome)+
-        "<span class='tag ouro'>"+NOMES[dia]+"</span></div>"+
-        caixaMedicao(t, dia)+"</div></div>";
-    }
-  });
-  $("hojeAtrasadasSec").hidden = !html;
-  $("hojeAtrasadas").innerHTML = html;
-}
-
-/* Aviso de itens críticos em aberto */
-function renderAlertaCriticos(){
-  var criticas = [];
-  var ih = idxHoje();
-  porFreq("diaria").forEach(function(t){
-    if (!t.critica) return;
-    for (var i = 0; i <= ih && i < DIAS.length; i++){
-      if (!(estado.d[t.id] && estado.d[t.id][DIAS[i]]))
-        criticas.push(t.nome + " (" + NOMES[DIAS[i]] + ")");
-    }
-  });
-  porFreq("semanal").forEach(function(t){
-    if (t.critica && !estado.w[t.id] && pendenteSemanal(t)) criticas.push(t.nome);
-  });
-  porFreq("quinzenal").forEach(function(t){
-    if (t.critica && venceu(t.id) && ciclos[t.id] !== chaveSemana(segAtual))
-      criticas.push(t.nome);
-  });
-
-  $("alertaCriticos").innerHTML = criticas.length
-    ? "<div class='alerta-critico'><b>⚠ "+criticas.length+
-      (criticas.length===1?" item crítico em aberto":" itens críticos em aberto")+"</b>"+
-      "<ul>"+criticas.slice(0,6).map(function(n){ return "<li>"+esc(n)+"</li>"; }).join("")+
-      "</ul></div>"
-    : "";
-}
-
-/* ---------- cliques da tela Hoje ---------- */
-function mudarAba(aba){
-  document.querySelectorAll("[data-aba]").forEach(function(b){
-    var painel = $(b.dataset.aba==="hoje"?"painelHoje":
-                   b.dataset.aba==="prog"?"painelProg":
-                   b.dataset.aba==="semana"?"painelChecklist":
-                   "painel"+b.dataset.aba.charAt(0).toUpperCase()+b.dataset.aba.slice(1));
-    if(painel) painel.hidden = b.dataset.aba!==aba;
-    b.classList.toggle("ativa", b.dataset.aba===aba);
-  });
-}
-
-$("painelHoje").addEventListener("click", function(ev){
-  var b = ev.target.closest("button");
-  if (!b) return;
-  if (b.dataset.pop){ abrirPop(b.dataset.pop); return; }
-  if (b.dataset.hjD){
-    var id = b.dataset.hjD, dia = b.dataset.hjDia;
-    estado.d[id] = estado.d[id] || {};
-    estado.d[id][dia] = !estado.d[id][dia];
-    carimbar(id+"|"+dia, estado.d[id][dia]);
-  } else if (b.dataset.hjW){
-    estado.w[b.dataset.hjW] = !estado.w[b.dataset.hjW];
-    carimbar(b.dataset.hjW, estado.w[b.dataset.hjW]);
-  } else if (b.dataset.hjQ){
-    var q = b.dataset.hjQ;
-    if (ciclos[q] === chaveSemana(segAtual)) delete ciclos[q];
-    else ciclos[q] = chaveSemana(segAtual);
-    carimbar(q, ciclos[q] === chaveSemana(segAtual));
-  } else if (b.dataset.hjR){
-    var r = b.dataset.hjR;
-    if (ciclos[r]) delete ciclos[r];
-    else {
-      var h = hoje();
-      ciclos[r] = h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);
-    }
-    carimbar(r, !!ciclos[r]);
-  } else return;
-  salvar(); renderTudo();
-});
-
-/* Medições, vínculos e confirmação de lembrete — um listener só, no documento.
-   Antes o vínculo e o lembrete só eram tratados dentro do painel da Semana:
-   escolher o tanque pela aba Hoje não salvava nada. */
-document.addEventListener("change", function(ev){
-  var el = ev.target;
-  if (!el.dataset) return;
-
-  if (el.dataset.med){                       // leitura numérica
-    estado.m = estado.m || {};
-    if (el.value === "") delete estado.m[el.dataset.med];
-    else estado.m[el.dataset.med] = el.value;
-    salvar(); renderTudo(); return;
-  }
-  if (el.dataset.vinculo){                   // item escolhido na base
-    estado.v = estado.v || {};
-    estado.v[el.dataset.vinculo] = el.value;
-    salvar(); renderTudo(); return;
-  }
-  if (el.dataset.l){                         // confirmação do lembrete
-    estado.l[el.dataset.l] = el.checked;
-    salvar(); renderTudo(); return;
-  }
-});
-
-/* ==================================================================
-   Histórico por tarefa — últimas 8 semanas
-   ================================================================== */
-async function verHistorico(tid){
-  var t = (donoAtual === sessao.login ? tarefas : tarefasGerenciadas)
-    .find(function(x){ return x.id===tid; });
-  if (!t) return;
-
-  $("histTitulo").textContent = t.nome;
-  $("histCorpo").innerHTML = "<div class='vazio'>Carregando…</div>";
-  $("modalHist").hidden = false;
-
-  try{
-    // pedir as últimas 8 semanas ao relatório
-    var semanas = ultimasSemanas(8);
-    var r = await api("/api/report?semanas="+semanas.join(","));
-    var pessoa = (r.resultados||[]).find(function(p){ return p.login===donoAtual; });
-    if (!pessoa){ $("histCorpo").innerHTML="<div class='vazio'>Sem dados.</div>"; return; }
-
-    var linhas = "";
-    semanas.slice().reverse().forEach(function(s){
-      var seg = new Date(s+"T00:00:00");
-      var est = pessoa.estados[s] || {};
-      var marcado = false; var valor = ""; var obs = "";
-
-      if (t.freq==="diaria"){
-        var d = est.d || {};
-        var dias = DIAS.filter(function(dia){ return d[t.id]&&d[t.id][dia]; });
-        marcado = dias.length > 0;
-        valor = dias.length ? dias.length+" dia(s)" : "";
-        obs = (est.o||{})[t.id] || "";
-      } else if (t.freq==="semanal"){
-        marcado = !!((est.w||{})[t.id]);
-        var m = (est.m||{})[t.id];
-        if (m) valor = m + (t.unidade?" "+t.unidade:"");
-        obs = (est.o||{})[t.id] || "";
-      } else if (t.freq==="quinzenal"||t.freq==="lembrete"){
-        marcado = (pessoa.ciclos||{})[t.id]===s;
-        obs = (est.o||{})[t.id] || "";
-      }
-
-      var dt = ("0"+seg.getDate()).slice(-2)+"/"+("0"+(seg.getMonth()+1)).slice(-2);
-      var cor = marcado ? "var(--verde)" : "var(--muted)";
-      linhas += "<tr style='border-bottom:1px solid var(--linha)'>"+
-        "<td style='padding:8px 10px;color:var(--muted);font-size:.79rem;"+
-          "white-space:nowrap'>"+dt+"</td>"+
-        "<td style='padding:8px 10px;font-size:.8rem;color:"+cor+";font-weight:600'>"+
-          (marcado?"✓ feita":"—")+"</td>"+
-        "<td style='padding:8px 10px;font-size:.79rem;color:var(--muted)'>"+
-          esc(valor||"")+"</td>"+
-        "<td style='padding:8px 10px;font-size:.79rem;color:var(--ink)'>"+
-          esc(obs||"")+"</td>"+
-        "</tr>";
-    });
-
-    $("histCorpo").innerHTML = "<table style='width:100%;border-collapse:collapse'>"+
-      "<thead><tr>"+
-      "<th style='padding:8px 10px;text-align:left;background:var(--verde);color:#fff;"+
-        "font-size:.78rem'>Semana</th>"+
-      "<th style='padding:8px 10px;text-align:left;background:var(--verde);color:#fff;"+
-        "font-size:.78rem'>Status</th>"+
-      "<th style='padding:8px 10px;text-align:left;background:var(--verde);color:#fff;"+
-        "font-size:.78rem'>Leitura</th>"+
-      "<th style='padding:8px 10px;text-align:left;background:var(--verde);color:#fff;"+
-        "font-size:.78rem'>Observação</th>"+
-      "</tr></thead><tbody>"+linhas+"</tbody></table>";
-  }catch(e){
-    $("histCorpo").innerHTML="<div class='vazio'>"+esc(e.message)+"</div>";
-  }
-}
-
-/* ==================================================================
-   Modal de observação — botão "📝 obs" em qualquer tarefa marcada
-   ================================================================== */
-var _obsCtx = {tid:null, dia:null};
-
-function abrirModalObs(tid, dia, nomeT){
-  _obsCtx = {tid:tid, dia:dia};
-  $("obsTitulo").textContent = nomeT || "Observação";
-  $("obsTexto").value = lerObs(tid, dia);
-  $("modalObs").hidden = false;
-  setTimeout(function(){ $("obsTexto").focus(); }, 80);
-}
-function fecharModalObs(){
-  $("modalObs").hidden = true;
-}
-$("btnObsSalvar").addEventListener("click", function(){
-  salvarObs(_obsCtx.tid, _obsCtx.dia, $("obsTexto").value.trim());
-  salvar(); renderTudo();
-  fecharModalObs();
-});
-$("modalObs").addEventListener("click", function(ev){
-  if (ev.target === this) fecharModalObs();
-});
-
-// delegar clique em qualquer btn-obs da página
-document.addEventListener("click", function(ev){
-  var b = ev.target.closest("button.btn-obs");
-  if (!b) return;
-  abrirModalObs(b.dataset.obsTid, b.dataset.obsDia||null, b.dataset.obsNome||"Observação");
-});
-
-/* Botão de obs inline — chamado pela renderização das listas */
-function btnObs(tid, dia, nome){
-  var obs = lerObs(tid, dia);
-  return "<button class='btn-obs' data-obs-tid='"+esc(tid)+"' data-obs-dia='"+
-    esc(dia||"")+"' data-obs-nome='"+esc(nome)+"'>" +
-    (obs ? "📝" : "📝 obs") + "</button>" +
-    (obs ? "<div class='obs-bubble'>"+esc(obs)+"</div>" : "");
-}
-
-/* ==================================================================
-   Modal de demanda — adicionar / editar registro com data e observação
-   ================================================================== */
-var _demModal = {id:null, idx:null};
-
-function abrirModalDemanda(id, idx, reg){
-  _demModal.id  = id;
-  _demModal.idx = idx;
-  var agora = new Date();
-  var iso   = agora.getFullYear()+"-"+("0"+(agora.getMonth()+1)).slice(-2)+"-"+
-              ("0"+agora.getDate()).slice(-2)+"T"+
-              ("0"+agora.getHours()).slice(-2)+":"+("0"+agora.getMinutes()).slice(-2);
-  $("demData").value = (reg && reg.data) ? reg.data.slice(0,16) : iso;
-  $("demObs").value  = (reg && reg.obs)  ? reg.obs : "";
-  $("demTitulo").textContent = idx === null ? "Novo registro" : "Editar registro";
-  $("modalDemanda").hidden = false;
-  $("demObs").focus();
-}
-function fecharModalDemanda(){
-  $("modalDemanda").hidden = true;
-}
-$("btnDemSalvar").addEventListener("click", function(){
-  var id   = _demModal.id;
-  var idx  = _demModal.idx;
-  var data = $("demData").value;          // datetime-local → ISO string parcial
-  var obs  = $("demObs").value.trim();
-  var lista = lerRegistros(id);
-  var reg = {data: data, obs: obs};
-  if (idx === null) lista.push(reg);
-  else lista[idx] = reg;
-  salvarRegistros(id, lista);
-  salvar(); renderTudo();
-  fecharModalDemanda();
-});
-$("btnDemCancelar").addEventListener("click", fecharModalDemanda);
-$("modalDemanda").addEventListener("click", function(ev){
-  if (ev.target === this) fecharModalDemanda();  // clique no fundo fecha
-});
-
-/* ==================================================================
-   Reset de marcações (admin)
-   ================================================================== */
-$("btnResetMarcacoes").addEventListener("click", async function(){
-  var btn = this;
-  var res = $("resetResultado");
-
-  if (!confirm("Tem certeza?\n\nEsta ação vai apagar TODAS as marcações de TODOS os usuários e não pode ser desfeita.\n\nUsuários, tarefas e a planilha são preservados.")) return;
-
-  btn.disabled = true;
-  btn.textContent = "Apagando…";
-  res.hidden = false;
-  res.style.background = "var(--verde-claro)";
-  res.style.border = "1.5px solid var(--linha)";
-  res.textContent = "Processando…";
-
-  try{
-    var r = await api("/api/reset", {
-      method: "POST",
-      body: {confirmacao: "RESETAR TUDO"}
-    });
-    res.style.background = "var(--verde-claro)";
-    res.style.border = "1.5px solid var(--verde)";
-    res.style.color = "var(--verde)";
-    res.innerHTML = "✅ " + r.mensagem +
-      "<br><small>" + r.chaves_apagadas + " chaves apagadas em " +
-      r.usuarios + " usuário(s).</small>";
-
-    // recarrega o estado local para refletir o reset
-    await carregarSemana();
-    renderTudo();
-  }catch(e){
-    res.style.background = "var(--vermelho-claro)";
-    res.style.border = "1.5px solid var(--vermelho)";
-    res.style.color = "var(--vermelho)";
-    res.textContent = "❌ " + e.message;
-  }
-
-  btn.disabled = false;
-  btn.textContent = "Apagar todas as marcações";
-});
-
-/* ---------- partida ---------- */
-
-/* Service worker: é o que permite ABRIR o app sem internet.
-   Sem ele, a fila offline só funcionaria com a aba já aberta — na fábrica
-   a pessoa abre o app do zero, muitas vezes sem sinal. */
-/* ================================================================
-   Banner de instalação PWA
-   ================================================================ */
-var _pwaPrompt = null;
-
-window.addEventListener("beforeinstallprompt", function(ev){
-  ev.preventDefault();
-  _pwaPrompt = ev;
-  // só mostra depois do login, e só uma vez por sessão
-  var ignorou = sessionStorage.getItem("hbier-pwa-ignorou");
-  if (!ignorou) $("bannerInstalar").hidden = false;
-});
-
-window.addEventListener("appinstalled", function(){
-  $("bannerInstalar").hidden = true;
-  _pwaPrompt = null;
-  toast("App instalado! Agora abra pela tela inicial. 🎉");
-});
-
-$("btnInstalar").addEventListener("click", async function(){
-  if (!_pwaPrompt) return;
-  _pwaPrompt.prompt();
-  var r = await _pwaPrompt.userChoice;
-  $("bannerInstalar").hidden = true;
-  _pwaPrompt = null;
-  if (r.outcome === "accepted") toast("Instalando… procure o ícone na tela inicial.");
-});
-
-$("btnFecharBanner").addEventListener("click", function(){
-  $("bannerInstalar").hidden = true;
-  sessionStorage.setItem("hbier-pwa-ignorou","1");
-});
-
-if ("serviceWorker" in navigator){
-  window.addEventListener("load", function(){
-    navigator.serviceWorker.register("/sw.js")
-      .then(function(reg){
-        // Verifica se há uma nova versão esperando para ativar
-        reg.addEventListener("updatefound", function(){
-          var novoSW = reg.installing;
-          if (!novoSW) return;
-          novoSW.addEventListener("statechange", function(){
-            if (novoSW.state === "installed" && navigator.serviceWorker.controller){
-              // Há uma versão nova instalada — pede para assumir agora
-              novoSW.postMessage("PULAR_ESPERA");
-            }
-          });
-        });
-      })
-      .catch(function(){ /* sem HTTPS ou navegador antigo — continua normalmente */ });
-
-    // Quando o SW novo assume, recarrega a página para usar a versão nova
-    var recarregando = false;
-    navigator.serviceWorker.addEventListener("controllerchange", function(){
-      if (!recarregando){
-        recarregando = true;
-        window.location.reload();
-      }
-    });
-  });
-}
-
-["versaoRodape","versaoLogin"].forEach(function(id){
-  var el = $(id);
-  if (el) el.textContent = "Versão " + VERSAO + " · " + DATA_VERSAO;
-});
-try{ $("tfFreq").dispatchEvent(new Event("change")); }catch(e){}
-iniciar();
-
-  // ===== EXPORTAR LIMPEZA PDF =====
-  (function(){
-    var btnExp = $("btnLimpExportar");
-    var modal  = $("modalLimpExport");
-    if (!btnExp || !modal) return;
-    function p2(n){ return ("0"+n).slice(-2); }
-    function toISO(d){ return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate()); }
-    function fmtBR(iso){
-      var d=new Date(iso);
-      return p2(d.getDate())+"/"+p2(d.getMonth()+1)+"/"+d.getFullYear()+" "+p2(d.getHours())+":"+p2(d.getMinutes());
-    }
-    function fmtCurta(iso){
-      var d=new Date(iso);
-      return p2(d.getDate())+"/"+p2(d.getMonth()+1)+"/"+d.getFullYear();
-    }
-    btnExp.addEventListener("click", function(){
-      var hoje=new Date();
-      $("limpExportDe").value  = toISO(new Date(hoje.getFullYear(),hoje.getMonth(),1));
-      $("limpExportAte").value = toISO(new Date(hoje.getFullYear(),hoje.getMonth()+1,0));
-      modal.hidden = false;
-    });
-    $("btnLimpExportFechar").addEventListener("click", function(){ modal.hidden=true; });
-    $("btnLimpExportGerar").addEventListener("click", async function(){
-      var de=$("limpExportDe").value, ate=$("limpExportAte").value;
-      if (!de||!ate){ toast("Selecione o período.","erro"); return; }
-      if (de>ate){ toast("Data inicial maior que a final.","erro"); return; }
-      var btn=$("btnLimpExportGerar");
-      btn.textContent="Carregando..."; btn.disabled=true;
-      try {
-        var res=await Promise.all(LIMP_SETORES.map(function(st){
-          return api("/api/limpeza?setor="+st.id)
-            .then(function(r){ return {setor:st,registros:r.registros||[],itens:r.itens||[]}; })
-            .catch(function(){ return {setor:st,registros:[],itens:[]}; });
-        }));
-        var deD=new Date(de+"T00:00:00"), ateD=new Date(ate+"T23:59:59");
-        var FREQ_L={semanal:"Semanal",quinzenal:"Quinzenal",mensal:"Mensal",
-                    anual:"Anual",a_cada_uso:"A cada uso",eventual:"Eventual"};
-        var periodo=fmtCurta(deD.toISOString())+" a "+fmtCurta(ateD.toISOString());
-        var emissao=fmtBR(new Date().toISOString());
-        var setoresH="";
-        res.forEach(function(r){
-          var regs=r.registros.filter(function(x){var d=new Date(x.em);return d>=deD&&d<=ateD;});
-          var ult={};
-          regs.forEach(function(x){if(!ult[x.item]||x.em>ult[x.item].em) ult[x.item]=x;});
-          var its=r.itens.length>0?r.itens:(LIMP_ITENS_POR_SETOR[r.setor.id]||[]);
-          if(!its.length&&!regs.length) return;
-          var linhas=its.map(function(item){
-            var reg=ult[item.id];
-            var sBg=reg?"#D1FAE5":"#FEE2E2",sCor=reg?"#065F46":"#991B1B";
-            return "<tr>"+
-              "<td style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>"+esc(item.nome)+"</td>"+
-              "<td style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt;text-align:center'>"+(FREQ_L[item.freq]||item.freq)+"</td>"+
-              "<td style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt;text-align:center'>"+(reg?fmtBR(reg.em):"—")+"</td>"+
-              "<td style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt;text-align:center'>"+(reg?(reg.nomeFeitoPor||reg.feitoPor||"—"):"—")+"</td>"+
-              "<td style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt;text-align:center;background:"+sBg+";color:"+sCor+";font-weight:600'>"+(reg?"Realizado":"Não registrado")+"</td>"+
-              "<td style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>"+(reg?esc(reg.obs||""):"")+"</td>"+
-            "</tr>";
-          }).join("");
-          setoresH+="<div style='margin-bottom:20px;page-break-inside:avoid'>"+
-            "<div style='background:#025F1D;color:#fff;padding:7px 12px;border-radius:6px 6px 0 0;"+
-              "font-size:9.5pt;font-weight:700;display:flex;justify-content:space-between'>"+
-              "<span>"+r.setor.icone+" "+r.setor.nome+"</span>"+
-              "<span style='font-size:8pt;font-weight:400'>Resp.: "+r.setor.responsavel+" | "+regs.length+" reg.</span>"+
-            "</div>"+
-            "<table style='width:100%;border-collapse:collapse'>"+
-              "<thead><tr style='background:#F2F1EB'>"+
-                "<th style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt;text-align:left'>Item</th>"+
-                "<th style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>Freq.</th>"+
-                "<th style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>Última realização</th>"+
-                "<th style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>Responsável</th>"+
-                "<th style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>Status</th>"+
-                "<th style='padding:5px 8px;border:1px solid #E4E1D5;font-size:8pt'>Obs.</th>"+
-              "</tr></thead><tbody>"+linhas+"</tbody></table>"+
-            "<div style='margin-top:8px;display:flex;gap:40px;font-size:8pt;color:#6E7568'>"+
-              "<div style='flex:1'><div style='border-bottom:1px solid #ccc;height:26px'></div>"+
-              "<div style='margin-top:3px'>Responsável: "+r.setor.responsavel+"</div></div>"+
-              "<div style='flex:1'><div style='border-bottom:1px solid #ccc;height:26px'></div>"+
-              "<div style='margin-top:3px'>Visto / Supervisor</div></div></div></div>";
-        });
-        var html="<!DOCTYPE html><html lang='pt-BR'><head><meta charset='UTF-8'>"+
-          "<title>Limpeza HBier "+periodo+"</title>"+
-          "<style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;font-size:9pt;color:#22271F}"+
-          "table{border-collapse:collapse;width:100%}tr{page-break-inside:avoid}</style></head><body>"+
-          "<div style='border-bottom:3px solid #025F1D;margin-bottom:16px;padding-bottom:10px;"+
-            "display:flex;justify-content:space-between;align-items:flex-end'>"+
-            "<div><div style='font-size:7.5pt;color:#6E7568;text-transform:uppercase;letter-spacing:.08em'>HBier Cervejaria Artesanal</div>"+
-              "<div style='font-size:14pt;font-weight:700;margin:2px 0'>Relatório de Limpeza e Higienização</div>"+
-              "<div style='font-size:9pt;color:#6E7568'>Período: "+periodo+"</div></div>"+
-            "<div style='text-align:right;font-size:7.5pt;color:#6E7568'>Emitido: "+emissao+"<br>Sistema HBier · MAPA</div>"+
-          "</div>"+setoresH+
-          "<div style='margin-top:24px;border-top:1px solid #E4E1D5;padding-top:10px;"+
-            "display:flex;justify-content:space-between;font-size:7.5pt;color:#6E7568'>"+
-            "<div>HBier Cervejaria Artesanal · Relatório de Limpeza · "+periodo+"</div>"+
-            "<div>"+emissao+"</div></div></body></html>";
-        var win=window.open("","_blank","width=900,height=700");
-        if(!win){toast("Permita pop-ups para gerar o PDF.","erro");return;}
-        win.document.write(html); win.document.close();
-        win.focus(); setTimeout(function(){win.print();},600);
-        modal.hidden=true;
-      } catch(e){toast("Erro: "+e.message,"erro");}
-      finally{btn.textContent="Gerar e Imprimir / PDF";btn.disabled=false;}
-    });
-  })();
-
-
-  // Toggle visão semanal/mensal
-  setTimeout(function(){
-    var bS=$("btnVisaoSem"), bM=$("btnVisaoMes");
-    if(bS) bS.addEventListener("click",function(){ progSetVisao("semanal"); carregarProg(); });
-    if(bM) bM.addEventListener("click",function(){ progSetVisao("mensal");  carregarProg(); });
-  }, 0);
-
-
-  // ===== LIMPEZA RÁPIDA =====
-  (function(){
-    var btnAbrir  = $("btnLimpRapida");
-    var btnFechar = $("btnLimpRapidaFechar");
-    var modal     = $("modalLimpRapida");
-    var selSetor  = $("limpRapidaSetor");
-    var divItens  = $("limpRapidaItens");
-    var btnSalvar = $("btnLimpRapidaSalvar");
-    if (!btnAbrir || !modal) return;
-
-    var _lrSelecionados = {};  // item.id -> true
-    var _lrRegistros    = {};  // item.id -> registro existente
-
-    function FREQ_LABEL_LR(f){
-      var m={semanal:"Semanal",quinzenal:"Quinzenal",mensal:"Mensal",
-             anual:"Anual",a_cada_uso:"A cada uso",eventual:"Eventual",diaria:"Diária"};
-      return m[f]||f;
-    }
-
-    // Popular select de setores
-    function popularSetores(){
-      selSetor.innerHTML = "<option value=''>Selecione o setor...</option>"+
-        LIMP_SETORES.map(function(st){
-          return "<option value='"+st.id+"'>"+st.icone+" "+st.nome+"</option>";
-        }).join("");
-    }
-
-    // Carregar itens do setor selecionado
-    async function carregarItensSetor(setorId){
-      divItens.innerHTML = "<p style='color:var(--muted);font-size:.82rem;padding:8px 0'>Carregando...</p>";
-      btnSalvar.disabled = true;
-      _lrSelecionados = {};
-      _lrRegistros    = {};
-
-      var st = LIMP_SETORES.find(function(s){ return s.id===setorId; });
-      if (!st) return;
-
-      var itensSetor = LIMP_ITENS_POR_SETOR[setorId]||[];
-
-      // Buscar registros existentes
-      try{
-        var r = await api("/api/limpeza?setor="+setorId);
-        var regs = r.registros||[];
-        regs.forEach(function(reg){ _lrRegistros[reg.item]=reg; });
-      }catch(e){}
-
-      divItens.innerHTML = itensSetor.map(function(item){
-        var reg  = _lrRegistros[item.id];
-        var feito = !!reg;
-        var quando = reg ? fmtDataBR2(reg.em) : "";
-        var quem   = reg ? (reg.nomeFeitoPor||reg.feitoPor||"") : "";
-        return "<div class='limp-rapida-item"+(feito?" feito":"")+"' data-lri='"+item.id+"'>"+
-          "<div class='lri-check'>"+(feito?"✓":"")+"</div>"+
-          "<div style='flex:1'>"+
-            "<div class='lri-nome'>"+esc(item.nome)+"</div>"+
-            (feito?"<div style='font-size:.68rem;color:var(--verde)'>"+esc(quem)+" · "+esc(quando)+"</div>":"")+
-          "</div>"+
-          "<span class='lri-freq'>"+FREQ_LABEL_LR(item.freq)+"</span>"+
-        "</div>";
+  // Preencher select para admin/gestor
+  var sel = $("limpSetorSel");
+  if (_limpIsAdmin()){
+    sel.hidden = false;
+    if (!sel.options.length){
+      sel.innerHTML = LIMP_SETORES.map(function(st){
+        return "<option value='"+st.id+"'>"+st.icone+" "+st.nome+"</option>";
       }).join("");
-
-      // Bind de clique nos itens
-      divItens.querySelectorAll("[data-lri]").forEach(function(el){
-        el.addEventListener("click", function(){
-          var iid = el.dataset.lri;
-          if(_lrSelecionados[iid]){
-            delete _lrSelecionados[iid];
-            el.classList.remove("feito");
-            el.querySelector(".lri-check").textContent="";
-          } else {
-            _lrSelecionados[iid]=true;
-            el.classList.add("feito");
-            el.querySelector(".lri-check").textContent="✓";
-          }
-          btnSalvar.disabled = Object.keys(_lrSelecionados).length === 0;
-        });
-      });
     }
+    sel.value = _limpSetorAtual;
+  } else {
+    sel.hidden = true;
+  }
 
-    function fmtDataBR2(iso){
-      var d=new Date(iso);
-      return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+
-        " "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
-    }
+  // Buscar dados do setor
+  grid.innerHTML = "<div class='limp-vazio'>Carregando...</div>";
+  try {
+    var r = await api("/api/limpeza?setor="+_limpSetorAtual);
+    var registros = r.registros || [];
+    var itens     = r.itens     || LIMP_ITENS_POR_SETOR[_limpSetorAtual] || [];
 
-    selSetor.addEventListener("change", function(){
-      if (selSetor.value) carregarItensSetor(selSetor.value);
-      else { divItens.innerHTML="<p style='color:var(--muted);font-size:.82rem;padding:8px 0'>Selecione um setor acima.</p>"; btnSalvar.disabled=true; }
+    // Montar mapa ultimo registro por item
+    var ultimo = {};
+    registros.forEach(function(reg){
+      if (!ultimo[reg.item] || reg.em > ultimo[reg.item].em) ultimo[reg.item] = reg;
     });
 
-    btnAbrir.addEventListener("click", function(){
-      popularSetores();
-      selSetor.value="";
-      divItens.innerHTML="<p style='color:var(--muted);font-size:.82rem;padding:8px 0'>Selecione um setor acima.</p>";
-      btnSalvar.disabled=true;
-      _lrSelecionados={};
-      modal.hidden=false;
-    });
+    // Guardar para uso no render
+    _limpResumoDados = ultimo;
+    _limpItensCache  = itens;
 
-    btnFechar.addEventListener("click", function(){ modal.hidden=true; });
+    renderLimpItens();
+  } catch(e){
+    grid.innerHTML = "<div class='limp-vazio'>Erro ao carregar. Toque para tentar novamente.</div>";
+  }
+}
 
-    btnSalvar.addEventListener("click", async function(){
-      var setorId = selSetor.value;
-      if (!setorId || !Object.keys(_lrSelecionados).length) return;
-      btnSalvar.textContent="Salvando..."; btnSalvar.disabled=true;
-      var erros=0;
-      for (var iid of Object.keys(_lrSelecionados)){
+var _limpItensCache = [];
+
+function renderLimpItens(){
+  var grid = $("limpItensNova");
+  if (!grid) return;
+
+  // Filtrar itens pela frequencia ativa
+  var itensFiltrados = _limpItensCache.filter(function(it){
+    return it.freq === _limpFreqAtiva;
+  });
+
+  if (!itensFiltrados.length){
+    grid.innerHTML = "<div class='limp-vazio'>\u2705 Nenhum item de limpeza<br>nesta frequ\u00eancia para este setor.</div>";
+    return;
+  }
+
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var lim  = LIMP_LIMITE_DIAS[_limpFreqAtiva] || 7;
+
+  // Descobrir login do responsavel
+  var st    = LIMP_SETORES.find(function(x){ return x.id === _limpSetorAtual; });
+  var respNome = st ? st.responsavel : "";
+  var memR = equipe.find(function(u){
+    return (u.nome||u.login).toLowerCase().indexOf(respNome.toLowerCase()) >= 0
+        || respNome.toLowerCase().indexOf((u.nome||u.login).toLowerCase()) >= 0;
+  });
+  var respLogin = memR ? memR.login : sessao.login;
+
+  var html = "";
+  itensFiltrados.forEach(function(it){
+    var reg       = _limpResumoDados[it.id];
+    var feitoHoje = reg && limpDiasDesde(reg.em) === 0;
+    var diasDesde = reg ? limpDiasDesde(reg.em) : null;
+    var diasRest  = diasDesde !== null ? (lim - diasDesde) : null;
+
+    // Status visual
+    var cls     = "";
+    var detalhe = "";
+    if (feitoHoje){
+      cls     = "ok";
+      var por = reg.nomeFeitoPor || reg.feitoPor || "";
+      var hr  = new Date(reg.em);
+      var hh  = ("0"+hr.getHours()).slice(-2)+":"+("0"+hr.getMinutes()).slice(-2);
+      detalhe = "\u2713 Feito hoje \u00e0s "+hh+(por?" por @"+por:"");
+    } else if (diasRest === null){
+      cls     = "vencido";
+      detalhe = "Nunca realizado";
+    } else if (diasRest < 0){
+      cls     = "vencido";
+      detalhe = "Vencido h\u00e1 "+Math.abs(diasRest)+"d (\u00faltimo: "+fmtDia(new Date(reg.em))+")";
+    } else if (diasRest === 0){
+      cls     = "aviso";
+      detalhe = "Vence hoje \u2014 \u00faltimo: "+fmtDia(new Date(reg.em));
+    } else if (diasRest <= Math.ceil(lim*0.3)){
+      cls     = "aviso";
+      detalhe = "Vence em "+diasRest+"d \u2014 \u00faltimo: "+fmtDia(new Date(reg.em));
+    } else {
+      cls     = "ok";
+      detalhe = "Em dia \u2014 \u00faltimo: "+fmtDia(new Date(reg.em))+" ("+diasDesde+"d atr\u00e1s)";
+    }
+
+    var regId = reg ? esc(reg.id) : "";
+    html += "<div class='limp-card "+cls+"'>"+
+      "<div class='limp-card-info'>"+
+        "<div class='limp-card-nome'>"+esc(it.nome)+"</div>"+
+        "<div class='limp-card-detalhe'>"+detalhe+"</div>"+
+      "</div>"+
+      "<button class='limp-card-btn"+(feitoHoje?" feito":"")+"' "+
+        "data-lc-item='"+esc(it.id)+"' "+
+        "data-lc-setor='"+esc(_limpSetorAtual)+"' "+
+        "data-lc-freq='"+esc(it.freq)+"' "+
+        "data-lc-resp='"+esc(respLogin)+"' "+
+        "data-lc-reg='"+regId+"'>"+
+        (feitoHoje ? "\u2713 Feito" : "Feito")+
+      "</button>"+
+    "</div>";
+  });
+
+  grid.innerHTML = html;
+
+  // Listeners dos botoes
+  grid.querySelectorAll("[data-lc-item]").forEach(function(btn){
+    btn.addEventListener("click", async function(){
+      var itemId = btn.dataset.lcItem;
+      var setId  = btn.dataset.lcSetor;
+      var freq   = btn.dataset.lcFreq;
+      var resp   = btn.dataset.lcResp;
+      var regId  = btn.dataset.lcReg;
+      var feito  = btn.classList.contains("feito");
+
+      if (feito && regId){
+        if (!confirm("Remover este registro?")) return;
+        btn.disabled = true; btn.textContent = "...";
         try{
-          await api("/api/limpeza",{method:"POST",body:{setor:setorId,item:iid,obs:""}});
-        }catch(e){ erros++; }
+          await api("/api/limpeza",{method:"POST",body:{acao:"remover",setor:setId,id:regId}});
+          toast("Removido.");
+          carregarLimpeza();
+        }catch(e){ toast("Erro: "+e.message,"erro"); btn.disabled=false; btn.textContent="\u2713 Feito"; }
+        return;
       }
-      if (erros) toast(erros+" item(s) com erro","erro");
-      else toast("Limpeza registrada! "+Object.keys(_lrSelecionados).length+" item(s).");
-      btnSalvar.textContent="Registrar marcados";
-      // Recarregar para mostrar timestamps atualizados
-      carregarItensSetor(setorId);
-      _lrSelecionados={};
-      btnSalvar.disabled=true;
+      btn.disabled = true; btn.textContent = "...";
+      try{
+        await api("/api/limpeza",{method:"POST",body:{
+          acao:"registrar",setor:setId,item:itemId,periodicidade:freq,feitoPor:resp,obs:""
+        }});
+        toast("Registrado!","ok");
+        carregarLimpeza();
+      }catch(e){ toast("Erro: "+e.message,"erro"); btn.disabled=false; btn.textContent="Feito"; }
     });
-  })();
+  });
+}
+
+// Listeners das abas de frequencia
+setTimeout(function(){
+  document.querySelectorAll(".limp-freq-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".limp-freq-btn").forEach(function(b){ b.classList.remove("ativo"); });
+      btn.classList.add("ativo");
+      _limpFreqAtiva = btn.dataset.freq;
+      renderLimpItens();
+    });
+  });
+  // Listener do select de setor (admin)
+  var sel = $("limpSetorSel");
+  if (sel){
+    sel.addEventListener("change", function(){
+      _limpSetorAtual = sel.value;
+      carregarLimpeza();
+    });
+  }
+  // Listener exportar PDF
+  var btnExp = $("btnLimpExportar");
+  if (btnExp){
+    btnExp.addEventListener("click", function(){
+      // Abrir modal de exportar (reaproveitando o modal existente)
+      var de = new Date(); de.setDate(1);
+      var ate = new Date(de.getFullYear(), de.getMonth()+1, 0);
+      function toISO(d){ return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
+      var deI = $("limpExportDe"), ateI = $("limpExportAte"), m = $("modalLimpExport");
+      if (deI) deI.value = toISO(de);
+      if (ateI) ateI.value = toISO(ate);
+      if (m) m.hidden = false;
+    });
+  }
+}, 0);
 
 })();
 </script>
