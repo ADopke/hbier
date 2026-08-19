@@ -2649,7 +2649,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.8.8";
+var VERSAO = "2.8.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6715,6 +6715,20 @@ document.addEventListener("click", function(ev){
     // data padrão = hoje
     var hoje = new Date();
     $("limpData").value = hoje.getFullYear()+"-"+("0"+(hoje.getMonth()+1)).slice(-2)+"-"+("0"+hoje.getDate()).slice(-2);
+    // Pré-selecionar responsável do setor
+    var stObj = LIMP_SETORES.find(function(x){ return x.id===_limpSetorAtivo; });
+    if (stObj && stObj.responsavel){
+      // Encontrar o login do responsável (pelo nome ou nome parcial)
+      var memResp = equipe.find(function(u){
+        return (u.nome||u.login).toLowerCase().indexOf(stObj.responsavel.toLowerCase()) >= 0
+            || stObj.responsavel.toLowerCase().indexOf((u.nome||u.login).toLowerCase()) >= 0;
+      });
+      if (memResp) $("limpFeitoPor").value = memResp.login;
+    }
+    // Pré-selecionar periodicidade do item
+    if (itemObj && itemObj.freq){
+      $("limpPeriodicidade").value = itemObj.freq;
+    }
     $("limpModalReg").hidden = false;
     $("limpModalReg").scrollIntoView({behavior:"smooth",block:"nearest"});
     return;
