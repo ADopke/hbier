@@ -1,4 +1,4 @@
-const VERSAO = "2.9.1";
+const VERSAO = "2.9.3";
 const CACHE  = "hbier-v" + VERSAO;
 
 // Lista de arquivos para pré-cache

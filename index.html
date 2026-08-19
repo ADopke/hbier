@@ -2661,7 +2661,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.9.1";
+var VERSAO = "2.9.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -3756,7 +3756,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
     if (b.dataset.aba === "relatorios" && !relCarregado) carregarRelatorio();
     if (b.dataset.aba === "equipe" && !acompCarregado) carregarAcompanhamento();
     if (b.dataset.aba === "metas") carregarMetas();
-    if (b.dataset.aba === "limpeza") carregarLimpeza();
+    if (b.dataset.aba === "limpeza") setTimeout(function(){ carregarLimpeza(); }, 0);
   });
 });
 
@@ -6571,6 +6571,8 @@ function limpStatusLabel(dias){
 
 
 function renderLimpSetores(){
+  var grid = $("limpSetorGrid");
+  if (!grid) return;
   var html = "";
   LIMP_SETORES.forEach(function(st){
     var resumoSetor = _limpResumo[st.id] || {};
@@ -6594,18 +6596,21 @@ function renderLimpSetores(){
       "<span class='ls-status "+status+"'>"+esc(label)+"</span>"+
     "</button>";
   });
-  $("limpSetorGrid").innerHTML = html;
+  grid.innerHTML = html;
 }
 
 async function carregarLimpeza(){
-  // Renderizar imediatamente com o que temos (evita aba vazia)
+  // Garantir que o grid existe antes de renderizar
+  var grid = $("limpSetorGrid");
+  if (!grid){ return; }
+  // Renderizar imediatamente com o que temos
   renderLimpSetores();
-  // Depois buscar resumo e atualizar
+  // Depois buscar resumo e atualizar badges de status
   try{
     var r = await api("/api/limpeza?resumo=1");
     _limpResumo = r.resumo || {};
     renderLimpSetores();
-  }catch(e){ _limpResumo = {}; }
+  }catch(e){ _limpResumo = {}; renderLimpSetores(); }
   if (_limpSetorAtivo) await carregarLimpezaSetor(_limpSetorAtivo);
 }
 
