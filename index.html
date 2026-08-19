@@ -379,6 +379,67 @@
   .meta-semana-barra{ flex:1;height:5px;background:var(--cinza);border-radius:99px;overflow:hidden; }
   .meta-semana-fill{ height:100%;background:var(--verde);border-radius:99px; }
 
+  /* ---- programação de hoje (aba Hoje) ---- */
+  .hoje-prog-item{
+    padding:10px 14px;border-bottom:1px solid var(--linha);
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .hoje-prog-item:last-child{ border-bottom:none; }
+  .hoje-prog-row{ display:flex;align-items:center;gap:8px; }
+  .hoje-prog-pill{
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.68rem;
+    text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:20px;flex-shrink:0;
+  }
+  .hpp-b{ background:var(--verde-claro);color:var(--verde); }
+  .hpp-e{ background:#E8F0FF;color:#003E99; }
+  .hpp-r{ background:#FFF3E8;color:#7A4500; }
+  .hoje-prog-nome{ font-weight:700;font-size:.9rem;flex:1; }
+  .hoje-prog-sub{ font-size:.73rem;color:var(--muted); }
+  .hoje-prog-badge{
+    font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;
+    font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;flex-shrink:0;
+  }
+  .hpb-pend{ background:#FEF3C7;color:#92400E; }
+  .hpb-ok{   background:#D1FAE5;color:#065F46; }
+  .hoje-prog-acoes{ display:flex;gap:6px;flex-wrap:wrap;margin-top:2px; }
+  .hoje-prog-btn{
+    padding:5px 12px;border:none;border-radius:7px;cursor:pointer;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;
+    text-transform:uppercase;letter-spacing:.05em;
+  }
+  .hpb-lancr{ background:var(--verde);color:#fff; }
+  .hpb-lancr-env{ background:#003E99;color:#fff; }
+  .hpb-editar{ background:var(--dourado);color:#3A2D00; }
+  .hpb-checks{ display:flex;gap:5px;flex-wrap:wrap;margin-top:2px; }
+
+  /* ---- limpeza rápida ---- */
+  .limp-rapida-setor{
+    padding:10px 14px;border-bottom:1px solid var(--linha);
+  }
+  .limp-rapida-setor:last-child{ border-bottom:none; }
+  .limp-rapida-setor-nome{
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.88rem;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--verde);margin-bottom:6px;
+  }
+  .limp-rapida-itens{ display:flex;flex-direction:column;gap:4px; }
+  .limp-rapida-item{
+    display:flex;align-items:center;gap:8px;padding:5px 8px;
+    border-radius:7px;border:1.5px solid var(--linha);background:#fff;
+    cursor:pointer;transition:background .1s;
+  }
+  .limp-rapida-item:hover{ background:var(--cinza); }
+  .limp-rapida-item.feito{ background:var(--verde-claro);border-color:var(--verde); }
+  .lri-check{
+    width:20px;height:20px;border-radius:5px;border:2px solid var(--linha);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    font-size:.8rem;transition:.1s;
+  }
+  .limp-rapida-item.feito .lri-check{ background:var(--verde);border-color:var(--verde);color:#fff; }
+  .lri-nome{ font-size:.85rem;flex:1; }
+  .lri-freq{ font-size:.68rem;color:var(--muted);flex-shrink:0; }
+  .limp-rapida-item.feito .lri-nome{ color:var(--verde);font-weight:600; }
+
   /* ---- separador de dia na programação ---- */
   .prog-dia-sep{
     padding:9px 14px 8px;
@@ -1096,6 +1157,15 @@
         <div class="hoje-data" id="hojeData"></div>
         <div id="hojeLista"></div>
       </section>
+      <!-- Programação de hoje -->
+      <section id="hojeProgSec" hidden>
+        <div class="sec-head" style="background:var(--verde);color:#fff;border-radius:10px 10px 0 0;margin:0">
+          <span class="sec-title" style="color:#fff">🗓 Programado para hoje</span>
+          <span class="sec-sub" id="hojeProgResumo" style="color:rgba(255,255,255,.75)"></span>
+        </div>
+        <div id="hojeProgLista" style="padding:0 0 8px"></div>
+      </section>
+
       <section id="hojeAtrasadasSec" hidden>
         <div class="sec-head">
           <span class="sec-title">⏰ Ficou para trás nesta semana</span>
@@ -1560,6 +1630,8 @@
       <section>
         <div class="sec-head">
           <span class="sec-title">🧹 Limpeza</span>
+          <button class="btn-hoje-sem" id="btnLimpRapida"
+            style="font-size:.78rem;padding:5px 11px">⚡ Limpeza rápida</button>
           <button class="btn-hoje-sem" id="btnLimpExportar"
             style="font-size:.78rem;padding:5px 11px">📄 Exportar PDF</button>
         </div>
@@ -2530,6 +2602,26 @@
   </div>
 
 <!-- Modal exportar limpeza PDF -->
+<div id="modalLimpRapida" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25);max-height:90vh;display:flex;flex-direction:column">
+    <div style="background:var(--verde);color:#fff;padding:14px 16px;flex-shrink:0;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between">
+      <span>⚡ Limpeza Rápida</span>
+      <button id="btnLimpRapidaFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
+    </div>
+    <div style="padding:10px 14px;background:var(--cinza);flex-shrink:0">
+      <label style="font-size:.78rem;font-weight:600;color:var(--muted)">Setor</label>
+      <select id="limpRapidaSetor" style="width:100%;margin-top:4px;padding:8px;border:1.5px solid var(--linha);border-radius:8px;font-size:.85rem">
+        <option value="">Selecione o setor...</option>
+      </select>
+    </div>
+    <div id="limpRapidaItensWrap" style="overflow-y:auto;flex:1;padding:8px 0">
+      <div id="limpRapidaItens" style="padding:0 14px"><p style="color:var(--muted);font-size:.82rem;margin-top:8px">Selecione um setor acima.</p></div>
+    </div>
+    <div style="padding:10px 14px;border-top:1px solid var(--linha);flex-shrink:0;display:flex;gap:8px">
+      <button id="btnLimpRapidaSalvar" disabled style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--verde);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.9rem;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Registrar marcados</button>
+    </div>
+  </div>
+</div>
 <div id="modalLimpExport" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:14px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25)">
     <div style="background:var(--verde);color:#fff;padding:14px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between">
@@ -2555,7 +2647,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.8.4";
+var VERSAO = "2.8.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2971,6 +3063,7 @@ $("btnOrdem").addEventListener("click", function(){
 function renderTudo(){
   renderCabecalho();
   renderHoje();
+  renderHojePrograma();
   renderDiarias();
   renderSemanais();
   renderQuinzenais();
@@ -7854,6 +7947,169 @@ document.addEventListener("keydown", function(ev){
 var NOMES_LONGOS = ["Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira",
                     "Sexta-feira","Sábado","Domingo"];
 
+/* ================================================================
+   Programação de hoje — melhoria 1
+   ================================================================ */
+async function renderHojePrograma(){
+  var sec = $("hojeProgSec");
+  if (!sec) return;
+
+  var hojeStr = (function(){
+    var h = new Date(); h.setHours(0,0,0,0);
+    return h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);
+  })();
+
+  // Buscar semana atual
+  var seg = chaveSemana(segHoje);
+  var r;
+  try { r = await api("/api/prog?semana="+seg+"&tarefas=1"); }
+  catch(e){ sec.hidden=true; return; }
+
+  var itens = (r.itens||[]).filter(function(it){
+    if (it.dataISO) return it.dataISO === hojeStr;
+    // fallback: calcular pelo nome do dia
+    var DIAS_OFF = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
+    if (it.dia === undefined || it.dia === "") return false;
+    var off = DIAS_OFF[it.dia];
+    if (off === undefined) return false;
+    var d = new Date(segHoje); d.setDate(d.getDate()+off);
+    var dStr = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
+    return dStr === hojeStr;
+  });
+
+  // Barreis do dia
+  var chSem = seg;
+  var barreis = r.barreis||{};
+  var regsBarril = (barreis["barril-"+chSem]||[]).filter(function(rb){
+    if (rb.dataISO) return rb.dataISO === hojeStr;
+    var DIAS_OFF2 = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
+    if (!rb.dia) return false;
+    var off = DIAS_OFF2[rb.dia];
+    if (off === undefined) return false;
+    var d = new Date(segHoje); d.setDate(d.getDate()+off);
+    var dStr = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
+    return dStr === hojeStr;
+  });
+  regsBarril.forEach(function(rb){ itens.push({tipo:"barril", id:rb.id, produto:rb.produto, total:rb.total, lancadoPor:rb.lancadoPor, checks:rb.checks||{}, _semana:seg}); });
+
+  if (!itens.length){ sec.hidden=true; return; }
+
+  $("hojeProgResumo").textContent = itens.length+" item(s)";
+  sec.hidden = false;
+
+  var FREQ_LABEL_CHECKS = {beerSalesProg:"BeerSales Prog.",lancadoBeerSales:"BeerSales Conc.",lancadoBeerbo:"Beerbo"};
+
+  $("hojeProgLista").innerHTML = itens.map(function(it){
+    var pc = it.tipo==="brassagem"?"hpp-b":(it.tipo==="envase"?"hpp-e":"hpp-r");
+    var pt = it.tipo==="brassagem"?"🍺 Brassagem":(it.tipo==="envase"?"📦 Envase":"🛢 Barril");
+    var nome = esc(it.estilo||it.produto||"—");
+    var sub = [];
+    if(it.tanque) sub.push(esc(it.tanque));
+    if(it.tanqueOrigem) sub.push(esc(it.tanqueOrigem));
+    if(it.lote) sub.push("Lote: "+esc(it.lote));
+    if(it.tipo==="brassagem"&&it.volPrev) sub.push("Prev: "+esc(it.volPrev)+" L");
+    if(it.tipo==="envase"&&it.qtd) sub.push("Prev: "+esc(it.qtd)+" un");
+    if(it.tipo==="barril"&&it.total) sub.push(fmtNum(it.total)+" L");
+    var temRes = !!(it.resultado);
+    var badgeCls = temRes?"hpb-ok":"hpb-pend";
+    var badgeTxt = temRes?"✓ Resultado":"Aguardando";
+    var semIt = it._semana||seg;
+
+    // Botões de ação rápida
+    var acoes = "";
+    if(it.tipo!=="barril"){
+      if(!temRes){
+        var btnCls = it.tipo==="envase"?"hpb-lancr-env":"hpb-lancr";
+        acoes += "<button class='hoje-prog-btn "+btnCls+"' data-hprog-res='"+esc(it.id)+"' data-hprog-semana='"+esc(semIt)+"' data-hprog-tipo='"+esc(it.tipo)+"'>📋 Lançar resultado</button>";
+      } else {
+        acoes += "<button class='hoje-prog-btn hpb-editar' data-hprog-res='"+esc(it.id)+"' data-hprog-semana='"+esc(semIt)+"' data-hprog-tipo='"+esc(it.tipo)+"'>✏ Editar resultado</button>";
+      }
+    }
+
+    // Checks rápidos
+    var ch = it.checks||{};
+    var camposCheck = ["beerSalesProg","lancadoBeerSales"];
+    if(it.tipo==="brassagem"||it.tipo==="barril") camposCheck.push("lancadoBeerbo");
+    var checks = camposCheck.map(function(campo){
+      if(it.tipo==="barril"&&campo==="lancadoBeerbo") return "";
+      var marc = !!ch[campo];
+      var por  = ch[campo+"_por"]?" @"+ch[campo+"_por"]:"";
+      var em   = ch[campo+"_em"]?" · "+fmtCheckEm(ch[campo+"_em"]):"";
+      var cls  = campo==="beerSalesProg"?(marc?"programado":""):(marc?"marcado":"");
+      var dataAttr = it.tipo==="barril"
+        ? "data-hprog-bcheck='"+campo+"' data-hprog-bid='"+esc(it.id)+"' data-hprog-bsem='"+esc(semIt)+"'"
+        : "data-hprog-check='"+campo+"' data-hprog-cid='"+esc(it.id)+"' data-hprog-csem='"+esc(semIt)+"'";
+      return "<button class='check-lancamento"+(cls?" "+cls:"")+"' "+dataAttr+">"+
+        "<span class='cl-icone'>"+(marc?"✓":"")+"</span>"+
+        (FREQ_LABEL_CHECKS[campo]||campo)+
+        (marc?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+em+"</span>":"")+
+      "</button>";
+    }).join("");
+
+    return "<div class='hoje-prog-item'>"+
+      "<div class='hoje-prog-row'>"+
+        "<span class='hoje-prog-pill "+pc+"'>"+pt+"</span>"+
+        "<span class='hoje-prog-nome'>"+nome+"</span>"+
+        "<span class='hoje-prog-badge "+badgeCls+"'>"+badgeTxt+"</span>"+
+      "</div>"+
+      (sub.length?"<div class='hoje-prog-sub'>"+sub.join(" · ")+"</div>":"")+
+      (acoes?"<div class='hoje-prog-acoes'>"+acoes+"</div>":"")+
+      (checks?"<div class='hpb-checks'>"+checks+"</div>":"")+
+    "</div>";
+  }).join("");
+
+  // Listeners dos botões de resultado
+  $("hojeProgLista").querySelectorAll("[data-hprog-res]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var id   = btn.dataset.hprogRes;
+      var sem  = btn.dataset.hprogSemana;
+      var tipo = btn.dataset.hprogTipo;
+      // Navegar para a semana e abrir modal de resultado
+      segProg = segundaDe(new Date(hojeStr+"T00:00:00"));
+      mudarAba("prog");
+      progSetVisao("semanal");
+      setTimeout(function(){
+        carregarProg().then(function(){
+          // Simular clique no botão de resultado
+          var btnRes = document.querySelector("[data-prog-res='"+id+"']");
+          if(btnRes) btnRes.click();
+        });
+      }, 500);
+    });
+  });
+
+  // Checks de brassagem/envase
+  $("hojeProgLista").querySelectorAll("[data-hprog-check]").forEach(function(btn){
+    btn.addEventListener("click", async function(){
+      var campo = btn.dataset.hprogCheck;
+      var id    = btn.dataset.hprogCid;
+      var sem   = btn.dataset.hprogCsem;
+      try{
+        var r2 = await api("/api/prog",{method:"POST",body:{acao:"check",id:id,semana:sem,campo:campo}});
+        // Atualizar local
+        var it = itens.find(function(x){ return x.id===id; });
+        if(it&&r2.item){ it.checks=r2.item.checks||{}; }
+        renderHojePrograma();
+      } catch(e){ toast("Erro: "+e.message,"erro"); }
+    });
+  });
+
+  // Checks de barril
+  $("hojeProgLista").querySelectorAll("[data-hprog-bcheck]").forEach(function(btn){
+    btn.addEventListener("click", async function(){
+      var campo = btn.dataset.hprogBcheck;
+      var id    = btn.dataset.hprogBid;
+      var sem   = btn.dataset.hprogBsem;
+      try{
+        var r2 = await api("/api/prog",{method:"POST",body:{acao:"barril_check",id:id,semana:sem,campo:campo,progId:"barril-"+sem}});
+        var it = itens.find(function(x){ return x.id===id; });
+        if(it&&r2.reg){ it.checks=r2.reg.checks||{}; }
+        renderHojePrograma();
+      } catch(e){ toast("Erro: "+e.message,"erro"); }
+    });
+  });
+}
+
 function renderHoje(){
   var ih = idxHoje();
   var hojeReal = chaveSemana(segAtual) === chaveSemana(segHoje);
@@ -7989,6 +8245,17 @@ function renderAlertaCriticos(){
 }
 
 /* ---------- cliques da tela Hoje ---------- */
+function mudarAba(aba){
+  document.querySelectorAll("[data-aba]").forEach(function(b){
+    var painel = $(b.dataset.aba==="hoje"?"painelHoje":
+                   b.dataset.aba==="prog"?"painelProg":
+                   b.dataset.aba==="semana"?"painelChecklist":
+                   "painel"+b.dataset.aba.charAt(0).toUpperCase()+b.dataset.aba.slice(1));
+    if(painel) painel.hidden = b.dataset.aba!==aba;
+    b.classList.toggle("ativa", b.dataset.aba===aba);
+  });
+}
+
 $("painelHoje").addEventListener("click", function(ev){
   var b = ev.target.closest("button");
   if (!b) return;
@@ -8419,6 +8686,128 @@ iniciar();
     if(bS) bS.addEventListener("click",function(){ progSetVisao("semanal"); carregarProg(); });
     if(bM) bM.addEventListener("click",function(){ progSetVisao("mensal");  carregarProg(); });
   }, 0);
+
+
+  // ===== LIMPEZA RÁPIDA =====
+  (function(){
+    var btnAbrir  = $("btnLimpRapida");
+    var btnFechar = $("btnLimpRapidaFechar");
+    var modal     = $("modalLimpRapida");
+    var selSetor  = $("limpRapidaSetor");
+    var divItens  = $("limpRapidaItens");
+    var btnSalvar = $("btnLimpRapidaSalvar");
+    if (!btnAbrir || !modal) return;
+
+    var _lrSelecionados = {};  // item.id -> true
+    var _lrRegistros    = {};  // item.id -> registro existente
+
+    function FREQ_LABEL_LR(f){
+      var m={semanal:"Semanal",quinzenal:"Quinzenal",mensal:"Mensal",
+             anual:"Anual",a_cada_uso:"A cada uso",eventual:"Eventual"};
+      return m[f]||f;
+    }
+
+    // Popular select de setores
+    function popularSetores(){
+      selSetor.innerHTML = "<option value=''>Selecione o setor...</option>"+
+        LIMP_SETORES.map(function(st){
+          return "<option value='"+st.id+"'>"+st.icone+" "+st.nome+"</option>";
+        }).join("");
+    }
+
+    // Carregar itens do setor selecionado
+    async function carregarItensSetor(setorId){
+      divItens.innerHTML = "<p style='color:var(--muted);font-size:.82rem;padding:8px 0'>Carregando...</p>";
+      btnSalvar.disabled = true;
+      _lrSelecionados = {};
+      _lrRegistros    = {};
+
+      var st = LIMP_SETORES.find(function(s){ return s.id===setorId; });
+      if (!st) return;
+
+      var itensSetor = LIMP_ITENS_POR_SETOR[setorId]||[];
+
+      // Buscar registros existentes
+      try{
+        var r = await api("/api/limpeza?setor="+setorId);
+        var regs = r.registros||[];
+        regs.forEach(function(reg){ _lrRegistros[reg.item]=reg; });
+      }catch(e){}
+
+      divItens.innerHTML = itensSetor.map(function(item){
+        var reg  = _lrRegistros[item.id];
+        var feito = !!reg;
+        var quando = reg ? fmtDataBR2(reg.em) : "";
+        var quem   = reg ? (reg.nomeFeitoPor||reg.feitoPor||"") : "";
+        return "<div class='limp-rapida-item"+(feito?" feito":"")+"' data-lri='"+item.id+"'>"+
+          "<div class='lri-check'>"+(feito?"✓":"")+"</div>"+
+          "<div style='flex:1'>"+
+            "<div class='lri-nome'>"+esc(item.nome)+"</div>"+
+            (feito?"<div style='font-size:.68rem;color:var(--verde)'>"+esc(quem)+" · "+esc(quando)+"</div>":"")+
+          "</div>"+
+          "<span class='lri-freq'>"+FREQ_LABEL_LR(item.freq)+"</span>"+
+        "</div>";
+      }).join("");
+
+      // Bind de clique nos itens
+      divItens.querySelectorAll("[data-lri]").forEach(function(el){
+        el.addEventListener("click", function(){
+          var iid = el.dataset.lri;
+          if(_lrSelecionados[iid]){
+            delete _lrSelecionados[iid];
+            el.classList.remove("feito");
+            el.querySelector(".lri-check").textContent="";
+          } else {
+            _lrSelecionados[iid]=true;
+            el.classList.add("feito");
+            el.querySelector(".lri-check").textContent="✓";
+          }
+          btnSalvar.disabled = Object.keys(_lrSelecionados).length === 0;
+        });
+      });
+    }
+
+    function fmtDataBR2(iso){
+      var d=new Date(iso);
+      return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+
+        " "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+    }
+
+    selSetor.addEventListener("change", function(){
+      if (selSetor.value) carregarItensSetor(selSetor.value);
+      else { divItens.innerHTML="<p style='color:var(--muted);font-size:.82rem;padding:8px 0'>Selecione um setor acima.</p>"; btnSalvar.disabled=true; }
+    });
+
+    btnAbrir.addEventListener("click", function(){
+      popularSetores();
+      selSetor.value="";
+      divItens.innerHTML="<p style='color:var(--muted);font-size:.82rem;padding:8px 0'>Selecione um setor acima.</p>";
+      btnSalvar.disabled=true;
+      _lrSelecionados={};
+      modal.hidden=false;
+    });
+
+    btnFechar.addEventListener("click", function(){ modal.hidden=true; });
+
+    btnSalvar.addEventListener("click", async function(){
+      var setorId = selSetor.value;
+      if (!setorId || !Object.keys(_lrSelecionados).length) return;
+      btnSalvar.textContent="Salvando..."; btnSalvar.disabled=true;
+      var erros=0;
+      for (var iid of Object.keys(_lrSelecionados)){
+        try{
+          await api("/api/limpeza",{method:"POST",body:{setor:setorId,item:iid,obs:""}});
+        }catch(e){ erros++; }
+      }
+      if (erros) toast(erros+" item(s) com erro","erro");
+      else toast("Limpeza registrada! "+Object.keys(_lrSelecionados).length+" item(s).");
+      btnSalvar.textContent="Registrar marcados";
+      // Recarregar para mostrar timestamps atualizados
+      carregarItensSetor(setorId);
+      _lrSelecionados={};
+      btnSalvar.disabled=true;
+    });
+  })();
 
 })();
 </script>
