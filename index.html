@@ -2649,7 +2649,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.8.7";
+var VERSAO = "2.8.8";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6507,81 +6507,17 @@ var LIMP_SETORES = [
 ];
 
 var LIMP_ITENS_POR_SETOR = {
-  sala_malte:[
-    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
-    {id:"pia",nome:"Pia",freq:"semanal"},{id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},
-    {id:"ralo",nome:"Ralo",freq:"quinzenal"},{id:"maq_funil",nome:"Máquina (Funil)",freq:"a_cada_uso"},
-    {id:"maq_carcaca",nome:"Máquina (Carcaça)",freq:"a_cada_uso"}
-  ],
-  deposito_chopeiras:[
-    {id:"piso",nome:"Piso",freq:"quinzenal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
-    {id:"bancadas",nome:"Bancadas",freq:"quinzenal"}
-  ],
-  deposito:[
-    {id:"piso",nome:"Piso",freq:"quinzenal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
-    {id:"mesas",nome:"Mesas",freq:"quinzenal"},{id:"armarios",nome:"Armários",freq:"quinzenal"}
-  ],
-  sala_barris:[
-    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"quinzenal"},
-    {id:"teto",nome:"Teto",freq:"anual"},{id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},
-    {id:"ralo",nome:"Ralo",freq:"quinzenal"},{id:"maq_soda",nome:"Máquina (Tanque Soda)",freq:"a_cada_uso"},
-    {id:"maq_perac",nome:"Máquina (Tanque Peracético)",freq:"a_cada_uso"},
-    {id:"maq_bocal",nome:"Máquina (Bocal de acoplamento)",freq:"a_cada_uso"},
-    {id:"maq_carcaca",nome:"Máquina (Carcaça)",freq:"semanal"}
-  ],
-  brassagem:[
-    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
-    {id:"pia",nome:"Pia",freq:"quinzenal"},{id:"geladeira",nome:"Geladeira (Interno/Externo)",freq:"quinzenal"},
-    {id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"semanal"},
-    {id:"maquinas",nome:"Máquinas",freq:"a_cada_uso"},{id:"tubulacoes",nome:"Tubulações externas",freq:"quinzenal"},
-    {id:"bancada",nome:"Bancada",freq:"quinzenal"}
-  ],
-  adega:[
-    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
-    {id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},
-    {id:"tanques",nome:"Tanques",freq:"a_cada_uso"},{id:"saca_amostra",nome:"Saca amostra / Escotilha",freq:"a_cada_uso"},
-    {id:"calota",nome:"Calota dos tanques",freq:"anual"},{id:"tubulacoes",nome:"Tubulações externas",freq:"quinzenal"}
-  ],
-  envase:[
-    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
-    {id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},
-    {id:"maq_bicos",nome:"Máquina (Bicos)",freq:"a_cada_uso"},{id:"maq_assoalho",nome:"Máquina (Assoalho)",freq:"a_cada_uso"},
-    {id:"maq_cip",nome:"Máquina (CIP)",freq:"a_cada_uso"},{id:"tubulacoes",nome:"Tubulações externas",freq:"quinzenal"},
-    {id:"bancada",nome:"Bancada de Apoio",freq:"semanal"},{id:"forno_vapor",nome:"Forno Vapor",freq:"quinzenal"},
-    {id:"mesa_acum",nome:"Mesa Acumuladora",freq:"a_cada_uso"}
-  ],
-  enfardamento:[
-    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
-    {id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},
-    {id:"maq_esteira",nome:"Máquinas (Esteira)",freq:"a_cada_uso"},
-    {id:"maq_cabine",nome:"Máquinas (Cabine do Forno)",freq:"a_cada_uso"},
-    {id:"maq_mesa",nome:"Máquina (Mesa Acumuladora)",freq:"a_cada_uso"}
-  ],
-  sleeve:[
-    {id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
-    {id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},
-    {id:"maq_esteira",nome:"Máquina (Esteira)",freq:"a_cada_uso"},{id:"maq_cabine",nome:"Máquina (Cabine)",freq:"a_cada_uso"},
-    {id:"maq_sensores",nome:"Máquina (Sensores)",freq:"a_cada_uso"},{id:"maq_torpedo",nome:"Máquina (Torpedo)",freq:"a_cada_uso"},
-    {id:"maq_facas",nome:"Máquina (Facas)",freq:"a_cada_uso"},{id:"bancada",nome:"Bancada",freq:"semanal"}
-  ],
-  camara_fria:[
-    {id:"piso",nome:"Piso",freq:"mensal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
-    {id:"teto",nome:"Teto",freq:"mensal"},{id:"porta",nome:"Porta",freq:"mensal"},
-    {id:"rampa",nome:"Rampa",freq:"mensal"}
-  ],
-  container:[
-    {id:"piso",nome:"Piso",freq:"mensal"},{id:"paredes",nome:"Paredes",freq:"mensal"},
-    {id:"teto",nome:"Teto",freq:"mensal"},{id:"porta",nome:"Porta",freq:"mensal"}
-  ]
-};
-
-var LIMP_LIMITE_DIAS = {
-  semanal:7, quinzenal:15, mensal:30, anual:365, a_cada_uso:3, eventual:30
-};
-
-var LIMP_PERIODOS = {
-  semanal:"Semanal", quinzenal:"Quinzenal", mensal:"Mensal",
-  anual:"Anual", a_cada_uso:"A cada uso", eventual:"Eventual/CIP"
+  sala_malte:[{id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},{id:"pia",nome:"Pia",freq:"semanal"},{id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},{id:"maq_funil",nome:"Máquina (Funil)",freq:"a_cada_uso"},{id:"maq_carcaca",nome:"Máquina (Carcaça)",freq:"a_cada_uso"}],
+  deposito_chopeiras:[{id:"piso",nome:"Piso",freq:"quinzenal"},{id:"paredes",nome:"Paredes",freq:"mensal"},{id:"bancadas",nome:"Bancadas",freq:"quinzenal"}],
+  deposito:[{id:"piso",nome:"Piso",freq:"quinzenal"},{id:"paredes",nome:"Paredes",freq:"mensal"},{id:"mesas",nome:"Mesas",freq:"quinzenal"},{id:"armarios",nome:"Armários",freq:"quinzenal"}],
+  sala_barris:[{id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"quinzenal"},{id:"teto",nome:"Teto",freq:"anual"},{id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},{id:"maq_tq_soda",nome:"Máquina (Tanque Soda)",freq:"a_cada_uso"},{id:"maq_perace",nome:"Máquina (Tanque peracético)",freq:"a_cada_uso"},{id:"maq_bocal",nome:"Máquina (Bocal acoplamento)",freq:"a_cada_uso"},{id:"maq_carcaca",nome:"Máquina (Carcaça)",freq:"semanal"}],
+  brassagem:[{id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},{id:"pia",nome:"Pia",freq:"quinzenal"},{id:"geladeira",nome:"Geladeira (Int/Ext)",freq:"quinzenal"},{id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"semanal"},{id:"maquinas",nome:"Máquinas",freq:"a_cada_uso"},{id:"tub_ext",nome:"Tubulações externas",freq:"quinzenal"},{id:"bancada",nome:"Bancada",freq:"quinzenal"}],
+  adega:[{id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},{id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},{id:"tanques",nome:"Tanques",freq:"a_cada_uso"},{id:"saca_amostra",nome:"Saca amostra/Escotilha",freq:"a_cada_uso"},{id:"calota",nome:"Calota dos tanques",freq:"anual"},{id:"tub_ext",nome:"Tubulações externas",freq:"quinzenal"}],
+  envase:[{id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},{id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},{id:"maq_bicos",nome:"Máquina (Bicos)",freq:"a_cada_uso"},{id:"maq_assoalho",nome:"Máquina (Assoalho)",freq:"a_cada_uso"},{id:"maq_cip",nome:"Máquina (CIP)",freq:"a_cada_uso"},{id:"tub_ext",nome:"Tubulações externas",freq:"quinzenal"},{id:"bancada",nome:"Bancada de Apoio",freq:"semanal"},{id:"forno_vapor",nome:"Forno Vapor",freq:"quinzenal"},{id:"mesa_acum",nome:"Mesa Acumuladora",freq:"a_cada_uso"}],
+  enfardamento:[{id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},{id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},{id:"maq_esteira",nome:"Máquinas (Esteira)",freq:"a_cada_uso"},{id:"maq_forno",nome:"Máquinas (Cabine Forno)",freq:"a_cada_uso"},{id:"maq_mesa",nome:"Máquina (Mesa Acumuladora)",freq:"a_cada_uso"}],
+  sleeve:[{id:"piso",nome:"Piso",freq:"semanal"},{id:"paredes",nome:"Paredes",freq:"mensal"},{id:"grades_piso",nome:"Grades do piso",freq:"quinzenal"},{id:"ralo",nome:"Ralo",freq:"quinzenal"},{id:"maq_esteira",nome:"Máquina (Esteira)",freq:"a_cada_uso"},{id:"maq_cabine",nome:"Máquina (Cabine)",freq:"a_cada_uso"},{id:"maq_sensores",nome:"Máquina (Sensores)",freq:"a_cada_uso"},{id:"maq_torpedo",nome:"Máquina (Torpedo)",freq:"a_cada_uso"},{id:"maq_facas",nome:"Máquina (Facas)",freq:"a_cada_uso"},{id:"bancada",nome:"Bancada",freq:"semanal"}],
+  camara_fria:[{id:"piso",nome:"Piso",freq:"mensal"},{id:"paredes",nome:"Paredes",freq:"mensal"},{id:"teto",nome:"Teto",freq:"mensal"},{id:"porta",nome:"Porta",freq:"mensal"},{id:"rampa",nome:"Rampa",freq:"mensal"}],
+  container:[{id:"piso",nome:"Piso",freq:"mensal"},{id:"paredes",nome:"Paredes",freq:"mensal"},{id:"teto",nome:"Teto",freq:"mensal"},{id:"porta",nome:"Porta",freq:"mensal"}]
 };
 
 var LIMP_ITENS = [];  // compatibilidade — itens carregados por setor
