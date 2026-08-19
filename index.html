@@ -332,7 +332,25 @@
   .det-dia-m{ border-top:2px solid var(--verde); }
   .det-dia-header-m{ padding:9px 14px;background:var(--verde);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.9rem;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;justify-content:space-between; }
   .det-dia-fechar-m{ background:none;border:none;color:rgba(255,255,255,.8);font-size:1rem;cursor:pointer; }
-  .det-dia-item-m{ padding:9px 14px;border-top:1px solid var(--linha);display:flex;align-items:center;gap:9px; }
+  .det-dia-item-m{ padding:9px 14px;border-top:1px solid var(--linha);cursor:pointer; }
+  .det-dia-item-m:hover{ background:var(--cinza); }
+  .det-dia-item-m-row{ display:flex;align-items:center;gap:9px; }
+  .det-dia-edit-panel{
+    margin-top:8px;padding:10px 12px;background:var(--cinza);
+    border-radius:8px;display:flex;flex-direction:column;gap:8px;
+  }
+  .ddep-row{ display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
+  .ddep-label{ font-size:.72rem;font-weight:600;color:var(--muted);min-width:60px; }
+  .ddep-input{
+    flex:1;padding:6px 9px;border:1.5px solid var(--linha);border-radius:7px;
+    font-size:.85rem;background:#fff;min-width:80px;
+  }
+  .ddep-checks{ display:flex;gap:6px;flex-wrap:wrap;margin-top:2px; }
+  .ddep-btn-salvar{
+    padding:6px 14px;border:none;border-radius:7px;background:var(--verde);color:#fff;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;
+    text-transform:uppercase;letter-spacing:.05em;cursor:pointer;align-self:flex-end;
+  }
   .det-dia-pill-m{ font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:20px;flex-shrink:0; }
   .ddp-b{ background:var(--verde-claro);color:var(--verde); }
   .ddp-e{ background:#E8F0FF;color:#003E99; }
@@ -2531,7 +2549,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.8.1";
+var VERSAO = "2.8.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5019,26 +5037,199 @@ async function carregarProgMensal(){
     var NDS=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
     var MC=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
     $("progDetDiaLabel").textContent=NDS[dt.getDay()]+" — "+dt.getDate()+" "+MC[dt.getMonth()];
-    $("progDetDiaItens").innerHTML=its.map(function(it){
-      var pc=it.tipo==="brassagem"?"ddp-b":(it.tipo==="envase"?"ddp-e":"ddp-r");
-      var pt=it.tipo==="brassagem"?"🍺 Brassagem":(it.tipo==="envase"?"📦 Envase":"🛢 Barril");
-      var nome=esc(it.estilo||it.produto||"—");
-      var sub=[];
-      if(it.tanque) sub.push(esc(it.tanque));
-      if(it.tanqueOrigem) sub.push(esc(it.tanqueOrigem));
-      if(it.lote) sub.push("Lote: "+esc(it.lote));
-      if(it.tipo==="brassagem"){if(it.volPrev)sub.push("Prev: "+esc(it.volPrev)+" L");if(it.resultado&&it.resultado.volume)sub.push("Real: "+esc(it.resultado.volume)+" L");if(it.resultado&&it.resultado.og)sub.push("OG: "+esc(it.resultado.og));}
-      else if(it.tipo==="envase"){if(it.formato)sub.push(esc(it.formato));if(it.qtd)sub.push("Prev: "+esc(it.qtd)+" un");if(it.resultado&&it.resultado.qtdEnvasada)sub.push("Real: "+fmtNum(it.resultado.qtdEnvasada)+" un");}
-      else{if(it.total)sub.push(fmtNum(it.total)+" L total");}
-      if(it.criadaPor)sub.push("por @"+esc(it.criadaPor));
-      var bc=it.resultado?"ddb-ok":"ddb-pend";
-      var bt=it.resultado?"✓ Resultado":"Aguardando";
-      return "<div class='det-dia-item-m'>"+
-        "<span class='det-dia-pill-m "+pc+"'>"+pt+"</span>"+
-        "<div style='flex:1'><div class='det-dia-nome-m'>"+nome+"</div>"+
-        (sub.length?"<div class='det-dia-sub-m'>"+sub.join(" · ")+"</div>":"")+
-        "</div><span class='det-dia-badge-m "+bc+"'>"+bt+"</span></div>";
-    }).join("");
+    // Guardar referência aos itens para o painel de edição
+    var _detDiaItens = its;
+    var _detDiaIso   = iso;
+
+    function renderDetDiaItens(itens, expandidoId){
+      return itens.map(function(it){
+        var pc=it.tipo==="brassagem"?"ddp-b":(it.tipo==="envase"?"ddp-e":"ddp-r");
+        var pt=it.tipo==="brassagem"?"🍺 Brassagem":(it.tipo==="envase"?"📦 Envase":"🛢 Barril");
+        var nome=esc(it.estilo||it.produto||"—");
+        var sub=[];
+        if(it.tanque) sub.push(esc(it.tanque));
+        if(it.tanqueOrigem) sub.push(esc(it.tanqueOrigem));
+        if(it.lote) sub.push("Lote: "+esc(it.lote));
+        if(it.tipo==="brassagem"){
+          if(it.volPrev)sub.push("Prev: "+esc(it.volPrev)+" L");
+          if(it.resultado&&it.resultado.volume)sub.push("Real: "+esc(it.resultado.volume)+" L");
+          if(it.resultado&&it.resultado.og)sub.push("OG: "+esc(it.resultado.og));
+        } else if(it.tipo==="envase"){
+          if(it.formato)sub.push(esc(it.formato));
+          if(it.estilo)sub.push(esc(it.estilo));
+          if(it.qtd)sub.push("Prev: "+esc(it.qtd)+" un");
+          if(it.resultado&&it.resultado.qtdEnvasada)sub.push("Real: "+fmtNum(it.resultado.qtdEnvasada)+" un");
+        } else {
+          if(it.total)sub.push(fmtNum(it.total)+" L total");
+        }
+        if(it.criadaPor||it.lancadoPor)sub.push("por @"+esc(it.criadaPor||it.lancadoPor));
+        var bc=it.resultado?"ddb-ok":"ddb-pend";
+        var bt=it.resultado?"✓ Resultado":"Aguardando";
+        var expandido=(it.id===expandidoId);
+
+        // Painel de edição inline
+        var ch=it.checks||{};
+        var painelEdit="";
+        if(expandido){
+          // Campos de edição por tipo
+          var camposHtml="";
+          if(it.tipo==="brassagem"){
+            camposHtml+=
+              "<div class='ddep-row'><span class='ddep-label'>Estilo</span>"+
+              "<input class='ddep-input' id='ddep_estilo' value='"+esc(it.estilo||"")+"'></div>"+
+              "<div class='ddep-row'><span class='ddep-label'>Tanque</span>"+
+              "<input class='ddep-input' id='ddep_tanque' value='"+esc(it.tanque||"")+"'></div>"+
+              "<div class='ddep-row'><span class='ddep-label'>Lote</span>"+
+              "<input class='ddep-input' id='ddep_lote' value='"+esc(it.lote||"")+"'></div>"+
+              "<div class='ddep-row'><span class='ddep-label'>Vol. prev.</span>"+
+              "<input class='ddep-input' id='ddep_volPrev' placeholder='ex: 2000' value='"+esc(it.volPrev||"")+"'></div>";
+          } else if(it.tipo==="envase"){
+            camposHtml+=
+              "<div class='ddep-row'><span class='ddep-label'>Produto</span>"+
+              "<input class='ddep-input' id='ddep_produto' value='"+esc(it.produto||"")+"'></div>"+
+              "<div class='ddep-row'><span class='ddep-label'>Estilo</span>"+
+              "<input class='ddep-input' id='ddep_estilo' value='"+esc(it.estilo||"")+"'></div>"+
+              "<div class='ddep-row'><span class='ddep-label'>Tanque</span>"+
+              "<input class='ddep-input' id='ddep_tanque' value='"+esc(it.tanqueOrigem||"")+"'></div>"+
+              "<div class='ddep-row'><span class='ddep-label'>Lote</span>"+
+              "<input class='ddep-input' id='ddep_lote' value='"+esc(it.lote||"")+"'></div>"+
+              "<div class='ddep-row'><span class='ddep-label'>Formato</span>"+
+              "<input class='ddep-input' id='ddep_formato' value='"+esc(it.formato||"")+"'></div>"+
+              "<div class='ddep-row'><span class='ddep-label'>Qtd prev.</span>"+
+              "<input class='ddep-input' id='ddep_qtd' placeholder='ex: 5000 un' value='"+esc(it.qtd||"")+"'></div>";
+          } else {
+            // barril — só checks (campos de barril têm estrutura diferente)
+            camposHtml="<div style='font-size:.75rem;color:var(--muted)'>Os campos do barril são editados na visão semanal.</div>";
+          }
+
+          // Checks
+          function chkBtn(campo, rotulo, classe){
+            var marc=!!ch[campo];
+            var por=ch[campo+"_por"]?" @"+ch[campo+"_por"]:"";
+            var em=ch[campo+"_em"]?" · "+fmtCheckEm(ch[campo+"_em"]):"";
+            return "<button class='check-lancamento"+(marc?" "+classe:"")+"' "+
+              "data-ddep-check='"+campo+"' data-ddep-id='"+esc(it.id)+"' data-ddep-semana='"+esc(_detSemana(it))+"'>"+
+              "<span class='cl-icone'>"+(marc?"✓":"")+"</span>"+
+              rotulo+(marc?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+em+"</span>":"")+
+            "</button>";
+          }
+          var isEnvIt=(it.tipo==="envase");
+          var checksHtml="<div class='ddep-checks'>"+
+            chkBtn("beerSalesProg","BeerSales Prog.","programado")+
+            chkBtn("lancadoBeerSales","BeerSales Conc.","marcado")+
+            (isEnvIt?"":chkBtn("lancadoBeerbo","Beerbo","marcado"))+
+          "</div>";
+
+          painelEdit="<div class='det-dia-edit-panel'>"+
+            camposHtml+
+            (it.tipo!=="barril"?"<button class='ddep-btn-salvar' data-ddep-salvar='"+esc(it.id)+"' data-ddep-semana='"+esc(_detSemana(it))+"' data-ddep-tipo='"+esc(it.tipo)+"'>Salvar</button>":"")+
+            checksHtml+
+          "</div>";
+        }
+
+        return "<div class='det-dia-item-m' data-ddep-toggle='"+esc(it.id)+"'>"+
+          "<div class='det-dia-item-m-row'>"+
+            "<span class='det-dia-pill-m "+pc+"'>"+pt+"</span>"+
+            "<div style='flex:1'><div class='det-dia-nome-m'>"+nome+"</div>"+
+            (sub.length?"<div class='det-dia-sub-m'>"+sub.join(" · ")+"</div>":"")+
+            "</div>"+
+            "<span class='det-dia-badge-m "+bc+"'>"+bt+"</span>"+
+            "<span style='font-size:.8rem;color:var(--muted);margin-left:4px'>"+(expandido?"▲":"▼")+"</span>"+
+          "</div>"+
+          painelEdit+
+        "</div>";
+      }).join("");
+    }
+
+    function _detSemana(it){
+      // calcular a chave de semana a partir do dataISO do item
+      var d=new Date((it.dataISO||_detDiaIso)+"T00:00:00");
+      var diff=(d.getDay()+6)%7;
+      var seg=new Date(d); seg.setDate(seg.getDate()-diff);
+      return seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
+    }
+
+    var _detExpandidoId = null;
+
+    function _atualizarDetDia(){
+      $("progDetDiaItens").innerHTML = renderDetDiaItens(_detDiaItens, _detExpandidoId);
+      _bindDetDia();
+    }
+
+    function _bindDetDia(){
+      // Toggle expandir
+      var toggles = $("progDetDiaItens").querySelectorAll("[data-ddep-toggle]");
+      toggles.forEach(function(el){
+        el.addEventListener("click", function(e){
+          // Ignorar cliques em botões internos
+          if(e.target.closest("button")) return;
+          var id=el.dataset.ddepToggle;
+          _detExpandidoId=(_detExpandidoId===id)?null:id;
+          _atualizarDetDia();
+        });
+      });
+
+      // Salvar campos
+      var salvares = $("progDetDiaItens").querySelectorAll("[data-ddep-salvar]");
+      salvares.forEach(function(btn){
+        btn.addEventListener("click", async function(){
+          var id    = btn.dataset.ddepSalvar;
+          var sem   = btn.dataset.ddepSemana;
+          var tipo  = btn.dataset.ddepTipo;
+          var body  = {acao:"editar",id:id,semana:sem};
+          if(tipo==="brassagem"){
+            body.estilo   = ($("ddep_estilo")||{value:""}).value.trim();
+            body.tanque   = ($("ddep_tanque")||{value:""}).value.trim();
+            body.lote     = ($("ddep_lote")||{value:""}).value.trim();
+            body.volPrev  = ($("ddep_volPrev")||{value:""}).value.trim();
+          } else {
+            body.produto      = ($("ddep_produto")||{value:""}).value.trim();
+            body.estilo       = ($("ddep_estilo")||{value:""}).value.trim();
+            body.tanqueOrigem = ($("ddep_tanque")||{value:""}).value.trim();
+            body.lote         = ($("ddep_lote")||{value:""}).value.trim();
+            body.formato      = ($("ddep_formato")||{value:""}).value.trim();
+            body.qtd          = ($("ddep_qtd")||{value:""}).value.trim();
+          }
+          // Preservar dataISO do item
+          var it=_detDiaItens.find(function(x){return x.id===id;});
+          if(it&&it.dataISO) body.dataISO=it.dataISO;
+          if(it&&it.dia) body.dia=it.dia;
+          try{
+            btn.textContent="Salvando..."; btn.disabled=true;
+            var r=await api("/api/prog",{method:"POST",body:body});
+            // Atualizar item local
+            var idx=_detDiaItens.findIndex(function(x){return x.id===id;});
+            if(idx>=0&&r.itens){
+              var novo=r.itens.find(function(x){return x.id===id;});
+              if(novo) _detDiaItens[idx]=novo;
+            }
+            toast("Salvo!");
+            _atualizarDetDia();
+          }catch(e){ toast("Erro: "+e.message,"erro"); }
+          finally{ try{btn.textContent="Salvar";btn.disabled=false;}catch(e2){} }
+        });
+      });
+
+      // Checks
+      var checks = $("progDetDiaItens").querySelectorAll("[data-ddep-check]");
+      checks.forEach(function(btn){
+        btn.addEventListener("click", async function(e){
+          e.stopPropagation();
+          var campo = btn.dataset.ddepCheck;
+          var id    = btn.dataset.ddepId;
+          var sem   = btn.dataset.ddepSemana;
+          try{
+            var r=await api("/api/prog",{method:"POST",body:{acao:"check",id:id,semana:sem,campo:campo}});
+            var idx=_detDiaItens.findIndex(function(x){return x.id===id;});
+            if(idx>=0&&r.item){ _detDiaItens[idx]=r.item; }
+            _atualizarDetDia();
+          }catch(e){ toast("Erro: "+e.message,"erro"); }
+        });
+      });
+    }
+
+    $("progDetDiaItens").innerHTML = renderDetDiaItens(its, null);
+    _bindDetDia();
     $("progDetDia").hidden=false;
     $("progDetDia").scrollIntoView({behavior:"smooth",block:"nearest"});
     $("btnDetDiaIrSem").onclick=function(){
