@@ -6651,18 +6651,133 @@ function renderLimpSetores(){
   grid.innerHTML = html;
 }
 
+function renderMinhaLimpeza(resumo){
+  var sec = $("minhaLimpSecao");
+  if (!sec) return;
+  var nomeUser = (sessao && (sessao.nome || sessao.login) || "").toLowerCase();
+  var meusSec = LIMP_SETORES.filter(function(st){
+    var resp = (st.responsavel||"").toLowerCase();
+    return resp && (resp === nomeUser || nomeUser.indexOf(resp) >= 0 || resp.indexOf(nomeUser) >= 0);
+  });
+  var isAdmin = sessao && (sessao.papel === "admin" || sessao.papel === "gestor");
+  if (!meusSec.length && isAdmin) meusSec = LIMP_SETORES;
+  if (!meusSec.length){ sec.hidden = true; return; }
+
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  function diasRest(freq, ultimoEm){
+    var lim = LIMP_LIMITE_DIAS[freq] || 7;
+    if (!ultimoEm) return -999;
+    var d = new Date(ultimoEm); d.setHours(0,0,0,0);
+    return lim - Math.floor((hoje - d)/86400000);
+  }
+  function prazoTxt(dr){
+    if (dr <= -999) return "Nunca feito";
+    if (dr < 0)    return "Vencido h\u00e1 "+Math.abs(dr)+"d";
+    if (dr === 0)  return "Vence hoje";
+    if (dr === 1)  return "Vence amanh\u00e3";
+    return "Vence em "+dr+"d";
+  }
+
+  var todos = [];
+  meusSec.forEach(function(st){
+    var res = (resumo && resumo[st.id]) || {};
+    (LIMP_ITENS_POR_SETOR[st.id]||[]).forEach(function(it){
+      if (it.freq === "a_cada_uso") return;
+      var ult = res[it.id];
+      var dr  = diasRest(it.freq, ult ? ult.em : null);
+      todos.push({setor:st, item:it, ult:ult, dr:dr, prazoTxt:prazoTxt(dr)});
+    });
+  });
+  todos.sort(function(a,b){ return a.dr - b.dr; });
+
+  var grps = [
+    {key:"vencido", label:"VENCIDO",      cls:"mlg-vencido", it:[]},
+    {key:"hoje",    label:"VENCE HOJE",   cls:"mlg-hoje",    it:[]},
+    {key:"semana",  label:"ESTA SEMANA",  cls:"mlg-semana",  it:[]},
+    {key:"ok",      label:"EM DIA",       cls:"mlg-ok",      it:[]}
+  ];
+  todos.forEach(function(x){
+    if      (x.dr < 0)   grps[0].it.push(x);
+    else if (x.dr === 0) grps[1].it.push(x);
+    else if (x.dr <= 7)  grps[2].it.push(x);
+    else                 grps[3].it.push(x);
+  });
+
+  var temUrg = grps[0].it.length + grps[1].it.length + grps[2].it.length > 0;
+  var html = "";
+  grps.forEach(function(g){
+    if (!g.it.length) return;
+    if (g.key === "ok" && temUrg) return;
+    html += "<div class='minha-limp-grupo'><div class='minha-limp-grupo-header "+g.cls+"'>"+
+      g.label+" <small style='font-weight:400'>("+g.it.length+" item"+(g.it.length>1?"s":"")+")</small></div>";
+    g.it.forEach(function(x){
+      var feito = x.ult && limpDiasDesde(x.ult.em) === 0;
+      var memR = equipe.find(function(u){
+        return (u.nome||u.login).toLowerCase().indexOf((x.setor.responsavel||"").toLowerCase()) >= 0
+            || (x.setor.responsavel||"").toLowerCase().indexOf((u.nome||u.login).toLowerCase()) >= 0;
+      });
+      var resp  = memR ? memR.login : sessao.login;
+      var regId = x.ult ? esc(x.ult.id) : "";
+      html += "<div class='minha-limp-item'>"+
+        "<span class='mli-setor'>"+esc(x.setor.icone)+" "+esc(x.setor.nome.split(" ")[0])+"</span>"+
+        "<span class='mli-nome'>"+esc(x.item.nome)+"</span>"+
+        "<span class='mli-prazo'>"+esc(x.prazoTxt)+"</span>"+
+        "<button class='mli-btn"+(feito?" feito":"")+"' "+
+          "data-mli-item='"+esc(x.item.id)+"' data-mli-setor='"+esc(x.setor.id)+"' "+
+          "data-mli-freq='"+esc(x.item.freq)+"' data-mli-resp='"+esc(resp)+"' "+
+          "data-mli-reg='"+regId+"'>"+
+          (feito ? "\u2713 Feito" : "\u2713 Feito")+"</button>"+
+      "</div>";
+    });
+    html += "</div>";
+  });
+  if (!html) html = "<div style='padding:12px;text-align:center;color:var(--muted);font-size:.82rem'>Tudo em dia!</div>";
+
+  sec.innerHTML = "<div style='padding:10px 14px 4px;font-family:\"Barlow Condensed\",sans-serif;"+
+    "font-weight:800;font-size:.9rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)'>"+
+    "Minha Limpeza</div>"+html;
+  sec.hidden = false;
+
+  sec.querySelectorAll("[data-mli-item]").forEach(function(btn){
+    btn.addEventListener("click", async function(){
+      var itemId = btn.dataset.mliItem;
+      var setId  = btn.dataset.mliSetor;
+      var freq   = btn.dataset.mliFreq;
+      var resp   = btn.dataset.mliResp;
+      var regId  = btn.dataset.mliReg;
+      var feito  = btn.classList.contains("feito");
+      if (feito && regId){
+        if (!confirm("Remover este registro?")) return;
+        btn.disabled=true; btn.textContent="...";
+        try{
+          await api("/api/limpeza",{method:"POST",body:{acao:"remover",setor:setId,id:regId}});
+          toast("Removido."); carregarLimpeza();
+        }catch(e){ toast("Erro: "+e.message,"erro"); btn.disabled=false; btn.textContent="Feito"; }
+        return;
+      }
+      btn.disabled=true; btn.textContent="...";
+      try{
+        await api("/api/limpeza",{method:"POST",body:{acao:"registrar",setor:setId,item:itemId,periodicidade:freq,feitoPor:resp,obs:""}});
+        toast("Registrado!","ok"); carregarLimpeza();
+      }catch(e){ toast("Erro: "+e.message,"erro"); btn.disabled=false; btn.textContent="Feito"; }
+    });
+  });
+}
+
 async function carregarLimpeza(){
   // Garantir que o grid existe antes de renderizar
   var grid = $("limpSetorGrid");
   if (!grid){ return; }
   // Renderizar imediatamente com o que temos
   renderLimpSetores();
+  renderMinhaLimpeza(_limpResumo);
   // Depois buscar resumo e atualizar badges de status
   try{
     var r = await api("/api/limpeza?resumo=1");
     _limpResumo = r.resumo || {};
     renderLimpSetores();
-  }catch(e){ _limpResumo = {}; renderLimpSetores(); }
+    renderMinhaLimpeza(_limpResumo);
+  }catch(e){ _limpResumo = {}; renderLimpSetores(); renderMinhaLimpeza({}); }
   if (_limpSetorAtivo) await carregarLimpezaSetor(_limpSetorAtivo);
 }
 
