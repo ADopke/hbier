@@ -440,6 +440,18 @@
   .lri-freq{ font-size:.68rem;color:var(--muted);flex-shrink:0; }
   .limp-rapida-item.feito .lri-nome{ color:var(--verde);font-weight:600; }
 
+  /* ---- config limpeza ---- */
+  .limp-cfg-setor{ border-bottom:2px solid var(--linha);padding:10px 14px; }
+  .limp-cfg-setor:last-child{ border-bottom:none; }
+  .limp-cfg-setor-header{ font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:.9rem;text-transform:uppercase;letter-spacing:.05em;color:var(--verde);margin-bottom:8px; }
+  .limp-cfg-resp{ display:flex;align-items:center;gap:8px;margin-bottom:8px; }
+  .limp-cfg-label{ font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;min-width:80px; }
+  .limp-cfg-sel-resp{ flex:1;padding:6px 8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.85rem;background:#fff; }
+  .limp-cfg-item{ display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--linha); }
+  .limp-cfg-item-nome{ flex:1;font-size:.83rem; }
+  .limp-cfg-sel-freq{ padding:5px 8px;border:1.5px solid var(--linha);border-radius:7px;font-size:.8rem;background:#fff;min-width:110px; }
+
+  /* ---- minha limpeza (guia do operador) ---- */
   /* ---- minha limpeza (guia do operador) ---- */
   #minhaLimpGuia{ padding:0 14px 10px; }
   .mlg-freq-bloco{ margin-bottom:10px; }
@@ -1680,6 +1692,8 @@
       <section>
         <div class="sec-head">
           <span class="sec-title">🧹 Limpeza</span>
+          <button class="btn-hoje-sem" id="btnLimpConfig" hidden
+            style="font-size:.78rem;padding:5px 11px">⚙️ Config</button>
           <button class="btn-hoje-sem" id="btnLimpRapida"
             style="font-size:.78rem;padding:5px 11px">⚡ Limpeza rápida</button>
           <button class="btn-hoje-sem" id="btnLimpExportar"
@@ -2701,7 +2715,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.9.5";
+var VERSAO = "2.9.6";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6655,10 +6669,12 @@ async function carregarLimpeza(){
   // Renderizar imediatamente com o que temos
   renderLimpSetores();
   renderMinhaLimpGuia(_limpResumo);
-  // Depois buscar resumo e atualizar badges de status
+  // Depois buscar config customizada + resumo
   try{
-    var r = await api("/api/limpeza?resumo=1");
-    _limpResumo = r.resumo || {};
+    var rc = await api("/api/limpeza?resumo=1");
+    _limpResumo = rc.resumo || {};
+    // Aplicar config salva (responsaveis/frequencias editados pelo gestor)
+    if (rc.config) aplicarLimpConfig(rc.config);
     renderLimpSetores();
     renderMinhaLimpGuia(_limpResumo);
   }catch(e){ _limpResumo = {}; renderLimpSetores(); renderMinhaLimpGuia({}); }
@@ -9024,7 +9040,158 @@ function renderMinhaLimpGuia(resumo){
 }
 
 
+
+/* ================================================================
+   Configuracao de limpeza — admin/gestor v2.9.6
+   ================================================================ */
+
+/* Aplica config salva no Redis sobre os arrays em memoria */
+function aplicarLimpConfig(cfg){
+  if (!cfg) return;
+  LIMP_SETORES.forEach(function(st){
+    var c = cfg[st.id];
+    if (!c) return;
+    if (c.responsavel !== undefined) st.responsavel = c.responsavel;
+    if (c.itens){
+      var itens = LIMP_ITENS_POR_SETOR[st.id] || [];
+      itens.forEach(function(it){
+        var ci = c.itens[it.id];
+        if (ci && ci.freq) it.freq = ci.freq;
+      });
+    }
+  });
+}
+
+/* Abrir modal de configuracao de limpeza */
+async function abrirLimpConfig(){
+  var modal = $("modalLimpConfig");
+  if (!modal) return;
+  modal.hidden = false;
+  var corpo = $("limpConfigCorpo");
+  corpo.innerHTML = "<div style='color:var(--muted);font-size:.85rem;padding:10px'>Carregando...</div>";
+
+  // Buscar config salva
+  var cfgSalva = {};
+  try {
+    var r = await api("/api/limpeza",{method:"POST",body:{acao:"config_get"}});
+    cfgSalva = r.config || {};
+  } catch(e) {}
+
+  var FREQS = ["semanal","quinzenal","mensal","anual","a_cada_uso","eventual"];
+  var FREQ_LABELS = {semanal:"Semanal",quinzenal:"Quinzenal",mensal:"Mensal",
+                     anual:"Anual",a_cada_uso:"A cada uso",eventual:"Eventual"};
+
+  var html = "";
+  LIMP_SETORES.forEach(function(st){
+    var cfgSetor = cfgSalva[st.id] || {};
+    var cfgItens = cfgSetor.itens || {};
+    var itens = LIMP_ITENS_POR_SETOR[st.id] || [];
+
+    // Responsavel do setor
+    var respAtual = cfgSetor.responsavel !== undefined ? cfgSetor.responsavel : st.responsavel;
+    var optsResp = equipe.map(function(u){
+      var nome = u.nome||u.login;
+      return "<option value='"+esc(u.nome||u.login)+"'"+(nome===respAtual?" selected":"")+">"+esc(nome)+"</option>";
+    }).join("");
+
+    html += "<div class='limp-cfg-setor' data-cfg-setor='"+esc(st.id)+"'>"+
+      "<div class='limp-cfg-setor-header'>"+st.icone+" "+esc(st.nome)+"</div>"+
+      "<div class='limp-cfg-resp'>"+
+        "<label class='limp-cfg-label'>Responsavel</label>"+
+        "<select class='limp-cfg-sel-resp' data-setor='"+esc(st.id)+"'>"+optsResp+"</select>"+
+      "</div>"+
+      "<div class='limp-cfg-itens'>";
+
+    itens.forEach(function(it){
+      var freqAtual = (cfgItens[it.id] && cfgItens[it.id].freq) ? cfgItens[it.id].freq : it.freq;
+      var optsFreq = FREQS.map(function(f){
+        return "<option value='"+f+"'"+(f===freqAtual?" selected":"")+">"+FREQ_LABELS[f]+"</option>";
+      }).join("");
+      html += "<div class='limp-cfg-item'>"+
+        "<span class='limp-cfg-item-nome'>"+esc(it.nome)+"</span>"+
+        "<select class='limp-cfg-sel-freq' data-setor='"+esc(st.id)+"' data-item='"+esc(it.id)+"'>"+optsFreq+"</select>"+
+      "</div>";
+    });
+
+    html += "</div></div>";
+  });
+
+  corpo.innerHTML = html;
+}
+
+/* Salvar config */
+async function salvarLimpConfig(){
+  var modal = $("modalLimpConfig");
+  var btnSalvar = $("btnLimpConfigSalvar");
+  btnSalvar.disabled = true;
+  btnSalvar.textContent = "Salvando...";
+
+  var cfg = {};
+  // Coletar responsaveis
+  document.querySelectorAll(".limp-cfg-sel-resp").forEach(function(sel){
+    var setorId = sel.dataset.setor;
+    if (!cfg[setorId]) cfg[setorId] = {};
+    cfg[setorId].responsavel = sel.value;
+  });
+  // Coletar frequencias
+  document.querySelectorAll(".limp-cfg-sel-freq").forEach(function(sel){
+    var setorId = sel.dataset.setor;
+    var itemId  = sel.dataset.item;
+    if (!cfg[setorId]) cfg[setorId] = {};
+    if (!cfg[setorId].itens) cfg[setorId].itens = {};
+    cfg[setorId].itens[itemId] = {freq: sel.value};
+  });
+
+  try {
+    await api("/api/limpeza",{method:"POST",body:{acao:"config_set",config:cfg}});
+    // Aplicar imediatamente em memoria
+    aplicarLimpConfig(cfg);
+    toast("Configuracao salva!","ok");
+    if (modal) modal.hidden = true;
+    carregarLimpeza();
+  } catch(e) {
+    toast("Erro: "+e.message,"erro");
+  } finally {
+    btnSalvar.disabled = false;
+    btnSalvar.textContent = "Salvar";
+  }
+}
+
+
+  // Config de limpeza
+  setTimeout(function(){
+    var btnCfg = $("btnLimpConfig");
+    var modal  = $("modalLimpConfig");
+    if (btnCfg){
+      // Mostrar botao apenas para admin/gestor
+      if (sessao && ["admin","gestor"].includes(sessao.papel)) btnCfg.hidden = false;
+      btnCfg.addEventListener("click", function(){ abrirLimpConfig(); });
+    }
+    if ($("btnLimpConfigFechar"))
+      $("btnLimpConfigFechar").addEventListener("click", function(){ if(modal) modal.hidden=true; });
+    if ($("btnLimpConfigCancelar"))
+      $("btnLimpConfigCancelar").addEventListener("click", function(){ if(modal) modal.hidden=true; });
+    if ($("btnLimpConfigSalvar"))
+      $("btnLimpConfigSalvar").addEventListener("click", function(){ salvarLimpConfig(); });
+  }, 200);
+
 })();
 </script>
+<div id="modalLimpConfig" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25);margin:auto">
+    <div style="background:var(--verde);color:#fff;padding:14px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1">
+      <span>⚙️ Configurar Limpeza</span>
+      <button id="btnLimpConfigFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
+    </div>
+    <div style="padding:14px;font-size:.78rem;color:var(--muted);background:var(--cinza);border-bottom:1px solid var(--linha)">
+      Altere o responsável e a frequência de cada item. As mudanças são salvas no servidor e aplicadas imediatamente.
+    </div>
+    <div id="limpConfigCorpo" style="padding:0 0 8px;max-height:70vh;overflow-y:auto"></div>
+    <div style="padding:12px 14px;border-top:1px solid var(--linha);display:flex;gap:8px;position:sticky;bottom:0;background:#fff">
+      <button id="btnLimpConfigCancelar" style="padding:9px 16px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
+      <button id="btnLimpConfigSalvar" style="flex:1;padding:9px;border:none;border-radius:8px;background:var(--verde);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Salvar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
