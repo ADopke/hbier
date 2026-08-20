@@ -2738,7 +2738,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.9.8";
+var VERSAO = "2.9.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4858,13 +4858,14 @@ function renderChecksLancamento(it, semana){
   function btnCheck(campo, rotulo){
     var marcado = !!ch[campo];
     var por = ch[campo+"_por"] ? " @"+ch[campo+"_por"] : "";
+    var em  = ch[campo+"_em"]  ? " · "+fmtCheckEm(ch[campo+"_em"]) : "";
     return "<button class='check-lancamento"+(marcado?" marcado":"")+"'"+
       " data-prog-check='"+esc(campo)+"'"+
       " data-prog-check-id='"+esc(it.id)+"'"+
       " data-prog-check-semana='"+esc(semana)+"'"+
-      " title='"+(marcado?"Marcado por"+esc(por)+" — clique para desmarcar":"Marcar como lançado")+"'>"+
+      " title='"+(marcado?"Marcado por"+esc(por)+em+" — clique para desmarcar":"Marcar como lançado")+"'>"+
       "<span class='cl-icone'>"+(marcado?"✓":"")+"</span>"+
-      esc(rotulo)+(marcado&&por?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+"</span>":"")+
+      esc(rotulo)+(marcado?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+em+"</span>":"")+
       "</button>";
   }
 
