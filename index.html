@@ -6113,7 +6113,7 @@ async function carregarMetas(){
         // Previsto por formato na semana
         if (it.qtd){
           var qpFmt=parseFloat((it.qtd+"").replace(",","."))||0;
-          if(qpFmt){var fmtPv=it.formato||"";var estPv=(it.estilo||"").trim()||(it.produto||"").trim();
+          if(qpFmt){var fmtPv=it.formato||"";var estPv=(it.estilo||"").trim(); // SEM fallback produto
             if(fmtPv){var cpv=estPv?fmtPv+" "+estPv:fmtPv;if(!semFmtPrev[cpv])semFmtPrev[cpv]=0;semFmtPrev[cpv]+=qpFmt;}}
         }
         // Realizado: qtd do resultado
@@ -6129,13 +6129,17 @@ async function carregarMetas(){
             var lf = (LITROS_FORMATO[fmt]||0) * qr;
             porFormato[fmt].litros += lf;
             litrosEnvasados += lf;
-            var estiloEnv=(it.estilo||"").trim()||(prod||"").trim();
+            var estiloEnv=(it.estilo||"").trim(); // SEM fallback para produto
             if(estiloEnv){
+              // Formato COM estilo: ex. "PET 500ml IPA"
               var chaveProd=fmt+" "+estiloEnv;
               if(!porFormato["_prod_"+chaveProd])porFormato["_prod_"+chaveProd]=0;
               porFormato["_prod_"+chaveProd]+=qr;
               if(!semFmtReal[chaveProd])semFmtReal[chaveProd]=0;semFmtReal[chaveProd]+=qr;
-            } else {if(!semFmtReal[fmt])semFmtReal[fmt]=0;semFmtReal[fmt]+=qr;}
+            } else {
+              // Formato SEM estilo: ex. "PET 2L" — acumula pelo formato direto
+              if(!semFmtReal[fmt])semFmtReal[fmt]=0;semFmtReal[fmt]+=qr;
+            }
           }
         }
       }
