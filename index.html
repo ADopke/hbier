@@ -440,6 +440,41 @@
   .lri-freq{ font-size:.68rem;color:var(--muted);flex-shrink:0; }
   .limp-rapida-item.feito .lri-nome{ color:var(--verde);font-weight:600; }
 
+  /* ---- minha limpeza (guia do operador) ---- */
+  #minhaLimpGuia{ padding:0 14px 10px; }
+  .mlg-freq-bloco{ margin-bottom:10px; }
+  .mlg-freq-titulo{
+    font-family:'Barlow Condensed',sans-serif;font-weight:800;
+    font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;
+    padding:6px 0 4px;color:var(--muted);
+    border-bottom:1px solid var(--linha);margin-bottom:6px;
+  }
+  .mlg-item{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 10px;border-radius:8px;margin-bottom:4px;
+    border:1.5px solid var(--linha);background:#fff;
+  }
+  .mlg-item.ok     { background:var(--verde-claro);border-color:var(--verde); }
+  .mlg-item.aviso  { background:var(--dourado-claro);border-color:var(--dourado); }
+  .mlg-item.vencido{ background:#FFF5F5;border-color:#FECACA; }
+  .mlg-nome{ flex:1;font-size:.87rem;font-weight:600; }
+  .mlg-detalhe{ font-size:.7rem;color:var(--muted);margin-top:1px; }
+  .mlg-item.ok      .mlg-detalhe{ color:var(--verde); }
+  .mlg-item.aviso   .mlg-detalhe{ color:#7A5500; }
+  .mlg-item.vencido .mlg-detalhe{ color:var(--vermelho); }
+  .mlg-btn{
+    padding:5px 12px;border:none;border-radius:7px;
+    background:var(--verde);color:#fff;cursor:pointer;flex-shrink:0;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;
+  }
+  .mlg-btn.feito{
+    background:var(--verde-claro);color:var(--verde);
+    border:1.5px solid var(--verde);
+  }
+  .mlg-btn.feito:hover{ background:#FEE2E2;color:var(--vermelho);border-color:#FECACA; }
+  .mlg-vazio{ text-align:center;padding:16px;color:var(--muted);font-size:.82rem; }
+
   /* ---- separador de dia na programação ---- */
   .prog-dia-sep{
     padding:9px 14px 8px;
@@ -1651,6 +1686,8 @@
             style="font-size:.78rem;padding:5px 11px">📄 Exportar PDF</button>
         </div>
         <div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:10px">
+          <!-- guia de limpeza do operador -->
+          <div id="minhaLimpGuia" hidden></div>
           <!-- seletor de setor -->
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="limpSetorGrid">
             <!-- preenchido por JS -->
@@ -2664,7 +2701,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.9.4";
+var VERSAO = "2.9.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6617,12 +6654,14 @@ async function carregarLimpeza(){
   if (!grid){ return; }
   // Renderizar imediatamente com o que temos
   renderLimpSetores();
+  renderMinhaLimpGuia(_limpResumo);
   // Depois buscar resumo e atualizar badges de status
   try{
     var r = await api("/api/limpeza?resumo=1");
     _limpResumo = r.resumo || {};
     renderLimpSetores();
-  }catch(e){ _limpResumo = {}; renderLimpSetores(); }
+    renderMinhaLimpGuia(_limpResumo);
+  }catch(e){ _limpResumo = {}; renderLimpSetores(); renderMinhaLimpGuia({}); }
   if (_limpSetorAtivo) await carregarLimpezaSetor(_limpSetorAtivo);
 }
 
@@ -8863,6 +8902,127 @@ iniciar();
       btnSalvar.disabled=true;
     });
   })();
+
+
+/* ================================================================
+   Guia de Limpeza do Operador v2.9.5
+   Inserido em cima da v2.9.4 sem alterar nada existente
+   ================================================================ */
+function renderMinhaLimpGuia(resumo){
+  var div = $("minhaLimpGuia");
+  if (!div) return;
+
+  var nomeU = (sessao && (sessao.nome || sessao.login) || "").toLowerCase().trim();
+  var meuSetor = LIMP_SETORES.find(function(st){
+    var r = (st.responsavel || "").toLowerCase().trim();
+    return r && (r === nomeU || nomeU.indexOf(r) >= 0 || r.indexOf(nomeU) >= 0);
+  });
+
+  if (!meuSetor){ div.hidden = true; return; }
+
+  var res   = (resumo && resumo[meuSetor.id]) || {};
+  var itens = LIMP_ITENS_POR_SETOR[meuSetor.id] || [];
+
+  var memR = equipe.find(function(u){
+    return (u.nome||u.login).toLowerCase().indexOf((meuSetor.responsavel||"").toLowerCase()) >= 0
+        || (meuSetor.responsavel||"").toLowerCase().indexOf((u.nome||u.login).toLowerCase()) >= 0;
+  });
+  var respLogin = memR ? memR.login : sessao.login;
+
+  var FREQS = [
+    {key:"semanal",   label:"Semanal",   lim:7},
+    {key:"quinzenal", label:"Quinzenal", lim:15},
+    {key:"mensal",    label:"Mensal",    lim:30},
+    {key:"anual",     label:"Anual",     lim:365}
+  ];
+
+  var html = "<div style='font-size:.8rem;font-weight:700;color:var(--verde);padding:6px 0 8px;"+
+    "font-family:\"Barlow Condensed\",sans-serif;text-transform:uppercase;letter-spacing:.06em'>"+
+    esc(meuSetor.icone)+" "+esc(meuSetor.nome)+" \u2014 Minha Limpeza</div>";
+
+  FREQS.forEach(function(fq){
+    var itensFq = itens.filter(function(it){ return it.freq === fq.key; });
+    if (!itensFq.length) return;
+
+    var linhas = itensFq.map(function(it){
+      var reg       = res[it.id];
+      var feitoHoje = reg && limpDiasDesde(reg.em) === 0;
+      var diasDesde = reg ? limpDiasDesde(reg.em) : null;
+      var diasRest  = diasDesde !== null ? fq.lim - diasDesde : null;
+
+      var cls = ""; var det = "";
+      if (feitoHoje){
+        cls = "ok";
+        var hr = new Date(reg.em);
+        var hh = ("0"+hr.getHours()).slice(-2)+":"+("0"+hr.getMinutes()).slice(-2);
+        det = "\u2713 Feito hoje \u00e0s "+hh+" por @"+esc(reg.nomeFeitoPor||reg.feitoPor||"");
+      } else if (diasRest === null){
+        cls = "vencido"; det = "Nunca realizado";
+      } else if (diasRest < 0){
+        cls = "vencido";
+        det = "Vencido h\u00e1 "+Math.abs(diasRest)+"d \u2014 \u00faltimo: "+fmtDia(new Date(reg.em));
+      } else if (diasRest <= Math.ceil(fq.lim * 0.25)){
+        cls = "aviso";
+        det = "Vence em "+diasRest+"d \u2014 \u00faltimo: "+fmtDia(new Date(reg.em));
+      } else {
+        cls = "ok";
+        det = reg ? "Em dia \u2014 \u00faltimo: "+fmtDia(new Date(reg.em)) : "";
+      }
+
+      var regId = reg ? esc(reg.id) : "";
+      return "<div class='mlg-item "+cls+"'>"+
+        "<div style='flex:1'>"+
+          "<div class='mlg-nome'>"+esc(it.nome)+"</div>"+
+          (det?"<div class='mlg-detalhe'>"+det+"</div>":"")+
+        "</div>"+
+        "<button class='mlg-btn"+(feitoHoje?" feito":"")+"' "+
+          "data-mlg-item='"+esc(it.id)+"' "+
+          "data-mlg-setor='"+esc(meuSetor.id)+"' "+
+          "data-mlg-freq='"+esc(it.freq)+"' "+
+          "data-mlg-resp='"+esc(respLogin)+"' "+
+          "data-mlg-reg='"+regId+"'>"+
+          (feitoHoje?"\u2713 Feito":"Feito")+
+        "</button>"+
+      "</div>";
+    }).join("");
+
+    html += "<div class='mlg-freq-bloco'><div class='mlg-freq-titulo'>"+fq.label+"</div>"+linhas+"</div>";
+  });
+
+  div.innerHTML = html;
+  div.hidden = false;
+
+  div.querySelectorAll("[data-mlg-item]").forEach(function(btn){
+    btn.addEventListener("click", async function(){
+      var itemId = btn.dataset.mlgItem;
+      var setId  = btn.dataset.mlgSetor;
+      var freq   = btn.dataset.mlgFreq;
+      var resp   = btn.dataset.mlgResp;
+      var regId  = btn.dataset.mlgReg;
+      var feito  = btn.classList.contains("feito");
+
+      if (feito && regId){
+        if (!confirm("Remover este registro?")) return;
+        btn.disabled=true; btn.textContent="...";
+        try{
+          await api("/api/limpeza",{method:"POST",body:{acao:"remover",setor:setId,id:regId}});
+          toast("Removido.");
+          carregarLimpeza();
+        }catch(e){ toast("Erro: "+e.message,"erro"); btn.disabled=false; btn.textContent="\u2713 Feito"; }
+        return;
+      }
+      btn.disabled=true; btn.textContent="...";
+      try{
+        await api("/api/limpeza",{method:"POST",body:{
+          acao:"registrar",setor:setId,item:itemId,periodicidade:freq,feitoPor:resp,obs:""
+        }});
+        toast("Registrado! \u2713","ok");
+        carregarLimpeza();
+      }catch(e){ toast("Erro: "+e.message,"erro"); btn.disabled=false; btn.textContent="Feito"; }
+    });
+  });
+}
+
 
 })();
 </script>
