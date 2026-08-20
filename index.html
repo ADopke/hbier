@@ -1692,8 +1692,6 @@
       <section>
         <div class="sec-head">
           <span class="sec-title">🧹 Limpeza</span>
-          <button class="btn-hoje-sem" id="btnLimpConfig" hidden
-            style="font-size:.78rem;padding:5px 11px">⚙️ Config</button>
           <button class="btn-hoje-sem" id="btnLimpRapida"
             style="font-size:.78rem;padding:5px 11px">⚡ Limpeza rápida</button>
           <button class="btn-hoje-sem" id="btnLimpExportar"
@@ -1702,6 +1700,15 @@
         <div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:10px">
           <!-- guia de limpeza do operador -->
           <div id="minhaLimpGuia" hidden></div>
+          <!-- botao config (admin/gestor) -->
+          <button id="btnLimpConfig" hidden
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;
+            background:var(--cinza);color:var(--muted);cursor:pointer;
+            font-family:'Barlow Condensed',sans-serif;font-weight:700;
+            font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;
+            text-align:left">
+            ⚙️ Configurar responsáveis e frequências
+          </button>
           <!-- seletor de setor -->
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="limpSetorGrid">
             <!-- preenchido por JS -->
@@ -2715,7 +2722,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.9.6";
+var VERSAO = "2.9.7";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -2937,6 +2944,8 @@ async function abrirApp(){
   $("abaEquipe").hidden = !["admin","gestor"].includes(sessao.papel);
   $("abaRelatorios").hidden = sessao.papel !== "admin";
   $("campoPara").hidden = !["admin","gestor"].includes(sessao.papel);
+  var _cfgBtn = $("btnLimpConfig");
+  if (_cfgBtn) _cfgBtn.hidden = !["admin","gestor"].includes(sessao.papel);
   donoAtual = sessao.login;
   relCarregado = false;
   acompCarregado = false;
@@ -9158,22 +9167,18 @@ async function salvarLimpConfig(){
 }
 
 
-  // Config de limpeza
-  setTimeout(function(){
+  // Config de limpeza -- listeners sem depender de sessao
+  (function(){
+    var modal = $("modalLimpConfig");
     var btnCfg = $("btnLimpConfig");
-    var modal  = $("modalLimpConfig");
-    if (btnCfg){
-      // Mostrar botao apenas para admin/gestor
-      if (sessao && ["admin","gestor"].includes(sessao.papel)) btnCfg.hidden = false;
-      btnCfg.addEventListener("click", function(){ abrirLimpConfig(); });
-    }
+    if (btnCfg) btnCfg.addEventListener("click", function(){ abrirLimpConfig(); });
     if ($("btnLimpConfigFechar"))
       $("btnLimpConfigFechar").addEventListener("click", function(){ if(modal) modal.hidden=true; });
     if ($("btnLimpConfigCancelar"))
       $("btnLimpConfigCancelar").addEventListener("click", function(){ if(modal) modal.hidden=true; });
     if ($("btnLimpConfigSalvar"))
       $("btnLimpConfigSalvar").addEventListener("click", function(){ salvarLimpConfig(); });
-  }, 200);
+  })();
 
 })();
 </script>
