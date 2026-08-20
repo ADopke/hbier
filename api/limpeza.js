@@ -201,5 +201,37 @@ export default protegido(async function handler(req, res) {
     return res.json({ ok: true });
   }
 
+  /* -- config_get: retornar configuração editável dos setores -- */
+  if (dados.acao === "config_get") {
+    if (!["admin","gestor"].includes(sessao.papel))
+      return erro(res, 403, "Sem permissão.");
+    const cfg = (await ler("limp:config")) || {};
+    return res.json({ ok: true, config: cfg });
+  }
+
+  /* -- config_set: salvar responsável ou frequência de um item -- */
+  if (dados.acao === "config_set") {
+    if (!["admin","gestor"].includes(sessao.papel))
+      return erro(res, 403, "Apenas admin ou gestor podem alterar configurações.");
+    // dados.config = { setor: { responsavel, itens: { itemId: { freq } } } }
+    const configAtual = (await ler("limp:config")) || {};
+    const novaCfg = dados.config || {};
+    // Merge: sobrescrever só o que veio
+    for (const setorId of Object.keys(novaCfg)) {
+      if (!configAtual[setorId]) configAtual[setorId] = {};
+      if (novaCfg[setorId].responsavel !== undefined)
+        configAtual[setorId].responsavel = novaCfg[setorId].responsavel;
+      if (novaCfg[setorId].itens) {
+        if (!configAtual[setorId].itens) configAtual[setorId].itens = {};
+        for (const itemId of Object.keys(novaCfg[setorId].itens)) {
+          if (!configAtual[setorId].itens[itemId]) configAtual[setorId].itens[itemId] = {};
+          Object.assign(configAtual[setorId].itens[itemId], novaCfg[setorId].itens[itemId]);
+        }
+      }
+    }
+    await gravar("limp:config", configAtual);
+    return res.json({ ok: true, config: configAtual });
+  }
+
   return erro(res, 400, "Ação desconhecida.");
 });
