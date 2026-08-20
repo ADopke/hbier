@@ -2713,6 +2713,22 @@
     </div>
   </div>
 </div>
+<div id="modalLimpConfig" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25);margin:auto">
+    <div style="background:var(--verde);color:#fff;padding:14px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1">
+      <span>⚙️ Configurar Limpeza</span>
+      <button id="btnLimpConfigFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
+    </div>
+    <div style="padding:14px;font-size:.78rem;color:var(--muted);background:var(--cinza);border-bottom:1px solid var(--linha)">
+      Altere o responsável e a frequência de cada item. As mudanças são salvas no servidor e aplicadas imediatamente.
+    </div>
+    <div id="limpConfigCorpo" style="padding:0 0 8px;max-height:70vh;overflow-y:auto"></div>
+    <div style="padding:12px 14px;border-top:1px solid var(--linha);display:flex;gap:8px;position:sticky;bottom:0;background:#fff">
+      <button id="btnLimpConfigCancelar" style="padding:9px 16px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
+      <button id="btnLimpConfigSalvar" style="flex:1;padding:9px;border:none;border-radius:8px;background:var(--verde);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Salvar</button>
+    </div>
+  </div>
+</div>
 <script>
 (function(){
 "use strict";
@@ -9182,21 +9198,5 @@ async function salvarLimpConfig(){
 
 })();
 </script>
-<div id="modalLimpConfig" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto">
-  <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25);margin:auto">
-    <div style="background:var(--verde);color:#fff;padding:14px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1">
-      <span>⚙️ Configurar Limpeza</span>
-      <button id="btnLimpConfigFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;cursor:pointer">&#x2715;</button>
-    </div>
-    <div style="padding:14px;font-size:.78rem;color:var(--muted);background:var(--cinza);border-bottom:1px solid var(--linha)">
-      Altere o responsável e a frequência de cada item. As mudanças são salvas no servidor e aplicadas imediatamente.
-    </div>
-    <div id="limpConfigCorpo" style="padding:0 0 8px;max-height:70vh;overflow-y:auto"></div>
-    <div style="padding:12px 14px;border-top:1px solid var(--linha);display:flex;gap:8px;position:sticky;bottom:0;background:#fff">
-      <button id="btnLimpConfigCancelar" style="padding:9px 16px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Cancelar</button>
-      <button id="btnLimpConfigSalvar" style="flex:1;padding:9px;border:none;border-radius:8px;background:var(--verde);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Salvar</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
