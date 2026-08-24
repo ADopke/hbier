@@ -487,6 +487,32 @@
   .mlg-btn.feito:hover{ background:#FEE2E2;color:var(--vermelho);border-color:#FECACA; }
   .mlg-vazio{ text-align:center;padding:16px;color:var(--muted);font-size:.82rem; }
 
+  /* ---- tempo no tanque ---- */
+  .ttq-card{
+    background:#fff;border:1.5px solid var(--linha);border-radius:10px;
+    padding:11px 14px;margin-bottom:8px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .ttq-card.finalizado{ background:var(--cinza);opacity:.6; }
+  .ttq-card.critico   { background:#FFF5F5;border-color:#FECACA; }
+  .ttq-card.aviso     { background:var(--dourado-claro);border-color:var(--dourado); }
+  .ttq-card.ok        { background:var(--verde-claro);border-color:var(--verde); }
+  .ttq-info{ flex:1; }
+  .ttq-nome{ font-weight:700;font-size:.9rem; }
+  .ttq-sub { font-size:.72rem;color:var(--muted);margin-top:2px; }
+  .ttq-card.critico .ttq-sub{ color:var(--vermelho); }
+  .ttq-card.aviso   .ttq-sub{ color:#7A5500; }
+  .ttq-card.ok      .ttq-sub{ color:var(--verde); }
+  .ttq-dias{
+    font-family:'Barlow Condensed',sans-serif;font-weight:800;
+    font-size:1.6rem;line-height:1;text-align:center;min-width:48px;
+  }
+  .ttq-card.critico .ttq-dias{ color:var(--vermelho); }
+  .ttq-card.aviso   .ttq-dias{ color:var(--dourado); }
+  .ttq-card.ok      .ttq-dias{ color:var(--verde); }
+  .ttq-card.finalizado .ttq-dias{ color:var(--muted); }
+  .ttq-unit{ font-size:.65rem;font-weight:600;text-transform:uppercase;color:var(--muted); }
+
   /* ---- separador de dia na programação ---- */
   .prog-dia-sep{
     padding:9px 14px 8px;
@@ -1945,6 +1971,15 @@
           <button class="btn mini secundario" id="btnAtualizarTanques">Atualizar</button>
         </div>
       </section>
+
+      <!-- Panorama de tempo no tanque -->
+      <section id="secTempTanque" hidden>
+        <div class="sec-head">
+          <span class="sec-title">⏱ Tempo no Tanque</span>
+          <span class="sec-sub" id="tempTanqueMedia"></span>
+        </div>
+        <div id="tempTanqueLista" style="padding:0 14px 14px"></div>
+      </section>
     </div>
 
     <!-- ---------- ABA BASE DE REFERÊNCIA ---------- -->
@@ -2740,7 +2775,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.0.2";
+var VERSAO = "3.0.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -3831,7 +3866,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
     $("painelMetas").hidden      = b.dataset.aba !== "metas";
     $("painelLimpeza").hidden    = b.dataset.aba !== "limpeza";
     if (b.dataset.aba === "base" && !baseCarregada) carregarBase();
-    if (b.dataset.aba === "tanques") carregarTanques();
+    if (b.dataset.aba === "tanques"){ carregarTanques(); carregarTempTanque(); }
     if (b.dataset.aba === "prog") carregarProg();
     if (b.dataset.aba === "manut") carregarEquipamentos();
     if (b.dataset.aba === "relatorios" && !relCarregado) carregarRelatorio();
@@ -7224,8 +7259,9 @@ async function carregarTanques(){
 }
 
 $("btnAtualizarTanques").addEventListener("click", function(){
-  baseCarregada = false; carregarTanques();
+  baseCarregada = false; carregarTanques().then(function(){ carregarTempTanque(); });
 });
+// Carregar panorama de tempo ao abrir a aba (já foi inserido via carregarTanques listener de aba)
 
 /* ==================================================================
    Acompanhamento e relatórios
