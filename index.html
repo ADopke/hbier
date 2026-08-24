@@ -2363,6 +2363,14 @@
           <div style="font-size:.78rem;font-weight:700;color:var(--verde);
             text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
             📊 Dados da brassagem</div>
+          <!-- Tanque finalizado — movido para o topo para fácil acesso -->
+          <label style="display:flex;align-items:center;gap:10px;font-size:.88rem;
+            cursor:pointer;padding:10px 12px;background:#FEF3C7;border-radius:8px;
+            border:1.5px solid var(--dourado);margin-bottom:4px">
+            <input type="checkbox" id="resTanqFinalizado" style="width:18px;height:18px">
+            <span><strong>Tanque finalizado (zerado)</strong><br>
+            <span style="font-size:.75rem;color:var(--muted)">Marque quando o lote saiu totalmente do tanque — remove o alerta de tempo</span></span>
+          </label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div>
               <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
@@ -2402,12 +2410,6 @@
                 border-radius:8px;font-size:.9rem">
             </div>
           </div>
-          <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;
-            cursor:pointer;margin-bottom:14px">
-            <input type="checkbox" id="resTanqFinalizado">
-            Tanque finalizado (zerado)
-          </label>
-
           <div style="font-size:.78rem;font-weight:700;color:#003E99;
             text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
             📊 Quantidade e perdas</div>
@@ -2738,7 +2740,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "2.9.9";
+var VERSAO = "3.0.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
