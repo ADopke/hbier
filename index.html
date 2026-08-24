@@ -9274,6 +9274,139 @@ async function salvarLimpConfig(){
       $("btnLimpConfigSalvar").addEventListener("click", function(){ salvarLimpConfig(); });
   })();
 
+
+/* ================================================================
+   Panorama de tempo no tanque — busca brassagens das últimas semanas
+   ================================================================ */
+async function carregarTempTanque(){
+  var sec  = $("secTempTanque");
+  var lista = $("tempTanqueLista");
+  var mediaEl = $("tempTanqueMedia");
+  if (!sec || !lista) return;
+  sec.hidden = false;
+  lista.innerHTML = "<div class='vazio'>Carregando\u2026</div>";
+
+  // Buscar últimas 12 semanas de programação
+  var semanas = [];
+  var d = new Date(); d.setHours(0,0,0,0);
+  for (var i = 0; i < 12; i++){
+    var seg = segundaDe(new Date(d));
+    var ch = seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
+    semanas.push(ch);
+    d.setDate(d.getDate() - 7);
+  }
+
+  var resultados = await Promise.all(semanas.map(function(sem){
+    return api("/api/prog?semana="+sem)
+      .then(function(r){ return r.itens || []; })
+      .catch(function(){ return []; });
+  }));
+
+  // Coletar todas as brassagens com resultado
+  var brassagens = [];
+  resultados.forEach(function(itens){
+    itens.forEach(function(it){
+      if (it.tipo !== "brassagem" || !it.resultado || !it.resultado.em) return;
+      brassagens.push(it);
+    });
+  });
+
+  // Remover duplicatas pelo id
+  var vistas = {};
+  brassagens = brassagens.filter(function(it){
+    if (vistas[it.id]) return false;
+    vistas[it.id] = true;
+    return true;
+  });
+
+  if (!brassagens.length){
+    lista.innerHTML = "<div class='vazio'>Nenhuma brassagem com resultado encontrada.</div>";
+    if (mediaEl) mediaEl.textContent = "";
+    return;
+  }
+
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  function diasNoTq(isoEm){
+    if (!isoEm) return null;
+    var d2 = new Date(isoEm); d2.setHours(0,0,0,0);
+    return Math.floor((hoje - d2) / 86400000);
+  }
+
+  // Ordenar: não finalizados primeiro (mais crítico no topo), finalizados depois
+  brassagens.sort(function(a, b){
+    var fa = !!a.resultado.tanqueFinalizado;
+    var fb = !!b.resultado.tanqueFinalizado;
+    if (fa !== fb) return fa ? 1 : -1;  // finalizados vão para baixo
+    var da = diasNoTq(a.resultado.em) || 0;
+    var db = diasNoTq(b.resultado.em) || 0;
+    return db - da;  // mais dias no topo
+  });
+
+  // Calcular média (só dos não finalizados)
+  var ativos = brassagens.filter(function(it){ return !it.resultado.tanqueFinalizado; });
+  var somaAtivos = ativos.reduce(function(acc, it){
+    return acc + (diasNoTq(it.resultado.em) || 0);
+  }, 0);
+  var media = ativos.length ? Math.round(somaAtivos / ativos.length) : null;
+  if (mediaEl){
+    mediaEl.textContent = ativos.length
+      ? ativos.length+" lote(s) ativo(s)"+(media!==null?" \u00b7 m\u00e9dia: "+media+" dias":"")
+      : "Nenhum lote ativo no tanque";
+  }
+
+  var html = "";
+
+  // Resumo de média no topo
+  if (media !== null){
+    var corMedia = media >= 20 ? "var(--vermelho)" : media >= 12 ? "var(--dourado)" : "var(--verde)";
+    html += "<div style='display:flex;align-items:center;gap:12px;padding:10px 12px;"+
+      "background:var(--cinza);border-radius:10px;margin-bottom:12px;border:1.5px solid var(--linha)'>"+
+      "<div style='flex:1;font-size:.82rem;color:var(--muted)'>"+
+        "<strong style='color:var(--ink)'>M\u00e9dia de tempo no tanque</strong><br>"+
+        ativos.length+" lote(s) ativo(s) considerado(s)"+
+      "</div>"+
+      "<div style='font-family:\"Barlow Condensed\",sans-serif;font-weight:800;font-size:2rem;color:"+corMedia+"'>"+
+        media+"<span style='font-size:.7rem;font-weight:600;color:var(--muted)'> dias</span>"+
+      "</div>"+
+    "</div>";
+  }
+
+  brassagens.forEach(function(it){
+    var dias    = diasNoTq(it.resultado.em);
+    var finaliz = !!it.resultado.tanqueFinalizado;
+    var cls     = finaliz ? "finalizado" : dias >= 20 ? "critico" : dias >= 12 ? "aviso" : "ok";
+    var sub     = "";
+    if (finaliz){
+      sub = "Tanque finalizado (zerado)";
+    } else if (dias >= 20){
+      sub = "Limite ultrapassado \u2014 verificar urgente";
+    } else if (dias >= 12){
+      sub = "Pr\u00f3ximo do limite de 15 dias";
+    } else {
+      sub = "Em processo normal";
+    }
+    var lote = it.lote ? " \u00b7 "+esc(it.lote) : "";
+    var vol  = it.resultado.volume ? " \u00b7 "+fmtNum(it.resultado.volume)+" L" : "";
+
+    html += "<div class='ttq-card "+cls+"'>"+
+      "<div class='ttq-info'>"+
+        "<div class='ttq-nome'>"+esc(it.estilo||"Brassagem")+
+          (it.tanque?" \u2014 "+esc(it.tanque):"")+
+        "</div>"+
+        "<div class='ttq-sub'>"+sub+(lote||vol?"<br><span style='opacity:.7'>"+lote.slice(3)+vol+"</span>":"")+
+        "</div>"+
+      "</div>"+
+      "<div style='text-align:center'>"+
+        "<div class='ttq-dias'>"+(dias !== null ? dias : "?")+"</div>"+
+        "<div class='ttq-unit'>dias</div>"+
+      "</div>"+
+    "</div>";
+  });
+
+  lista.innerHTML = html;
+}
+
+
 })();
 </script>
 </body>
