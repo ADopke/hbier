@@ -7070,7 +7070,8 @@ async function verificarAlertasTanque(){
           dia:     it.dia || "",
           dias:    dias,
           nivel:   dias >= DIAS_CRITICO ? "vermelho" : "amarelo",
-          semana:  chSem
+          semana:  chSem,
+          id:      it.id || ""
         });
       });
     }).catch(function(){ return; });
@@ -7093,17 +7094,51 @@ function renderAlertasTanque(alertas, destino){
     var msg     = a.nivel === "vermelho"
       ? "Limite ultrapassado! Verificar urgente."
       : "Próximo do limite de 15 dias.";
-    html += "<div class='alerta-tanque "+a.nivel+"'>"+
+    html += "<div class='alerta-tanque "+a.nivel+"' "+
+      (a.id?"data-alerta-id='"+esc(a.id)+"' data-alerta-sem='"+esc(a.semana)+"' style='cursor:pointer' title='Clique para editar o resultado'":"")+">" +
       "<span class='at-icone'>"+icone+"</span>"+
       "<div class='at-body'>"+
         "<div class='at-titulo'>"+esc(a.estilo)+(a.tanque?" — "+esc(a.tanque):"")+"</div>"+
-        "<div class='at-sub'>"+msg+"</div>"+
+        "<div class='at-sub'>"+msg+(a.id?" · <u>Toque para resolver</u>":"")+"</div>"+
       "</div>"+
       "<div class='at-dias'>"+a.dias+" "+sufixo+"</div>"+
     "</div>";
   });
   html += "</div>";
   el.innerHTML = html;
+
+  // Listener: clicar no alerta abre o resultado da brassagem
+  el.querySelectorAll("[data-alerta-id]").forEach(function(card){
+    card.addEventListener("click", function(){
+      var itemId = card.dataset.alertaId;
+      var semana = card.dataset.alertaSem;
+      if (!itemId || !semana) return;
+      // Navegar para a semana
+      segProg = segundaDe(new Date(semana+"T00:00:00"));
+      // Trocar para aba Programação
+      document.querySelectorAll("[data-aba]").forEach(function(b){
+        var painel = $(b.dataset.aba==="hoje"?"painelHoje":
+                       b.dataset.aba==="prog"?"painelProg":
+                       b.dataset.aba==="semana"?"painelChecklist":
+                       "painel"+b.dataset.aba.charAt(0).toUpperCase()+b.dataset.aba.slice(1));
+        if (painel) painel.hidden = b.dataset.aba !== "prog";
+        b.classList.toggle("ativa", b.dataset.aba === "prog");
+      });
+      progSetVisao("semanal");
+      // Carregar a semana e abrir o modal de resultado
+      carregarProg().then(function(){
+        // Pequeno delay para o DOM renderizar
+        setTimeout(function(){
+          var btnRes = document.querySelector("[data-prog-res='"+itemId+"']");
+          if (btnRes) btnRes.click();
+          else {
+            // Se não encontrou, apenas mostra a semana
+            toast("Brassagem encontrada na semana de "+semana.substring(0,10));
+          }
+        }, 400);
+      });
+    });
+  });
 }
 
 // Inserir badge no card de brassagem na programação
