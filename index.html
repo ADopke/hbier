@@ -2775,7 +2775,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.0.3";
+var VERSAO = "3.0.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5926,27 +5926,35 @@ $("progLista").addEventListener("click", function(ev){
     var el=$(id); if(el) el.value="";
   });
   $("resTanqFinalizado").checked = false;
-  // preencher se já tem resultado
+  // Mostrar modal com loading — só habilitar salvar após carregar dados existentes
+  var btnSalvar = $("btnResSalvar");
+  btnSalvar.disabled = true;
+  btnSalvar.textContent = "Carregando...";
+  $("modalRes").hidden = false;
+
   api("/api/prog?semana="+_resItem.semana).then(function(r){
     var it=(r.itens||[]).find(function(x){return x.id===_resItem.id;});
-    if(!it||!it.resultado) return;
-    var res=it.resultado;
-    $("btnResRemover").hidden = false;  // tem resultado — pode remover
-    if(!isEnvase){
-      if($("resOg"))     $("resOg").value     = res.og||"";
-      if($("resVolume")) $("resVolume").value  = res.volume||"";
-    } else {
-      if($("resLitrosIni")) $("resLitrosIni").value = res.litrosInicio||"";
-      if($("resLitrosFim")) $("resLitrosFim").value = res.litrosFim||"";
-      $("resTanqFinalizado").checked = !!res.tanqueFinalizado;
-      if($("resQtdEnv"))  $("resQtdEnv").value  = res.qtdEnvasada||"";
-      if($("resSleeve"))  $("resSleeve").value   = res.sleevePerd||"";
-      if($("resPet"))     $("resPet").value      = res.petPerd||"";
-      if($("resTampas"))  $("resTampas").value   = res.tampasPerd||"";
+    if(it && it.resultado){
+      var res=it.resultado;
+      $("btnResRemover").hidden = false;
+      if(!isEnvase){
+        if($("resOg"))     $("resOg").value     = res.og||"";
+        if($("resVolume")) $("resVolume").value  = res.volume||"";
+      } else {
+        if($("resLitrosIni")) $("resLitrosIni").value = res.litrosInicio||"";
+        if($("resLitrosFim")) $("resLitrosFim").value = res.litrosFim||"";
+        $("resTanqFinalizado").checked = !!res.tanqueFinalizado;
+        if($("resQtdEnv"))  $("resQtdEnv").value  = res.qtdEnvasada||"";
+        if($("resSleeve"))  $("resSleeve").value   = res.sleevePerd||"";
+        if($("resPet"))     $("resPet").value      = res.petPerd||"";
+        if($("resTampas"))  $("resTampas").value   = res.tampasPerd||"";
+      }
+      if($("resObs")) $("resObs").value = res.obsReal||"";
     }
-    if($("resObs")) $("resObs").value = res.obsReal||"";
-  }).catch(function(){});
-  $("modalRes").hidden = false;
+  }).catch(function(){}).finally(function(){
+    btnSalvar.disabled = false;
+    btnSalvar.textContent = "✓ Salvar resultado";
+  });
 });
 
 $("btnResSalvar").addEventListener("click", async function(){
