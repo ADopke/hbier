@@ -1649,12 +1649,31 @@
             style="font-size:.78rem;padding:5px 11px">⚡ Limpeza rápida</button>
           <button class="btn-hoje-sem" id="btnLimpExportar"
             style="font-size:.78rem;padding:5px 11px">📄 Exportar PDF</button>
+          <button class="btn-hoje-sem" id="btnLimpResponsaveis" hidden
+            style="font-size:.78rem;padding:5px 11px">⚙ Responsáveis</button>
         </div>
         <div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:10px">
           <!-- seletor de setor -->
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="limpSetorGrid">
             <!-- preenchido por JS -->
           </div>
+        </div>
+      </section>
+
+      <!-- painel de configuração de responsáveis (admin/gestor) -->
+      <section id="limpPainelResp" hidden style="margin:0 0 4px">
+        <div class="sec-head">
+          <span class="sec-title">⚙ Responsáveis por setor</span>
+          <button class="btn-hoje-sem" id="btnLimpRespFechar"
+            style="font-size:.78rem;padding:5px 11px">✕ Fechar</button>
+        </div>
+        <div style="padding:10px 14px 14px;display:flex;flex-direction:column;gap:8px"
+             id="limpRespLista">
+          <!-- preenchido por JS -->
+        </div>
+        <div style="padding:0 14px 14px;display:flex;gap:8px">
+          <button class="btn-verde" id="btnLimpRespSalvar"
+            style="flex:1;font-size:.85rem;padding:9px 0">💾 Salvar responsáveis</button>
         </div>
       </section>
 
@@ -2708,7 +2727,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.0.5";
+var VERSAO = "3.0.6";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6668,12 +6687,23 @@ async function carregarLimpeza(){
   // Garantir que o grid existe antes de renderizar
   var grid = $("limpSetorGrid");
   if (!grid){ return; }
+
+  // Mostrar botão de configuração para admin/gestor
+  var btnResp = $("btnLimpResponsaveis");
+  if (btnResp) btnResp.hidden = !(sessao && ["admin","gestor"].includes(sessao.papel));
+
   // Renderizar imediatamente com o que temos
   renderLimpSetores();
-  // Depois buscar resumo e atualizar badges de status
+  // Buscar resumo + responsáveis salvos e atualizar
   try{
     var r = await api("/api/limpeza?resumo=1");
     _limpResumo = r.resumo || {};
+    // Aplicar responsáveis salvos no Redis sobre os padrões do código
+    if (r.responsaveis){
+      LIMP_SETORES.forEach(function(st){
+        if (r.responsaveis[st.id]) st.responsavel = r.responsaveis[st.id];
+      });
+    }
     renderLimpSetores();
   }catch(e){ _limpResumo = {}; renderLimpSetores(); }
 
@@ -7053,6 +7083,67 @@ $("btnLimpMiniConfirmar").addEventListener("click", function(){
     window._limpMiniPendente = null;
   });
 });
+
+// ---------- Painel de configuração de responsáveis ----------
+function limpAbrirPainelResp(){
+  var painel = $("limpPainelResp");
+  if (!painel) return;
+  // Garantir que a equipe está carregada; se não, buscar
+  var membros = equipe.length ? Promise.resolve() : api("/api/users").then(function(r){ equipe = r.usuarios||[]; });
+  Promise.resolve(membros).then(function(){
+    var html = "";
+    LIMP_SETORES.forEach(function(st){
+      var opcoes = equipe.map(function(u){
+        var nome = esc(u.nome || u.login);
+        var sel = (st.responsavel || "").toLowerCase() === (u.nome||u.login).toLowerCase() ? " selected" : "";
+        // também testar correspondência parcial (nome contém responsavel ou vice-versa)
+        if (!sel){
+          var nL = (u.nome||u.login).toLowerCase();
+          var rL = (st.responsavel||"").toLowerCase();
+          if (rL && (nL.indexOf(rL)>=0 || rL.indexOf(nL)>=0)) sel = " selected";
+        }
+        return "<option value='"+esc(u.nome||u.login)+"'"+sel+">"+nome+"</option>";
+      }).join("");
+      html += "<div style='display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--borda)'>"
+            + "<span style='font-size:1.1rem'>"+st.icone+"</span>"
+            + "<span style='flex:1;font-size:.83rem;font-weight:600'>"+esc(st.nome)+"</span>"
+            + "<select data-limp-resp-setor='"+st.id+"' style='font-size:.82rem;padding:4px 6px;"
+            +   "border:1px solid var(--borda);border-radius:7px;background:#fff;max-width:140px'>"
+            + "<option value=''>— nenhum —</option>"
+            + opcoes
+            + "</select></div>";
+    });
+    $("limpRespLista").innerHTML = html;
+    painel.hidden = false;
+    painel.scrollIntoView({behavior:"smooth",block:"nearest"});
+  }).catch(function(e){ toast("Erro ao carregar equipe: "+e.message,"erro"); });
+}
+
+$("btnLimpResponsaveis").addEventListener("click", limpAbrirPainelResp);
+$("btnLimpRespFechar").addEventListener("click", function(){ $("limpPainelResp").hidden = true; });
+
+$("btnLimpRespSalvar").addEventListener("click", function(){
+  var sels = $("limpRespLista").querySelectorAll("[data-limp-resp-setor]");
+  var mapa = {};
+  sels.forEach(function(s){ if(s.value) mapa[s.dataset.limpRespSetor] = s.value; });
+  $("btnLimpRespSalvar").disabled = true;
+  $("btnLimpRespSalvar").textContent = "Salvando...";
+  api("/api/limpeza",{method:"POST",body:{acao:"salvarResponsaveis", responsaveis:mapa}})
+    .then(function(){
+      // Aplicar localmente no LIMP_SETORES para refletir imediatamente
+      LIMP_SETORES.forEach(function(st){ if(mapa[st.id]) st.responsavel = mapa[st.id]; });
+      toast("Responsáveis salvos ✓","ok");
+      $("limpPainelResp").hidden = true;
+      renderLimpSetores();
+      if (_limpSetorAtivo) carregarLimpezaSetor(_limpSetorAtivo);
+    })
+    .catch(function(e){ toast("Erro: "+e.message,"erro"); })
+    .finally(function(){
+      $("btnLimpRespSalvar").disabled = false;
+      $("btnLimpRespSalvar").textContent = "💾 Salvar responsáveis";
+    });
+});
+// -----------------------------------------------------------
 
 $("btnLimpCancelar").addEventListener("click", function(){
   $("limpModalReg").hidden = true;
