@@ -14,6 +14,7 @@ export const SETORES = {
   sleeve:             { nome: "Sleeve",                        responsavel: "Bruno"     },
   camara_fria:        { nome: "Câmara Fria",                   responsavel: "Alex"      },
   container:          { nome: "Container",                     responsavel: "Alex"      },
+  veiculos:           { nome: "Veículos",                      responsavel: "Lampiao"   },
 };
 
 // Itens por setor com frequência conforme planilha
@@ -50,15 +51,16 @@ export const ITENS_POR_SETOR = {
     { id:"maq_carcaca",   nome:"Máquina (Carcaça)",             freq:"semanal"    },
   ],
   brassagem: [
-    { id:"piso",        nome:"Piso",                     freq:"semanal"    },
-    { id:"paredes",     nome:"Paredes",                   freq:"mensal"     },
-    { id:"pia",         nome:"Pia",                       freq:"quinzenal"  },
-    { id:"geladeira",   nome:"Geladeira (Interno/Externo)",freq:"quinzenal" },
-    { id:"grades_piso", nome:"Grades do piso",            freq:"quinzenal"  },
-    { id:"ralo",        nome:"Ralo",                      freq:"semanal"    },
-    { id:"maquinas",    nome:"Máquinas",                  freq:"a_cada_uso" },
-    { id:"tubulacoes",  nome:"Tubulações externas",       freq:"quinzenal"  },
-    { id:"bancada",     nome:"Bancada",                   freq:"quinzenal"  },
+    { id:"piso",          nome:"Piso",                      freq:"semanal"    },
+    { id:"paredes",       nome:"Paredes",                    freq:"mensal"     },
+    { id:"pia",           nome:"Pia",                        freq:"quinzenal"  },
+    { id:"geladeira",     nome:"Geladeira (Interno/Externo)",freq:"quinzenal"  },
+    { id:"grades_piso",   nome:"Grades do piso",             freq:"quinzenal"  },
+    { id:"ralo",          nome:"Ralo",                       freq:"semanal"    },
+    { id:"maquinas",      nome:"Máquinas",                   freq:"a_cada_uso" },
+    { id:"tubulacoes",    nome:"Tubulações externas",        freq:"quinzenal"  },
+    { id:"bancada",       nome:"Bancada",                    freq:"quinzenal"  },
+    { id:"tq_agua_quente",nome:"Tanque de Água Quente",      freq:"quinzenal"  },
   ],
   adega: [
     { id:"piso",        nome:"Piso",                   freq:"semanal"    },
@@ -116,6 +118,10 @@ export const ITENS_POR_SETOR = {
     { id:"paredes",nome:"Paredes", freq:"mensal" },
     { id:"teto",   nome:"Teto",    freq:"mensal" },
     { id:"porta",  nome:"Porta",   freq:"mensal" },
+  ],
+  veiculos: [
+    { id:"expert",  nome:"Expert",  freq:"semanal" },
+    { id:"courier", nome:"Courier", freq:"semanal" },
   ],
 };
 
