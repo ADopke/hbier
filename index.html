@@ -1746,6 +1746,46 @@
 
     </div>
 
+    <!-- Mini-modal: confirmar registro de limpeza com data + obs -->
+    <div id="limpMiniModal" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.45);
+      z-index:900;display:flex;align-items:center;justify-content:center;padding:20px">
+      <div style="background:#fff;border-radius:14px;width:100%;max-width:340px;
+        box-shadow:0 8px 32px rgba(0,0,0,.22);overflow:hidden">
+        <div style="background:var(--verde);color:#fff;padding:12px 16px;
+          font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;
+          text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;
+          justify-content:space-between">
+          <span id="limpMiniTitulo">Registrar limpeza</span>
+          <button id="btnLimpMiniFechar" style="background:none;border:none;color:rgba(255,255,255,.8);
+            font-size:1.2rem;cursor:pointer;line-height:1">&#x2715;</button>
+        </div>
+        <div style="padding:14px;display:flex;flex-direction:column;gap:10px">
+          <div>
+            <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">
+              📅 Data da limpeza</label>
+            <input type="date" id="limpMiniData"
+              style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.92rem">
+          </div>
+          <div>
+            <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">
+              Observações (opcional)</label>
+            <input type="text" id="limpMiniObs"
+              placeholder="Ex.: limpeza profunda, CIP do TQ-03…"
+              style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.88rem">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:2px">
+            <button id="btnLimpMiniCancelar" style="flex:1;padding:10px;border:1.5px solid var(--linha);
+              border-radius:8px;background:#fff;cursor:pointer;font-size:.88rem;font-weight:600">
+              Cancelar</button>
+            <button id="btnLimpMiniConfirmar" style="flex:2;padding:10px;border:none;border-radius:8px;
+              background:var(--verde);color:#fff;cursor:pointer;font-weight:700;font-size:.92rem;
+              font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.05em">
+              ✓ Registrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ---------- ABA EQUIPE (admin) ---------- -->
     <div id="painelEquipe" hidden>
       <section>
@@ -6909,23 +6949,19 @@ document.addEventListener("click", function(ev){
       return;
     }
 
-    btnFeito.disabled = true;
-    btnFeito.textContent = "Salvando...";
-    api("/api/limpeza",{method:"POST",body:{
-      acao:          "registrar",
-      setor:         setorId,
-      item:          itemId,
-      periodicidade: freq,
-      feitoPor:      respLogin,
-      obs:           ""
-    }}).then(function(){
-      toast("Limpeza registrada ✓","ok");
-      carregarLimpezaSetor(setorId);
-    }).catch(function(e){
-      toast("Erro: "+e.message,"erro");
-      btnFeito.disabled=false;
-      btnFeito.textContent="✓ Feito";
-    });
+    // Abrir mini-modal para data + observação
+    var itemObj2 = limpAcharItem(itemId, setorId);
+    var nomeItem = itemObj2 ? itemObj2.nome : itemId;
+    $("limpMiniTitulo").textContent = "✓ " + nomeItem;
+    // Pré-preencher data de hoje
+    var hj = new Date();
+    var hjStr = hj.getFullYear()+"-"+("0"+(hj.getMonth()+1)).slice(-2)+"-"+("0"+hj.getDate()).slice(-2);
+    $("limpMiniData").value = hjStr;
+    $("limpMiniData").max   = hjStr;
+    $("limpMiniObs").value  = "";
+    // Guardar contexto pendente
+    window._limpMiniPendente = {itemId:itemId, setorId:setorId, freq:freq, respLogin:respLogin, btnFeito:btnFeito};
+    $("limpMiniModal").hidden = false;
     return;
   }
 
@@ -6968,6 +7004,54 @@ document.addEventListener("click", function(ev){
     }).catch(function(e){ toast(e.message,"erro"); });
     return;
   }
+});
+
+// Mini-modal (data + obs) para registro rápido com data retroativa
+function limpMiniFechar(reativarBtn){
+  $("limpMiniModal").hidden = true;
+  if (reativarBtn && window._limpMiniPendente && window._limpMiniPendente.btnFeito){
+    var b = window._limpMiniPendente.btnFeito;
+    b.disabled = false;
+    b.textContent = "✓ Feito";
+  }
+  window._limpMiniPendente = null;
+}
+$("btnLimpMiniFechar").addEventListener("click",  function(){ limpMiniFechar(true); });
+$("btnLimpMiniCancelar").addEventListener("click", function(){ limpMiniFechar(true); });
+$("limpMiniModal").addEventListener("click", function(ev){
+  if (ev.target === $("limpMiniModal")) limpMiniFechar(true); // fechar ao clicar fora
+});
+
+$("btnLimpMiniConfirmar").addEventListener("click", function(){
+  var p = window._limpMiniPendente;
+  if (!p) return;
+  var dataVal = $("limpMiniData").value;    // AAAA-MM-DD
+  var obsVal  = $("limpMiniObs").value.trim();
+  if (!dataVal){ toast("Informe a data da limpeza.","erro"); return; }
+  // Monta ISO com meio-dia (UTC) para evitar problemas de fuso
+  var emISO = dataVal + "T12:00:00.000Z";
+  $("limpMiniModal").hidden = true;
+  p.btnFeito.disabled    = true;
+  p.btnFeito.textContent = "Salvando...";
+  api("/api/limpeza",{method:"POST",body:{
+    acao:          "registrar",
+    setor:         p.setorId,
+    item:          p.itemId,
+    periodicidade: p.freq,
+    feitoPor:      p.respLogin,
+    obs:           obsVal,
+    em:            emISO
+  }}).then(function(){
+    toast("Limpeza registrada ✓","ok");
+    window._limpMiniPendente = null;
+    carregarLimpezaSetor(p.setorId);
+  }).catch(function(e){
+    toast("Erro: "+e.message,"erro");
+    $("limpMiniModal").hidden = true;
+    p.btnFeito.disabled    = false;
+    p.btnFeito.textContent = "✓ Feito";
+    window._limpMiniPendente = null;
+  });
 });
 
 $("btnLimpCancelar").addEventListener("click", function(){
