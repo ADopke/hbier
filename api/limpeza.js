@@ -173,6 +173,25 @@ export default protegido(async function handler(req, res) {
     if (!SETORES[setor]) return erro(res, 400, "Setor inválido.");
     if (!item)           return erro(res, 400, "Item obrigatório.");
 
+    // Data do registro: aceita data retroativa enviada pelo cliente (campo `em`)
+    // Validações: deve ser ISO válida, não futura, máximo 90 dias atrás
+    let emISO = new Date().toISOString();
+    if (dados.em) {
+      const dataEnviada = new Date(dados.em);
+      if (isNaN(dataEnviada.getTime())) {
+        return erro(res, 400, "Data inválida.");
+      }
+      const agora = Date.now();
+      if (dataEnviada.getTime() > agora + 60_000) {
+        return erro(res, 400, "Data não pode ser futura.");
+      }
+      const limitePasado = agora - 90 * 24 * 60 * 60 * 1000; // 90 dias
+      if (dataEnviada.getTime() < limitePasado) {
+        return erro(res, 400, "Data retroativa muito antiga (máximo 90 dias).");
+      }
+      emISO = dataEnviada.toISOString();
+    }
+
     const registros = (await ler(chaveSetor(setor))) || [];
     const novo = {
       id: novoId(),
@@ -181,7 +200,7 @@ export default protegido(async function handler(req, res) {
       obs,
       feitoPor,
       nomeFeitoPor: sessao.nome || sessao.login,
-      em: new Date().toISOString(),
+      em: emISO,
     };
     registros.push(novo);
     if (registros.length > 300) registros.splice(0, registros.length - 300);
@@ -199,38 +218,6 @@ export default protegido(async function handler(req, res) {
     const registros = (await ler(chaveSetor(setor))) || [];
     await gravar(chaveSetor(setor), registros.filter((r) => r.id !== id));
     return res.json({ ok: true });
-  }
-
-  /* -- config_get: retornar configuração editável dos setores -- */
-  if (dados.acao === "config_get") {
-    if (!["admin","gestor"].includes(sessao.papel))
-      return erro(res, 403, "Sem permissão.");
-    const cfg = (await ler("limp:config")) || {};
-    return res.json({ ok: true, config: cfg });
-  }
-
-  /* -- config_set: salvar responsável ou frequência de um item -- */
-  if (dados.acao === "config_set") {
-    if (!["admin","gestor"].includes(sessao.papel))
-      return erro(res, 403, "Apenas admin ou gestor podem alterar configurações.");
-    // dados.config = { setor: { responsavel, itens: { itemId: { freq } } } }
-    const configAtual = (await ler("limp:config")) || {};
-    const novaCfg = dados.config || {};
-    // Merge: sobrescrever só o que veio
-    for (const setorId of Object.keys(novaCfg)) {
-      if (!configAtual[setorId]) configAtual[setorId] = {};
-      if (novaCfg[setorId].responsavel !== undefined)
-        configAtual[setorId].responsavel = novaCfg[setorId].responsavel;
-      if (novaCfg[setorId].itens) {
-        if (!configAtual[setorId].itens) configAtual[setorId].itens = {};
-        for (const itemId of Object.keys(novaCfg[setorId].itens)) {
-          if (!configAtual[setorId].itens[itemId]) configAtual[setorId].itens[itemId] = {};
-          Object.assign(configAtual[setorId].itens[itemId], novaCfg[setorId].itens[itemId]);
-        }
-      }
-    }
-    await gravar("limp:config", configAtual);
-    return res.json({ ok: true, config: configAtual });
   }
 
   return erro(res, 400, "Ação desconhecida.");
