@@ -131,6 +131,7 @@ export const LIMITE_DIAS = {
 
 function chaveSetor(setor)        { return `limpeza:${setor}`; }
 const CHAVE_RESPONSAVEIS = "limpeza:_responsaveis";
+const CHAVE_FREQUENCIAS  = "limpeza:_frequencias";
 
 export default protegido(async function handler(req, res) {
   const sessao = await exigirLogin(req, res);
@@ -149,7 +150,8 @@ export default protegido(async function handler(req, res) {
       resultado[setor] = ultimoPorItem;
     }
     const responsaveis = (await ler(CHAVE_RESPONSAVEIS)) || {};
-    return res.json({ ok: true, resumo: resultado, setores: SETORES, itensPorSetor: ITENS_POR_SETOR, limiteDias: LIMITE_DIAS, responsaveis });
+    const frequencias  = (await ler(CHAVE_FREQUENCIAS))  || {};
+    return res.json({ ok: true, resumo: resultado, setores: SETORES, itensPorSetor: ITENS_POR_SETOR, limiteDias: LIMITE_DIAS, responsaveis, frequencias });
   }
 
   /* ---------- GET: registros de um setor ---------- */
@@ -208,6 +210,34 @@ export default protegido(async function handler(req, res) {
     if (registros.length > 300) registros.splice(0, registros.length - 300);
     await gravar(chaveSetor(setor), registros);
     return res.json({ ok: true, registro: novo });
+  }
+
+  /* -- salvarFrequencias -- */
+  if (dados.acao === "salvarFrequencias") {
+    if (!["admin","gestor"].includes(sessao.papel))
+      return erro(res, 403, "Apenas admin ou gestor podem alterar frequências.");
+    const freqs = dados.frequencias;
+    if (!freqs || typeof freqs !== "object") return erro(res, 400, "Dados inválidos.");
+    const freqsValidas = ["diaria","semanal","quinzenal","mensal","anual","a_cada_uso","eventual"];
+    // Validar e filtrar
+    const mapaFiltrado = {};
+    for (const [setor, itens] of Object.entries(freqs)) {
+      if (!ITENS_POR_SETOR[setor]) continue;
+      mapaFiltrado[setor] = {};
+      for (const [itemId, freq] of Object.entries(itens)) {
+        const itemValido = ITENS_POR_SETOR[setor].find(function(it){ return it.id === itemId; });
+        if (itemValido && freqsValidas.includes(freq)) {
+          mapaFiltrado[setor][itemId] = freq;
+        }
+      }
+    }
+    // Merge com frequências já salvas para não perder outros setores
+    const existentes = (await ler(CHAVE_FREQUENCIAS)) || {};
+    for (const [setor, itens] of Object.entries(mapaFiltrado)) {
+      existentes[setor] = Object.assign(existentes[setor] || {}, itens);
+    }
+    await gravar(CHAVE_FREQUENCIAS, existentes);
+    return res.json({ ok: true, frequencias: existentes });
   }
 
   /* -- salvarResponsaveis -- */
