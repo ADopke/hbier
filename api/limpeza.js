@@ -129,7 +129,8 @@ export const LIMITE_DIAS = {
   eventual:   30,
 };
 
-function chaveSetor(setor) { return `limpeza:${setor}`; }
+function chaveSetor(setor)        { return `limpeza:${setor}`; }
+const CHAVE_RESPONSAVEIS = "limpeza:_responsaveis";
 
 export default protegido(async function handler(req, res) {
   const sessao = await exigirLogin(req, res);
@@ -147,7 +148,8 @@ export default protegido(async function handler(req, res) {
       });
       resultado[setor] = ultimoPorItem;
     }
-    return res.json({ ok: true, resumo: resultado, setores: SETORES, itensPorSetor: ITENS_POR_SETOR, limiteDias: LIMITE_DIAS });
+    const responsaveis = (await ler(CHAVE_RESPONSAVEIS)) || {};
+    return res.json({ ok: true, resumo: resultado, setores: SETORES, itensPorSetor: ITENS_POR_SETOR, limiteDias: LIMITE_DIAS, responsaveis });
   }
 
   /* ---------- GET: registros de um setor ---------- */
@@ -206,6 +208,23 @@ export default protegido(async function handler(req, res) {
     if (registros.length > 300) registros.splice(0, registros.length - 300);
     await gravar(chaveSetor(setor), registros);
     return res.json({ ok: true, registro: novo });
+  }
+
+  /* -- salvarResponsaveis -- */
+  if (dados.acao === "salvarResponsaveis") {
+    if (!["admin","gestor"].includes(sessao.papel))
+      return erro(res, 403, "Apenas admin ou gestor podem alterar responsáveis.");
+    const mapa = dados.responsaveis;
+    if (!mapa || typeof mapa !== "object") return erro(res, 400, "Dados inválidos.");
+    // Aceitar apenas setores conhecidos
+    const mapaFiltrado = {};
+    for (const [setor, nome] of Object.entries(mapa)) {
+      if (SETORES[setor] && typeof nome === "string" && nome.trim()) {
+        mapaFiltrado[setor] = nome.trim();
+      }
+    }
+    await gravar(CHAVE_RESPONSAVEIS, mapaFiltrado);
+    return res.json({ ok: true, responsaveis: mapaFiltrado });
   }
 
   /* -- remover -- */
