@@ -2752,7 +2752,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.0.9";
+var VERSAO = "3.1.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6840,7 +6840,7 @@ async function carregarLimpezaSetor(setorId){
           " data-limp-feito-setor='"+setorId+"'"+
           " data-limp-feito-freq='"+u.it.freq+"'"+
           " data-limp-feito-reg=''"+
-          " data-limp-feito-resp='"+esc(resp_login)+"'>✓ Feito</button>"+
+          " data-limp-feito-resp='"+esc(resp_login)+"'>✓ Registrar</button>"+
       "</div>";
     });
     htmlUrgentes += "</div>";
@@ -6874,7 +6874,7 @@ async function carregarLimpezaSetor(setorId){
           " data-limp-feito-freq='"+it.freq+"'"+
           " data-limp-feito-reg='"+(ultimo?esc(ultimo.id):"")+"'"+
           " data-limp-feito-resp='"+esc(resp_login)+"'>"+
-          (feito_hoje ? "✓ Feito hoje" : "✓ Feito")+
+          (feito_hoje ? "✓ Registrado hoje" : "✓ Registrar")+
         "</button>"+
         "<span data-limp-item='"+it.id+"' style='display:none'></span>"+
       "</div>"+
@@ -7003,7 +7003,7 @@ document.addEventListener("click", function(ev){
       }).catch(function(e){
         toast("Erro: "+e.message,"erro");
         btnFeito.disabled=false;
-        btnFeito.textContent="✓ Feito hoje";
+        btnFeito.textContent="✓ Registrado hoje";
       });
       return;
     }
@@ -7071,7 +7071,7 @@ function limpMiniFechar(reativarBtn){
   if (reativarBtn && window._limpMiniPendente && window._limpMiniPendente.btnFeito){
     var b = window._limpMiniPendente.btnFeito;
     b.disabled = false;
-    b.textContent = "✓ Feito";
+    b.textContent = "✓ Registrar";
   }
   window._limpMiniPendente = null;
 }
@@ -7108,7 +7108,7 @@ $("btnLimpMiniConfirmar").addEventListener("click", function(){
     toast("Erro: "+e.message,"erro");
     $("limpMiniModal").hidden = true;
     p.btnFeito.disabled    = false;
-    p.btnFeito.textContent = "✓ Feito";
+    p.btnFeito.textContent = "✓ Registrar";
     window._limpMiniPendente = null;
   });
 });
