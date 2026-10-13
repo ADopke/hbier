@@ -1459,6 +1459,22 @@
           border-bottom:1px solid var(--linha);display:flex;flex-wrap:wrap;
           gap:6px;align-items:center;min-height:0"></div>
 
+        <!-- busca de lote -->
+        <div id="progBuscaLoteWrap" style="padding:10px 14px 0;border-bottom:1px solid var(--linha)">
+          <div style="display:flex;gap:8px;align-items:center">
+            <div style="position:relative;flex:1">
+              <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:.9rem;pointer-events:none">🔍</span>
+              <input type="text" id="progBuscaLoteInput" placeholder="Buscar lote… ex: LOT38/26"
+                style="width:100%;padding:9px 10px 9px 32px;border:1.5px solid var(--linha);border-radius:8px;
+                  font-size:.87rem;box-sizing:border-box;background:var(--card);color:var(--ink)"
+                autocomplete="off" spellcheck="false">
+            </div>
+            <button class="btn mini" id="btnProgBuscaLote" style="white-space:nowrap;flex-shrink:0">Buscar</button>
+            <button class="btn mini secundario" id="btnProgBuscaLoteLimpar" hidden style="flex-shrink:0">✕</button>
+          </div>
+          <div id="progBuscaLoteResultado" style="margin-top:10px;margin-bottom:4px"></div>
+        </div>
+
         <!-- visão semanal -->
         <div id="progListaWrap">
           <div id="progLista" style="padding:14px"></div>
@@ -2752,7 +2768,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.1.0";
+var VERSAO = "3.2.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4790,6 +4806,197 @@ async function carregarProg(){
     renderProg(r.itens, seg, segProg, r.tarefasVinculadas||{}, r.barreis||{});
   }catch(e){ $("progLista").innerHTML="<div class='vazio'>"+esc(e.message)+"</div>"; }
 }
+
+// ===== BUSCA DE LOTE =====
+(function(){
+  var _buscando = false;
+
+  function chaveSemDe(d){
+    var s = segundaDe(d);
+    return s.getFullYear()+"-"+("0"+(s.getMonth()+1)).slice(-2)+"-"+("0"+s.getDate()).slice(-2);
+  }
+
+  // Gera lista de chaves de semana dos últimos N meses a partir de hoje
+  function semanasUltimos(meses){
+    var semanas = [];
+    var hoje = new Date();
+    var inicio = new Date(hoje);
+    inicio.setMonth(inicio.getMonth() - meses);
+    var cur = segundaDe(inicio);
+    var fim = new Date(hoje);
+    fim.setDate(fim.getDate() + 14); // +2 semanas no futuro
+    while(cur <= fim){
+      semanas.push(chaveSemDe(cur));
+      var next = new Date(cur);
+      next.setDate(next.getDate()+7);
+      cur = next;
+    }
+    return semanas;
+  }
+
+  function nomeDiaSemana(seg, nomeDia){
+    // Retorna a data ISO do dia nomeado dentro da semana que começa em seg (YYYY-MM-DD)
+    var map = {Segunda:0,Terça:1,Quarta:2,Quinta:3,Sexta:4,Sábado:5,Domingo:6};
+    if(nomeDia === undefined || nomeDia === null || nomeDia === "") return null;
+    var off = map[nomeDia];
+    if(off === undefined) return null;
+    var d = new Date(seg+"T00:00:00");
+    d.setDate(d.getDate()+off);
+    return d.getDate()+"/"+(d.getMonth()+1)+"/"+d.getFullYear();
+  }
+
+  async function buscarLote(termo){
+    if(_buscando) return;
+    _buscando = true;
+    var res = $("progBuscaLoteResultado");
+    res.innerHTML = "<div style='color:var(--muted);font-size:.83rem;padding:4px 0'>🔎 Buscando em todos os registros…</div>";
+    $("btnProgBuscaLote").disabled = true;
+    $("btnProgBuscaLoteLimpar").hidden = false;
+
+    var termoN = termo.trim().toUpperCase();
+    var semanas = semanasUltimos(14); // ~3 anos de histórico
+    var achados = [];
+
+    try{
+      // Busca em paralelo, lotes de 8 para não sobrecarregar
+      var loteSize = 8;
+      for(var i=0; i<semanas.length; i+=loteSize){
+        var batch = semanas.slice(i, i+loteSize);
+        var resultados = await Promise.all(batch.map(function(sem){
+          return api("/api/prog?semana="+sem).then(function(r){ return {sem:sem, r:r}; }).catch(function(){ return null; });
+        }));
+        resultados.forEach(function(x){
+          if(!x) return;
+          var sem = x.sem, r = x.r;
+          // itens normais (brassagem, envase)
+          (r.itens||[]).forEach(function(it){
+            if(!it.lote) return;
+            if(it.lote.toUpperCase().indexOf(termoN) === -1) return;
+            achados.push({sem:sem, item:it});
+          });
+          // barreis
+          Object.values(r.barreis||{}).forEach(function(lista){
+            (lista||[]).forEach(function(it){
+              if(!it.lote) return;
+              if(it.lote.toUpperCase().indexOf(termoN) === -1) return;
+              achados.push({sem:sem, item:Object.assign({},it,{_tipo:"barril"})});
+            });
+          });
+        });
+      }
+    }catch(e){
+      res.innerHTML = "<div style='color:var(--erro);font-size:.83rem;padding:4px 0'>Erro na busca: "+esc(e.message)+"</div>";
+      _buscando = false;
+      $("btnProgBuscaLote").disabled = false;
+      return;
+    }
+
+    _buscando = false;
+    $("btnProgBuscaLote").disabled = false;
+
+    if(!achados.length){
+      res.innerHTML = "<div style='color:var(--muted);font-size:.83rem;padding:6px 0'>Nenhum registro encontrado para <b>"+esc(termo)+"</b>.</div>";
+      return;
+    }
+
+    // Ordenar por semana + dia
+    var ORDEM = {Segunda:0,Terça:1,Quarta:2,Quinta:3,Sexta:4,Sábado:5};
+    achados.sort(function(a,b){
+      if(a.sem < b.sem) return -1;
+      if(a.sem > b.sem) return 1;
+      return (ORDEM[a.item.dia]||99)-(ORDEM[b.item.dia]||99);
+    });
+
+    var html = "<div style='font-size:.8rem;color:var(--muted);margin-bottom:6px'>"+
+      achados.length+" registro(s) encontrado(s) para <b>"+esc(termo)+"</b>:</div>";
+
+    achados.forEach(function(x){
+      var it = x.item;
+      var sem = x.sem;
+      var tipo = it._tipo === "barril" ? "barril" : it.tipo;
+      var data = nomeDiaSemana(sem, it.dia) || sem;
+      var icone, cor, tag, detalhe="";
+
+      if(tipo === "brassagem"){
+        icone = "🍺"; cor = "var(--verde)"; tag = "Brassagem";
+        if(it.tanque)  detalhe += "<span class='item-desc'>Tanque: "+esc(it.tanque)+"</span> ";
+        if(it.volPrev) detalhe += "<span class='item-desc' style='color:var(--verde);font-weight:600'>Prev: "+esc(it.volPrev)+" L</span> ";
+        if(it.resultado){
+          var rv = it.resultado;
+          if(rv.volume) detalhe += "<span class='item-desc' style='color:var(--verde);font-weight:600'>Real: "+esc(rv.volume)+" L</span> ";
+          if(rv.og)     detalhe += "<span class='item-desc'>OG: "+esc(rv.og)+"</span> ";
+        }
+      } else if(tipo === "envase"){
+        icone = "📦"; cor = "#003E99"; tag = "Envase";
+        if(it.tanqueOrigem) detalhe += "<span class='item-desc'>Origem: "+esc(it.tanqueOrigem)+"</span> ";
+        if(it.formato)      detalhe += "<span class='item-desc'>"+esc(it.formato)+"</span> ";
+        if(it.estilo)       detalhe += "<span class='item-desc'>"+esc(it.estilo)+"</span> ";
+        if(it.qtd)          detalhe += "<span class='item-desc'>Prev: "+esc(it.qtd)+"</span> ";
+        if(it.resultado){
+          var re = it.resultado;
+          if(re.qtdReal) detalhe += "<span class='item-desc' style='color:#003E99;font-weight:600'>Real: "+esc(re.qtdReal)+" un</span> ";
+        }
+      } else {
+        icone = "🛢"; cor = "#7A4500"; tag = "Barril";
+        if(it.produto) detalhe += "<span class='item-desc'>"+esc(it.produto)+"</span> ";
+        if(it.total)   detalhe += "<span class='item-desc'>"+fmtNum(it.total)+" L</span> ";
+      }
+
+      html += "<div class='prog-item' style='margin-bottom:8px;cursor:pointer' "+
+        "data-busca-ir-sem='"+esc(sem)+"' title='Ir para esta semana'>"+
+        "<div class='prog-main'>"+
+          "<div class='prog-tipo-header'>"+
+            "<span class='prog-tipo-icone'>"+icone+"</span>"+
+            "<span style='color:"+cor+";font-weight:700'>"+tag+"</span>"+
+            "<span style='margin-left:auto;font-size:.75rem;color:var(--muted)'>"+esc(data)+(it.dia?" ("+esc(it.dia)+")":"")+"</span>"+
+          "</div>"+
+          "<div style='margin:4px 0 2px;font-size:.78rem;font-weight:700;color:var(--ink)'>"+esc(it.lote)+"</div>"+
+          "<div style='display:flex;flex-wrap:wrap;gap:5px'>"+detalhe+"</div>"+
+          "<div style='font-size:.7rem;color:var(--muted);margin-top:3px'>"+
+            "Clique para ir para a semana de "+esc(sem)+"</div>"+
+        "</div>"+
+      "</div>";
+    });
+
+    res.innerHTML = html;
+
+    // Clicar no card navega para aquela semana
+    res.querySelectorAll("[data-busca-ir-sem]").forEach(function(el){
+      el.addEventListener("click", function(){
+        var s = el.dataset.buscaIrSem;
+        segProg = new Date(s+"T00:00:00");
+        if(_progVisao !== "semanal") progSetVisao("semanal");
+        carregarProg();
+        // scroll para o topo da lista
+        setTimeout(function(){ ($("progListaWrap")||{}).scrollIntoView&&$("progListaWrap").scrollIntoView({behavior:"smooth"}); }, 200);
+      });
+    });
+  }
+
+  // Eventos
+  document.addEventListener("DOMContentLoaded", function(){
+    $("btnProgBuscaLote").addEventListener("click", function(){
+      var t = $("progBuscaLoteInput").value.trim();
+      if(!t){ $("progBuscaLoteInput").focus(); return; }
+      buscarLote(t);
+    });
+
+    $("progBuscaLoteInput").addEventListener("keydown", function(e){
+      if(e.key === "Enter"){
+        var t = this.value.trim();
+        if(t) buscarLote(t);
+      }
+    });
+
+    $("btnProgBuscaLoteLimpar").addEventListener("click", function(){
+      $("progBuscaLoteInput").value = "";
+      $("progBuscaLoteResultado").innerHTML = "";
+      $("btnProgBuscaLoteLimpar").hidden = true;
+      $("progBuscaLoteInput").focus();
+    });
+  });
+})();
+// ===== FIM BUSCA DE LOTE =====
 
 function fmtNum(n){
   if(n===undefined||n===null||n==="") return "";
