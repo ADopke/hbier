@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.3";
+var VERSAO = "3.3.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7885,7 +7885,34 @@ async function carregarTanques(){
       return;
     }
 
-    var html = _dadosTanques.map(function(tq){
+    // ── Resumo no topo ──────────────────────────────────────────────
+    var contagem = {livre:0, planejado:0, maturando:0, critico:0, envasando:0};
+    _dadosTanques.forEach(function(tq){ if (contagem[tq.estagio] !== undefined) contagem[tq.estagio]++; });
+    var resumoHtml =
+      "<div style='display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:#F0FDF4;"+
+        "border-bottom:1px solid #A8D4B4'>"+
+        (contagem.livre    ? "<span style='background:#fff;border:1px solid #22C55E;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#15803D'>✅ "+contagem.livre+" livre"+(contagem.livre>1?"s":"")+"</span>" : "")+
+        (contagem.planejado? "<span style='background:#fff;border:1px solid #F59E0B;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#B45309'>📅 "+contagem.planejado+" previsto"+(contagem.planejado>1?"s":"")+"</span>" : "")+
+        (contagem.maturando? "<span style='background:#fff;border:1px solid #16A34A;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#15803D'>🍺 "+contagem.maturando+" maturando"+(contagem.maturando>1?"":"")+"</span>" : "")+
+        (contagem.critico  ? "<span style='background:#fff;border:1px solid #DC2626;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#DC2626'>🚨 "+contagem.critico+" atenção"+(contagem.critico>1?"":"")+"</span>" : "")+
+        (contagem.envasando? "<span style='background:#fff;border:1px solid #3B82F6;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#1D4ED8'>📦 "+contagem.envasando+" envasando"+(contagem.envasando>1?"":"")+"</span>" : "")+
+      "</div>";
+
+    // ── Agrupar por disponibilidade ──────────────────────────────────
+    var grupos = [
+      { label: "✅ Disponíveis para uso", cor: "#15803D", bg: "#F0FDF4", borda: "#A8D4B4",
+        estagios: ["livre"] },
+      { label: "📅 Brassagem prevista", cor: "#B45309", bg: "#FFFBEB", borda: "#FCD34D",
+        estagios: ["planejado"] },
+      { label: "🍺 Fermentando / Maturando", cor: "#15803D", bg: "#F0FDF4", borda: "#A8D4B4",
+        estagios: ["maturando"] },
+      { label: "🚨 Atenção — maturando há muito tempo", cor: "#DC2626", bg: "#FEF2F2", borda: "#FECACA",
+        estagios: ["critico"] },
+      { label: "📦 Em envase", cor: "#1D4ED8", bg: "#EFF6FF", borda: "#BFDBFE",
+        estagios: ["envasando"] },
+    ];
+
+    function renderCard(tq){
       var podeEditar = ["admin","gestor"].includes(sessao.papel);
 
       // badge de estágio
@@ -7967,9 +7994,20 @@ async function carregarTanques(){
         obsHtml+
         botoesHtml+
       "</div>";
+    }
+
+    var gruposHtml = grupos.map(function(g){
+      var tqs = _dadosTanques.filter(function(tq){ return g.estagios.includes(tq.estagio); });
+      if (!tqs.length) return "";
+      return "<div style='margin-bottom:14px'>"+
+        "<div style='font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;"+
+          "color:"+g.cor+";padding:6px 2px 4px;border-bottom:1.5px solid "+g.borda+";margin-bottom:8px'>"+
+          g.label+" <span style='font-weight:400;opacity:.7'>("+tqs.length+")</span></div>"+
+        "<div class='tanques-grid'>"+tqs.map(renderCard).join("")+"</div>"+
+      "</div>";
     }).join("");
 
-    $("tanquesLista").innerHTML = "<div class='tanques-grid'>"+html+"</div>";
+    $("tanquesLista").innerHTML = resumoHtml + "<div style='padding:14px'>" + gruposHtml + "</div>";
 
     // Eventos dos botões de ação
     $("tanquesLista").querySelectorAll("[data-tq-obs]").forEach(function(btn){
