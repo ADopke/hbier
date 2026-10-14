@@ -213,6 +213,7 @@ export default protegido(async function handler(req, res) {
       ok: true,
       tanques: tanquesEstado,
       geradoEm: new Date().toISOString(),
+      _debug: { brassagens, envases }, // remover após diagnosticar
     });
   }
 
