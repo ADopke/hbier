@@ -59,8 +59,7 @@ export default protegido(async function handler(req, res) {
 
     await Promise.all(semanas.map(async (sem) => {
       try {
-        const dados = (await ler(CHAVE_PROG(sem))) || {};
-        const itens = dados.itens || [];
+        const itens = (await ler(CHAVE_PROG(sem))) || [];
         itens.forEach(it => {
           if (it.tipo === "brassagem") {
             // Aceita tanto brassagens com resultado registrado quanto planejadas (sem resultado)
@@ -69,7 +68,7 @@ export default protegido(async function handler(req, res) {
             const dataRef = temResultado
               ? it.resultado.em
               : (it.dataISO || sem); // fallback: data prevista ou início da semana
-            if (!it.tanque && !it.lote) return; // ignora itens sem tanque e sem lote
+            if (!it.tanque) return; // ignora brassagens sem tanque definido
             // Normaliza "TQ-03", "TQ 03", "tq03" → "TQ03"
             const tanqueNorm = (it.tanque || "").toUpperCase().replace(/[-\s]/g, "");
             brassagens.push({
@@ -213,7 +212,6 @@ export default protegido(async function handler(req, res) {
       ok: true,
       tanques: tanquesEstado,
       geradoEm: new Date().toISOString(),
-      _debug: { brassagens, envases }, // remover após diagnosticar
     });
   }
 
