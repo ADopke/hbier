@@ -111,10 +111,15 @@ export default protegido(async function handler(req, res) {
     const tanquesEstado = TANQUES.map(tq => {
       const nomeUp = tq.nome.toUpperCase();
 
-      // brassagem mais recente para este tanque (não finalizada)
+      // brassagem realizada mais recente (não finalizada) — estado atual do tanque
       const brass = brassagens
-        .filter(b => b.tanque === nomeUp && !b.tanqueFinalizado)
+        .filter(b => b.tanque === nomeUp && !b.tanqueFinalizado && !b.planejada)
         .sort((a, b) => b.em.localeCompare(a.em))[0] || null;
+
+      // próxima brassagem planejada (ainda não realizada) — info adicional
+      const proximaBrass = brassagens
+        .filter(b => b.tanque === nomeUp && b.planejada)
+        .sort((a, b) => a.em.localeCompare(b.em))[0] || null;
 
       // brassagem finalizada mais recente (para histórico)
       const brassFinalizada = brassagens
@@ -128,7 +133,7 @@ export default protegido(async function handler(req, res) {
             .sort((a, b) => b.em.localeCompare(a.em))[0] || null
         : null;
 
-      // Estágio
+      // Estágio — baseado apenas no estado atual (ignora brassagens planejadas)
       let estagio, estagioLabel, estagioIcone, estagioCorBg, estagioCorBorda;
       if (manual[tq.id] && manual[tq.id].estagio) {
         estagio       = manual[tq.id].estagio;
@@ -142,13 +147,6 @@ export default protegido(async function handler(req, res) {
         estagioIcone  = "✅";
         estagioCorBg  = "#F0FDF4";
         estagioCorBorda = "#22C55E";
-      } else if (brass.planejada) {
-        // Brassagem planejada ainda não realizada
-        estagio       = "planejado";
-        estagioLabel  = "Brassagem prevista";
-        estagioIcone  = "📅";
-        estagioCorBg  = "#FFFBEB";
-        estagioCorBorda = "#F59E0B";
       } else if (envase) {
         estagio       = "envasando";
         estagioLabel  = "Envasando";
@@ -173,7 +171,7 @@ export default protegido(async function handler(req, res) {
         }
       }
 
-      const diasTanque = (brass && !brass.planejada) ? diasDesde(brass.em) : null;
+      const diasTanque = brass ? diasDesde(brass.em) : null;
 
       return {
         id:           tq.id,
@@ -191,6 +189,12 @@ export default protegido(async function handler(req, res) {
         diasTanque,
         brassadoEm:   brass ? brass.em     : "",
         brassadoSem:  brass ? brass.semana : "",
+        proximaBrass: proximaBrass ? {
+          estilo:  proximaBrass.estilo,
+          semana:  proximaBrass.semana,
+          dataISO: proximaBrass.em,
+          volPrev: proximaBrass.volume,
+        } : null,
         envase:       envase ? {
           lote:    envase.lote,
           estilo:  envase.estilo,
