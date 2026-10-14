@@ -243,6 +243,24 @@ export default protegido(async function handler(req, res) {
       return res.json({ ok: true });
     }
 
+    /* -- marcarPronto (pronto para envase) -- */
+    if (dados.acao === "marcarPronto") {
+      if (!["admin", "gestor"].includes(sessao.papel))
+        return erro(res, 403, "Apenas admin ou gestor.");
+      const { tanqueId } = dados;
+      if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
+      const mapa = (await ler(CHAVE_MANUAL)) || {};
+      mapa[tanqueId] = {
+        estagio:      "pronto",
+        estagioLabel: "Pronto para envase",
+        estagioIcone: "🟢",
+        por:          sessao.usuario || sessao.login,
+        em:           new Date().toISOString(),
+      };
+      await gravar(CHAVE_MANUAL, mapa);
+      return res.json({ ok: true });
+    }
+
     /* -- marcarLivre (sobrescrever manualmente) -- */
     if (dados.acao === "marcarLivre") {
       if (!["admin", "gestor"].includes(sessao.papel))
