@@ -71,10 +71,14 @@ export default protegido(async function handler(req, res) {
             if (!it.tanque) return; // ignora brassagens sem tanque definido
             // Normaliza "TQ-03", "TQ 03", "tq03" → "TQ03"
             const tanqueNorm = (it.tanque || "").toUpperCase().replace(/[-\s]/g, "");
-            // "planejada" = sem resultado E data prevista no futuro
+            // "planejada" = sem resultado E data prevista no futuro (não inclui hoje)
+            // "previstahoje" = sem resultado E data == hoje
             const dataISO = (it.dataISO || sem);
-            const ehFutura = dataISO > new Date().toISOString().slice(0, 10);
-            const planejada = !temResultado && ehFutura;
+            const hoje = new Date().toISOString().slice(0, 10);
+            const ehFutura = dataISO > hoje;
+            const ehHoje   = dataISO === hoje;
+            const planejada     = !temResultado && ehFutura;
+            const previstahoje  = !temResultado && ehHoje;
             brassagens.push({
               tanque:           tanqueNorm,
               lote:             it.lote      || "",
@@ -84,6 +88,7 @@ export default protegido(async function handler(req, res) {
               og:               temResultado ? (it.resultado.og || "") : "",
               tanqueFinalizado: temResultado ? !!it.resultado.tanqueFinalizado : false,
               planejada,
+              previstahoje,
               semana:           sem,
             });
           }
@@ -117,10 +122,15 @@ export default protegido(async function handler(req, res) {
 
       // brassagem realizada mais recente (não finalizada) — estado atual do tanque
       const brass = brassagens
-        .filter(b => b.tanque === nomeUp && !b.tanqueFinalizado && !b.planejada)
+        .filter(b => b.tanque === nomeUp && !b.tanqueFinalizado && !b.planejada && !b.previstahoje)
         .sort((a, b) => b.em.localeCompare(a.em))[0] || null;
 
-      // próxima brassagem planejada (ainda não realizada) — info adicional
+      // brassagem prevista para hoje (sem resultado ainda)
+      const brassHoje = brassagens
+        .filter(b => b.tanque === nomeUp && b.previstahoje)
+        .sort((a, b) => a.em.localeCompare(b.em))[0] || null;
+
+      // próxima brassagem planejada (ainda não realizada, futura) — info adicional
       const proximaBrass = brassagens
         .filter(b => b.tanque === nomeUp && b.planejada)
         .sort((a, b) => a.em.localeCompare(b.em))[0] || null;
@@ -147,6 +157,13 @@ export default protegido(async function handler(req, res) {
           estagioCorBg  = "#F5F5F5";
           estagioCorBorda = "#999";
         }
+      } else if (brassHoje) {
+        // brassagem prevista para hoje ainda sem resultado registrado
+        estagio       = "brassagem";
+        estagioLabel  = "Brassagem prevista";
+        estagioIcone  = "🔥";
+        estagioCorBg  = "#FFF7ED";
+        estagioCorBorda = "#F97316";
       } else if (!brass) {
         estagio       = "livre";
         estagioLabel  = "Livre";
@@ -171,12 +188,8 @@ export default protegido(async function handler(req, res) {
         }
       }
 
-      // envases vinculados ao lote (mantidos para exibição, não determinam estágio)
-      const envase = brass
-        ? envases
-            .filter(e => e.lote && brass.lote && e.lote === brass.lote)
-            .sort((a, b) => b.em.localeCompare(a.em))[0] || null
-        : null;
+      // referência de conteúdo: brassagem realizada tem prioridade; senão, usa prevista de hoje
+      const ref = brass || brassHoje || null;
 
       const diasTanque = brass ? diasDesde(brass.em) : null;
 
@@ -189,10 +202,10 @@ export default protegido(async function handler(req, res) {
         estagioIcone,
         estagioCorBg,
         estagioCorBorda,
-        lote:         brass ? brass.lote   : "",
-        estilo:       brass ? brass.estilo : "",
-        volume:       brass ? brass.volume : "",
-        og:           brass ? brass.og     : "",
+        lote:         ref ? ref.lote   : "",
+        estilo:       ref ? ref.estilo : "",
+        volume:       ref ? ref.volume : "",
+        og:           brass ? brass.og : "",
         diasTanque,
         brassadoEm:   brass ? brass.em     : "",
         brassadoSem:  brass ? brass.semana : "",
