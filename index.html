@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.7";
+var VERSAO = "3.3.8";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7886,11 +7886,12 @@ async function carregarTanques(){
     }
 
     // ── Resumo no topo ──────────────────────────────────────────────
-    var contagem = {pronto:0, livre:0, maturando:0, critico:0};
+    var contagem = {brassagem:0, pronto:0, livre:0, maturando:0, critico:0};
     _dadosTanques.forEach(function(tq){ if (contagem[tq.estagio] !== undefined) contagem[tq.estagio]++; });
     var resumoHtml =
       "<div style='display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:#F0FDF4;"+
         "border-bottom:1px solid #A8D4B4'>"+
+        (contagem.brassagem? "<span style='background:#F97316;border:1px solid #F97316;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:700;color:#fff'>🔥 "+contagem.brassagem+" brassagem hoje</span>" : "")+
         (contagem.pronto   ? "<span style='background:#14532D;border:1px solid #14532D;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:700;color:#fff'>🟢 "+contagem.pronto+" pronto"+(contagem.pronto>1?"s":"")+" p/ envase</span>" : "")+
         (contagem.livre    ? "<span style='background:#fff;border:1px solid #22C55E;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#15803D'>✅ "+contagem.livre+" livre"+(contagem.livre>1?"s":"")+"</span>" : "")+
         (contagem.maturando? "<span style='background:#fff;border:1px solid #16A34A;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#15803D'>🍺 "+contagem.maturando+" maturando</span>" : "")+
@@ -7899,6 +7900,8 @@ async function carregarTanques(){
 
     // ── Agrupar por disponibilidade ──────────────────────────────────
     var grupos = [
+      { label: "🔥 Brassagem prevista para hoje", cor: "#C2410C", bg: "#FFF7ED", borda: "#FDBA74",
+        estagios: ["brassagem"] },
       { label: "🟢 Prontos para envase", cor: "#14532D", bg: "#DCFCE7", borda: "#4ADE80",
         estagios: ["pronto"] },
       { label: "✅ Livres (vazios)", cor: "#15803D", bg: "#F0FDF4", borda: "#A8D4B4",
@@ -7975,15 +7978,16 @@ async function carregarTanques(){
       // botões de ação
       var botoesHtml = "";
       if (podeEditar){
-        var eMaturando = ["maturando","critico"].includes(tq.estagio);
-        var ePronto    = tq.estagio === "pronto";
-        var eLivre     = tq.estagio === "livre";
+        var eMaturando  = ["maturando","critico"].includes(tq.estagio);
+        var ePronto     = tq.estagio === "pronto";
+        var eLivre      = tq.estagio === "livre";
+        var eBrassagem  = tq.estagio === "brassagem";
         // "⟲ Automático" só aparece quando há override manual E não é "pronto"
         var temOverride = !!(tq.manualOverride && !ePronto);
         botoesHtml = "<div class='tq-acoes'>"+
           "<button class='tq-btn' data-tq-obs='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"' "+
             "data-tq-obs-atual='"+esc((tq.obs&&tq.obs.obs)||"")+"'>📝 Obs</button>"+
-          // maturando → pode marcar pronto
+          // maturando/crítico → pode marcar pronto para envase
           (eMaturando
             ? "<button class='tq-btn' style='background:#14532D;color:#fff;border-color:#14532D' "+
                 "data-tq-pronto='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>🟢 Pronto p/ envase</button>"
@@ -7993,12 +7997,12 @@ async function carregarTanques(){
             ? "<button class='tq-btn' style='background:#7C3AED;color:#fff;border-color:#7C3AED' "+
                 "data-tq-zerado='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>🫙 Tanque zerado</button>"
             : "")+
-          // qualquer tanque ocupado (não livre) → pode zerar diretamente
-          (!eLivre && !ePronto
+          // tanque ocupado (não livre, não pronto, não brassagem prevista hoje) → pode zerar
+          (!eLivre && !ePronto && !eBrassagem
             ? "<button class='tq-btn' style='background:#7C3AED;color:#fff;border-color:#7C3AED' "+
                 "data-tq-zerado='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>🫙 Tanque zerado</button>"
             : "")+
-          // quando há override manual (e não é pronto nem zerado manual) → voltar ao automático
+          // quando há override manual (e não é pronto) → voltar ao automático
           (temOverride
             ? "<button class='tq-btn' data-tq-auto='"+esc(tq.id)+"'>⟲ Automático</button>"
             : "")+
