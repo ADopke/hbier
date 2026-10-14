@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.1";
+var VERSAO = "3.3.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5848,16 +5848,22 @@ async function popularSelectTanques(selectId, modoEnvase, valorAtual) {
       var label, disabled = false;
       if (tq.estagio === "livre") {
         label = nome + " \u2014 Livre \u2705 (" + (tq.capacidade||"?") + " L)";
-        if (modoEnvase) disabled = true; // envase n\u00E3o faz sentido em tanque livre
+        if (modoEnvase) disabled = true;
+      } else if (tq.estagio === "planejado") {
+        label = nome + " \u2014 \uD83D\uDCC5 Previsto: " + (tq.lote||"") + (tq.estilo?" ("+tq.estilo+")":"");
+        if (!modoEnvase) disabled = true; // tanque j\u00E1 tem brassagem planejada
+        if (modoEnvase) disabled = true;  // sem resultado ainda, n\u00E3o envasar
       } else if (tq.estagio === "maturando") {
         var d = tq.diasTanque !== null && tq.diasTanque !== undefined ? " \u00B7 " + tq.diasTanque + "d" : "";
         label = nome + " \u2014 " + tq.estagioIcone + " " + (tq.lote||"") + (tq.estilo?" ("+tq.estilo+")":"") + d;
+        disabled = true; // ocupado
       } else if (tq.estagio === "critico") {
         var d = tq.diasTanque !== null && tq.diasTanque !== undefined ? " \u00B7 " + tq.diasTanque + "d" : "";
         label = nome + " \u2014 \uD83D\uDEA8 " + (tq.lote||"") + (tq.estilo?" ("+tq.estilo+")":"") + d + " \u2014 aten\u00E7\u00E3o!";
+        if (!modoEnvase) disabled = true;
       } else if (tq.estagio === "envasando") {
         label = nome + " \u2014 \uD83D\uDCE6 Envasando " + (tq.lote||"");
-        if (!modoEnvase) disabled = true; // brassagem n\u00E3o ocupa tanque em envase
+        if (!modoEnvase) disabled = true;
       } else {
         label = nome + " \u2014 " + (tq.estagioLabel||tq.estagio);
       }
