@@ -35,10 +35,10 @@ export default protegido(async function handler(req, res) {
     const obs    = (await ler(CHAVE_OBS))    || {};
     const manual = (await ler(CHAVE_MANUAL)) || {};
 
-    // Buscar últimas 16 semanas de programação para deduzir estágios
+    // Buscar últimas 26 semanas de programação para deduzir estágios (~6 meses)
     const semanas = [];
     const hoje = new Date();
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 26; i++) {
       const d = new Date(hoje);
       d.setDate(d.getDate() - i * 7);
       // segunda-feira da semana
@@ -70,8 +70,10 @@ export default protegido(async function handler(req, res) {
               ? it.resultado.em
               : (it.dataISO || sem); // fallback: data prevista ou início da semana
             if (!it.tanque && !it.lote) return; // ignora itens sem tanque e sem lote
+            // Normaliza "TQ-03", "TQ 03", "tq03" → "TQ03"
+            const tanqueNorm = (it.tanque || "").toUpperCase().replace(/[-\s]/g, "");
             brassagens.push({
-              tanque:           (it.tanque   || "").toUpperCase(),
+              tanque:           tanqueNorm,
               lote:             it.lote      || "",
               estilo:           it.estilo    || "",
               em:               dataRef,
@@ -84,7 +86,7 @@ export default protegido(async function handler(req, res) {
           }
           if (it.tipo === "envase" && it.resultado) {
             envases.push({
-              tanqueOrigem: (it.tanqueOrigem || "").toUpperCase(),
+              tanqueOrigem: (it.tanqueOrigem || "").toUpperCase().replace(/[-\s]/g, ""),
               lote:         it.lote          || "",
               estilo:       it.estilo        || "",
               formato:      it.formato       || "",
