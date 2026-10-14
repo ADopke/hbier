@@ -855,12 +855,13 @@
     margin-top:5px;line-height:1.4;
   }
   /* ---- status dos tanques ---- */
+  .tq-leg{font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:3px}
   .tanques-grid{
-    display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
     gap:10px;padding:14px;
   }
   .tanque-card{
-    border-radius:10px;padding:12px 14px;
+    border-radius:12px;padding:13px 14px;border-left:4px solid transparent;
     border:1px solid var(--linha);
   }
   .tq-topo{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;flex-wrap:wrap}
@@ -872,6 +873,19 @@
   .tq-prod{font-size:.82rem;margin-bottom:3px;color:var(--ink)}
   .tq-info{font-size:.76rem;color:var(--muted)}
   .tq-obs{font-size:.76rem;color:var(--muted);margin-top:4px;font-style:italic}
+  .tq-estagio{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;
+    padding:2px 9px;border-radius:6px;border:1px solid;margin-bottom:6px}
+  .tq-lote{font-size:.82rem;font-weight:700;color:var(--ink);margin-bottom:2px}
+  .tq-dias{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.1rem;
+    margin-left:auto;align-self:flex-start;white-space:nowrap}
+  .tq-row{display:flex;align-items:flex-start;gap:6px}
+  .tq-detalhe{font-size:.76rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+  .tq-detalhe span{background:var(--bg);border:1px solid var(--linha);border-radius:5px;padding:1px 7px}
+  .tq-acoes{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .tq-btn{font-size:.7rem;padding:3px 9px;border-radius:6px;border:1px solid var(--linha);
+    background:transparent;cursor:pointer;color:var(--muted);font-weight:600}
+  .tq-btn:hover{background:var(--bg);color:var(--ink)}
+  .tq-cap{font-size:.72rem;color:var(--muted);margin-top:2px}
 
   .carimbo{
     margin-top:6px;font-size:.75rem;color:var(--verde);font-weight:600;
@@ -1988,15 +2002,39 @@
     <!-- ---------- ABA STATUS DOS TANQUES ---------- -->
     <div id="painelTanques" hidden>
       <section>
-        <div class="sec-head">
-          <span class="sec-title">🍺 Status dos Tanques</span>
-          <span class="sec-sub" id="tanquesAtual"></span>
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
+          <span class="sec-title">🛢 Status dos Tanques</span>
+          <span class="sec-sub" id="tanquesAtual" style="margin-left:0"></span>
         </div>
-        <div id="tanquesLista"><div class="vazio">Carregando…</div></div>
-        <div style="padding:10px 14px;border-top:1px solid var(--linha)">
-          <button class="btn mini secundario" id="btnAtualizarTanques">Atualizar</button>
+        <!-- legenda de estágios -->
+        <div style="padding:6px 14px 8px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--linha)">
+          <span class="tq-leg"><span style="color:#22C55E">✅</span> Livre</span>
+          <span class="tq-leg"><span>🍺</span> Fermentando/Maturando</span>
+          <span class="tq-leg"><span>📦</span> Envasando</span>
+          <span class="tq-leg"><span>🚨</span> Atenção</span>
+        </div>
+        <div id="tanquesLista" style="padding:14px"><div class="vazio">Carregando…</div></div>
+        <div style="padding:10px 14px;border-top:1px solid var(--linha);display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn mini secundario" id="btnAtualizarTanques">↺ Atualizar</button>
+          <button class="btn mini secundario" id="btnExportarTanquesPDF">📄 PDF</button>
+          <button class="btn mini secundario" id="btnExportarTanquesExcel">📊 Excel</button>
         </div>
       </section>
+      <!-- modal de observação de tanque -->
+      <div class="modal-overlay" id="modalObsTanque" hidden>
+        <div class="modal-box" style="max-width:340px">
+          <div class="modal-titulo">📝 Observação — <span id="modalObsTanqueNome"></span></div>
+          <textarea id="modalObsTanqueTexto" rows="4"
+            style="width:100%;padding:10px;border:1.5px solid var(--linha);border-radius:8px;
+              font-size:.88rem;resize:vertical;box-sizing:border-box;color:var(--ink);background:var(--card)"
+            placeholder="Digite uma observação…"></textarea>
+          <div class="btn-linha" style="margin-top:10px">
+            <button class="btn mini" id="btnSalvarObsTanque">Salvar</button>
+            <button class="btn mini secundario" id="btnCancelarObsTanque">Cancelar</button>
+            <button class="btn mini perigo" id="btnLimparObsTanque" style="margin-left:auto">Limpar</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ---------- ABA BASE DE REFERÊNCIA ---------- -->
@@ -2774,7 +2812,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.2.1";
+var VERSAO = "3.3.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7745,75 +7783,222 @@ function badgeTempoTanque(resultado){
 }
 
 /* ==================================================================
-   Status dos tanques
+   Status dos tanques — via /api/tanques (Redis + programação)
    ================================================================== */
+
+var _dadosTanques = null; // cache para exportação
+
 async function carregarTanques(){
   $("tanquesLista").innerHTML = "<div class='vazio'>Carregando…</div>";
   try{
-    if (!baseCarregada) await carregarBase();
-    var tab = baseTabelas["Tanques"];
-    if (!tab || !tab.linhas.length){
-      $("tanquesLista").innerHTML =
-        "<div class='vazio'>A aba Tanques não está publicada na base de referência.</div>";
-      return;
-    }
-    var cols = tab.colunas;
-    var iCod  = cols.indexOf("Código");
-    var iNome = cols.indexOf("Nome / Identificação");
-    var iTipo = cols.indexOf("Tipo");
-    var iCap  = cols.indexOf("Capacidade (L)");
-    var iSit  = cols.indexOf("Situação");
-    var iProd = cols.indexOf("Produto atual");
-    var iLote = cols.indexOf("Lote atual");
-    var iObs  = cols.indexOf("Observações");
+    var r = await api("/api/tanques");
+    _dadosTanques = r.tanques || [];
 
-    var agora = new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+    var agora = new Date().toLocaleString("pt-BR",{
+      day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
     $("tanquesAtual").textContent = "atualizado "+agora;
 
-    var COR_SIT = {
-      "Em uso":      "#E9F3EB",
-      "em uso":      "#E9F3EB",
-      "Disponível":  "#FFF6DE",
-      "disponível":  "#FFF6DE",
-      "Vazio":       "#F2F1EB",
-      "vazio":       "#F2F1EB",
-      "Manutenção":  "#FDECEB",
-      "manutenção":  "#FDECEB",
-    };
+    if (!_dadosTanques.length){
+      $("tanquesLista").innerHTML = "<div class='vazio'>Nenhum tanque cadastrado.</div>";
+      return;
+    }
 
-    var html = tab.linhas.map(function(l){
-      var cod  = iCod>-1  ? (l[iCod]||"")  : "";
-      var nome = iNome>-1 ? (l[iNome]||"") : "";
-      var tipo = iTipo>-1 ? (l[iTipo]||"") : "";
-      var cap  = iCap>-1  ? (l[iCap]||"")  : "";
-      var sit  = iSit>-1  ? (l[iSit]||"")  : "";
-      var prod = iProd>-1 ? (l[iProd]||"") : "";
-      var lote = iLote>-1 ? (l[iLote]||"") : "";
-      var obs  = iObs>-1  ? (l[iObs]||"")  : "";
-      if (!cod && !nome) return "";
-      var bg = COR_SIT[sit] || "#F2F1EB";
-      return "<div class='tanque-card' style='background:"+bg+"'>"+
-        "<div class='tq-topo'>"+
-          "<span class='tq-cod'>"+esc(cod)+"</span>"+
-          "<span class='tq-nome'>"+esc(nome)+"</span>"+
-          (sit?"<span class='tq-sit'>"+esc(sit)+"</span>":"")+
+    var html = _dadosTanques.map(function(tq){
+      var podeEditar = ["admin","gestor"].includes(sessao.papel);
+
+      // badge de estágio
+      var estagioHtml = "<span class='tq-estagio' style='background:"+
+        esc(tq.estagioCorBg)+";color:var(--ink);border-color:"+esc(tq.estagioCorBorda)+"'>"+
+        esc(tq.estagioIcone)+" "+esc(tq.estagioLabel)+
+        "</span>";
+
+      // dias no tanque
+      var diasHtml = "";
+      if (tq.diasTanque !== null && tq.diasTanque !== undefined){
+        var corDias = tq.estagio === "critico" ? "#DC2626" : tq.estagio === "envasando" ? "#003E99" : "var(--verde)";
+        diasHtml = "<span class='tq-dias' style='color:"+corDias+"'>"+tq.diasTanque+"d</span>";
+      }
+
+      // detalhes
+      var detalhes = "";
+      if (tq.lote)   detalhes += "<span>Lote: "+esc(tq.lote)+"</span>";
+      if (tq.estilo) detalhes += "<span>"+esc(tq.estilo)+"</span>";
+      if (tq.volume) detalhes += "<span>"+esc(tq.volume)+" L</span>";
+      if (tq.og)     detalhes += "<span>OG: "+esc(tq.og)+"</span>";
+      if (tq.envase){
+        if (tq.envase.formato) detalhes += "<span>"+esc(tq.envase.formato)+"</span>";
+        if (tq.envase.qtd)     detalhes += "<span>"+esc(tq.envase.qtd)+"</span>";
+      }
+
+      // observação
+      var obsHtml = tq.obs && tq.obs.obs
+        ? "<div class='tq-obs'>📝 "+esc(tq.obs.obs)+"</div>"
+        : "";
+
+      // botões de ação
+      var botoesHtml = "";
+      if (podeEditar){
+        botoesHtml = "<div class='tq-acoes'>"+
+          "<button class='tq-btn' data-tq-obs='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"' "+
+            "data-tq-obs-atual='"+esc((tq.obs&&tq.obs.obs)||"")+"'>📝 Obs</button>"+
+          (tq.estagio !== "livre"
+            ? "<button class='tq-btn' data-tq-livre='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>✓ Marcar livre</button>"
+            : "")+
+          (tq.manualOverride
+            ? "<button class='tq-btn' data-tq-auto='"+esc(tq.id)+"'>⟲ Automático</button>"
+            : "")+
+        "</div>";
+      }
+
+      return "<div class='tanque-card' style='background:"+esc(tq.estagioCorBg)+
+        ";border-left-color:"+esc(tq.estagioCorBorda)+"'>"+
+        "<div class='tq-row'>"+
+          "<div style='flex:1'>"+
+            "<div class='tq-topo'>"+
+              "<span class='tq-cod'>"+esc(tq.nome)+"</span>"+
+              "<span class='tq-cap'>"+fmtNum(tq.capacidade)+" L</span>"+
+            "</div>"+
+            estagioHtml+
+          "</div>"+
+          diasHtml+
         "</div>"+
-        (prod?"<div class='tq-prod'>🍺 "+esc(prod)+(lote?" · Lote: "+esc(lote):"")+"</div>":"")+
-        (tipo||cap?"<div class='tq-info'>"+esc(tipo)+(tipo&&cap?" · ":"")+
-          (cap?esc(cap)+" L":"")+"</div>":"")+
-        (obs?"<div class='tq-obs'>"+esc(obs)+"</div>":"")+
+        (detalhes?"<div class='tq-detalhe'>"+detalhes+"</div>":"")+
+        obsHtml+
+        botoesHtml+
       "</div>";
     }).join("");
 
-    $("tanquesLista").innerHTML = "<div class='tanques-grid'>"+html+"</div>" ||
-      "<div class='vazio'>Nenhum tanque cadastrado.</div>";
+    $("tanquesLista").innerHTML = "<div class='tanques-grid'>"+html+"</div>";
+
+    // Eventos dos botões de ação
+    $("tanquesLista").querySelectorAll("[data-tq-obs]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        $("modalObsTanqueNome").textContent   = btn.dataset.tqNome;
+        $("modalObsTanqueTexto").value        = btn.dataset.tqObsAtual || "";
+        $("btnSalvarObsTanque").dataset.tqId  = btn.dataset.tqObs;
+        $("btnLimparObsTanque").dataset.tqId  = btn.dataset.tqObs;
+        $("modalObsTanque").hidden = false;
+        setTimeout(function(){ $("modalObsTanqueTexto").focus(); }, 50);
+      });
+    });
+
+    $("tanquesLista").querySelectorAll("[data-tq-livre]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        if (!confirm("Marcar "+btn.dataset.tqNome+" como livre manualmente?")) return;
+        try{
+          await api("/api/tanques",{method:"POST",body:{acao:"marcarLivre",tanqueId:btn.dataset.tqLivre}});
+          toast(btn.dataset.tqNome+" marcado como livre.","ok");
+          carregarTanques();
+        }catch(e){ toast(e.message,"erro"); }
+      });
+    });
+
+    $("tanquesLista").querySelectorAll("[data-tq-auto]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        try{
+          await api("/api/tanques",{method:"POST",body:{acao:"limparManual",tanqueId:btn.dataset.tqAuto}});
+          toast("Estágio voltou ao automático.","ok");
+          carregarTanques();
+        }catch(e){ toast(e.message,"erro"); }
+      });
+    });
+
   }catch(e){
     $("tanquesLista").innerHTML = "<div class='vazio'>"+esc(e.message)+"</div>";
   }
 }
 
+// Modal de observação
+$("btnSalvarObsTanque").addEventListener("click", async function(){
+  var id  = this.dataset.tqId;
+  var obs = $("modalObsTanqueTexto").value.trim();
+  try{
+    await api("/api/tanques",{method:"POST",body:{acao:"salvarObs",tanqueId:id,obs:obs}});
+    $("modalObsTanque").hidden = true;
+    toast("Observação salva.","ok");
+    carregarTanques();
+  }catch(e){ toast(e.message,"erro"); }
+});
+
+$("btnCancelarObsTanque").addEventListener("click", function(){
+  $("modalObsTanque").hidden = true;
+});
+
+$("btnLimparObsTanque").addEventListener("click", async function(){
+  var id = this.dataset.tqId;
+  if (!confirm("Remover observação?")) return;
+  try{
+    await api("/api/tanques",{method:"POST",body:{acao:"limparObs",tanqueId:id}});
+    $("modalObsTanque").hidden = true;
+    toast("Observação removida.","ok");
+    carregarTanques();
+  }catch(e){ toast(e.message,"erro"); }
+});
+
 $("btnAtualizarTanques").addEventListener("click", function(){
-  baseCarregada = false; carregarTanques();
+  carregarTanques();
+});
+
+// Exportar PDF da aba tanques
+$("btnExportarTanquesPDF").addEventListener("click", function(){
+  if (!_dadosTanques || !_dadosTanques.length){ toast("Carregue os tanques primeiro.","erro"); return; }
+  var rows = _dadosTanques.map(function(tq){
+    return "<tr>"+
+      "<td><b>"+esc(tq.nome)+"</b></td>"+
+      "<td>"+fmtNum(tq.capacidade)+" L</td>"+
+      "<td>"+esc(tq.estagioIcone)+" "+esc(tq.estagioLabel)+"</td>"+
+      "<td>"+esc(tq.lote||"—")+"</td>"+
+      "<td>"+esc(tq.estilo||"—")+"</td>"+
+      "<td>"+(tq.diasTanque !== null && tq.diasTanque !== undefined ? tq.diasTanque+" dias" : "—")+"</td>"+
+      "<td>"+esc(tq.volume||"—")+(tq.volume?" L":"")+"</td>"+
+      "<td>"+esc(tq.og||"—")+"</td>"+
+      "<td>"+esc((tq.obs&&tq.obs.obs)||"")+"</td>"+
+    "</tr>";
+  }).join("");
+  var agora = new Date().toLocaleString("pt-BR");
+  var w = window.open("","_blank");
+  w.document.write("<!doctype html><html><head><meta charset='utf-8'>"+
+    "<title>Tanques HBier</title>"+
+    "<style>body{font-family:Arial,sans-serif;font-size:12px;padding:20px}"+
+    "h2{margin-bottom:4px}p{margin:0 0 12px;color:#666;font-size:11px}"+
+    "table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left}"+
+    "th{background:#025F1D;color:#fff}tr:nth-child(even){background:#f9f9f9}"+
+    "</style></head><body>"+
+    "<h2>🛢 Status dos Tanques — HBier</h2><p>Gerado em "+agora+"</p>"+
+    "<table><thead><tr><th>Tanque</th><th>Capacidade</th><th>Estágio</th>"+
+    "<th>Lote</th><th>Estilo</th><th>Dias</th><th>Volume</th><th>OG</th><th>Obs</th></tr></thead>"+
+    "<tbody>"+rows+"</tbody></table></body></html>");
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 400);
+});
+
+// Exportar Excel (CSV) da aba tanques
+$("btnExportarTanquesExcel").addEventListener("click", function(){
+  if (!_dadosTanques || !_dadosTanques.length){ toast("Carregue os tanques primeiro.","erro"); return; }
+  var linhas = [["Tanque","Capacidade (L)","Estágio","Lote","Estilo","Dias no Tanque","Volume (L)","OG","Observação"]];
+  _dadosTanques.forEach(function(tq){
+    linhas.push([
+      tq.nome,
+      tq.capacidade,
+      tq.estagioLabel,
+      tq.lote||"",
+      tq.estilo||"",
+      (tq.diasTanque !== null && tq.diasTanque !== undefined ? tq.diasTanque : ""),
+      tq.volume||"",
+      tq.og||"",
+      (tq.obs&&tq.obs.obs)||"",
+    ]);
+  });
+  var csv = linhas.map(function(r){
+    return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(",");
+  }).join("\r\n");
+  var blob = new Blob(["﻿"+csv], {type:"text/csv;charset=utf-8"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = "tanques-hbier.csv";
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  toast("Excel (CSV) gerado.","ok");
 });
 
 /* ==================================================================
