@@ -62,15 +62,23 @@ export default protegido(async function handler(req, res) {
         const dados = (await ler(CHAVE_PROG(sem))) || {};
         const itens = dados.itens || [];
         itens.forEach(it => {
-          if (it.tipo === "brassagem" && it.resultado && it.resultado.em) {
+          if (it.tipo === "brassagem") {
+            // Aceita tanto brassagens com resultado registrado quanto planejadas (sem resultado)
+            // Para brassagens planejadas usa a dataISO prevista como referência de data
+            const temResultado = it.resultado && it.resultado.em;
+            const dataRef = temResultado
+              ? it.resultado.em
+              : (it.dataISO || sem); // fallback: data prevista ou início da semana
+            if (!it.tanque && !it.lote) return; // ignora itens sem tanque e sem lote
             brassagens.push({
               tanque:           (it.tanque   || "").toUpperCase(),
               lote:             it.lote      || "",
               estilo:           it.estilo    || "",
-              em:               it.resultado.em,
-              volume:           it.resultado.volume || it.volPrev || "",
-              og:               it.resultado.og     || "",
-              tanqueFinalizado: !!it.resultado.tanqueFinalizado,
+              em:               dataRef,
+              volume:           temResultado ? (it.resultado.volume || it.volPrev || "") : (it.volPrev || ""),
+              og:               temResultado ? (it.resultado.og || "") : "",
+              tanqueFinalizado: temResultado ? !!it.resultado.tanqueFinalizado : false,
+              planejada:        !temResultado,
               semana:           sem,
             });
           }
@@ -133,6 +141,13 @@ export default protegido(async function handler(req, res) {
         estagioIcone  = "✅";
         estagioCorBg  = "#F0FDF4";
         estagioCorBorda = "#22C55E";
+      } else if (brass.planejada) {
+        // Brassagem planejada ainda não realizada
+        estagio       = "planejado";
+        estagioLabel  = "Brassagem prevista";
+        estagioIcone  = "📅";
+        estagioCorBg  = "#FFFBEB";
+        estagioCorBorda = "#F59E0B";
       } else if (envase) {
         estagio       = "envasando";
         estagioLabel  = "Envasando";
@@ -157,7 +172,7 @@ export default protegido(async function handler(req, res) {
         }
       }
 
-      const diasTanque = brass ? diasDesde(brass.em) : null;
+      const diasTanque = (brass && !brass.planejada) ? diasDesde(brass.em) : null;
 
       return {
         id:           tq.id,
