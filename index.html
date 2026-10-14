@@ -2579,8 +2579,10 @@
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Tanque destino</label>
-          <input type="text" id="brassTanque" placeholder="Ex.: TQ-03"
-            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+          <select id="brassTanque"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem;background:#fff">
+            <option value="">Carregando tanques…</option>
+          </select>
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Lote</label>
@@ -2637,8 +2639,10 @@
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Tanque de origem</label>
-          <input type="text" id="envTanque" placeholder="Ex.: TQ-03"
-            style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem">
+          <select id="envTanque"
+            style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem;background:#fff">
+            <option value="">Carregando tanques…</option>
+          </select>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
@@ -2812,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.0";
+var VERSAO = "3.3.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5826,16 +5830,64 @@ function parseDiaSelect(val){
 
 
 // ===== BRASSAGEM =====
+/* Popula um <select> de tanques com status ao vivo.
+   modoEnvase=true \u2192 filtra prioritariamente tanques "maturando/cr\u00EDtico/envasando" (t\u00EAm lote)
+   valorAtual = valor a pr\u00E9-selecionar ap\u00F3s carregar */
+async function popularSelectTanques(selectId, modoEnvase, valorAtual) {
+  var sel = $(selectId);
+  if (!sel) return;
+  sel.innerHTML = "<option value=''>Carregando\u2026</option>";
+  sel.disabled = true;
+  try {
+    var r = await api("/api/tanques");
+    var tqs = (r && r.tanques) || [];
+    var opts = ["<option value=''>\u2014 Selecione o tanque \u2014</option>"];
+    tqs.forEach(function(tq) {
+      var nome = tq.nome; // "TQ01"
+      var val  = nome;    // salvo como "TQ01"
+      var label, disabled = false;
+      if (tq.estagio === "livre") {
+        label = nome + " \u2014 Livre \u2705 (" + (tq.capacidade||"?") + " L)";
+        if (modoEnvase) disabled = true; // envase n\u00E3o faz sentido em tanque livre
+      } else if (tq.estagio === "maturando") {
+        var d = tq.diasTanque !== null && tq.diasTanque !== undefined ? " \u00B7 " + tq.diasTanque + "d" : "";
+        label = nome + " \u2014 " + tq.estagioIcone + " " + (tq.lote||"") + (tq.estilo?" ("+tq.estilo+")":"") + d;
+      } else if (tq.estagio === "critico") {
+        var d = tq.diasTanque !== null && tq.diasTanque !== undefined ? " \u00B7 " + tq.diasTanque + "d" : "";
+        label = nome + " \u2014 \uD83D\uDEA8 " + (tq.lote||"") + (tq.estilo?" ("+tq.estilo+")":"") + d + " \u2014 aten\u00E7\u00E3o!";
+      } else if (tq.estagio === "envasando") {
+        label = nome + " \u2014 \uD83D\uDCE6 Envasando " + (tq.lote||"");
+        if (!modoEnvase) disabled = true; // brassagem n\u00E3o ocupa tanque em envase
+      } else {
+        label = nome + " \u2014 " + (tq.estagioLabel||tq.estagio);
+      }
+      opts.push("<option value='" + val + "'" + (disabled?" disabled":"") + ">" + label + "</option>");
+    });
+    sel.innerHTML = opts.join("");
+    if (valorAtual) sel.value = valorAtual;
+  } catch(e) {
+    sel.innerHTML = "<option value=''>Erro ao carregar tanques</option>";
+    // fallback: adicionar op\u00E7\u00F5es fixas
+    var nomes = ["TQ01","TQ02","TQ03","TQ04","TQ05","TQ06","TQ07","TQ08"];
+    nomes.forEach(function(n){
+      sel.innerHTML += "<option value='" + n + "'>" + n + "</option>";
+    });
+    if (valorAtual) sel.value = valorAtual;
+  } finally {
+    sel.disabled = false;
+  }
+}
+
 $("btnAddProg").addEventListener("click", function(){
   _brasseditando = null;
   $("brassFormTitulo").textContent = "\uD83C\uDF7A Nova Brassagem";
   $("brassEstilo").value  = "";
-  $("brassTanque").value  = "";
   $("brassLote").value    = "";
   $("brassObs").value     = "";
   $("brassVolPrev").value = "";
   preencherDias("brassDia");
   $("brassDia").value = "";
+  popularSelectTanques("brassTanque", false, "");
   $("modalBrassagem").hidden = false;
   setTimeout(function(){ $("brassEstilo").focus(); }, 80);
 });
@@ -5895,7 +5947,6 @@ $("btnAddEnvase").addEventListener("click", function(){
   $("envFormTitulo").textContent = "\uD83D\uDCE6 Novo Envase";
   $("envProduto").value = "";
   $("envLote").value = "";
-  $("envTanque").value = "";
   $("envFormato").value = "";
   $("envQtd").value = "";
   $("envObs").value = "";
@@ -5903,6 +5954,7 @@ $("btnAddEnvase").addEventListener("click", function(){
   $("envDia").value = "";
   $("envEstiloWrap").hidden = true;
   $("envEstilo").value = "";
+  popularSelectTanques("envTanque", true, "");
   $("modalEnvase").hidden = false;
   setTimeout(function(){ $("envProduto").focus(); }, 80);
 });
@@ -5993,24 +6045,24 @@ $("progLista").addEventListener("click", async function(ev){
       $("envFormTitulo").textContent = "\uD83D\uDCE6 Editar Envase";
       $("envProduto").value = it.produto||"";
       $("envLote").value    = it.lote||"";
-      $("envTanque").value  = it.tanqueOrigem||"";
       $("envFormato").value = it.formato||"";
       $("envQtd").value     = it.qtd||"";
       $("envObs").value     = it.obs||"";
       preencherDias("envDia");
       if (it.dataISO) $("envDia").value=(it.dia||"")+"|"+it.dataISO; else $("envDia").value=it.dia||"";
       setTimeout(function(){ atualizarEnvEstilo(); if(it.estilo) $("envEstilo").value=it.estilo; },0);
+      popularSelectTanques("envTanque", true, (it.tanqueOrigem||"").toUpperCase());
       $("modalEnvase").hidden = false;
     } else {
       _brasseditando = {id: it.id, semana};
       $("brassFormTitulo").textContent = "\uD83C\uDF7A Editar Brassagem";
       $("brassEstilo").value   = it.estilo||"";
-      $("brassTanque").value   = it.tanque||"";
       $("brassLote").value     = it.lote||"";
       $("brassVolPrev").value  = it.volPrev||"";
       $("brassObs").value      = it.obs||"";
       preencherDias("brassDia");
       if (it.dataISO) $("brassDia").value=(it.dia||"")+"|"+it.dataISO; else $("brassDia").value=it.dia||"";
+      popularSelectTanques("brassTanque", false, (it.tanque||"").toUpperCase());
       $("modalBrassagem").hidden = false;
     }
   }
