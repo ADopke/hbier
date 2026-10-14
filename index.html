@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.2";
+var VERSAO = "3.3.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7849,8 +7849,32 @@ var _dadosTanques = null; // cache para exportação
 async function carregarTanques(){
   $("tanquesLista").innerHTML = "<div class='vazio'>Carregando…</div>";
   try{
-    var r = await api("/api/tanques");
+    // buscar tanques + barreis das últimas 8 semanas em paralelo
+    var semanasBarril = [];
+    var base = segundaDe(new Date());
+    for (var wi = 0; wi < 8; wi++){
+      var d = new Date(base); d.setDate(d.getDate() - wi*7);
+      semanasBarril.push(chaveSemana(d));
+    }
+    var [r, ...barrilResps] = await Promise.all([
+      api("/api/tanques"),
+      ...semanasBarril.map(function(sem){ return api("/api/prog?semana="+sem).catch(function(){ return {}; }); })
+    ]);
     _dadosTanques = r.tanques || [];
+
+    // montar mapa: tanqueNorm → lista de registros de barril
+    var barrisPorTanque = {};
+    barrilResps.forEach(function(resp, i){
+      var barreis = resp.barreis || {};
+      Object.values(barreis).forEach(function(lista){
+        (lista||[]).forEach(function(reg){
+          var tn = (reg.tanque||"").toUpperCase().replace(/[-\s]/g,"");
+          if (!tn) return;
+          if (!barrisPorTanque[tn]) barrisPorTanque[tn] = [];
+          barrisPorTanque[tn].push(reg);
+        });
+      });
+    });
 
     var agora = new Date().toLocaleString("pt-BR",{
       day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
@@ -7888,6 +7912,24 @@ async function carregarTanques(){
         if (tq.envase.qtd)     detalhes += "<span>"+esc(tq.envase.qtd)+"</span>";
       }
 
+      // barreis vinculados a este tanque
+      var barrilHtml = "";
+      var nomeUp = tq.nome.toUpperCase();
+      var regsBarril = barrisPorTanque[nomeUp] || [];
+      if (regsBarril.length){
+        var totalL = regsBarril.reduce(function(s,r){ return s + (parseFloat(r.total)||0); }, 0);
+        var linhasBarril = regsBarril.map(function(r){
+          var partes = (r.linhas||[]).map(function(l){ return esc(l.formato)+"×"+l.qtd; }).join(" ");
+          var dt = r.dia ? esc(r.dia) : (r.dataISO ? esc(r.dataISO.slice(0,10)) : "");
+          return "<span style='opacity:.8;font-size:.75rem'>"+(dt?"("+dt+") ":"")+esc(r.produto||"")+(partes?" — "+partes:"")+" → "+fmtNum(r.total)+" L</span>";
+        }).join("<br>");
+        barrilHtml = "<div style='margin-top:6px;padding:6px 8px;background:rgba(212,144,90,.12);"+
+          "border-radius:6px;border:1px solid #D4905A;font-size:.78rem;color:#7A4500'>"+
+          "<div style='font-weight:700;margin-bottom:3px'>🛢 Barril — "+fmtNum(totalL)+" L envasados</div>"+
+          linhasBarril+
+          "</div>";
+      }
+
       // observação
       var obsHtml = tq.obs && tq.obs.obs
         ? "<div class='tq-obs'>📝 "+esc(tq.obs.obs)+"</div>"
@@ -7921,6 +7963,7 @@ async function carregarTanques(){
           diasHtml+
         "</div>"+
         (detalhes?"<div class='tq-detalhe'>"+detalhes+"</div>":"")+
+        barrilHtml+
         obsHtml+
         botoesHtml+
       "</div>";
