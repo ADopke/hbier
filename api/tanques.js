@@ -67,10 +67,14 @@ export default protegido(async function handler(req, res) {
             const temResultado = it.resultado && it.resultado.em;
             const dataRef = temResultado
               ? it.resultado.em
-              : (it.dataISO || sem); // fallback: data prevista ou início da semana
+              : (it.dataISO || sem);
             if (!it.tanque) return; // ignora brassagens sem tanque definido
             // Normaliza "TQ-03", "TQ 03", "tq03" → "TQ03"
             const tanqueNorm = (it.tanque || "").toUpperCase().replace(/[-\s]/g, "");
+            // "planejada" = sem resultado E data prevista no futuro
+            const dataISO = (it.dataISO || sem);
+            const ehFutura = dataISO > new Date().toISOString().slice(0, 10);
+            const planejada = !temResultado && ehFutura;
             brassagens.push({
               tanque:           tanqueNorm,
               lote:             it.lote      || "",
@@ -79,7 +83,7 @@ export default protegido(async function handler(req, res) {
               volume:           temResultado ? (it.resultado.volume || it.volPrev || "") : (it.volPrev || ""),
               og:               temResultado ? (it.resultado.og || "") : "",
               tanqueFinalizado: temResultado ? !!it.resultado.tanqueFinalizado : false,
-              planejada:        !temResultado,
+              planejada,
               semana:           sem,
             });
           }
