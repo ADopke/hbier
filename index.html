@@ -805,6 +805,12 @@
   }
   .alerta-tanque.vermelho .at-dias{ color:#DC2626; }
   .alerta-tanque.amarelo  .at-dias{ color:#E6A817; }
+  .at-dispensar{
+    display:block;margin-top:6px;font-size:.72rem;padding:3px 9px;
+    border:1px solid currentColor;border-radius:6px;background:transparent;
+    cursor:pointer;opacity:.65;font-weight:600;color:inherit;
+  }
+  .at-dispensar:hover{ opacity:1; }
 
   /* ---- visão ampliada por operador ---- */
   .detalhe-op{
@@ -2768,7 +2774,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.2.0";
+var VERSAO = "3.2.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7600,6 +7606,32 @@ async function atualizarLimpezaProg(){
 var DIAS_AVISO   = 12;   // amarelo
 var DIAS_CRITICO = 15;   // vermelho
 
+// --- Dispensa de alertas de tanque (localStorage) ---
+var _DISPENSA_PREFIX = "hbier_dispensa_tanque_";
+var _DISPENSA_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
+
+function _chaveDispensa(a){
+  return _DISPENSA_PREFIX + (a.estilo||"") + "__" + (a.tanque||"") + "__" + (a.semana||"");
+}
+
+function dispensarAlertaTanque(a){
+  try{
+    var val = JSON.stringify({ em: Date.now(), por: (sessao && sessao.usuario) || "?" });
+    localStorage.setItem(_chaveDispensa(a), val);
+  }catch(e){}
+}
+
+function alertaEstaDispensado(a){
+  try{
+    var raw = localStorage.getItem(_chaveDispensa(a));
+    if (!raw) return false;
+    var obj = JSON.parse(raw);
+    // expira depois de 7 dias para não sumir para sempre
+    return (Date.now() - obj.em) < _DISPENSA_TTL_MS;
+  }catch(e){ return false; }
+}
+// --- fim dispensa ---
+
 function diasNoTanque(isoStr){
   if (!isoStr) return null;
   var lancado = new Date(isoStr);
@@ -7642,6 +7674,9 @@ async function verificarAlertasTanque(){
     }).catch(function(){ return; });
   }));
 
+  // filtrar dispensados
+  alertas = alertas.filter(function(a){ return !alertaEstaDispensado(a); });
+
   // ordenar do mais crítico para o menos
   alertas.sort(function(a,b){ return b.dias - a.dias; });
   return alertas;
@@ -7652,8 +7687,11 @@ function renderAlertasTanque(alertas, destino){
   if (!el) return;
   if (!alertas || !alertas.length){ el.innerHTML = ""; return; }
 
+  // guardar referência dos alertas para o evento de dispensa
+  el._alertasDados = alertas;
+
   var html = "<div class='alerta-tanque-wrap'>";
-  alertas.forEach(function(a){
+  alertas.forEach(function(a, idx){
     var icone   = a.nivel === "vermelho" ? "🚨" : "⚠️";
     var sufixo  = a.dias === 1 ? "dia" : "dias";
     var msg     = a.nivel === "vermelho"
@@ -7664,12 +7702,32 @@ function renderAlertasTanque(alertas, destino){
       "<div class='at-body'>"+
         "<div class='at-titulo'>"+esc(a.estilo)+(a.tanque?" — "+esc(a.tanque):"")+"</div>"+
         "<div class='at-sub'>"+msg+"</div>"+
+        "<button class='at-dispensar' data-dispensar-idx='"+idx+"' "+
+          "data-dispensar-dest='"+esc(destino)+"'>✕ Dispensar aviso</button>"+
       "</div>"+
       "<div class='at-dias'>"+a.dias+" "+sufixo+"</div>"+
     "</div>";
   });
   html += "</div>";
   el.innerHTML = html;
+
+  // eventos dos botões de dispensa
+  el.querySelectorAll("[data-dispensar-idx]").forEach(function(btn){
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      var idx  = parseInt(btn.dataset.dispensarIdx, 10);
+      var dest = btn.dataset.dispensarDest;
+      var alvo = $(dest);
+      if (!alvo || !alvo._alertasDados) return;
+      var a = alvo._alertasDados[idx];
+      if (!a) return;
+      dispensarAlertaTanque(a);
+      // remover da lista e re-renderizar
+      alvo._alertasDados = alvo._alertasDados.filter(function(_,i){ return i !== idx; });
+      renderAlertasTanque(alvo._alertasDados, dest);
+      toast("Aviso dispensado por 7 dias.");
+    });
+  });
 }
 
 // Inserir badge no card de brassagem na programação
