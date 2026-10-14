@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.8";
+var VERSAO = "3.3.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7915,115 +7915,134 @@ async function carregarTanques(){
     function renderCard(tq){
       var podeEditar = ["admin","gestor"].includes(sessao.papel);
 
-      // badge de estágio
-      var estagioHtml = "<span class='tq-estagio' style='background:"+
-        esc(tq.estagioCorBg)+";color:var(--ink);border-color:"+esc(tq.estagioCorBorda)+"'>"+
-        esc(tq.estagioIcone)+" "+esc(tq.estagioLabel)+
-        "</span>";
+      // ── Variáveis de estado ─────────────────────────────────────
+      var eMaturando  = ["maturando","critico"].includes(tq.estagio);
+      var ePronto     = tq.estagio === "pronto";
+      var eLivre      = tq.estagio === "livre";
+      var eBrassagem  = tq.estagio === "brassagem";
+      var temOverride = !!(tq.manualOverride && !ePronto);
 
-      // dias no tanque
-      var diasHtml = "";
-      if (tq.diasTanque !== null && tq.diasTanque !== undefined){
-        var corDias = tq.estagio === "critico" ? "#DC2626" : "var(--verde)";
-        diasHtml = "<span class='tq-dias' style='color:"+corDias+"'>"+tq.diasTanque+"d</span>";
+      // cor da borda esquerda do card (reflete estagio atual)
+      var corBorda = tq.estagioCorBorda;
+
+      // ── BLOCO PRESENTE ──────────────────────────────────────────
+      // O que está dentro do tanque agora
+      var presenteConteudo = "";
+      if (eLivre) {
+        presenteConteudo =
+          "<div style='color:#6B7280;font-size:.78rem;font-style:italic;padding-top:4px'>Tanque vazio</div>";
+      } else {
+        // badge de status
+        var corBg = tq.estagioCorBg; var corBd = tq.estagioCorBorda;
+        var diasStr = (tq.diasTanque !== null && tq.diasTanque !== undefined) ? tq.diasTanque+"d" : "";
+        var corDias = tq.estagio === "critico" ? "#DC2626" : tq.estagio === "brassagem" ? "#C2410C" : "var(--verde)";
+        presenteConteudo =
+          // status badge + dias
+          "<div style='display:flex;align-items:center;gap:6px;margin-bottom:5px'>"+
+            "<span style='background:"+corBg+";border:1px solid "+corBd+";border-radius:5px;"+
+              "padding:1px 7px;font-size:.68rem;font-weight:700;white-space:nowrap'>"+
+              esc(tq.estagioIcone)+" "+esc(tq.estagioLabel)+
+            "</span>"+
+            (diasStr ? "<span style='font-family:\"Barlow Condensed\",sans-serif;font-weight:800;font-size:1rem;color:"+corDias+"'>"+diasStr+"</span>" : "")+
+          "</div>"+
+          // estilo em destaque
+          (tq.estilo ? "<div style='font-weight:700;font-size:.88rem;color:var(--ink);line-height:1.2;margin-bottom:3px'>"+esc(tq.estilo)+"</div>" : "")+
+          // lote + volume + OG em linha
+          "<div style='font-size:.73rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px'>"+
+            (tq.lote   ? "<span style='background:var(--bg);border:1px solid var(--linha);border-radius:4px;padding:1px 6px'>"+esc(tq.lote)+"</span>" : "")+
+            (tq.volume ? "<span style='background:var(--bg);border:1px solid var(--linha);border-radius:4px;padding:1px 6px'>"+esc(tq.volume)+" L</span>" : "")+
+            (tq.og     ? "<span style='background:var(--bg);border:1px solid var(--linha);border-radius:4px;padding:1px 6px'>OG "+esc(tq.og)+"</span>" : "")+
+          "</div>";
+
+        // barreis envasados (compacto)
+        var nomeUp = tq.nome.toUpperCase();
+        var regsBarril = barrisPorTanque[nomeUp] || [];
+        if (regsBarril.length){
+          var totalL = regsBarril.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
+          presenteConteudo +=
+            "<div style='margin-top:5px;font-size:.72rem;color:#7A4500;background:rgba(212,144,90,.1);"+
+            "border:1px solid #D4905A;border-radius:5px;padding:3px 7px'>"+
+            "🛢 Barril: "+fmtNum(totalL)+" L envasados</div>";
+        }
       }
 
-      // detalhes
-      var detalhes = "";
-      if (tq.lote)   detalhes += "<span>Lote: "+esc(tq.lote)+"</span>";
-      if (tq.estilo) detalhes += "<span>"+esc(tq.estilo)+"</span>";
-      if (tq.volume) detalhes += "<span>"+esc(tq.volume)+" L</span>";
-      if (tq.og)     detalhes += "<span>OG: "+esc(tq.og)+"</span>";
-      if (tq.envase){
-        if (tq.envase.formato) detalhes += "<span>"+esc(tq.envase.formato)+"</span>";
-        if (tq.envase.qtd)     detalhes += "<span>"+esc(tq.envase.qtd)+"</span>";
-      }
-
-      // próxima brassagem planejada
-      var proximaHtml = "";
-      if (tq.proximaBrass){
+      // ── BLOCO PRÓXIMO ────────────────────────────────────────────
+      // O que está previsto entrar no tanque
+      var proximoConteudo = "";
+      if (tq.proximaBrass) {
         var pb = tq.proximaBrass;
         var pbData = pb.dataISO ? pb.dataISO.slice(0,10) : pb.semana;
-        proximaHtml = "<div style='margin-top:6px;padding:5px 8px;background:rgba(245,158,11,.1);"+
-          "border-radius:6px;border:1px solid #F59E0B;font-size:.78rem;color:#92400E'>"+
-          "<span style='font-weight:700'>📅 Próxima brassagem:</span> "+
-          esc(pb.estilo||"—")+(pb.volPrev?" · "+esc(pb.volPrev)+" L":"")+
-          "<span style='opacity:.7;margin-left:6px'>semana "+esc(pbData)+"</span>"+
+        proximoConteudo =
+          (pb.estilo ? "<div style='font-weight:700;font-size:.88rem;color:var(--ink);line-height:1.2;margin-bottom:3px'>"+esc(pb.estilo)+"</div>" : "")+
+          "<div style='font-size:.73rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px'>"+
+            (pb.volPrev ? "<span style='background:var(--bg);border:1px solid var(--linha);border-radius:4px;padding:1px 6px'>"+esc(pb.volPrev)+" L</span>" : "")+
+            "<span style='background:var(--bg);border:1px solid var(--linha);border-radius:4px;padding:1px 6px'>"+esc(pbData)+"</span>"+
           "</div>";
+      } else {
+        proximoConteudo =
+          "<div style='color:#9CA3AF;font-size:.75rem;font-style:italic;padding-top:4px'>Sem previsão</div>";
       }
 
-      // barreis vinculados a este tanque
-      var barrilHtml = "";
-      var nomeUp = tq.nome.toUpperCase();
-      var regsBarril = barrisPorTanque[nomeUp] || [];
-      if (regsBarril.length){
-        var totalL = regsBarril.reduce(function(s,r){ return s + (parseFloat(r.total)||0); }, 0);
-        var linhasBarril = regsBarril.map(function(r){
-          var partes = (r.linhas||[]).map(function(l){ return esc(l.formato)+"×"+l.qtd; }).join(" ");
-          var dt = r.dia ? esc(r.dia) : (r.dataISO ? esc(r.dataISO.slice(0,10)) : "");
-          return "<span style='opacity:.8;font-size:.75rem'>"+(dt?"("+dt+") ":"")+esc(r.produto||"")+(partes?" — "+partes:"")+" → "+fmtNum(r.total)+" L</span>";
-        }).join("<br>");
-        barrilHtml = "<div style='margin-top:6px;padding:6px 8px;background:rgba(212,144,90,.12);"+
-          "border-radius:6px;border:1px solid #D4905A;font-size:.78rem;color:#7A4500'>"+
-          "<div style='font-weight:700;margin-bottom:3px'>🛢 Barril — "+fmtNum(totalL)+" L envasados</div>"+
-          linhasBarril+
-          "</div>";
-      }
-
-      // observação
+      // ── Observação ───────────────────────────────────────────────
       var obsHtml = tq.obs && tq.obs.obs
-        ? "<div class='tq-obs'>📝 "+esc(tq.obs.obs)+"</div>"
+        ? "<div style='font-size:.73rem;color:var(--muted);font-style:italic;padding:5px 0 0;border-top:1px solid var(--linha);margin-top:6px'>📝 "+esc(tq.obs.obs)+"</div>"
         : "";
 
-      // botões de ação
+      // ── Botões de ação ───────────────────────────────────────────
       var botoesHtml = "";
       if (podeEditar){
-        var eMaturando  = ["maturando","critico"].includes(tq.estagio);
-        var ePronto     = tq.estagio === "pronto";
-        var eLivre      = tq.estagio === "livre";
-        var eBrassagem  = tq.estagio === "brassagem";
-        // "⟲ Automático" só aparece quando há override manual E não é "pronto"
-        var temOverride = !!(tq.manualOverride && !ePronto);
         botoesHtml = "<div class='tq-acoes'>"+
           "<button class='tq-btn' data-tq-obs='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"' "+
             "data-tq-obs-atual='"+esc((tq.obs&&tq.obs.obs)||"")+"'>📝 Obs</button>"+
-          // maturando/crítico → pode marcar pronto para envase
           (eMaturando
             ? "<button class='tq-btn' style='background:#14532D;color:#fff;border-color:#14532D' "+
                 "data-tq-pronto='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>🟢 Pronto p/ envase</button>"
             : "")+
-          // pronto → pode marcar zerado (tanque foi esvaziado, volta a livre)
           (ePronto
             ? "<button class='tq-btn' style='background:#7C3AED;color:#fff;border-color:#7C3AED' "+
                 "data-tq-zerado='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>🫙 Tanque zerado</button>"
             : "")+
-          // tanque ocupado (não livre, não pronto, não brassagem prevista hoje) → pode zerar
           (!eLivre && !ePronto && !eBrassagem
             ? "<button class='tq-btn' style='background:#7C3AED;color:#fff;border-color:#7C3AED' "+
                 "data-tq-zerado='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>🫙 Tanque zerado</button>"
             : "")+
-          // quando há override manual (e não é pronto) → voltar ao automático
           (temOverride
             ? "<button class='tq-btn' data-tq-auto='"+esc(tq.id)+"'>⟲ Automático</button>"
             : "")+
         "</div>";
       }
 
-      return "<div class='tanque-card' style='background:"+esc(tq.estagioCorBg)+
-        ";border-left-color:"+esc(tq.estagioCorBorda)+"'>"+
-        "<div class='tq-row'>"+
-          "<div style='flex:1'>"+
-            "<div class='tq-topo'>"+
-              "<span class='tq-cod'>"+esc(tq.nome)+"</span>"+
-              "<span class='tq-cap'>"+fmtNum(tq.capacidade)+" L</span>"+
-            "</div>"+
-            estagioHtml+
-          "</div>"+
-          diasHtml+
+      // ── Montagem do card com dois blocos ─────────────────────────
+      return "<div class='tanque-card' style='background:#fff;border-left-color:"+esc(corBorda)+"'>"+
+
+        // cabeçalho: nome + capacidade
+        "<div style='display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px'>"+
+          "<span style='font-family:\"Barlow Condensed\",sans-serif;font-weight:700;font-size:1rem;"+
+            "color:var(--verde);letter-spacing:.05em'>"+esc(tq.nome)+"</span>"+
+          "<span style='font-size:.7rem;color:var(--muted)'>"+fmtNum(tq.capacidade)+" L</span>"+
         "</div>"+
-        (detalhes?"<div class='tq-detalhe'>"+detalhes+"</div>":"")+
-        proximaHtml+
-        barrilHtml+
+
+        // dois blocos lado a lado
+        "<div style='display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--linha);"+
+          "border-radius:8px;overflow:hidden'>"+
+
+          // bloco AGORA
+          "<div style='padding:8px 10px;border-right:1px solid var(--linha);"+
+            "background:"+esc(tq.estagioCorBg)+";min-height:72px'>"+
+            "<div style='font-size:.63rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;"+
+              "color:"+esc(corBorda)+";margin-bottom:4px'>Agora</div>"+
+            presenteConteudo+
+          "</div>"+
+
+          // bloco PRÓXIMO
+          "<div style='padding:8px 10px;background:#FAFAF8;min-height:72px'>"+
+            "<div style='font-size:.63rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;"+
+              "color:#9CA3AF;margin-bottom:4px'>Próximo</div>"+
+            proximoConteudo+
+          "</div>"+
+
+        "</div>"+
+
         obsHtml+
         botoesHtml+
       "</div>";
