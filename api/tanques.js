@@ -130,33 +130,29 @@ export default protegido(async function handler(req, res) {
         .filter(b => b.tanque === nomeUp && b.tanqueFinalizado)
         .sort((a, b) => b.em.localeCompare(a.em))[0] || null;
 
-      // envase mais recente vinculado ao lote deste tanque
-      const envase = brass
-        ? envases
-            .filter(e => e.lote && brass.lote && e.lote === brass.lote)
-            .sort((a, b) => b.em.localeCompare(a.em))[0] || null
-        : null;
-
       // Estágio — baseado apenas no estado atual (ignora brassagens planejadas)
+      // Fluxo: maturando → pronto (manual) → livre (manual "zerado")
       let estagio, estagioLabel, estagioIcone, estagioCorBg, estagioCorBorda;
       if (manual[tq.id] && manual[tq.id].estagio) {
         estagio       = manual[tq.id].estagio;
         estagioLabel  = manual[tq.id].estagioLabel  || estagio;
         estagioIcone  = manual[tq.id].estagioIcone  || "📌";
-        estagioCorBg  = "#F5F5F5";
-        estagioCorBorda = "#999";
+        if (estagio === "pronto") {
+          estagioCorBg  = "#DCFCE7";
+          estagioCorBorda = "#4ADE80";
+        } else if (estagio === "livre") {
+          estagioCorBg  = "#F0FDF4";
+          estagioCorBorda = "#22C55E";
+        } else {
+          estagioCorBg  = "#F5F5F5";
+          estagioCorBorda = "#999";
+        }
       } else if (!brass) {
         estagio       = "livre";
         estagioLabel  = "Livre";
         estagioIcone  = "✅";
         estagioCorBg  = "#F0FDF4";
         estagioCorBorda = "#22C55E";
-      } else if (envase) {
-        estagio       = "envasando";
-        estagioLabel  = "Envasando";
-        estagioIcone  = "📦";
-        estagioCorBg  = "#EFF6FF";
-        estagioCorBorda = "#3B82F6";
       } else {
         const dias = diasDesde(brass.em);
         const DIAS_CRITICO = 15;
@@ -174,6 +170,13 @@ export default protegido(async function handler(req, res) {
           estagioCorBorda = "#16A34A";
         }
       }
+
+      // envases vinculados ao lote (mantidos para exibição, não determinam estágio)
+      const envase = brass
+        ? envases
+            .filter(e => e.lote && brass.lote && e.lote === brass.lote)
+            .sort((a, b) => b.em.localeCompare(a.em))[0] || null
+        : null;
 
       const diasTanque = brass ? diasDesde(brass.em) : null;
 
@@ -279,6 +282,24 @@ export default protegido(async function handler(req, res) {
       mapa[tanqueId] = {
         estagio:      "livre",
         estagioLabel: "Livre (manual)",
+        estagioIcone: "✅",
+        por:          sessao.usuario || sessao.login,
+        em:           new Date().toISOString(),
+      };
+      await gravar(CHAVE_MANUAL, mapa);
+      return res.json({ ok: true });
+    }
+
+    /* -- marcarZerado (tanque esvaziado — disponível para nova brassagem) -- */
+    if (dados.acao === "marcarZerado") {
+      if (!["admin", "gestor"].includes(sessao.papel))
+        return erro(res, 403, "Apenas admin ou gestor.");
+      const { tanqueId } = dados;
+      if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
+      const mapa = (await ler(CHAVE_MANUAL)) || {};
+      mapa[tanqueId] = {
+        estagio:      "livre",
+        estagioLabel: "Livre (zerado)",
         estagioIcone: "✅",
         por:          sessao.usuario || sessao.login,
         em:           new Date().toISOString(),
