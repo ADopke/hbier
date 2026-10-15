@@ -191,6 +191,13 @@ export default protegido(async function handler(req, res) {
       // referência de conteúdo: brassagem realizada tem prioridade; senão, usa prevista de hoje
       const ref = brass || brassHoje || null;
 
+      // envases vinculados ao lote da brassagem atual (para exibição)
+      const envase = brass
+        ? envases
+            .filter(e => e.lote && brass.lote && e.lote === brass.lote)
+            .sort((a, b) => b.em.localeCompare(a.em))[0] || null
+        : null;
+
       const diasTanque = brass ? diasDesde(brass.em) : null;
 
       return {
