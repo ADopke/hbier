@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.11";
+var VERSAO = "3.3.12";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7930,7 +7930,10 @@ async function carregarTanques(){
       var presenteConteudo = "";
       if (eLivre) {
         presenteConteudo =
-          "<div style='color:#6B7280;font-size:.78rem;font-style:italic;padding-top:4px'>Tanque vazio</div>";
+          "<div style='display:flex;align-items:center;gap:6px;margin-bottom:4px'>"+
+            "<span style='background:#16A34A;color:#fff;border-radius:5px;padding:2px 8px;font-size:.67rem;font-weight:800;white-space:nowrap'>✅ Livre</span>"+
+          "</div>"+
+          "<div style='color:#6B7280;font-size:.78rem;font-style:italic'>Disponível para uso</div>";
       } else {
         // badge de status
         var corBg = tq.estagioCorBg; var corBd = tq.estagioCorBorda;
@@ -7938,20 +7941,20 @@ async function carregarTanques(){
         var corDias = tq.estagio === "critico" ? "#DC2626" : tq.estagio === "brassagem" ? "#C2410C" : "var(--verde)";
         presenteConteudo =
           // status badge + dias
-          "<div style='display:flex;align-items:center;gap:6px;margin-bottom:5px'>"+
-            "<span style='background:"+corBg+";border:1px solid "+corBd+";border-radius:5px;"+
-              "padding:1px 7px;font-size:.68rem;font-weight:700;white-space:nowrap'>"+
+          "<div style='display:flex;align-items:center;gap:6px;margin-bottom:6px'>"+
+            "<span style='background:"+corBd+";color:#fff;border-radius:5px;"+
+              "padding:2px 8px;font-size:.67rem;font-weight:800;white-space:nowrap;letter-spacing:.03em'>"+
               esc(tq.estagioIcone)+" "+esc(tq.estagioLabel)+
             "</span>"+
-            (diasStr ? "<span style='font-family:\"Barlow Condensed\",sans-serif;font-weight:800;font-size:1rem;color:"+corDias+"'>"+diasStr+"</span>" : "")+
+            (diasStr ? "<span style='font-family:\"Barlow Condensed\",sans-serif;font-weight:900;font-size:1.1rem;color:"+corDias+"'>"+diasStr+"</span>" : "")+
           "</div>"+
           // estilo em destaque
-          (tq.estilo ? "<div style='font-weight:700;font-size:.88rem;color:var(--ink);line-height:1.2;margin-bottom:3px'>"+esc(tq.estilo)+"</div>" : "")+
+          (tq.estilo ? "<div style='font-weight:700;font-size:.9rem;color:#111827;line-height:1.2;margin-bottom:3px'>"+esc(tq.estilo)+"</div>" : "")+
           // lote + volume + OG em linha
-          "<div style='font-size:.73rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px'>"+
-            (tq.lote   ? "<span style='background:var(--bg);border:1px solid var(--linha);border-radius:4px;padding:1px 6px'>"+esc(tq.lote)+"</span>" : "")+
-            (tq.volume ? "<span style='background:var(--bg);border:1px solid var(--linha);border-radius:4px;padding:1px 6px'>"+esc(tq.volume)+" L</span>" : "")+
-            (tq.og     ? "<span style='background:var(--bg);border:1px solid var(--linha);border-radius:4px;padding:1px 6px'>OG "+esc(tq.og)+"</span>" : "")+
+          "<div style='font-size:.73rem;display:flex;flex-wrap:wrap;gap:4px'>"+
+            (tq.lote   ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>"+esc(tq.lote)+"</span>" : "")+
+            (tq.volume ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>"+esc(tq.volume)+" L</span>" : "")+
+            (tq.og     ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>OG "+esc(tq.og)+"</span>" : "")+
           "</div>";
 
         // barreis envasados — só vincula se o lote do barril bate com o lote do tanque
@@ -7976,14 +7979,14 @@ async function carregarTanques(){
         var pb = tq.proximaBrass;
         var pbData = pb.dataISO ? pb.dataISO.slice(0,10) : pb.semana;
         proximoConteudo =
-          (pb.estilo ? "<div style='font-weight:700;font-size:.88rem;color:var(--ink);line-height:1.2;margin-bottom:3px'>"+esc(pb.estilo)+"</div>" : "")+
-          "<div style='font-size:.73rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px'>"+
-            (pb.volPrev ? "<span style='background:var(--bg);border:1px solid var(--linha);border-radius:4px;padding:1px 6px'>"+esc(pb.volPrev)+" L</span>" : "")+
-            "<span style='background:var(--bg);border:1px solid var(--linha);border-radius:4px;padding:1px 6px'>"+esc(pbData)+"</span>"+
+          (pb.estilo ? "<div style='font-weight:700;font-size:.88rem;color:#1E1B4B;line-height:1.2;margin-bottom:4px'>"+esc(pb.estilo)+"</div>" : "")+
+          "<div style='font-size:.73rem;color:#4338CA;display:flex;flex-wrap:wrap;gap:4px'>"+
+            (pb.volPrev ? "<span style='background:#C7D2FE;border:1px solid #818CF8;border-radius:4px;padding:1px 6px;font-weight:600'>"+esc(pb.volPrev)+" L</span>" : "")+
+            "<span style='background:#C7D2FE;border:1px solid #818CF8;border-radius:4px;padding:1px 6px;font-weight:600'>"+esc(pbData)+"</span>"+
           "</div>";
       } else {
         proximoConteudo =
-          "<div style='color:#9CA3AF;font-size:.75rem;font-style:italic;padding-top:4px'>Sem previsão</div>";
+          "<div style='color:#A5B4FC;font-size:.75rem;font-style:italic;padding-top:4px'>Sem previsão</div>";
       }
 
       // ── Observação ───────────────────────────────────────────────
@@ -8026,21 +8029,21 @@ async function carregarTanques(){
         "</div>"+
 
         // dois blocos lado a lado
-        "<div style='display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--linha);"+
-          "border-radius:8px;overflow:hidden'>"+
+        "<div style='display:grid;grid-template-columns:1fr 1fr;gap:0;border:2px solid "+esc(corBorda)+";"+
+          "border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)'>"+
 
-          // bloco AGORA
-          "<div style='padding:8px 10px;border-right:1px solid var(--linha);"+
-            "background:"+esc(tq.estagioCorBg)+";min-height:72px'>"+
-            "<div style='font-size:.63rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;"+
-              "color:"+esc(corBorda)+";margin-bottom:4px'>Agora</div>"+
+          // bloco AGORA — fundo sólido baseado no status
+          "<div style='padding:10px 11px;border-right:2px solid "+esc(corBorda)+";"+
+            "background:"+esc(tq.estagioCorBg)+";min-height:80px'>"+
+            "<div style='font-size:.6rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;"+
+              "color:"+esc(corBorda)+";margin-bottom:5px;opacity:.85'>▶ Agora</div>"+
             presenteConteudo+
           "</div>"+
 
-          // bloco PRÓXIMO
-          "<div style='padding:8px 10px;background:#FAFAF8;min-height:72px'>"+
-            "<div style='font-size:.63rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;"+
-              "color:#9CA3AF;margin-bottom:4px'>Próximo</div>"+
+          // bloco PRÓXIMO — fundo azul-ardósia suave
+          "<div style='padding:10px 11px;background:#EEF2FF;min-height:80px'>"+
+            "<div style='font-size:.6rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;"+
+              "color:#4338CA;margin-bottom:5px;opacity:.85'>⏭ Próximo</div>"+
             proximoConteudo+
           "</div>"+
 
