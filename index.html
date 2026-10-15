@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.13";
+var VERSAO = "3.3.14";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5066,14 +5066,6 @@ function fmtDataCurta(isoStr){
   return dias[d.getDay()]+" "+dd+"/"+mm;
 }
 
-// Retorna semana no formato "sem. 42" a partir de "2026-10-12"
-function fmtSemana(semISO){
-  if(!semISO) return "";
-  var d = new Date(semISO+"T00:00:00");
-  var inicio = new Date(d.getFullYear(), 0, 1);
-  var sem = Math.ceil(((d - inicio) / 86400000 + inicio.getDay() + 1) / 7);
-  return "sem. "+sem;
-}
 
 function renderResultadoBrassagem(r){
   if(!r) return "";
@@ -8017,7 +8009,7 @@ async function carregarTanques(){
             "<span style='background:#C7D2FE;border:1px solid #818CF8;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:700;color:#3730A3'>"+
               "📅 "+esc(pbDataLabel)+
             "</span>"+
-            (pbSemLabel ? "<span style='background:#E0E7FF;border:1px solid #A5B4FC;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:600;color:#4338CA'>"+esc(pbSemLabel)+"</span>" : "")+
+            (pbDataISO ? (function(){ var p=pbDataISO.split("-"); return "<span style='background:#E0E7FF;border:1px solid #A5B4FC;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:600;color:#4338CA'>"+p[2]+"/"+p[1]+"/"+p[0].slice(2)+"</span>"; })() : "")+
             (pb.volPrev ? "<span style='background:#E0E7FF;border:1px solid #A5B4FC;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:600;color:#4338CA'>🫙 "+esc(pb.volPrev)+" L</span>" : "")+
             (pbDiffLabel && pbDiff > 0 ? "<span style='background:#EDE9FE;border:1px solid #C4B5FD;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:800;color:#6D28D9'>⏱ "+esc(pbDiffLabel)+"</span>" : "")+
           "</div>";
