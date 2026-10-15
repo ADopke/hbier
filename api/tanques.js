@@ -184,8 +184,8 @@ export default protegido(async function handler(req, res) {
           estagio       = "maturando";
           estagioLabel  = "Fermentando / Maturando";
           estagioIcone  = "🍺";
-          estagioCorBg  = "#F0FDF4";
-          estagioCorBorda = "#16A34A";
+          estagioCorBg  = "#FFFBEB";
+          estagioCorBorda = "#F59E0B";
         }
       }
 
