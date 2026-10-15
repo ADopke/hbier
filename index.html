@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.12";
+var VERSAO = "3.3.13";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5049,6 +5049,30 @@ async function carregarProg(){
 function fmtNum(n){
   if(n===undefined||n===null||n==="") return "";
   return Number(n).toLocaleString("pt-BR",{maximumFractionDigits:1});
+}
+
+// Formata data ISO como "Seg 20/10" ou "hoje" / "amanhã" / "X dias"
+function fmtDataCurta(isoStr){
+  if(!isoStr) return "";
+  var d = new Date(isoStr+"T00:00:00");
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var diff = Math.round((d - hoje) / 86400000);
+  if (diff === 0) return "hoje";
+  if (diff === 1) return "amanhã";
+  if (diff > 0 && diff <= 14) return "em "+diff+" dias";
+  var dias = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+  var dd = String(d.getDate()).padStart(2,"0");
+  var mm = String(d.getMonth()+1).padStart(2,"0");
+  return dias[d.getDay()]+" "+dd+"/"+mm;
+}
+
+// Retorna semana no formato "sem. 42" a partir de "2026-10-12"
+function fmtSemana(semISO){
+  if(!semISO) return "";
+  var d = new Date(semISO+"T00:00:00");
+  var inicio = new Date(d.getFullYear(), 0, 1);
+  var sem = Math.ceil(((d - inicio) / 86400000 + inicio.getDay() + 1) / 7);
+  return "sem. "+sem;
 }
 
 function renderResultadoBrassagem(r){
@@ -7977,12 +8001,25 @@ async function carregarTanques(){
       var proximoConteudo = "";
       if (tq.proximaBrass) {
         var pb = tq.proximaBrass;
-        var pbData = pb.dataISO ? pb.dataISO.slice(0,10) : pb.semana;
+        var pbDataISO = pb.dataISO ? pb.dataISO.slice(0,10) : pb.semana;
+        var pbDataLabel = fmtDataCurta(pbDataISO);
+        var pbSemLabel  = fmtSemana(pb.semana);
+        // dias até a brassagem
+        var pbDiff = pbDataISO ? Math.round((new Date(pbDataISO+"T00:00:00") - new Date(new Date().toDateString())) / 86400000) : null;
+        var pbDiffLabel = pbDiff !== null && pbDiff > 0 ? pbDiff+"d" : (pbDiff === 0 ? "hoje" : "");
         proximoConteudo =
-          (pb.estilo ? "<div style='font-weight:700;font-size:.88rem;color:#1E1B4B;line-height:1.2;margin-bottom:4px'>"+esc(pb.estilo)+"</div>" : "")+
-          "<div style='font-size:.73rem;color:#4338CA;display:flex;flex-wrap:wrap;gap:4px'>"+
-            (pb.volPrev ? "<span style='background:#C7D2FE;border:1px solid #818CF8;border-radius:4px;padding:1px 6px;font-weight:600'>"+esc(pb.volPrev)+" L</span>" : "")+
-            "<span style='background:#C7D2FE;border:1px solid #818CF8;border-radius:4px;padding:1px 6px;font-weight:600'>"+esc(pbData)+"</span>"+
+          // estilo em destaque
+          (pb.estilo ? "<div style='font-weight:700;font-size:.88rem;color:#1E1B4B;line-height:1.2;margin-bottom:5px'>"+esc(pb.estilo)+"</div>" : "")+
+          // lote previsto (se informado)
+          (pb.lote ? "<div style='font-size:.72rem;color:#3730A3;font-weight:600;margin-bottom:4px'>🏷 "+esc(pb.lote)+"</div>" : "")+
+          // chips: data + semana + volume + countdown
+          "<div style='display:flex;flex-wrap:wrap;gap:3px'>"+
+            "<span style='background:#C7D2FE;border:1px solid #818CF8;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:700;color:#3730A3'>"+
+              "📅 "+esc(pbDataLabel)+
+            "</span>"+
+            (pbSemLabel ? "<span style='background:#E0E7FF;border:1px solid #A5B4FC;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:600;color:#4338CA'>"+esc(pbSemLabel)+"</span>" : "")+
+            (pb.volPrev ? "<span style='background:#E0E7FF;border:1px solid #A5B4FC;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:600;color:#4338CA'>🫙 "+esc(pb.volPrev)+" L</span>" : "")+
+            (pbDiffLabel && pbDiff > 0 ? "<span style='background:#EDE9FE;border:1px solid #C4B5FD;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:800;color:#6D28D9'>⏱ "+esc(pbDiffLabel)+"</span>" : "")+
           "</div>";
       } else {
         proximoConteudo =
