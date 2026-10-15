@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.9";
+var VERSAO = "3.3.10";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7954,9 +7954,12 @@ async function carregarTanques(){
             (tq.og     ? "<span style='background:var(--bg);border:1px solid var(--linha);border-radius:4px;padding:1px 6px'>OG "+esc(tq.og)+"</span>" : "")+
           "</div>";
 
-        // barreis envasados (compacto)
+        // barreis envasados — só vincula se o lote do barril bate com o lote do tanque
         var nomeUp = tq.nome.toUpperCase();
-        var regsBarril = barrisPorTanque[nomeUp] || [];
+        var todosBarril = barrisPorTanque[nomeUp] || [];
+        var regsBarril = tq.lote
+          ? todosBarril.filter(function(r){ return r.lote && r.lote === tq.lote; })
+          : []; // sem lote no tanque: não vincula nenhum barril
         if (regsBarril.length){
           var totalL = regsBarril.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
           presenteConteudo +=
