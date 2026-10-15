@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.17";
+var VERSAO = "3.3.18";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7864,26 +7864,33 @@ var _dadosTanques = null; // cache para exportação
 
 // Navega para a aba Programação e abre o modal de edição da brassagem
 async function irParaBrassagem(semana, id){
-  // 1. Troca para a aba prog
-  document.querySelectorAll(".abas button").forEach(function(x){ x.classList.remove("ativa"); });
-  var btnProg = document.querySelector("[data-aba='prog']");
-  if(btnProg){ btnProg.classList.add("ativa"); btnProg.scrollIntoView({block:"nearest",inline:"center",behavior:"smooth"}); }
-  Object.keys({hoje:1,tanques:1,checklist:1,tarefas:1,manut:1,equipe:1,base:1,relatorios:1,metas:1,limpeza:1}).forEach(function(a){
-    var el = $("painel"+a.charAt(0).toUpperCase()+a.slice(1));
-    if(el) el.hidden = true;
-  });
-  $("painelProg").hidden = false;
+  // 1. Busca o item diretamente na API
+  var r;
+  try { r = await api("/api/prog?semana="+semana); } catch(e){ toast("Erro ao abrir brassagem.","erro"); return; }
+  var it = (r.itens||[]).find(function(x){ return x.id === id; });
+  if(!it){ toast("Brassagem não encontrada.","erro"); return; }
 
-  // 2. Navega para a semana correta e carrega
+  // 2. Troca para a aba prog via clique no botão (aciona toda a lógica nativa)
+  var btnProg = document.querySelector(".abas button[data-aba='prog']");
+  if(btnProg){ btnProg.click(); }
+
+  // 3. Navega para a semana e recarrega
   segProg = segundaDe(new Date(semana+"T00:00:00"));
   if(typeof progSetVisao === "function") progSetVisao("semanal");
   await carregarProg();
 
-  // 3. Acha o botão de editar pelo id e dispara o clique
-  setTimeout(function(){
-    var btn = document.querySelector("[data-prog-edit='"+id+"']");
-    if(btn) btn.click();
-  }, 300);
+  // 4. Abre o modal preenchido diretamente (mesmo código do listener de editar)
+  _brasseditando = {id: it.id, semana};
+  $("brassFormTitulo").textContent = "🍺 Editar Brassagem";
+  $("brassEstilo").value   = it.estilo  || "";
+  $("brassLote").value     = it.lote    || "";
+  $("brassVolPrev").value  = it.volPrev || "";
+  $("brassObs").value      = it.obs     || "";
+  preencherDias("brassDia");
+  if(it.dataISO) $("brassDia").value = (it.dia||"")+"|"+it.dataISO;
+  else           $("brassDia").value = it.dia || "";
+  popularSelectTanques("brassTanque", false, (it.tanque||"").toUpperCase());
+  $("modalBrassagem").hidden = false;
 }
 
 async function carregarTanques(){
