@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.16";
+var VERSAO = "3.3.17";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7862,6 +7862,30 @@ function badgeTempoTanque(resultado){
 
 var _dadosTanques = null; // cache para exportação
 
+// Navega para a aba Programação e abre o modal de edição da brassagem
+async function irParaBrassagem(semana, id){
+  // 1. Troca para a aba prog
+  document.querySelectorAll(".abas button").forEach(function(x){ x.classList.remove("ativa"); });
+  var btnProg = document.querySelector("[data-aba='prog']");
+  if(btnProg){ btnProg.classList.add("ativa"); btnProg.scrollIntoView({block:"nearest",inline:"center",behavior:"smooth"}); }
+  Object.keys({hoje:1,tanques:1,checklist:1,tarefas:1,manut:1,equipe:1,base:1,relatorios:1,metas:1,limpeza:1}).forEach(function(a){
+    var el = $("painel"+a.charAt(0).toUpperCase()+a.slice(1));
+    if(el) el.hidden = true;
+  });
+  $("painelProg").hidden = false;
+
+  // 2. Navega para a semana correta e carrega
+  segProg = segundaDe(new Date(semana+"T00:00:00"));
+  if(typeof progSetVisao === "function") progSetVisao("semanal");
+  await carregarProg();
+
+  // 3. Acha o botão de editar pelo id e dispara o clique
+  setTimeout(function(){
+    var btn = document.querySelector("[data-prog-edit='"+id+"']");
+    if(btn) btn.click();
+  }, 300);
+}
+
 async function carregarTanques(){
   $("tanquesLista").innerHTML = "<div class='vazio'>Carregando…</div>";
   try{
@@ -7967,11 +7991,14 @@ async function carregarTanques(){
           // estilo em destaque
           (tq.estilo ? "<div style='font-weight:700;font-size:.9rem;color:#111827;line-height:1.2;margin-bottom:3px'>"+esc(tq.estilo)+"</div>" : "")+
           // lote + volume + OG em linha
-          "<div style='font-size:.73rem;display:flex;flex-wrap:wrap;gap:4px'>"+
+          "<div style='font-size:.73rem;display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px'>"+
             (tq.lote   ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>"+esc(tq.lote)+"</span>" : "")+
             (tq.volume ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>"+esc(tq.volume)+" L</span>" : "")+
             (tq.og     ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>OG "+esc(tq.og)+"</span>" : "")+
-          "</div>";
+          "</div>"+
+          (tq.brassadoId && tq.brassadoSem ? "<button onclick='irParaBrassagem(\""+esc(tq.brassadoSem)+"\",\""+esc(tq.brassadoId)+"\")' "+
+            "style='background:none;border:1px solid rgba(0,0,0,.18);border-radius:5px;padding:2px 8px;font-size:.7rem;"+
+            "color:#374151;cursor:pointer;font-weight:600'>✏️ editar brassagem</button>" : "");
 
         // barreis envasados — só vincula se o lote do barril bate com o lote do tanque
         var nomeUp = tq.nome.toUpperCase();
@@ -8005,14 +8032,17 @@ async function carregarTanques(){
           // lote previsto (se informado)
           (pb.lote ? "<div style='font-size:.72rem;color:#3730A3;font-weight:600;margin-bottom:4px'>🏷 "+esc(pb.lote)+"</div>" : "")+
           // chips: data + semana + volume + countdown
-          "<div style='display:flex;flex-wrap:wrap;gap:3px'>"+
+          "<div style='display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px'>"+
             "<span style='background:#C7D2FE;border:1px solid #818CF8;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:700;color:#3730A3'>"+
               "📅 "+esc(pbDataLabel)+
             "</span>"+
             (pbDataISO ? (function(){ var p=pbDataISO.split("-"); return "<span style='background:#E0E7FF;border:1px solid #A5B4FC;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:600;color:#4338CA'>"+p[2]+"/"+p[1]+"/"+p[0].slice(2)+"</span>"; })() : "")+
             (pb.volPrev ? "<span style='background:#E0E7FF;border:1px solid #A5B4FC;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:600;color:#4338CA'>🫙 "+esc(pb.volPrev)+" L</span>" : "")+
             (pbDiffLabel && pbDiff > 0 ? "<span style='background:#EDE9FE;border:1px solid #C4B5FD;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:800;color:#6D28D9'>⏱ "+esc(pbDiffLabel)+"</span>" : "")+
-          "</div>";
+          "</div>"+
+          (pb.id && pb.semana ? "<button onclick='irParaBrassagem(\""+esc(pb.semana)+"\",\""+esc(pb.id)+"\")' "+
+            "style='background:none;border:1px solid #818CF8;border-radius:5px;padding:2px 8px;font-size:.7rem;"+
+            "color:#4338CA;cursor:pointer;font-weight:600'>✏️ editar brassagem</button>" : "");
       } else {
         proximoConteudo =
           "<div style='color:#A5B4FC;font-size:.75rem;font-style:italic;padding-top:4px'>Sem previsão</div>";
