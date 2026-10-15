@@ -219,6 +219,7 @@ export default protegido(async function handler(req, res) {
         brassadoSem:  brass ? brass.semana : "",
         proximaBrass: proximaBrass ? {
           estilo:  proximaBrass.estilo,
+          lote:    proximaBrass.lote,
           semana:  proximaBrass.semana,
           dataISO: proximaBrass.em,
           volPrev: proximaBrass.volume,
