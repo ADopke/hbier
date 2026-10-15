@@ -8003,7 +8003,7 @@ async function carregarTanques(){
             (tq.volume ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>"+esc(tq.volume)+" L</span>" : "")+
             (tq.og     ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>OG "+esc(tq.og)+"</span>" : "")+
           "</div>"+
-          (tq.brassadoId && tq.brassadoSem ? "<button onclick='irParaBrassagem(\""+esc(tq.brassadoSem)+"\",\""+esc(tq.brassadoId)+"\")' "+
+          (tq.brassadoId && tq.brassadoSem ? "<button data-brass-nav-sem='"+esc(tq.brassadoSem)+"' data-brass-nav-id='"+esc(tq.brassadoId)+"' "+
             "style='background:none;border:1px solid rgba(0,0,0,.18);border-radius:5px;padding:2px 8px;font-size:.7rem;"+
             "color:#374151;cursor:pointer;font-weight:600'>✏️ editar brassagem</button>" : "");
 
@@ -8047,7 +8047,7 @@ async function carregarTanques(){
             (pb.volPrev ? "<span style='background:#E0E7FF;border:1px solid #A5B4FC;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:600;color:#4338CA'>🫙 "+esc(pb.volPrev)+" L</span>" : "")+
             (pbDiffLabel && pbDiff > 0 ? "<span style='background:#EDE9FE;border:1px solid #C4B5FD;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:800;color:#6D28D9'>⏱ "+esc(pbDiffLabel)+"</span>" : "")+
           "</div>"+
-          (pb.id && pb.semana ? "<button onclick='irParaBrassagem(\""+esc(pb.semana)+"\",\""+esc(pb.id)+"\")' "+
+          (pb.id && pb.semana ? "<button data-brass-nav-sem='"+esc(pb.semana)+"' data-brass-nav-id='"+esc(pb.id)+"' "+
             "style='background:none;border:1px solid #818CF8;border-radius:5px;padding:2px 8px;font-size:.7rem;"+
             "color:#4338CA;cursor:pointer;font-weight:600'>✏️ editar brassagem</button>" : "");
       } else {
@@ -8174,6 +8174,12 @@ async function carregarTanques(){
           toast("Estágio voltou ao automático.","ok");
           carregarTanques();
         }catch(e){ toast(e.message,"erro"); }
+      });
+    });
+
+    $("tanquesLista").querySelectorAll("[data-brass-nav-id]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        irParaBrassagem(btn.dataset.brassNavSem, btn.dataset.brassNavId);
       });
     });
 
