@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.14";
+var VERSAO = "3.3.15";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7995,7 +7995,7 @@ async function carregarTanques(){
         var pb = tq.proximaBrass;
         var pbDataISO = pb.dataISO ? pb.dataISO.slice(0,10) : pb.semana;
         var pbDataLabel = fmtDataCurta(pbDataISO);
-        var pbSemLabel  = fmtSemana(pb.semana);
+
         // dias até a brassagem
         var pbDiff = pbDataISO ? Math.round((new Date(pbDataISO+"T00:00:00") - new Date(new Date().toDateString())) / 86400000) : null;
         var pbDiffLabel = pbDiff !== null && pbDiff > 0 ? pbDiff+"d" : (pbDiff === 0 ? "hoje" : "");
