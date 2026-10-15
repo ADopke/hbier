@@ -35,16 +35,18 @@ export default protegido(async function handler(req, res) {
     const obs    = (await ler(CHAVE_OBS))    || {};
     const manual = (await ler(CHAVE_MANUAL)) || {};
 
-    // Buscar últimas 26 semanas de programação para deduzir estágios (~6 meses)
+    // Buscar 26 semanas para trás + 12 semanas para frente (~3 meses futuros)
     const semanas = [];
     const hoje = new Date();
-    for (let i = 0; i < 26; i++) {
-      const d = new Date(hoje);
+    // segunda-feira da semana atual
+    const dowHoje = hoje.getDay();
+    const diffHoje = dowHoje === 0 ? -6 : 1 - dowHoje;
+    const segAtual = new Date(hoje);
+    segAtual.setDate(segAtual.getDate() + diffHoje);
+
+    for (let i = -12; i < 26; i++) {   // negativo = futuro, positivo = passado
+      const d = new Date(segAtual);
       d.setDate(d.getDate() - i * 7);
-      // segunda-feira da semana
-      const dow = d.getDay();
-      const diff = dow === 0 ? -6 : 1 - dow;
-      d.setDate(d.getDate() + diff);
       const ch = d.toISOString().slice(0, 10);
       semanas.push(ch);
     }
