@@ -120,9 +120,10 @@ export default protegido(async function handler(req, res) {
     const tanquesEstado = TANQUES.map(tq => {
       const nomeUp = tq.nome.toUpperCase();
 
-      // brassagem realizada mais recente (não finalizada) — estado atual do tanque
+      // brassagem com resultado mais recente = o que está no tanque agora
+      // (nova brassagem substitui automaticamente a anterior — sem precisar "finalizar")
       const brass = brassagens
-        .filter(b => b.tanque === nomeUp && !b.tanqueFinalizado && !b.planejada && !b.previstahoje)
+        .filter(b => b.tanque === nomeUp && !b.planejada && !b.previstahoje)
         .sort((a, b) => b.em.localeCompare(a.em))[0] || null;
 
       // brassagem prevista para hoje (sem resultado ainda)
