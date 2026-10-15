@@ -82,6 +82,7 @@ export default protegido(async function handler(req, res) {
             const planejada     = !temResultado && ehFutura;
             const previstahoje  = !temResultado && ehHoje;
             brassagens.push({
+              id:               it.id        || "",
               tanque:           tanqueNorm,
               lote:             it.lote      || "",
               estilo:           it.estilo    || "",
@@ -219,7 +220,9 @@ export default protegido(async function handler(req, res) {
         diasTanque,
         brassadoEm:   brass ? brass.em     : "",
         brassadoSem:  brass ? brass.semana : "",
+        brassadoId:   brass ? brass.id     : "",
         proximaBrass: proximaBrass ? {
+          id:      proximaBrass.id,
           estilo:  proximaBrass.estilo,
           lote:    proximaBrass.lote,
           semana:  proximaBrass.semana,
