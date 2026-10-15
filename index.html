@@ -2816,7 +2816,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.3.15";
+var VERSAO = "3.3.16";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7910,7 +7910,7 @@ async function carregarTanques(){
         (contagem.brassagem? "<span style='background:#F97316;border:1px solid #F97316;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:700;color:#fff'>🔥 "+contagem.brassagem+" brassagem hoje</span>" : "")+
         (contagem.pronto   ? "<span style='background:#14532D;border:1px solid #14532D;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:700;color:#fff'>🟢 "+contagem.pronto+" pronto"+(contagem.pronto>1?"s":"")+" p/ envase</span>" : "")+
         (contagem.livre    ? "<span style='background:#fff;border:1px solid #22C55E;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#15803D'>✅ "+contagem.livre+" livre"+(contagem.livre>1?"s":"")+"</span>" : "")+
-        (contagem.maturando? "<span style='background:#fff;border:1px solid #16A34A;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#15803D'>🍺 "+contagem.maturando+" maturando</span>" : "")+
+        (contagem.maturando? "<span style='background:#FFFBEB;border:1px solid #F59E0B;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#92400E'>🍺 "+contagem.maturando+" maturando</span>" : "")+
         (contagem.critico  ? "<span style='background:#fff;border:1px solid #DC2626;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#DC2626'>🚨 "+contagem.critico+" atenção</span>" : "")+
       "</div>";
 
@@ -7922,7 +7922,7 @@ async function carregarTanques(){
         estagios: ["pronto"] },
       { label: "✅ Livres (vazios)", cor: "#15803D", bg: "#F0FDF4", borda: "#A8D4B4",
         estagios: ["livre"] },
-      { label: "🍺 Fermentando / Maturando", cor: "#15803D", bg: "#F0FDF4", borda: "#A8D4B4",
+      { label: "🍺 Fermentando / Maturando", cor: "#92400E", bg: "#FFFBEB", borda: "#FCD34D",
         estagios: ["maturando"] },
       { label: "🚨 Atenção — maturando há muito tempo", cor: "#DC2626", bg: "#FEF2F2", borda: "#FECACA",
         estagios: ["critico"] },
