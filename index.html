@@ -8123,11 +8123,16 @@ async function carregarTanques(){
         botoesHtml+
 
         // ── Histórico de movimentações do lote atual ──────────────
-        (tq.historico && tq.historico.length && tq.lote ? (function(){
-          var loteAtual = (tq.lote || "").toUpperCase();
+        (tq.historico && tq.historico.length ? (function(){
+          var loteAtual = (tq.lote || "").trim().toUpperCase();
           var hist = tq.historico.filter(function(m){
-            return m.tipo !== "brassagem" &&
-                   (m.lote || "").toUpperCase() === loteAtual;
+            if (m.tipo === "brassagem") return false;
+            // Se tem lote no tanque, filtra só os do mesmo lote
+            if (loteAtual) {
+              return (m.lote || "").trim().toUpperCase() === loteAtual;
+            }
+            // Sem lote definido: mostra tudo (não deve acontecer normalmente)
+            return true;
           });
           if (!hist.length) return "";
           var linhas = hist.slice(0, 20).map(function(m){
