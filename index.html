@@ -8122,9 +8122,13 @@ async function carregarTanques(){
         obsHtml+
         botoesHtml+
 
-        // ── Histórico de movimentações ────────────────────────────
-        (tq.historico && tq.historico.length ? (function(){
-          var hist = tq.historico.filter(function(m){ return m.tipo !== "brassagem"; });
+        // ── Histórico de movimentações do lote atual ──────────────
+        (tq.historico && tq.historico.length && tq.lote ? (function(){
+          var loteAtual = (tq.lote || "").toUpperCase();
+          var hist = tq.historico.filter(function(m){
+            return m.tipo !== "brassagem" &&
+                   (m.lote || "").toUpperCase() === loteAtual;
+          });
           if (!hist.length) return "";
           var linhas = hist.slice(0, 20).map(function(m){
             var icone = m.tipo === "barril" ? "🛢" : "📦";
