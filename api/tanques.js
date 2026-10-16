@@ -53,28 +53,41 @@ export default protegido(async function handler(req, res) {
 
     // Importar dinamicamente para não criar dependência circular em prod
     // (prog.js já exporta sua lógica via Redis; aqui lemos diretamente)
-    const CHAVE_PROG = (sem) => `prog:${sem}`;
+    const CHAVE_PROG        = (sem) => `prog:${sem}`;
+    const CHAVE_PROG_BARRIL = (sem) => `prog:barril-${sem}`;
 
-    // Coletar todos os itens de brassagem e envase com resultado
+    // Coletar todos os itens de brassagem, envase e barril
     const brassagens = []; // { tanque, lote, estilo, em, volume, og, tanqueFinalizado, semana }
     const envases    = []; // { tanqueOrigem, lote, estilo, formato, qtd, em, semana }
+    const movimentos = []; // histórico completo: { tipo, tanque, lote, estilo, em, dataISO, descricao, semana }
 
     await Promise.all(semanas.map(async (sem) => {
       try {
-        const itens = (await ler(CHAVE_PROG(sem))) || [];
+        // Lê itens de programação e barreis em paralelo
+        const [dados, dadosBarreis] = await Promise.all([
+          ler(CHAVE_PROG(sem)),
+          ler(CHAVE_PROG_BARRIL(sem)),
+        ]);
+        const itens = Array.isArray(dados) ? dados : (dados && dados.itens ? dados.itens : []);
+        // dadosBarreis pode ser:
+        //   - array direto de registros
+        //   - objeto { "barril-{sem}": [...] }   (formato retornado pela API /prog)
+        //   - null/undefined (semana sem barreis)
+        let barreisSem = [];
+        if (Array.isArray(dadosBarreis)) {
+          barreisSem = dadosBarreis;
+        } else if (dadosBarreis && typeof dadosBarreis === "object") {
+          // pega todos os arrays dentro do objeto
+          barreisSem = Object.values(dadosBarreis).flat();
+        }
+
         itens.forEach(it => {
           if (it.tipo === "brassagem") {
-            // Aceita tanto brassagens com resultado registrado quanto planejadas (sem resultado)
-            // Para brassagens planejadas usa a dataISO prevista como referência de data
             const temResultado = it.resultado && it.resultado.em;
             // Sempre usa a data prevista (dataISO) como referência para contagem de dias
-            // independente de quando o resultado foi registrado
             const dataRef = it.dataISO || sem;
-            if (!it.tanque) return; // ignora brassagens sem tanque definido
-            // Normaliza "TQ-03", "TQ 03", "tq03" → "TQ03"
+            if (!it.tanque) return;
             const tanqueNorm = (it.tanque || "").toUpperCase().replace(/[-\s]/g, "");
-            // "planejada" = sem resultado E data prevista no futuro (não inclui hoje)
-            // "previstahoje" = sem resultado E data == hoje
             const dataISO = (it.dataISO || sem);
             const hoje = new Date().toISOString().slice(0, 10);
             const ehFutura = dataISO > hoje;
@@ -94,10 +107,25 @@ export default protegido(async function handler(req, res) {
               previstahoje,
               semana:           sem,
             });
+            // Adiciona brassagem ao histórico de movimentos
+            if (temResultado || ehHoje || !ehFutura) {
+              movimentos.push({
+                tipo:      "brassagem",
+                tanque:    tanqueNorm,
+                lote:      it.lote    || "",
+                estilo:    it.estilo  || "",
+                em:        dataRef,
+                dataISO:   dataISO,
+                volume:    temResultado ? (it.resultado.volume || it.volPrev || "") : (it.volPrev || ""),
+                semana:    sem,
+              });
+            }
           }
           if (it.tipo === "envase" && it.resultado) {
+            const tanqueNorm = (it.tanqueOrigem || "").toUpperCase().replace(/[-\s]/g, "");
+            const emEnvase = it.dataISO || sem;
             envases.push({
-              tanqueOrigem: (it.tanqueOrigem || "").toUpperCase().replace(/[-\s]/g, ""),
+              tanqueOrigem: tanqueNorm,
               lote:         it.lote          || "",
               estilo:       it.estilo        || "",
               formato:      it.formato       || "",
@@ -105,7 +133,52 @@ export default protegido(async function handler(req, res) {
               em:           it.resultado.em  || it.resultado.emReal || "",
               semana:       sem,
             });
+            movimentos.push({
+              tipo:      "envase",
+              tanque:    tanqueNorm,
+              lote:      it.lote    || "",
+              estilo:    it.estilo  || "",
+              em:        emEnvase,
+              dataISO:   emEnvase,
+              formato:   it.formato || "",
+              qtd:       it.resultado.qtdEnvasada || it.resultado.qtdReal || it.qtd || "",
+              volume:    it.resultado.volume || "",
+              semana:    sem,
+            });
           }
+        });
+
+        // Barreis — chave separada `prog:barril-{sem}` → array de registros
+        barreisSem.forEach(reg => {
+          const tanqueNorm = (reg.tanque || "").toUpperCase().replace(/[-\s]/g, "");
+          if (!tanqueNorm) return;
+          // Determinar dataISO a partir do campo dataISO ou do dia da semana
+          let dataISO = reg.dataISO || "";
+          if (!dataISO && reg.dia) {
+            const DIAS = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5,"Domingo":6};
+            const off = DIAS[reg.dia];
+            if (off !== undefined) {
+              const d = new Date(sem + "T00:00:00");
+              d.setDate(d.getDate() + off);
+              dataISO = d.toISOString().slice(0, 10);
+            }
+          }
+          if (!dataISO) dataISO = sem;
+          const linhasDesc = (reg.linhas || []).map(l =>
+            `${l.formato} × ${l.qtd}`
+          ).join(", ");
+          movimentos.push({
+            tipo:      "barril",
+            tanque:    tanqueNorm,
+            lote:      reg.lote    || "",
+            estilo:    reg.produto || "",
+            em:        dataISO,
+            dataISO:   dataISO,
+            linhas:    reg.linhas  || [],
+            totalL:    reg.total   || 0,
+            descricao: linhasDesc,
+            semana:    sem,
+          });
         });
       } catch (_) { /* semana sem dados */ }
     }));
@@ -251,6 +324,43 @@ export default protegido(async function handler(req, res) {
         obs:          obs[tq.id]    || null,
         manualOverride: manual[tq.id] || null,
       };
+    });
+
+    // Montar histórico por tanque (movimentos ordenados do mais recente para o mais antigo)
+    // Inclui cálculo de "dias no tanque" no momento de cada envase/barril
+    function diasEntreIso(dataInicio, dataFim) {
+      if (!dataInicio || !dataFim) return null;
+      const a = new Date(dataInicio + "T00:00:00");
+      const b = new Date(dataFim   + "T00:00:00");
+      return Math.max(0, Math.floor((b - a) / 86400000));
+    }
+
+    // Para cada movimento de envase/barril, encontrar a brassagem do mesmo lote+tanque
+    // para calcular quantos dias a cerveja tinha no tanque naquele momento
+    movimentos.forEach(mov => {
+      if (mov.tipo === "brassagem") return;
+      const brass = brassagens
+        .filter(b => b.lote && mov.lote && b.lote === mov.lote && b.tanque === mov.tanque)
+        .sort((a, b) => b.em.localeCompare(a.em))[0] || null;
+      mov.diasNoBrassar = brass ? diasEntreIso(brass.em, mov.dataISO) : null;
+      mov.brassadoEm    = brass ? brass.em : null;
+    });
+
+    // Agrupar movimentos por tanque
+    const historicoPorTanque = {};
+    movimentos.forEach(mov => {
+      if (!mov.tanque) return;
+      if (!historicoPorTanque[mov.tanque]) historicoPorTanque[mov.tanque] = [];
+      historicoPorTanque[mov.tanque].push(mov);
+    });
+    // Ordenar cada lista do mais recente para o mais antigo
+    Object.values(historicoPorTanque).forEach(lista => {
+      lista.sort((a, b) => b.dataISO.localeCompare(a.dataISO));
+    });
+
+    // Associar histórico a cada tanque
+    tanquesEstado.forEach(tq => {
+      tq.historico = historicoPorTanque[tq.nome.toUpperCase()] || [];
     });
 
     return res.json({
