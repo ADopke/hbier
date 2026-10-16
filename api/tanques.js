@@ -169,7 +169,7 @@ export default protegido(async function handler(req, res) {
           estagioCorBorda = "#999";
         }
       } else if (brassHoje) {
-        // brassagem prevista para hoje ainda sem resultado registrado
+        // brassagem de hoje tem prioridade máxima — substitui qualquer brassagem anterior
         estagio       = "brassagem";
         estagioLabel  = "Brassagem prevista";
         estagioIcone  = "🔥";
@@ -199,17 +199,17 @@ export default protegido(async function handler(req, res) {
         }
       }
 
-      // referência de conteúdo: brassagem realizada tem prioridade; senão, usa prevista de hoje
-      const ref = brass || brassHoje || null;
+      // referência de conteúdo: brassagem de hoje tem prioridade sobre anterior em maturação
+      const ref = brassHoje || brass || null;
 
       // envases vinculados ao lote da brassagem atual (para exibição)
-      const envase = brass
+      const envase = brass && !brassHoje
         ? envases
             .filter(e => e.lote && brass.lote && e.lote === brass.lote)
             .sort((a, b) => b.em.localeCompare(a.em))[0] || null
         : null;
 
-      const diasTanque = brass ? diasDesde(brass.em) : null;
+      const diasTanque = brass && !brassHoje ? diasDesde(brass.em) : null;
 
       return {
         id:           tq.id,
@@ -223,11 +223,11 @@ export default protegido(async function handler(req, res) {
         lote:         ref ? ref.lote   : "",
         estilo:       ref ? ref.estilo : "",
         volume:       ref ? ref.volume : "",
-        og:           brass ? brass.og : "",
+        og:           brass && !brassHoje ? brass.og : "",
         diasTanque,
-        brassadoEm:   brass ? brass.em     : "",
-        brassadoSem:  brass ? brass.semana : "",
-        brassadoId:   brass ? brass.id     : "",
+        brassadoEm:   ref ? ref.em     : "",
+        brassadoSem:  ref ? ref.semana : "",
+        brassadoId:   ref ? ref.id     : "",
         proximaBrass: proximaBrass ? {
           id:      proximaBrass.id,
           estilo:  proximaBrass.estilo,
