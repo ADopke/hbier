@@ -144,10 +144,17 @@ export default protegido(async function handler(req, res) {
         .filter(b => b.tanque === nomeUp && b.tanqueFinalizado)
         .sort((a, b) => b.em.localeCompare(a.em))[0] || null;
 
-      // Estágio — baseado apenas no estado atual (ignora brassagens planejadas)
+      // Estágio — baseado no estado atual
       // Fluxo: maturando → pronto (manual) → livre (manual "zerado")
+      // Override "livre/zerado" cede para brassagem real ou prevista hoje
+      const overrideAtivo = manual[tq.id] && manual[tq.id].estagio;
+      const overrideEhLivre = overrideAtivo && (manual[tq.id].estagio === "livre");
+      const overrideEhPronto = overrideAtivo && (manual[tq.id].estagio === "pronto");
+      // "pronto" sempre tem prioridade; "livre" cede se há brassagem
+      const usarOverride = overrideEhPronto || (overrideEhLivre && !brass && !brassHoje);
+
       let estagio, estagioLabel, estagioIcone, estagioCorBg, estagioCorBorda;
-      if (manual[tq.id] && manual[tq.id].estagio) {
+      if (usarOverride) {
         estagio       = manual[tq.id].estagio;
         estagioLabel  = manual[tq.id].estagioLabel  || estagio;
         estagioIcone  = manual[tq.id].estagioIcone  || "📌";
