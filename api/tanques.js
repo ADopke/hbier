@@ -67,9 +67,9 @@ export default protegido(async function handler(req, res) {
             // Aceita tanto brassagens com resultado registrado quanto planejadas (sem resultado)
             // Para brassagens planejadas usa a dataISO prevista como referência de data
             const temResultado = it.resultado && it.resultado.em;
-            const dataRef = temResultado
-              ? it.resultado.em
-              : (it.dataISO || sem);
+            // Sempre usa a data prevista (dataISO) como referência para contagem de dias
+            // independente de quando o resultado foi registrado
+            const dataRef = it.dataISO || sem;
             if (!it.tanque) return; // ignora brassagens sem tanque definido
             // Normaliza "TQ-03", "TQ 03", "tq03" → "TQ03"
             const tanqueNorm = (it.tanque || "").toUpperCase().replace(/[-\s]/g, "");
