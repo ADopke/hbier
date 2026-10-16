@@ -1868,6 +1868,30 @@
 
     <!-- ---------- ABA EQUIPE (admin) ---------- -->
     <div id="painelEquipe" hidden>
+
+      <section id="secCriarAcesso" style="border:2px solid var(--verde);border-radius:10px;margin:14px;padding:0;overflow:hidden">
+        <div class="sec-head" style="background:var(--verde);color:#fff;margin:0;border-radius:0">
+          <span class="sec-title" style="color:#fff">➕ Adicionar colaborador</span>
+        </div>
+        <div class="form-grid" style="padding:14px">
+          <div><label for="nvNome">Nome completo</label>
+            <input type="text" id="nvNome" placeholder="Ex.: Marcos"></div>
+          <div><label for="nvLogin">Login (usuário)</label>
+            <input type="text" id="nvLogin" placeholder="ex.: marcos" autocomplete="off"></div>
+          <div><label for="nvSenha">Senha inicial</label>
+            <input type="password" id="nvSenha" autocomplete="new-password"></div>
+          <div><label for="nvPapel">Perfil de acesso</label>
+            <select id="nvPapel">
+              <option value="colaborador">Colaborador — acesso à rotina</option>
+              <option value="gestor">Gestor — cria tarefas para a equipe</option>
+              <option value="admin" id="opcaoAdmin">Administrador — acesso total</option>
+            </select></div>
+          <div class="acoes-form">
+            <button class="btn mini" id="btnCriarUsuario">✅ Criar acesso</button>
+          </div>
+        </div>
+      </section>
+
       <section>
         <div class="sec-head">
           <span class="sec-title">📊 Acompanhamento da semana</span>
@@ -1936,26 +1960,6 @@
         </div>
       </section>
 
-      <section id="secCriarAcesso" hidden>
-        <div class="sec-head"><span class="sec-title">➕ Novo acesso</span></div>
-        <div class="form-grid">
-          <div><label for="nvNome">Nome</label>
-            <input type="text" id="nvNome" placeholder="Ex.: Marcos"></div>
-          <div><label for="nvLogin">Usuário</label>
-            <input type="text" id="nvLogin" placeholder="ex.: marcos"></div>
-          <div><label for="nvSenha">Senha inicial</label>
-            <input type="password" id="nvSenha" autocomplete="new-password"></div>
-          <div><label for="nvPapel">Perfil</label>
-            <select id="nvPapel">
-              <option value="colaborador">Colaborador</option>
-              <option value="gestor">Gestor — cria tarefas para a equipe, sem acesso ao admin</option>
-              <option value="admin" id="opcaoAdmin">Administrador</option>
-            </select></div>
-          <div class="acoes-form">
-            <button class="btn mini" id="btnCriarUsuario">Criar acesso</button>
-          </div>
-        </div>
-      </section>
     </div>
 
     <!-- ---------- ABA RELATÓRIOS ---------- -->
