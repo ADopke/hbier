@@ -8121,6 +8121,66 @@ async function carregarTanques(){
 
         obsHtml+
         botoesHtml+
+
+        // ── Histórico de movimentações ────────────────────────────
+        (tq.historico && tq.historico.length ? (function(){
+          var hist = tq.historico.filter(function(m){ return m.tipo !== "brassagem"; });
+          if (!hist.length) return "";
+          var linhas = hist.slice(0, 20).map(function(m){
+            var icone = m.tipo === "barril" ? "🛢" : "📦";
+            var corBg = m.tipo === "barril" ? "#FFF3E8" : "#F0F9FF";
+            var corBd = m.tipo === "barril" ? "#D4905A" : "#7DD3FC";
+            var corTx = m.tipo === "barril" ? "#7A4500" : "#0369A1";
+
+            // data formatada dd/mm/aa
+            var dataFmt = "";
+            if (m.dataISO) {
+              var p = m.dataISO.split("-");
+              dataFmt = p[2]+"/"+p[1]+"/"+p[0].slice(2);
+            }
+
+            // dias no tanque
+            var diasStr = m.diasNoBrassar !== null && m.diasNoBrassar !== undefined
+              ? "<span style='font-weight:800;color:"+corTx+";font-size:.75rem'>"+m.diasNoBrassar+"d</span>"
+              : "";
+
+            // descrição do conteúdo
+            var desc = "";
+            if (m.tipo === "barril") {
+              var linhasBarril = (m.linhas||[]).map(function(l){
+                return esc(l.formato)+" ×"+l.qtd;
+              }).join(" · ");
+              desc = linhasBarril + (m.totalL ? " <b>= "+fmtNum(m.totalL)+" L</b>" : "");
+            } else {
+              desc = (m.formato ? esc(m.formato)+" " : "")+(m.qtd ? "×"+m.qtd+" un" : "")+(m.volume ? " / "+m.volume+" L" : "");
+            }
+
+            return "<div style='display:flex;align-items:center;gap:8px;padding:5px 8px;"+
+              "background:"+corBg+";border:1px solid "+corBd+";border-radius:6px;font-size:.73rem'>"+
+              "<span style='font-size:.85rem'>"+icone+"</span>"+
+              "<div style='flex:1;min-width:0'>"+
+                "<div style='font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>"+
+                  esc(m.lote||m.estilo||"")+"</div>"+
+                "<div style='color:#6B7280'>"+desc+"</div>"+
+              "</div>"+
+              "<div style='text-align:right;white-space:nowrap'>"+
+                (dataFmt ? "<div style='color:#6B7280;font-size:.68rem'>"+dataFmt+"</div>" : "")+
+                (diasStr ? "<div style='margin-top:1px'>"+diasStr+" no tanque</div>" : "")+
+              "</div>"+
+            "</div>";
+          }).join("");
+
+          return "<details style='margin-top:8px'>"+
+            "<summary style='cursor:pointer;font-size:.72rem;font-weight:700;color:var(--muted);"+
+              "padding:4px 2px;list-style:none;display:flex;align-items:center;gap:4px'>"+
+              "<span>📋 Histórico de envases ("+hist.length+")</span>"+
+            "</summary>"+
+            "<div style='display:flex;flex-direction:column;gap:4px;margin-top:6px'>"+
+              linhas+
+            "</div>"+
+          "</details>";
+        })() : "")+
+
       "</div>";
     }
 
