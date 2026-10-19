@@ -2858,6 +2858,22 @@
     </div>
   </div>
 </div>
+<!-- Modal FICHA DE PRODUÇÃO -->
+<div id="modalFicha" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:600px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.35)">
+    <!-- cabeçalho -->
+    <div style="background:#7A3B00;color:#fff;padding:14px 16px;border-radius:14px 14px 0 0;flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.07em">🗒 Ficha de Produção</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="btnFichaImprimir" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:6px;padding:5px 12px;font-size:.8rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;cursor:pointer;letter-spacing:.04em">🖨 Imprimir / PDF</button>
+        <button id="btnFichaFechar" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.3rem;cursor:pointer;line-height:1">&#x2715;</button>
+      </div>
+    </div>
+    <!-- corpo -->
+    <div id="fichaConteudo" style="overflow-y:auto;flex:1;padding:0"></div>
+  </div>
+</div>
+
 <div id="modalLimpExport" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:14px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25)">
     <div style="background:var(--verde);color:#fff;padding:14px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between">
@@ -2883,7 +2899,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.5.8";
+var VERSAO = "3.5.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8440,6 +8456,10 @@ async function carregarTanques(){
           "<button class='tq-btn' data-tq-obs='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"' "+
             "data-tq-obs-atual='"+esc((tq.obs&&tq.obs.obs)||"")+"'>📝 Obs</button>"+
           "<button class='tq-btn' data-tq-hist='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>📋 Histórico</button>"+
+          (!eLivre && tq.lote
+            ? "<button class='tq-btn' style='background:#7A3B00;color:#fff;border-color:#7A3B00' "+
+                "data-tq-ficha='"+esc(tq.id)+"'>🗒 Ficha do Lote</button>"
+            : "")+
           (eMaturando
             ? "<button class='tq-btn' style='background:#14532D;color:#fff;border-color:#14532D' "+
                 "data-tq-pronto='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>🟢 Pronto p/ envase</button>"
@@ -8730,6 +8750,16 @@ async function carregarTanques(){
       });
     });
 
+    // Botão "Ficha do Lote"
+    $("tanquesLista").querySelectorAll("[data-tq-ficha]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var tqId = btn.dataset.tqFicha;
+        var tq = (_dadosTanques||[]).find(function(t){ return t.id === tqId; });
+        if (!tq) return;
+        abrirFichaLote(tq);
+      });
+    });
+
   }catch(e){
     $("tanquesLista").innerHTML = "<div class='vazio'>"+esc(e.message)+"</div>";
   }
@@ -8827,6 +8857,249 @@ $("btnExportarTanquesExcel").addEventListener("click", function(){
   document.body.removeChild(a); URL.revokeObjectURL(url);
   toast("Excel (CSV) gerado.","ok");
 });
+
+/* ==================================================================
+   Ficha de Produção por Lote
+   ================================================================== */
+
+$("btnFichaFechar").addEventListener("click", function(){ $("modalFicha").hidden = true; });
+$("modalFicha").addEventListener("click", function(e){ if (e.target === $("modalFicha")) $("modalFicha").hidden = true; });
+
+$("btnFichaImprimir").addEventListener("click", function(){
+  var conteudo = $("fichaConteudo").innerHTML;
+  var w = window.open("","_blank","width=800,height=900");
+  if (!w) { toast("Permita pop-ups para imprimir.","erro"); return; }
+  w.document.write("<!doctype html><html lang='pt-BR'><head><meta charset='utf-8'>"+
+    "<title>Ficha de Produção — HBier</title>"+
+    "<link rel='preconnect' href='https://fonts.googleapis.com'>"+
+    "<link href='https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap' rel='stylesheet'>"+
+    "<style>"+
+      "*{box-sizing:border-box;margin:0;padding:0}"+
+      "body{font-family:'Barlow',sans-serif;background:#fff;color:#1a1a1a;padding:24px 28px;max-width:720px;margin:0 auto}"+
+      ".fp-header{margin-bottom:20px}"+
+      ".fp-marca{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.6rem;color:#025F1D;letter-spacing:.08em;text-transform:uppercase}"+
+      ".fp-sub{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:#C99700;font-weight:600;margin-top:2px}"+
+      ".fp-titulo{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.8rem;color:#1a1a1a;margin-top:10px;line-height:1.1}"+
+      ".fp-stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}"+
+      ".fp-stat{border:1.5px solid #e0d9c8;border-radius:8px;padding:8px 14px;min-width:80px;text-align:center}"+
+      ".fp-stat-label{font-size:.65rem;font-weight:700;color:#6E7568;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}"+
+      ".fp-stat-val{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.25rem;color:#1a1a1a}"+
+      ".fp-section{margin-top:18px}"+
+      ".fp-section-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.9rem;color:#fff;text-transform:uppercase;letter-spacing:.08em;padding:5px 12px;background:#025F1D;border-radius:4px;margin-bottom:10px}"+
+      ".fp-section-title.dourado{background:#7A3B00}"+
+      ".fp-section-title.azul{background:#1E3A8A}"+
+      ".fp-table{width:100%;border-collapse:collapse;font-size:.82rem}"+
+      ".fp-table th{background:#F0FDF4;color:#025F1D;font-weight:700;padding:6px 10px;text-align:left;border:1px solid #C6E8C6;font-size:.78rem}"+
+      ".fp-table td{padding:6px 10px;border:1px solid #E4E1D5;vertical-align:top}"+
+      ".fp-table tr:nth-child(even) td{background:#FAFAF7}"+
+      ".fp-linha{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}"+
+      ".fp-campo{flex:1;min-width:120px}"+
+      ".fp-campo-label{font-size:.68rem;font-weight:700;color:#6E7568;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}"+
+      ".fp-campo-val{font-size:.88rem;font-weight:600;color:#1a1a1a;padding:5px 8px;border:1px solid #E4E1D5;border-radius:5px;background:#FAFAF7;min-height:26px}"+
+      ".fp-rodape{margin-top:22px;padding-top:12px;border-top:1.5px solid #E4E1D5;font-size:.72rem;color:#6E7568;display:flex;justify-content:space-between}"+
+      "@media print{@page{size:A4;margin:16mm 14mm}body{padding:0}button{display:none}}"+
+    "</style></head><body>"+conteudo+
+    "<div class='fp-rodape'><span>Gerado em "+new Date().toLocaleString("pt-BR")+"</span><span>HBier — Rotina da Fábrica</span></div>"+
+    "</body></html>");
+  w.document.close();
+  setTimeout(function(){ w.focus(); w.print(); }, 600);
+});
+
+function abrirFichaLote(tq){
+  var lote   = tq.lote || "—";
+  var estilo = tq.estilo || "—";
+  var volume = tq.volume ? fmtNum(tq.volume)+" L" : "—";
+  var og     = tq.og || "—";
+  var tanque = tq.nome || "—";
+  var estagio = (tq.estagioIcone||"")+" "+(tq.estagioLabel||"");
+  var dias    = (tq.diasTanque !== null && tq.diasTanque !== undefined) ? tq.diasTanque+"d" : "—";
+
+  // data de entrada no tanque
+  var dataEntradaFmt = "—";
+  if (tq.brassadoEm) {
+    var p = tq.brassadoEm.split("-");
+    if (p.length === 3) dataEntradaFmt = p[2]+"/"+p[1]+"/"+p[0];
+  }
+
+  // histórico de envasamentos deste lote
+  var loteUp = lote.trim().toUpperCase();
+  var envasamentos = [];
+  if (tq.historico && tq.historico.length) {
+    envasamentos = tq.historico.filter(function(m){
+      if (m.tipo !== "envase") return false;
+      var mLote = (m.lote||"").trim().toUpperCase();
+      return (!mLote || mLote === loteUp) && (m.qtd || m.litrosFim || m.temResultado);
+    }).sort(function(a,b){ return (a.dataISO||"").localeCompare(b.dataISO||""); });
+  }
+
+  // obs do lote (buscar no historico de brassagem)
+  var obsLote = "";
+  if (tq.historico) {
+    var brass = tq.historico.find(function(m){ return m.tipo==="brassagem" && (m.lote||"").trim().toUpperCase()===loteUp; });
+    if (brass && brass.obs) obsLote = brass.obs;
+  }
+
+  // linha de envases
+  var envasesHtml = "";
+  if (envasamentos.length) {
+    var rows = envasamentos.map(function(m, i){
+      var df = ""; if (m.dataISO){ var p=m.dataISO.split("-"); df=p[2]+"/"+p[1]+"/"+p[0]; }
+      var diasTq = tq.brassadoEm && m.dataISO ? (function(){
+        var a=new Date(tq.brassadoEm+"T00:00:00"), b=new Date(m.dataISO+"T00:00:00");
+        var d=Math.floor((b-a)/86400000); return (!isNaN(d)&&d>=0)?d+"d":"—";
+      })() : "—";
+      var litros = "";
+      if (m.litrosInicio || m.litrosFim) litros = (m.litrosInicio?fmtNum(m.litrosInicio)+" L":"?")+" → "+(m.litrosFim?fmtNum(m.litrosFim)+" L":"?");
+      return "<tr><td>"+(i+1)+"</td><td>"+esc(df)+"</td><td>"+esc(m.formato||"—")+"</td>"+
+        "<td style='text-align:right'>"+(m.qtd?fmtNum(m.qtd)+" un":"—")+"</td>"+
+        "<td>"+esc(litros||"—")+"</td>"+
+        "<td style='text-align:center'>"+esc(diasTq)+"</td></tr>";
+    }).join("");
+    envasesHtml =
+      "<div class='fp-section'>"+
+        "<div class='fp-section-title azul'>📦 Envasamentos</div>"+
+        "<table class='fp-table'>"+
+          "<thead><tr><th>#</th><th>Data</th><th>Formato</th><th>Qtd</th><th>Tanque</th><th>Dias no tanque</th></tr></thead>"+
+          "<tbody>"+rows+"</tbody>"+
+        "</table>"+
+      "</div>";
+  } else {
+    envasesHtml =
+      "<div class='fp-section'>"+
+        "<div class='fp-section-title azul'>📦 Envasamentos</div>"+
+        "<p style='font-size:.82rem;color:#6E7568;font-style:italic;padding:8px 0'>Nenhum envasamento registrado ainda.</p>"+
+      "</div>";
+  }
+
+  // obs
+  var obsHtml = "";
+  if (obsLote) {
+    obsHtml = "<div class='fp-section'>"+
+      "<div class='fp-section-title' style='background:#6E7568'>📝 Observações</div>"+
+      "<p style='font-size:.85rem;line-height:1.5;padding:8px 4px'>"+esc(obsLote)+"</p>"+
+    "</div>";
+  }
+
+  var html =
+    "<div style='padding:20px 20px 0'>"+
+      // cabeçalho marca + título
+      "<div class='fp-header'>"+
+        "<div style='display:flex;align-items:center;gap:12px;margin-bottom:8px'>"+
+          "<div><div class='fp-marca'>HBier</div><div class='fp-sub'>Ficha de Produção</div></div>"+
+          "<div style='flex:1;border-top:2px solid #E4E1D5'></div>"+
+          "<div style='font-size:.75rem;color:#6E7568'>"+esc(new Date().toLocaleDateString("pt-BR"))+"</div>"+
+        "</div>"+
+        "<div class='fp-titulo'>"+esc(estilo)+"</div>"+
+        "<div style='font-size:.8rem;color:#6E7568;margin-top:4px'>Lote <b style='color:#1a1a1a'>"+esc(lote)+"</b> · "+esc(tanque)+"</div>"+
+      "</div>"+
+
+      // stats
+      "<div class='fp-stats'>"+
+        "<div class='fp-stat'><div class='fp-stat-label'>Volume</div><div class='fp-stat-val'>"+esc(volume)+"</div></div>"+
+        "<div class='fp-stat'><div class='fp-stat-label'>OG</div><div class='fp-stat-val'>"+esc(og)+"</div></div>"+
+        "<div class='fp-stat'><div class='fp-stat-label'>Brassado em</div><div class='fp-stat-val' style='font-size:.95rem'>"+esc(dataEntradaFmt)+"</div></div>"+
+        "<div class='fp-stat'><div class='fp-stat-label'>Dias no tanque</div><div class='fp-stat-val'>"+esc(dias)+"</div></div>"+
+        "<div class='fp-stat'><div class='fp-stat-label'>Estágio</div><div class='fp-stat-val' style='font-size:.85rem'>"+esc(estagio.trim())+"</div></div>"+
+      "</div>"+
+
+      // campos editáveis de receita (para preenchimento na impressão)
+      "<div class='fp-section'>"+
+        "<div class='fp-section-title dourado'>🍺 Dados da Receita</div>"+
+        "<div class='fp-linha'>"+
+          "<div class='fp-campo'><div class='fp-campo-label'>Estilo</div><div class='fp-campo-val'>"+esc(estilo)+"</div></div>"+
+          "<div class='fp-campo'><div class='fp-campo-label'>FG (previsto)</div><div class='fp-campo-val'></div></div>"+
+          "<div class='fp-campo'><div class='fp-campo-label'>ABV (%)</div><div class='fp-campo-val'></div></div>"+
+        "</div>"+
+        "<div class='fp-linha'>"+
+          "<div class='fp-campo'><div class='fp-campo-label'>IBU</div><div class='fp-campo-val'></div></div>"+
+          "<div class='fp-campo'><div class='fp-campo-label'>EBC / SRM</div><div class='fp-campo-val'></div></div>"+
+          "<div class='fp-campo'><div class='fp-campo-label'>Eficiência (%)</div><div class='fp-campo-val'></div></div>"+
+        "</div>"+
+      "</div>"+
+
+      // fermentáveis
+      "<div class='fp-section'>"+
+        "<div class='fp-section-title'>🌾 Fermentáveis (Matérias-Primas)</div>"+
+        "<table class='fp-table'>"+
+          "<thead><tr><th>Nome</th><th>Tipo</th><th>Fornecedor</th><th>Pot.</th><th>EBC</th><th>Qtd</th></tr></thead>"+
+          "<tbody>"+
+            "<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>"+
+            "<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>"+
+            "<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>"+
+          "</tbody>"+
+        "</table>"+
+      "</div>"+
+
+      // lúpulos
+      "<div class='fp-section'>"+
+        "<div class='fp-section-title'>🌿 Lúpulos</div>"+
+        "<table class='fp-table'>"+
+          "<thead><tr><th>Nome</th><th>Momento</th><th>Forma</th><th>Origem</th><th>AA%</th><th>Qtd</th></tr></thead>"+
+          "<tbody>"+
+            "<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>"+
+            "<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>"+
+          "</tbody>"+
+        "</table>"+
+      "</div>"+
+
+      // leveduras + diversos
+      "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px'>"+
+        "<div class='fp-section'>"+
+          "<div class='fp-section-title'>🦠 Leveduras</div>"+
+          "<table class='fp-table'>"+
+            "<thead><tr><th>Nome</th><th>Lab.</th><th>Qtd</th></tr></thead>"+
+            "<tbody><tr><td>&nbsp;</td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td></tr></tbody>"+
+          "</table>"+
+        "</div>"+
+        "<div class='fp-section'>"+
+          "<div class='fp-section-title' style='background:#4B5563'>⚗️ Diversos / Adjuntos</div>"+
+          "<table class='fp-table'>"+
+            "<thead><tr><th>Nome</th><th>Tipo</th><th>Qtd</th></tr></thead>"+
+            "<tbody><tr><td>&nbsp;</td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td></tr></tbody>"+
+          "</table>"+
+        "</div>"+
+      "</div>"+
+
+      // mash
+      "<div class='fp-section'>"+
+        "<div class='fp-section-title' style='background:#92400E'>🌡 Perfil de Mostura (Mash)</div>"+
+        "<table class='fp-table'>"+
+          "<thead><tr><th>Estágio</th><th>Temp. (°C)</th><th>Tempo (min)</th></tr></thead>"+
+          "<tbody>"+
+            "<tr><td>&nbsp;</td><td></td><td></td></tr>"+
+            "<tr><td>&nbsp;</td><td></td><td></td></tr>"+
+            "<tr><td>&nbsp;</td><td></td><td></td></tr>"+
+            "<tr><td>&nbsp;</td><td></td><td></td></tr>"+
+          "</tbody>"+
+        "</table>"+
+      "</div>"+
+
+      // fermentação
+      "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px'>"+
+        "<div class='fp-section'>"+
+          "<div class='fp-section-title' style='background:#1D4ED8'>❄ Perfil de Fermentação</div>"+
+          "<table class='fp-table'>"+
+            "<thead><tr><th>Estágio</th><th>Temp.</th><th>Tempo</th></tr></thead>"+
+            "<tbody><tr><td>&nbsp;</td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td></tr></tbody>"+
+          "</table>"+
+        "</div>"+
+        "<div class='fp-section'>"+
+          "<div class='fp-section-title' style='background:#1D4ED8'>🧊 Perfil de Maturação</div>"+
+          "<table class='fp-table'>"+
+            "<thead><tr><th>Estágio</th><th>Temp.</th><th>Tempo</th></tr></thead>"+
+            "<tbody><tr><td>&nbsp;</td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td></tr></tbody>"+
+          "</table>"+
+        "</div>"+
+      "</div>"+
+
+      envasesHtml+
+      obsHtml+
+    "<div style='height:20px'></div>"+
+    "</div>";
+
+  $("fichaConteudo").innerHTML = html;
+  $("modalFicha").hidden = false;
+}
 
 /* ==================================================================
    Acompanhamento e relatórios
