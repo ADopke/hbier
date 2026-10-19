@@ -2005,27 +2005,8 @@
 
     <!-- ---------- ABA STATUS DOS TANQUES ---------- -->
     <div id="painelTanques" hidden>
-      <section>
-        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
-          <span class="sec-title">🛢 Status dos Tanques</span>
-          <span class="sec-sub" id="tanquesAtual" style="margin-left:0"></span>
-        </div>
-        <!-- legenda de estágios -->
-        <div style="padding:6px 14px 8px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--linha)">
-          <span class="tq-leg"><span style="color:#22C55E">✅</span> Livre</span>
-          <span class="tq-leg"><span>🍺</span> Fermentando/Maturando</span>
-          <span class="tq-leg"><span>📦</span> Envasando</span>
-          <span class="tq-leg"><span>🚨</span> Atenção</span>
-        </div>
-        <div id="tanquesLista" style="padding:14px"><div class="vazio">Carregando…</div></div>
-        <div style="padding:10px 14px;border-top:1px solid var(--linha);display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn mini secundario" id="btnAtualizarTanques">↺ Atualizar</button>
-          <button class="btn mini secundario" id="btnExportarTanquesPDF">📄 PDF</button>
-          <button class="btn mini secundario" id="btnExportarTanquesExcel">📊 Excel</button>
-        </div>
-      </section>
       <!-- Busca de lotes encerrados -->
-      <section id="secaoBuscaLotes" style="margin-top:0;border-top:2px solid var(--linha)">
+      <section id="secaoBuscaLotes" style="margin-top:0">
         <div class="sec-head" style="flex-wrap:wrap;gap:8px;cursor:pointer" id="buscaLotesCabecalho">
           <span class="sec-title">🔍 Busca de Lotes</span>
           <span style="font-size:.8rem;color:var(--muted);margin-left:auto">Todos os lotes encerrados</span>
@@ -2049,6 +2030,25 @@
               Clique em Buscar para carregar os lotes encerrados.
             </div>
           </div>
+        </div>
+      </section>
+      <section>
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
+          <span class="sec-title">🛢 Status dos Tanques</span>
+          <span class="sec-sub" id="tanquesAtual" style="margin-left:0"></span>
+        </div>
+        <!-- legenda de estágios -->
+        <div style="padding:6px 14px 8px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--linha)">
+          <span class="tq-leg"><span style="color:#22C55E">✅</span> Livre</span>
+          <span class="tq-leg"><span>🍺</span> Fermentando/Maturando</span>
+          <span class="tq-leg"><span>📦</span> Envasando</span>
+          <span class="tq-leg"><span>🚨</span> Atenção</span>
+        </div>
+        <div id="tanquesLista" style="padding:14px"><div class="vazio">Carregando…</div></div>
+        <div style="padding:10px 14px;border-top:1px solid var(--linha);display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn mini secundario" id="btnAtualizarTanques">↺ Atualizar</button>
+          <button class="btn mini secundario" id="btnExportarTanquesPDF">📄 PDF</button>
+          <button class="btn mini secundario" id="btnExportarTanquesExcel">📊 Excel</button>
         </div>
       </section>
 
