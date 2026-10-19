@@ -8206,10 +8206,13 @@ async function carregarTanques(){
         obsHtml+
         botoesHtml+
 
-        // ── Histórico de movimentações do tanque ──────────────
+        // ── Histórico de movimentações do lote atual ──────────────
         (tq.historico && tq.historico.length ? (function(){
+          var loteAtual = (tq.lote || "").trim().toUpperCase();
           var hist = tq.historico.filter(function(m){
-            return m.tipo !== "brassagem";
+            if (m.tipo === "brassagem") return false;
+            if (!loteAtual) return true;
+            return (m.lote || "").trim().toUpperCase() === loteAtual;
           });
           if (!hist.length) return "";
           var linhas = hist.slice(0, 20).map(function(m){
