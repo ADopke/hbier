@@ -488,6 +488,30 @@ export default protegido(async function handler(req, res) {
       return res.json({ ok: true });
     }
 
+    /* -- desfazerZerado (reverter zerado removendo override + último snapshot) -- */
+    if (dados.acao === "desfazerZerado") {
+      if (!["admin", "gestor"].includes(sessao.papel))
+        return erro(res, 403, "Apenas admin ou gestor.");
+      const { tanqueId } = dados;
+      if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
+
+      // Remover override manual (tanque volta ao estado automático da brassagem)
+      const mapa = (await ler(CHAVE_MANUAL)) || {};
+      const override = mapa[tanqueId];
+      if (!override || !override.zerado)
+        return erro(res, 400, "Tanque não está zerado — nada a desfazer.");
+      delete mapa[tanqueId];
+      await gravar(CHAVE_MANUAL, mapa);
+
+      // Remover o snapshot mais recente do histórico (o que foi gravado ao zerar)
+      const hist = (await ler(CHAVE_HIST(tanqueId))) || [];
+      if (hist.length && hist[0].encerradoEm) {
+        hist.shift();
+        await gravar(CHAVE_HIST(tanqueId), hist);
+      }
+      return res.json({ ok: true });
+    }
+
     /* -- limparManual (voltar ao automático) -- */
     if (dados.acao === "limparManual") {
       if (!["admin", "gestor"].includes(sessao.papel))
