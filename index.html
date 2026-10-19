@@ -3116,7 +3116,7 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.6.0";
+var VERSAO = "3.6.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8623,6 +8623,15 @@ async function carregarTanques(){
               "</div>";
           }
         }
+        // ── Botão Ficha no bloco Agora ────────────────────────────
+        if (tq.lote) {
+          presenteConteudo +=
+            "<button data-tq-ficha-agora='"+esc(tq.id)+"' "+
+              "style='display:block;width:100%;margin-top:8px;background:#7A3B00;border:none;border-radius:6px;"+
+              "padding:5px 0;font-size:.72rem;color:#fff;cursor:pointer;font-weight:700;"+
+              "font-family:\"Barlow Condensed\",sans-serif;letter-spacing:.04em;text-align:center'>"+
+              "🗒 Ficha do Lote</button>";
+        }
       }
 
       // ── BLOCO PRÓXIMO ────────────────────────────────────────────
@@ -8652,7 +8661,16 @@ async function carregarTanques(){
           "</div>"+
           (pb.id && pb.semana ? "<button data-brass-nav-sem='"+esc(pb.semana)+"' data-brass-nav-id='"+esc(pb.id)+"' "+
             "style='background:none;border:1px solid #818CF8;border-radius:5px;padding:2px 8px;font-size:.7rem;"+
-            "color:#4338CA;cursor:pointer;font-weight:600'>✏️ editar brassagem</button>" : "");
+            "color:#4338CA;cursor:pointer;font-weight:600'>✏️ editar brassagem</button>" : "")+
+          // ── Botão Ficha no bloco Próximo ─────────────────────────
+          (pb.lote
+            ? "<button data-tq-ficha-proximo='"+esc(tq.id)+"' data-tq-ficha-proximo-lote='"+esc(pb.lote)+"' "+
+                "data-tq-ficha-proximo-estilo='"+esc(pb.estilo||"")+"' data-tq-ficha-proximo-vol='"+esc(pb.volPrev||"")+"' "+
+                "style='display:block;width:100%;margin-top:8px;background:#3730A3;border:none;border-radius:6px;"+
+                "padding:5px 0;font-size:.72rem;color:#fff;cursor:pointer;font-weight:700;"+
+                "font-family:\"Barlow Condensed\",sans-serif;letter-spacing:.04em;text-align:center'>"+
+                "🗒 Ficha do Lote</button>"
+            : "");
       } else {
         proximoConteudo =
           "<div style='color:#A5B4FC;font-size:.75rem;font-style:italic;padding-top:4px;margin-bottom:8px'>Sem previsão</div>"+
@@ -8676,10 +8694,6 @@ async function carregarTanques(){
           "<button class='tq-btn' data-tq-obs='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"' "+
             "data-tq-obs-atual='"+esc((tq.obs&&tq.obs.obs)||"")+"'>📝 Obs</button>"+
           "<button class='tq-btn' data-tq-hist='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>📋 Histórico</button>"+
-          (!eLivre && tq.lote
-            ? "<button class='tq-btn' style='background:#7A3B00;color:#fff;border-color:#7A3B00' "+
-                "data-tq-ficha='"+esc(tq.id)+"'>🗒 Ficha do Lote</button>"
-            : "")+
           (eMaturando
             ? "<button class='tq-btn' style='background:#14532D;color:#fff;border-color:#14532D' "+
                 "data-tq-pronto='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>🟢 Pronto p/ envase</button>"
@@ -8970,13 +8984,36 @@ async function carregarTanques(){
       });
     });
 
-    // Botão "Ficha do Lote"
-    $("tanquesLista").querySelectorAll("[data-tq-ficha]").forEach(function(btn){
+    // Botão "Ficha do Lote" — bloco Agora (lote atual)
+    $("tanquesLista").querySelectorAll("[data-tq-ficha-agora]").forEach(function(btn){
       btn.addEventListener("click", function(){
-        var tqId = btn.dataset.tqFicha;
+        var tqId = btn.dataset.tqFichaAgora;
         var tq = (_dadosTanques||[]).find(function(t){ return t.id === tqId; });
         if (!tq) return;
         abrirFichaLote(tq);
+      });
+    });
+
+    // Botão "Ficha do Lote" — bloco Próximo (lote previsto)
+    $("tanquesLista").querySelectorAll("[data-tq-ficha-proximo]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var tqId = btn.dataset.tqFichaProximo;
+        var tq = (_dadosTanques||[]).find(function(t){ return t.id === tqId; });
+        var loteProx = btn.dataset.tqFichaProximoLote;
+        var estiloProx = btn.dataset.tqFichaProximoEstilo || "";
+        var volProx = btn.dataset.tqFichaProximoVol || "";
+        // cria objeto tq parcial para o lote previsto
+        var tqProx = {
+          lote: loteProx,
+          estilo: estiloProx,
+          volume: volProx,
+          og: null,
+          nome: tq ? tq.nome : "—",
+          brassadoEm: tq && tq.proximaBrass ? (tq.proximaBrass.dataISO || null) : null,
+          diasTanque: null,
+          historico: []
+        };
+        abrirFichaLote(tqProx);
       });
     });
 
