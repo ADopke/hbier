@@ -2883,7 +2883,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.5.1";
+var VERSAO = "3.5.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8301,8 +8301,15 @@ async function carregarTanques(){
           var loteAtual = (tq.lote || "").trim().toUpperCase();
           var hist = tq.historico.filter(function(m){
             if (m.tipo === "brassagem") return false;
+            // envases PET sem resultado ainda (só previsão) — não mostrar
+            if (m.tipo === "envase" && !m.temResultado && !m.qtd && !m.litrosFim) return false;
             if (!loteAtual) return true;
-            return (m.lote || "").trim().toUpperCase() === loteAtual;
+            var mLote = (m.lote || "").trim().toUpperCase();
+            // match exato
+            if (mLote === loteAtual) return true;
+            // fallback: envase sem lote definido mas do mesmo tanque (dados antigos)
+            if (m.tipo === "envase" && !mLote) return true;
+            return false;
           });
           if (!hist.length) return "";
           var linhas = hist.slice(0, 20).map(function(m){
@@ -8331,7 +8338,17 @@ async function carregarTanques(){
               }).join(" · ");
               desc = linhasBarril + (m.totalL ? " <b>= "+fmtNum(m.totalL)+" L</b>" : "");
             } else {
-              desc = (m.formato ? esc(m.formato)+" " : "")+(m.qtd ? "×"+m.qtd+" un" : "")+(m.volume ? " / "+m.volume+" L" : "");
+              // envase PET: mostrar qtd e litros do tanque
+              var partes = [];
+              if (m.formato) partes.push(esc(m.formato));
+              if (m.qtd) partes.push("<b>×"+m.qtd+" un</b>");
+              if (m.litrosInicio && m.litrosFim) {
+                partes.push(fmtNum(m.litrosInicio)+"→"+fmtNum(m.litrosFim)+" L");
+              } else if (m.litrosFim) {
+                partes.push("→"+fmtNum(m.litrosFim)+" L restantes");
+              }
+              if (!m.qtd && !m.litrosFim) partes.push("envase lançado");
+              desc = partes.join(" · ");
             }
 
             return "<div style='display:flex;align-items:center;gap:8px;padding:5px 8px;"+
