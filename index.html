@@ -1346,6 +1346,7 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
         <button data-aba="limpeza">🧹 Limpeza</button>
         <button data-aba="manut">Manutenções</button>
         <button data-aba="base">Banco de dados</button>
+        <button data-aba="lotes" id="abaLotes" hidden>📋 Lotes</button>
         <button data-aba="relatorios" id="abaRelatorios" hidden>Relatórios</button>
         <button data-aba="equipe" id="abaEquipe" hidden>Equipe</button>
       </nav>
@@ -2280,6 +2281,49 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
       </section>
     </div>
 
+    <!-- ========== ABA LOTES ========== -->
+    <div id="painelLotes" hidden>
+      <section>
+        <div class="sec-head">
+          <span class="sec-title">📋 Lotes de Produção</span>
+          <span class="sec-sub" id="lotesResumo"></span>
+        </div>
+        <div class="form-grid" style="margin-bottom:12px">
+          <div>
+            <label for="lotesBusca">Buscar lote ou estilo</label>
+            <input type="text" id="lotesBusca" placeholder="ex: HELLES, Pilsen…" oninput="filtrarLotes()">
+          </div>
+          <div>
+            <label for="lotesStatus">Status</label>
+            <select id="lotesStatus" onchange="filtrarLotes()">
+              <option value="">Todos</option>
+              <option value="em andamento">Em andamento</option>
+              <option value="envasado">Envasado</option>
+              <option value="arquivado">Arquivado</option>
+            </select>
+          </div>
+        </div>
+        <div id="lotesCarregando" style="padding:24px;text-align:center;color:var(--muted);font-size:.9rem" hidden>⏳ Carregando lotes…</div>
+        <div id="lotesVazio" style="padding:24px;text-align:center;color:var(--muted);font-size:.9rem" hidden>Nenhum lote com ficha salva ainda. Abra a ficha de um lote pelo painel Tanques e salve.</div>
+        <div class="grade-wrap">
+          <table id="tabelaLotes" style="width:100%">
+            <thead>
+              <tr>
+                <th style="text-align:left">Lote</th>
+                <th style="text-align:left">Estilo</th>
+                <th>Início</th>
+                <th>Status</th>
+                <th>Salvo em</th>
+                <th>Por</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="lotesCorpo"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
     <div class="rodape">O que é bom a gente <b>brinda</b></div>
     <div class="versao" id="versaoRodape"></div>
   </main>
@@ -3072,7 +3116,7 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.5.9";
+var VERSAO = "3.6.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -3293,6 +3337,7 @@ async function abrirApp(){
   $("userPapel").textContent = sessao.papel === "admin" ? "administrador" : "colaborador";
   $("abaEquipe").hidden = !["admin","gestor"].includes(sessao.papel);
   $("abaRelatorios").hidden = sessao.papel !== "admin";
+  $("abaLotes").hidden = !["admin","gestor"].includes(sessao.papel);
   $("campoPara").hidden = !["admin","gestor"].includes(sessao.papel);
   donoAtual = sessao.login;
   relCarregado = false;
@@ -4160,6 +4205,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
     $("painelRelatorios").hidden = b.dataset.aba !== "relatorios";
     $("painelMetas").hidden      = b.dataset.aba !== "metas";
     $("painelLimpeza").hidden    = b.dataset.aba !== "limpeza";
+    $("painelLotes").hidden      = b.dataset.aba !== "lotes";
     if (b.dataset.aba === "base" && !baseCarregada) carregarBase();
     if (b.dataset.aba === "tanques") carregarTanques();
     if (b.dataset.aba === "prog") carregarProg();
@@ -4168,6 +4214,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
     if (b.dataset.aba === "equipe" && !acompCarregado) carregarAcompanhamento();
     if (b.dataset.aba === "metas") carregarMetas();
     if (b.dataset.aba === "limpeza") setTimeout(function(){ carregarLimpeza(); }, 0);
+    if (b.dataset.aba === "lotes") carregarLotes();
   });
 });
 
@@ -9079,6 +9126,76 @@ $("btnFichaImprimir").addEventListener("click", function(){
 });
 
 /* ---- helpers da ficha interativa (prefixo fp_ para não colidir) ---- */
+/* ================================================================
+   Aba Lotes — lista e acesso a fichas salvas
+   ================================================================ */
+var _todosLotes = [];
+async function carregarLotes(){
+  $("lotesCarregando").hidden = false;
+  $("lotesVazio").hidden = true;
+  $("lotesCorpo").innerHTML = "";
+  try {
+    var r = await api("/api/ficha?lista=1");
+    _todosLotes = r.lotes || [];
+    $("lotesResumo").textContent = _todosLotes.length + " lote(s) com ficha";
+    filtrarLotes();
+  } catch(e) {
+    toast("Erro ao carregar lotes: " + e.message);
+  } finally {
+    $("lotesCarregando").hidden = true;
+  }
+}
+function filtrarLotes(){
+  var busca = ($("lotesBusca").value || "").toLowerCase();
+  var status = $("lotesStatus").value;
+  var lista = _todosLotes.filter(function(l){
+    var matchBusca = !busca ||
+      (l.lote || "").toLowerCase().includes(busca) ||
+      (l.estilo || "").toLowerCase().includes(busca);
+    var matchStatus = !status || l.status === status;
+    return matchBusca && matchStatus;
+  });
+  var corpo = $("lotesCorpo");
+  if (!lista.length) {
+    $("lotesVazio").hidden = false;
+    corpo.innerHTML = "";
+    return;
+  }
+  $("lotesVazio").hidden = true;
+  corpo.innerHTML = lista.map(function(l){
+    var dataI = l.dataInicio ? (function(d){ var p=d.split("-"); return p[2]+"/"+p[1]+"/"+p[0]; })(l.dataInicio) : "—";
+    var salvoEm = l.salvoEm ? new Date(l.salvoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "—";
+    var statusCls = l.status === "envasado" ? "verde" : l.status === "arquivado" ? "cinza" : "marrom";
+    return "<tr>"+
+      "<td><b>"+esc(l.lote)+"</b></td>"+
+      "<td>"+esc(l.estilo)+"</td>"+
+      "<td style='text-align:center'>"+esc(dataI)+"</td>"+
+      "<td style='text-align:center'><span class='tag "+statusCls+"'>"+esc(l.status)+"</span></td>"+
+      "<td style='text-align:center;font-size:.8rem;color:var(--muted)'>"+esc(salvoEm)+"</td>"+
+      "<td style='font-size:.8rem;color:var(--muted)'>"+esc(l.salvoPor||"—")+"</td>"+
+      "<td><button class='btn mini' onclick='abrirFichaPorLote("+JSON.stringify(l.lote)+")'>📋 Abrir</button></td>"+
+    "</tr>";
+  }).join("");
+}
+async function abrirFichaPorLote(lote){
+  // abre a ficha a partir da aba Lotes, sem um objeto tq completo
+  var r = await api("/api/ficha?lote="+encodeURIComponent(lote));
+  var ficha = r.ficha || {};
+  var cab = ficha.cabecalho || {};
+  var tqFake = {
+    lote: lote,
+    estilo: cab.estilo || "—",
+    volume: cab.volume || null,
+    og: cab.og || null,
+    nome: cab.tanque || "—",
+    brassadoEm: cab.dataInicio || null,
+    diasTanque: null,
+    historico: [],
+    _fichaPrecarregada: ficha
+  };
+  abrirFichaLote(tqFake);
+}
+
 function fp_toggleSec(head){ head.closest('.fp-sec').classList.toggle('collapsed'); }
 function fp_delRow(btn){ btn.closest('tr').remove(); fp_markDirty(); }
 function fp_delLog(btn){ btn.closest('.fp-mlog-row,.fp-log-row').remove(); fp_markDirty(); }
@@ -9162,14 +9279,69 @@ function fp_markDirty(){
   if(s){s.textContent='● Alterações não salvas';s.className='fp-unsaved dirty';}
 }
 function fp_simSave(btn){
+  // coleta os dados da ficha atual para enviar ao servidor
+  var app = document.getElementById('fp-app');
+  if (!app) return;
+  var loteEl = app.querySelector('#fp-panel-receita .fp-fg-grid input');
+  // tenta pegar o lote do atributo data que guardamos ao abrir
+  var loteVal = (app.dataset.fpLote || "").trim();
+  if (!loteVal) { toast("Não foi possível identificar o lote."); return; }
+
+  // serializa todos os inputs/textareas/selects para um objeto plano
+  function coletarTabela(tblId){
+    var tbl = document.getElementById(tblId); if(!tbl) return [];
+    return Array.from(tbl.querySelectorAll('tbody tr')).map(function(tr){
+      return Array.from(tr.querySelectorAll('input,select,textarea')).map(function(el){ return el.value; });
+    });
+  }
+  function coletarGrid(seletor){
+    var els = app.querySelectorAll(seletor);
+    return Array.from(els).map(function(el){ return el.value; });
+  }
+
+  var dados = {
+    cabecalho: {
+      lote:       loteVal,
+      estilo:     coletarGrid('#fp-panel-receita .fp-fg-grid input')[1] || "",
+      volume:     coletarGrid('#fp-panel-receita .fp-fg-grid input')[2] || "",
+      dataInicio: coletarGrid('#fp-panel-receita .fp-fg-grid input')[4] || "",
+      tanque:     coletarGrid('#fp-panel-receita .fp-fg-grid input')[5] || "",
+      og:         coletarGrid('#fp-panel-receita .fp-fg-grid.tight input')[0] || "",
+    },
+    sais:        coletarTabela('fp-tbl-sais'),
+    fermentaveis:coletarTabela('fp-tbl-ferm'),
+    lupulos:     coletarTabela('fp-tbl-lup'),
+    adjuntos:    coletarTabela('fp-tbl-adj'),
+    mash:        coletarTabela('fp-tbl-mash'),
+    perfFerm:    coletarTabela('fp-tbl-pferm'),
+    perfMatur:   coletarTabela('fp-tbl-pmatur'),
+    dryhop:      coletarTabela('fp-tbl-dryhop'),
+    trub:        coletarTabela('fp-tbl-trub'),
+    resultado: {
+      fg:         (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(1) input')||{}).value||"",
+      abv:        (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(2) input')||{}).value||"",
+      atenuacao:  (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(3) input')||{}).value||"",
+      eficiencia: (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(4) input')||{}).value||"",
+      volume:     (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(5) input')||{}).value||"",
+      co2:        (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(6) input')||{}).value||"",
+    },
+    meta: { status: "em andamento" }
+  };
+
   btn.textContent='⏳ Salvando…'; btn.disabled=true;
-  setTimeout(function(){
-    fp_dirty=false;
-    var s=document.getElementById('fp-saveStatus');
-    if(s){s.textContent='✓ Salvo agora mesmo';s.className='fp-unsaved';}
-    btn.textContent='💾 Salvar Ficha'; btn.disabled=false;
-    setTimeout(function(){if(!fp_dirty&&s) s.textContent='';},3000);
-  },900);
+  api('/api/ficha', {method:'POST', body:{ lote: loteVal, dados: dados }})
+    .then(function(r){
+      fp_dirty=false;
+      var s=document.getElementById('fp-saveStatus');
+      var hora = new Date(r.salvoEm).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      if(s){s.textContent='✓ Salvo às '+hora+' (v'+r.versao+')';s.className='fp-unsaved';}
+      btn.textContent='💾 Salvar Ficha'; btn.disabled=false;
+      setTimeout(function(){if(!fp_dirty&&s) s.textContent='';},4000);
+    })
+    .catch(function(e){
+      toast('Erro ao salvar: '+e.message);
+      btn.textContent='💾 Salvar Ficha'; btn.disabled=false;
+    });
 }
 
 function abrirFichaLote(tq){
@@ -9214,7 +9386,7 @@ function abrirFichaLote(tq){
   /* ================================================================
      HTML interativo da ficha
      ================================================================ */
-  var html = '<div class="fp-app '+modoClass+'" id="fp-app">'+
+  var html = '<div class="fp-app '+modoClass+'" id="fp-app" data-fp-lote="'+esc(lote)+'">'+
 
   /* — dica de papel — */
   '<div class="fp-role-dica" id="fp-role-dica">'+dicaTxt+'</div>'+
@@ -9624,6 +9796,59 @@ function abrirFichaLote(tq){
   });
 
   $("modalFicha").hidden = false;
+
+  /* — carregar dados salvos se existirem (ou dados pré-carregados da aba Lotes) — */
+  var fichaPrecarregada = tq._fichaPrecarregada || null;
+  if (fichaPrecarregada) {
+    fp_preencherFicha(fichaPrecarregada);
+  } else if (lote && lote !== "—") {
+    api('/api/ficha?lote='+encodeURIComponent(lote))
+      .then(function(r){ if(r.ficha) fp_preencherFicha(r.ficha); })
+      .catch(function(){}); // silencioso — ficha nova não tem dados ainda
+  }
+}
+
+function fp_preencherFicha(ficha){
+  // preenche tabelas simples
+  function preencherTabela(tblId, linhas){
+    if(!linhas || !linhas.length) return;
+    var tbl=document.getElementById(tblId); if(!tbl) return;
+    var tbody=tbl.querySelector('tbody');
+    // limpa linhas existentes exceto a primeira (template)
+    var rows=tbody.querySelectorAll('tr');
+    // adiciona linhas faltantes
+    while(tbody.querySelectorAll('tr').length < linhas.length) fp_addRow(tblId);
+    tbody.querySelectorAll('tr').forEach(function(tr,i){
+      if(!linhas[i]) return;
+      tr.querySelectorAll('input,select,textarea').forEach(function(el,j){
+        if(linhas[i][j] !== undefined) el.value=linhas[i][j];
+      });
+    });
+  }
+  if(ficha.sais)         preencherTabela('fp-tbl-sais',ficha.sais);
+  if(ficha.fermentaveis) preencherTabela('fp-tbl-ferm',ficha.fermentaveis);
+  if(ficha.lupulos)      preencherTabela('fp-tbl-lup',ficha.lupulos);
+  if(ficha.adjuntos)     preencherTabela('fp-tbl-adj',ficha.adjuntos);
+  if(ficha.mash)         preencherTabela('fp-tbl-mash',ficha.mash);
+  if(ficha.perfFerm)     preencherTabela('fp-tbl-pferm',ficha.perfFerm);
+  if(ficha.perfMatur)    preencherTabela('fp-tbl-pmatur',ficha.perfMatur);
+  if(ficha.dryhop)       preencherTabela('fp-tbl-dryhop',ficha.dryhop);
+  if(ficha.trub)         preencherTabela('fp-tbl-trub',ficha.trub);
+  // resultado
+  if(ficha.resultado){
+    var app=document.getElementById('fp-app');
+    var cards=app.querySelectorAll('#fp-panel-resultado .fp-result-card input');
+    var vals=[ficha.resultado.fg,ficha.resultado.abv,ficha.resultado.atenuacao,
+              ficha.resultado.eficiencia,ficha.resultado.volume,ficha.resultado.co2];
+    cards.forEach(function(el,i){ if(vals[i]!==undefined) el.value=vals[i]; });
+  }
+  // indicador de salvo
+  if(ficha.meta && ficha.meta.salvoEm){
+    var s=document.getElementById('fp-saveStatus');
+    var hora=new Date(ficha.meta.salvoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    if(s){s.textContent='✓ Última gravação: '+hora+' por '+(ficha.meta.salvoPor||'—');s.className='fp-unsaved';}
+  }
+  fp_dirty=false;
 }
 
 /* ==================================================================
