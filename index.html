@@ -2790,7 +2790,7 @@
         <span style="font-size:1.1rem">📋</span>
         <span id="histTanqueTitulo" style="font-family:'Barlow Condensed',sans-serif;
           font-weight:700;text-transform:uppercase;font-size:1rem;flex:1">Histórico de Lotes</span>
-        <button onclick="fecharModalHistTanque()" style="background:none;border:none;
+        <button id="btnFecharHistTanque" style="background:none;border:none;
           color:rgba(255,255,255,.8);font-size:1.3rem;cursor:pointer;padding:4px 8px;line-height:1">✕</button>
       </div>
       <div id="histTanqueCorpo" style="overflow-y:auto;padding:14px;flex:1;
@@ -8373,6 +8373,11 @@ async function carregarTanques(){
           (temOverride
             ? "<button class='tq-btn' data-tq-auto='"+esc(tq.id)+"'>⟲ Automático</button>"
             : "")+
+          // Botão desfazer zerado — disponível enquanto tanque estiver livre/zerado
+          (eLivre && tq.manualOverride && tq.manualOverride.zerado
+            ? "<button class='tq-btn' style='background:#FEF2F2;color:#991B1B;border-color:#FECACA;font-size:.7rem' "+
+                "data-tq-desfazer='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>↩ Desfazer zerado</button>"
+            : "")+
         "</div>";
       }
 
@@ -8579,6 +8584,18 @@ async function carregarTanques(){
             msgZerado += " | Quebra: "+fmtNum(snapshot.quebraTanque)+" L";
           }
           toast(msgZerado,"ok");
+          if (window._invalidarCacheLotes) _invalidarCacheLotes();
+          carregarTanques();
+        }catch(e){ toast(e.message,"erro"); }
+      });
+    });
+
+    $("tanquesLista").querySelectorAll("[data-tq-desfazer]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        if (!confirm("Desfazer o zerado do "+btn.dataset.tqNome+"?\nO tanque voltará ao estado anterior e o registro será removido do histórico.")) return;
+        try{
+          await api("/api/tanques",{method:"POST",body:{acao:"desfazerZerado",tanqueId:btn.dataset.tqDesfazer}});
+          toast("Zerado desfeito — "+btn.dataset.tqNome+" voltou ao estado anterior.","ok");
           if (window._invalidarCacheLotes) _invalidarCacheLotes();
           carregarTanques();
         }catch(e){ toast(e.message,"erro"); }
@@ -10401,8 +10418,12 @@ $("btnObsSalvar").addEventListener("click", function(){
 $("modalObs").addEventListener("click", function(ev){
   if (ev.target === this) fecharModalObs();
 });
+$("btnFecharHistTanque").addEventListener("click", function(){ fecharModalHistTanque(); });
 $("modalHistTanque").addEventListener("click", function(ev){
   if (ev.target === this) fecharModalHistTanque();
+});
+document.addEventListener("keydown", function(ev){
+  if (ev.key === "Escape" && $("modalHistTanque").style.display === "flex") fecharModalHistTanque();
 });
 
 // delegar clique em qualquer btn-obs da página
