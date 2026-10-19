@@ -1151,6 +1151,7 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
 .fp-etapa-cell{padding:4px 8px;border-right:1px solid var(--fp-border);min-width:0}
 .fp-etapa-cell:last-child{border-right:none}
 .fp-etapa-nome{font-weight:600;font-size:12px;color:var(--fp-fg2)}
+.fp-etapa-alvo{font-weight:400;font-size:10px;color:var(--fp-fg3);letter-spacing:.01em}
 .fp-etapa-cell input{background:transparent;border:none;font-family:'Barlow',sans-serif;font-size:12px;color:var(--fp-fg);width:100%;font-variant-numeric:tabular-nums}
 .fp-etapa-cell input:focus{outline:1px solid var(--fp-marrom);border-radius:3px;padding:1px 3px}
 @media(max-width:520px){
@@ -9292,24 +9293,130 @@ function fp_addEnzRow(){
     '<div class="fp-enz-cell"><input placeholder="momento"></div>';
   c.appendChild(row); fp_markDirty();
 }
+/* — lê o perfil de mostura da receita e devolve array [{nome,tempAlvo,rampaAlvo,tempoAlvo}] — */
+function fp_lerPerfilMash(){
+  var tbl = document.getElementById('fp-tbl-mash');
+  if (!tbl) return [];
+  return Array.from(tbl.querySelectorAll('tbody tr')).map(function(tr){
+    var cells = tr.querySelectorAll('input');
+    return {
+      nome:      (cells[0]||{}).value || '—',
+      tempAlvo:  (cells[1]||{}).value || '',
+      rampaAlvo: (cells[2]||{}).value || '',
+      tempoAlvo: (cells[3]||{}).value || '',
+    };
+  }).filter(function(r){ return r.nome && r.nome !== '—' || r.tempAlvo; });
+}
+
+/* — atualiza o campo "Nº de bateladas" no cabeçalho — */
+function fp_atualizarNumBateladas(){
+  var list = document.getElementById('fp-bat-list');
+  var campo = document.getElementById('fp-num-bateladas');
+  if (!list || !campo) return;
+  var n = list.querySelectorAll('.fp-bat-card').length;
+  campo.value = n > 0 ? n : '';
+}
+
+/* — calcula diferença em minutos entre dois "HH:MM" — */
+function fp_diffMin(ini, fim){
+  if (!ini || !fim) return null;
+  var pi = ini.split(':'), pf = fim.split(':');
+  var mi = parseInt(pi[0])*60 + parseInt(pi[1]);
+  var mf = parseInt(pf[0])*60 + parseInt(pf[1]);
+  var diff = mf - mi;
+  if (diff < 0) diff += 1440; // virada de meia-noite
+  return diff;
+}
+
+/* — listener de cálculo automático numa linha de etapa — */
+function fp_bindEtapaCalc(row){
+  var inputs = row.querySelectorAll('input');
+  // inputs: [0]=nome, [1]=inicio, [2]=fim, [3]=duracao, [4]=rampa, [5]=temp
+  var iniEl  = inputs[1];
+  var fimEl  = inputs[2];
+  var durEl  = inputs[3];
+  function recalc(){
+    if (!iniEl || !fimEl || !durEl) return;
+    var diff = fp_diffMin(iniEl.value, fimEl.value);
+    if (diff !== null && diff >= 0) {
+      durEl.value = diff;
+    } else {
+      durEl.value = '';
+    }
+  }
+  if (iniEl) iniEl.addEventListener('change', recalc);
+  if (fimEl) fimEl.addEventListener('change', recalc);
+}
+
 function fp_addBatelada(){
   var list=document.getElementById('fp-bat-list');
   if(!list){ console.error('fp-bat-list não encontrado'); return; }
   var num=list.querySelectorAll('.fp-bat-card').length+1;
+  var numStr = num < 10 ? '0'+num : ''+num;
+
+  /* — lê perfil de mostura da receita — */
+  var perfilMash = fp_lerPerfilMash();
+  /* etapas fixas depois da mostura */
+  var etapasFixas = ['Lauter','Fervura','Whirlpool','Resfriamento'];
+
+  /* — gera linhas do perfil de mostura (dinâmico) — */
+  var linhasMash = perfilMash.length
+    ? perfilMash.map(function(e){
+        var alvo = [e.tempAlvo ? e.tempAlvo+'°C' : '', e.rampaAlvo ? e.rampaAlvo+'min rampa' : '', e.tempoAlvo ? e.tempoAlvo+'min' : ''].filter(Boolean).join(' / ');
+        return '<div class="fp-etapa-row" data-bat-etapa="mash">'+
+          '<div class="fp-etapa-cell fp-etapa-nome" title="'+esc(alvo)+'">'+esc(e.nome)+(alvo?'<span class="fp-etapa-alvo"> ('+esc(alvo)+')</span>':'')+'</div>'+
+          '<div class="fp-etapa-cell"><input type="time"></div>'+
+          '<div class="fp-etapa-cell"><input type="time"></div>'+
+          '<div class="fp-etapa-cell"><input class="fp-dur-auto" placeholder="—" readonly style="background:var(--fp-bg3);cursor:default" title="Calculado de Início→Fim"></div>'+
+          '<div class="fp-etapa-cell"><input placeholder="'+esc(e.rampaAlvo||'—')+'"></div>'+
+          '<div class="fp-etapa-cell"><input placeholder="'+esc(e.tempAlvo||'—')+'"></div>'+
+        '</div>';
+      }).join('')
+    : /* fallback se perfil ainda não preenchido */
+      '<div class="fp-etapa-row" data-bat-etapa="mash">'+
+        '<div class="fp-etapa-cell fp-etapa-nome">Mostura</div>'+
+        '<div class="fp-etapa-cell"><input type="time"></div>'+
+        '<div class="fp-etapa-cell"><input type="time"></div>'+
+        '<div class="fp-etapa-cell"><input class="fp-dur-auto" placeholder="—" readonly style="background:var(--fp-bg3);cursor:default" title="Calculado de Início→Fim"></div>'+
+        '<div class="fp-etapa-cell"><input placeholder="—"></div>'+
+        '<div class="fp-etapa-cell"><input placeholder="—"></div>'+
+      '</div>';
+
+  /* — linhas fixas: Lauter, Fervura, Whirlpool, Resfriamento — */
+  var linhasFixas = etapasFixas.map(function(e){
+    return '<div class="fp-etapa-row">'+
+      '<div class="fp-etapa-cell fp-etapa-nome">'+e+'</div>'+
+      '<div class="fp-etapa-cell"><input type="time"></div>'+
+      '<div class="fp-etapa-cell"><input type="time"></div>'+
+      '<div class="fp-etapa-cell"><input class="fp-dur-auto" placeholder="—" readonly style="background:var(--fp-bg3);cursor:default" title="Calculado de Início→Fim"></div>'+
+      '<div class="fp-etapa-cell"><input placeholder="—"></div>'+
+      '<div class="fp-etapa-cell"><input placeholder="—"></div>'+
+    '</div>';
+  }).join('');
+
   var card=document.createElement('div'); card.className='fp-bat-card';
-  card.innerHTML='<div class="fp-bat-header"><span class="fp-bat-num">⚗️ Batelada 0'+num+'</span><span class="fp-bat-status">⏳ Nova</span></div>'+
+  card.innerHTML=
+    '<div class="fp-bat-header">'+
+      '<span class="fp-bat-num">⚗️ Batelada '+numStr+'</span>'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        '<span class="fp-bat-status">⏳ Nova</span>'+
+        '<button onclick="fp_removerBatelada(this)" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);border-radius:4px;color:#fff;cursor:pointer;font-size:11px;padding:2px 7px;font-family:\'Barlow Condensed\',sans-serif;letter-spacing:.04em">✕ Remover</button>'+
+      '</div>'+
+    '</div>'+
     '<div class="fp-bat-body">'+
     '<div class="fp-small-label">Etapas da brassagem</div>'+
     '<div class="fp-etapas-grid">'+
-    '<div class="fp-etapa-row header"><div class="fp-etapa-cell">Etapa</div><div class="fp-etapa-cell">Início</div><div class="fp-etapa-cell">Fim</div><div class="fp-etapa-cell">Duração real (min)</div><div class="fp-etapa-cell">Rampa real (min)</div><div class="fp-etapa-cell">Temp real (°C)</div></div>'+
-    ['Mostura','Lauter','Fervura','Whirlpool','Resfriamento'].map(function(e){
-      return '<div class="fp-etapa-row"><div class="fp-etapa-cell fp-etapa-nome">'+e+'</div>'+
-        '<div class="fp-etapa-cell"><input type="time" placeholder="--:--"></div>'+
-        '<div class="fp-etapa-cell"><input type="time" placeholder="--:--"></div>'+
-        '<div class="fp-etapa-cell"><input placeholder="—"></div>'+
-        '<div class="fp-etapa-cell"><input placeholder="—"></div>'+
-        '<div class="fp-etapa-cell"><input placeholder="—"></div></div>';
-    }).join('')+'</div>'+
+      '<div class="fp-etapa-row header">'+
+        '<div class="fp-etapa-cell">Etapa (alvo)</div>'+
+        '<div class="fp-etapa-cell">Início</div>'+
+        '<div class="fp-etapa-cell">Fim</div>'+
+        '<div class="fp-etapa-cell">Duração real (min)</div>'+
+        '<div class="fp-etapa-cell">Rampa real (min)</div>'+
+        '<div class="fp-etapa-cell">Temp real (°C)</div>'+
+      '</div>'+
+      linhasMash+
+      linhasFixas+
+    '</div>'+
     '<div class="fp-divider"></div>'+
     '<div class="fp-small-label">Volumes e densidades</div>'+
     '<div class="fp-vol-row">'+
@@ -9320,7 +9427,32 @@ function fp_addBatelada(){
     '<div class="fp-small-label">Observações</div>'+
     '<textarea class="fp-obs-field" placeholder="Observações…"></textarea>'+
     '</div>';
+
   list.appendChild(card);
+
+  /* — ativa cálculo automático em cada linha de etapa — */
+  card.querySelectorAll('.fp-etapa-row:not(.header)').forEach(fp_bindEtapaCalc);
+
+  fp_atualizarNumBateladas();
+  fp_markDirty();
+}
+
+function fp_removerBatelada(btn){
+  var card = btn.closest('.fp-bat-card');
+  if (!card) return;
+  card.remove();
+  /* renumera */
+  var list = document.getElementById('fp-bat-list');
+  if (list) {
+    list.querySelectorAll('.fp-bat-card').forEach(function(c, i){
+      var span = c.querySelector('.fp-bat-num');
+      if (span) {
+        var n = i+1;
+        span.textContent = '⚗️ Batelada '+(n < 10 ? '0'+n : n);
+      }
+    });
+  }
+  fp_atualizarNumBateladas();
   fp_markDirty();
 }
 var fp_dirty=false;
@@ -9361,6 +9493,20 @@ function fp_simSave(btn){
       fg:         (document.getElementById('fp-fg-alvo')||{}).value  || "",
       abv:        (document.getElementById('fp-abv-alvo')||{}).value || "",
     },
+    bateladas: (function(){
+      var list = document.getElementById('fp-bat-list'); if(!list) return [];
+      return Array.from(list.querySelectorAll('.fp-bat-card')).map(function(card){
+        // etapas: cada linha não-header
+        var etapas = Array.from(card.querySelectorAll('.fp-etapa-row:not(.header)')).map(function(row){
+          return Array.from(row.querySelectorAll('input,textarea')).map(function(el){ return el.value; });
+        });
+        // volumes: fp-vol-row inputs
+        var volumes = Array.from(card.querySelectorAll('.fp-vol-row input')).map(function(el){ return el.value; });
+        // obs
+        var obs = (card.querySelector('.fp-obs-field')||{}).value||'';
+        return { etapas: etapas, volumes: volumes, obs: obs };
+      });
+    })(),
     sais:        coletarTabela('fp-tbl-sais'),
     fermentaveis:coletarTabela('fp-tbl-ferm'),
     lupulos:     coletarTabela('fp-tbl-lup'),
@@ -9467,7 +9613,7 @@ function abrirFichaLote(tq){
         '<div class="fp-field"><label>Nome do lote</label><input value="'+esc(lote)+'"></div>'+
         '<div class="fp-field"><label>Estilo</label><input value="'+esc(estilo)+'"></div>'+
         '<div class="fp-field"><label>Volume total (L)</label><input type="number" value="'+esc(volume.replace(' L',''))+'"></div>'+
-        '<div class="fp-field"><label>Nº de bateladas</label><input type="number" value=""></div>'+
+        '<div class="fp-field"><label>Nº de bateladas</label><input id="fp-num-bateladas" type="number" value="" readonly style="background:var(--fp-bg3);cursor:default" title="Atualizado automaticamente"></div>'+
         '<div class="fp-field"><label>Data início</label><input type="date" value="'+esc(tq.brassadoEm||'')+'"></div>'+
         '<div class="fp-field"><label>Tanque</label><input value="'+esc(tanque)+'"></div>'+
       '</div>'+
@@ -9878,6 +10024,40 @@ function fp_preencherFicha(ficha){
       });
     });
   }
+  // restaura bateladas
+  if(ficha.bateladas && ficha.bateladas.length){
+    var batList = document.getElementById('fp-bat-list');
+    if(batList){
+      batList.innerHTML = '';
+      ficha.bateladas.forEach(function(bat, idx){
+        fp_addBatelada(); // cria card vazio com perfil de mash atual
+        var card = batList.querySelectorAll('.fp-bat-card')[idx];
+        if(!card) return;
+        // preenche etapas
+        if(bat.etapas && bat.etapas.length){
+          var rows = card.querySelectorAll('.fp-etapa-row:not(.header)');
+          bat.etapas.forEach(function(vals, ri){
+            var row = rows[ri]; if(!row) return;
+            var inputs = row.querySelectorAll('input,textarea');
+            vals.forEach(function(v, ci){
+              var el = inputs[ci]; if(!el) return;
+              // duracao auto é readonly — só preenche se não for auto
+              if(!el.classList.contains('fp-dur-auto')) el.value = v;
+              else if(v) el.value = v; // aceita valor salvo mesmo readonly
+            });
+          });
+        }
+        // preenche volumes
+        if(bat.volumes){
+          var vEls = card.querySelectorAll('.fp-vol-row input');
+          bat.volumes.forEach(function(v, i){ if(vEls[i]) vEls[i].value = v; });
+        }
+        // obs
+        if(bat.obs){ var obsEl = card.querySelector('.fp-obs-field'); if(obsEl) obsEl.value = bat.obs; }
+      });
+      fp_atualizarNumBateladas();
+    }
+  }
   if(ficha.sais)         preencherTabela('fp-tbl-sais',ficha.sais);
   if(ficha.fermentaveis) preencherTabela('fp-tbl-ferm',ficha.fermentaveis);
   if(ficha.lupulos)      preencherTabela('fp-tbl-lup',ficha.lupulos);
@@ -9913,18 +10093,19 @@ function fp_preencherFicha(ficha){
 }
 
 /* — expõe funções fp_ no window para que onclick inline as encontre — */
-window.fp_toggleSec   = fp_toggleSec;
-window.fp_calcAbv     = fp_calcAbv;
-window.fp_delRow      = fp_delRow;
-window.fp_delLog      = fp_delLog;
-window.fp_addRow      = fp_addRow;
-window.fp_addMaturRow = fp_addMaturRow;
-window.fp_addEnzRow   = fp_addEnzRow;
-window.fp_addBatelada = fp_addBatelada;
-window.fp_markDirty   = fp_markDirty;
-window.fp_simSave     = fp_simSave;
-window.abrirFichaLote = abrirFichaLote;
-window.abrirFichaPorLote = abrirFichaPorLote;
+window.fp_toggleSec        = fp_toggleSec;
+window.fp_calcAbv          = fp_calcAbv;
+window.fp_delRow           = fp_delRow;
+window.fp_delLog           = fp_delLog;
+window.fp_addRow           = fp_addRow;
+window.fp_addMaturRow      = fp_addMaturRow;
+window.fp_addEnzRow        = fp_addEnzRow;
+window.fp_addBatelada      = fp_addBatelada;
+window.fp_removerBatelada  = fp_removerBatelada;
+window.fp_markDirty        = fp_markDirty;
+window.fp_simSave          = fp_simSave;
+window.abrirFichaLote      = abrirFichaLote;
+window.abrirFichaPorLote   = abrirFichaPorLote;
 
 /* ==================================================================
    Acompanhamento e relatórios
