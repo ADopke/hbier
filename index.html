@@ -1070,6 +1070,179 @@
     .check{width:34px;height:34px}
     td.celula{width:50px}
   }
+
+/* ================================================================
+   FICHA DE PRODUÇÃO INTERATIVA — estilos isolados no container .fp-app
+   ================================================================ */
+.fp-app{font-family:'Barlow',sans-serif;font-size:14px;line-height:1.5;color:#1A1208;background:#F5F2EE}
+.fp-app *,
+.fp-app *::before,
+.fp-app *::after{box-sizing:border-box}
+/* tokens internos */
+.fp-app{
+  --fp-bg:#F5F2EE;--fp-bg2:#FFFDF9;--fp-bg3:#EDE9E3;
+  --fp-fg:#1A1208;--fp-fg2:#4A3C28;--fp-fg3:#8A7860;
+  --fp-border:#D4C8B4;
+  --fp-verde:#025F1D;--fp-dourado:#C99700;--fp-marrom:#7A3B00;
+  --fp-vermelho:#C82010;--fp-azul:#0A4E7A;
+  --fp-card:#FFFDF9;--fp-shadow:rgba(90,60,20,.10);
+}
+/* role dica */
+.fp-role-dica{background:rgba(201,151,0,.12);border-bottom:1px solid rgba(201,151,0,.25);padding:7px 16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--fp-dourado);text-align:center}
+/* tabs */
+.fp-tabs-wrap{background:var(--fp-bg2);border-bottom:2px solid var(--fp-border)}
+.fp-tabs{display:flex;overflow-x:auto;gap:0;padding:0 8px;scrollbar-width:none}
+.fp-tabs::-webkit-scrollbar{display:none}
+.fp-tab{flex-shrink:0;padding:10px 14px;border:none;background:none;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--fp-fg3);border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s;display:flex;align-items:center;gap:5px}
+.fp-tab.active{color:var(--fp-marrom);border-bottom-color:var(--fp-marrom)}
+.fp-tab:hover:not(.active){color:var(--fp-fg2)}
+/* content */
+.fp-content{padding:14px 16px;background:var(--fp-bg)}
+.fp-panel{display:none}
+.fp-panel.active{display:block}
+/* section card */
+.fp-sec{background:var(--fp-card);border:1px solid var(--fp-border);border-radius:10px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 4px var(--fp-shadow)}
+.fp-sec-head{padding:9px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--fp-border);cursor:pointer;user-select:none}
+.fp-sec-head-left{display:flex;align-items:center;gap:8px}
+.fp-sec-icon{font-size:16px}
+.fp-sec-title{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fp-fg2)}
+.fp-sec-title.marrom{color:var(--fp-marrom)}.fp-sec-title.verde{color:var(--fp-verde)}.fp-sec-title.azul{color:var(--fp-azul)}.fp-sec-title.dourado{color:var(--fp-dourado)}
+.fp-sec-toggle{font-size:11px;color:var(--fp-fg3);transition:transform .2s}
+.fp-sec.collapsed .fp-sec-toggle{transform:rotate(-90deg)}
+.fp-sec.collapsed .fp-sec-body{display:none}
+.fp-sec-body{padding:12px 14px}
+/* form grid */
+.fp-fg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.fp-fg-grid.tight{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+.fp-fg-grid.wide{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.fp-field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.fp-field.span2{grid-column:span 2}.fp-field.full{grid-column:1/-1}
+.fp-field label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3)}
+.fp-field input,.fp-field select,.fp-field textarea{background:var(--fp-bg);border:1px solid var(--fp-border);border-radius:6px;padding:6px 9px;color:var(--fp-fg);font-family:'Barlow',sans-serif;font-size:13px;transition:border-color .15s;width:100%}
+.fp-field input:focus,.fp-field select:focus,.fp-field textarea:focus{outline:none;border-color:var(--fp-marrom)}
+.fp-field textarea{min-height:68px;resize:vertical}
+.fp-field .fp-unit{font-size:11px;color:var(--fp-fg3);margin-top:1px}
+/* tables */
+.fp-tbl-wrap{overflow-x:auto}
+table.fp-data{width:100%;border-collapse:collapse;font-size:13px}
+table.fp-data th{background:var(--fp-bg3);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3);padding:6px 8px;text-align:left;border-bottom:1px solid var(--fp-border);white-space:nowrap}
+table.fp-data td{padding:5px 8px;border-bottom:1px solid var(--fp-border);vertical-align:middle;min-width:0}
+table.fp-data tr:last-child td{border-bottom:none}
+table.fp-data input{background:transparent;border:none;padding:2px 0;width:100%;min-width:50px;color:var(--fp-fg);font-family:'Barlow',sans-serif;font-size:13px;font-variant-numeric:tabular-nums}
+table.fp-data input:focus{outline:1px solid var(--fp-marrom);border-radius:3px;padding:2px 4px}
+table.fp-data .fp-del-btn{background:none;border:none;cursor:pointer;color:var(--fp-fg3);font-size:14px;padding:2px 4px;border-radius:4px}
+table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,16,.1)}
+.fp-add-row-btn{margin-top:8px;background:none;border:1px dashed var(--fp-border);border-radius:6px;padding:5px 12px;width:100%;cursor:pointer;color:var(--fp-fg3);font-size:12px;font-family:'Barlow',sans-serif;transition:all .15s}
+.fp-add-row-btn:hover{border-color:var(--fp-marrom);color:var(--fp-marrom)}
+/* batelada */
+.fp-bat-list{display:flex;flex-direction:column;gap:12px}
+.fp-bat-card{background:var(--fp-card);border:1px solid var(--fp-border);border-radius:10px;overflow:hidden;box-shadow:0 1px 4px var(--fp-shadow)}
+.fp-bat-header{background:var(--fp-marrom);color:#fff;padding:8px 14px;display:flex;align-items:center;justify-content:space-between}
+.fp-bat-num{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.04em}
+.fp-bat-status{font-size:11px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.2)}
+.fp-bat-status.ok{background:var(--fp-verde)}.fp-bat-status.prog{background:var(--fp-dourado);color:#fff}
+.fp-bat-body{padding:12px 14px}
+/* etapas */
+.fp-etapas-grid{border:1px solid var(--fp-border);border-radius:7px;overflow:hidden;margin-bottom:10px}
+.fp-etapa-row{display:grid;grid-template-columns:130px 1fr 1fr 90px 70px 1fr;gap:0;border-bottom:1px solid var(--fp-border);align-items:center}
+.fp-etapa-row:last-child{border-bottom:none}
+.fp-etapa-row.header{background:var(--fp-bg3)}
+.fp-etapa-row.header .fp-etapa-cell{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3);padding:5px 8px}
+.fp-etapa-cell{padding:4px 8px;border-right:1px solid var(--fp-border);min-width:0}
+.fp-etapa-cell:last-child{border-right:none}
+.fp-etapa-nome{font-weight:600;font-size:12px;color:var(--fp-fg2)}
+.fp-etapa-cell input{background:transparent;border:none;font-family:'Barlow',sans-serif;font-size:12px;color:var(--fp-fg);width:100%;font-variant-numeric:tabular-nums}
+.fp-etapa-cell input:focus{outline:1px solid var(--fp-marrom);border-radius:3px;padding:1px 3px}
+@media(max-width:520px){
+  .fp-etapa-row{grid-template-columns:100px 1fr 1fr}
+  .fp-etapa-cell:nth-child(4),.fp-etapa-cell:nth-child(5),.fp-etapa-cell:nth-child(6){display:none}
+}
+/* vol row */
+.fp-vol-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:8px}
+/* log rows */
+.fp-log-table{border:1px solid var(--fp-border);border-radius:7px;overflow:hidden}
+.fp-log-scroll{overflow-x:auto}
+.fp-log-row{display:grid;grid-template-columns:120px 70px 70px 70px 70px 1fr 28px;gap:0;border-bottom:1px solid var(--fp-border);align-items:center}
+.fp-log-row:last-child{border-bottom:none}
+.fp-log-row.header{background:var(--fp-bg3)}
+.fp-log-row.header .fp-log-cell{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3)}
+.fp-log-cell{padding:5px 8px;border-right:1px solid var(--fp-border);font-size:12px;min-width:0}
+.fp-log-cell:last-child{border-right:none}
+.fp-log-cell input{background:transparent;border:none;font-family:'Barlow',sans-serif;font-size:12px;color:var(--fp-fg);width:100%;font-variant-numeric:tabular-nums}
+.fp-log-cell input:focus{outline:1px solid var(--fp-marrom);border-radius:3px;padding:1px 3px}
+/* maturação log (8 cols) */
+.fp-mlog-row{display:grid;grid-template-columns:120px 70px 70px 70px 70px 70px 1fr 28px;gap:0;border-bottom:1px solid var(--fp-border);align-items:center}
+.fp-mlog-row:last-child{border-bottom:none}
+.fp-mlog-row.header{background:var(--fp-bg3)}
+.fp-mlog-row.header .fp-log-cell{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3)}
+/* resultado */
+.fp-result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:12px}
+.fp-result-card{background:var(--fp-bg3);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.fp-rc-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3)}
+.fp-rc-val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--fp-dourado)}
+.fp-rc-ref{font-size:11px;color:var(--fp-fg3)}
+.fp-result-card.ok .fp-rc-val{color:var(--fp-verde)}
+.fp-result-card.warn .fp-rc-val{color:var(--fp-vermelho)}
+/* save bar */
+.fp-save-bar{position:sticky;bottom:0;background:var(--fp-bg2);border-top:1px solid var(--fp-border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 -2px 8px var(--fp-shadow)}
+.fp-save-bar .fp-unsaved{font-size:12px;color:var(--fp-fg3);font-style:italic}
+.fp-save-bar .fp-unsaved.dirty{color:var(--fp-dourado);font-style:normal;font-weight:600}
+.fp-btn{border:none;cursor:pointer;border-radius:7px;padding:8px 16px;font-family:'Barlow',sans-serif;font-weight:600;font-size:13px;transition:opacity .15s}
+.fp-btn:hover{opacity:.85}
+.fp-btn-primary{background:var(--fp-marrom);color:#fff}
+.fp-btn-secondary{background:var(--fp-bg3);color:var(--fp-fg2);border:1px solid var(--fp-border)}
+/* add batelada btn */
+.fp-add-bat-btn{border:2px dashed var(--fp-border);border-radius:10px;padding:14px;width:100%;background:none;cursor:pointer;color:var(--fp-fg3);font-size:13px;font-family:'Barlow',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.fp-add-bat-btn:hover{border-color:var(--fp-marrom);color:var(--fp-marrom)}
+/* roles */
+.fp-role-badge{display:inline-flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+.fp-role-badge.g{background:rgba(201,151,0,.18);color:var(--fp-dourado)}
+.fp-role-badge.e{background:rgba(2,95,29,.15);color:var(--fp-verde)}
+.fp-lock-icon{font-size:11px;margin-left:3px;opacity:.55}
+/* modo-gestor: unlock icon */
+.fp-app.modo-gestor .fp-lock-icon{display:none}
+/* modo-executor: trava seções gestor */
+.fp-app.modo-executor .fp-gestor-sec input,
+.fp-app.modo-executor .fp-gestor-sec select,
+.fp-app.modo-executor .fp-gestor-sec textarea{pointer-events:none;opacity:.5;background:var(--fp-bg3)!important;border-style:dashed!important;cursor:not-allowed}
+.fp-app.modo-executor .fp-gestor-sec .fp-add-row-btn,
+.fp-app.modo-executor .fp-gestor-sec .fp-del-btn{display:none}
+.fp-app.modo-executor .fp-gestor-sec .fp-enz-cell button{display:none}
+.fp-app.modo-executor .fp-role-dica{background:rgba(2,95,29,.1);border-bottom-color:rgba(2,95,29,.25);color:var(--fp-verde)}
+/* misc */
+.fp-two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.fp-two-col{grid-template-columns:1fr}}
+.fp-divider{height:1px;background:var(--fp-border);margin:10px 0}
+.fp-small-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3);margin-bottom:6px}
+.fp-obs-field{background:var(--fp-bg);border:1px solid var(--fp-border);border-radius:6px;padding:7px 9px;color:var(--fp-fg);font-family:'Barlow',sans-serif;font-size:13px;width:100%;resize:vertical;min-height:58px}
+.fp-obs-field:focus{outline:none;border-color:var(--fp-marrom)}
+/* granulometria */
+.fp-gran-grid{display:grid;grid-template-columns:1fr 90px 90px;gap:0;border:1px solid var(--fp-border);border-radius:7px;overflow:hidden}
+.fp-gran-row{display:contents}
+.fp-gran-cell{padding:5px 10px;border-bottom:1px solid var(--fp-border);border-right:1px solid var(--fp-border);font-size:12px;color:var(--fp-fg)}
+.fp-gran-cell:last-child{border-right:none}
+.fp-gran-row:last-child .fp-gran-cell{border-bottom:none}
+.fp-gran-cell.head{background:var(--fp-bg3);font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3)}
+.fp-gran-cell input{background:transparent;border:none;font-family:'Barlow',sans-serif;font-size:12px;color:var(--fp-fg);width:100%;font-variant-numeric:tabular-nums}
+.fp-gran-cell input:focus{outline:1px solid var(--fp-marrom);border-radius:3px}
+/* enzimas */
+.fp-enz-grid{display:grid;grid-template-columns:1fr 100px 100px 80px;gap:0;border:1px solid var(--fp-border);border-radius:7px;overflow:hidden}
+.fp-enz-cell{padding:5px 10px;border-bottom:1px solid var(--fp-border);border-right:1px solid var(--fp-border);font-size:12px;color:var(--fp-fg)}
+.fp-enz-cell:last-child{border-right:none}
+.fp-enz-row:last-child .fp-enz-cell{border-bottom:none}
+.fp-enz-cell.head{background:var(--fp-bg3);font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3)}
+.fp-enz-cell input{background:transparent;border:none;font-family:'Barlow',sans-serif;font-size:12px;color:var(--fp-fg);width:100%;font-variant-numeric:tabular-nums}
+.fp-enz-cell input:focus{outline:1px solid var(--fp-marrom);border-radius:3px}
+/* ferment log dia a dia */
+.fp-flog-wrap{overflow-x:auto}
+.fp-flog-table{border-collapse:collapse;font-size:12px;min-width:600px;width:100%}
+.fp-flog-table th{background:var(--fp-bg3);font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3);padding:5px 8px;border:1px solid var(--fp-border);white-space:nowrap;text-align:center}
+.fp-flog-table td{padding:4px 6px;border:1px solid var(--fp-border);text-align:center;vertical-align:middle;color:var(--fp-fg)}
+.fp-flog-table td.fp-row-label{background:var(--fp-bg3);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fp-fg2);white-space:nowrap;text-align:left;padding:5px 10px}
+.fp-flog-table td input{background:transparent;border:none;text-align:center;width:100%;font-family:'Barlow',sans-serif;font-size:12px;color:var(--fp-fg);font-variant-numeric:tabular-nums;min-width:50px}
+.fp-flog-table td input:focus{outline:1px solid var(--fp-marrom);border-radius:3px}
+/* executor info banner */
+.fp-exec-banner{padding:8px 12px;background:rgba(2,95,29,.08);border:1px solid rgba(2,95,29,.2);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--fp-verde);font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:.04em}
 </style>
 </head>
 <body>
@@ -8905,23 +9078,122 @@ $("btnFichaImprimir").addEventListener("click", function(){
   setTimeout(function(){ w.focus(); w.print(); }, 600);
 });
 
-function abrirFichaLote(tq){
-  var lote   = tq.lote || "—";
-  var estilo = tq.estilo || "—";
-  var volume = tq.volume ? fmtNum(tq.volume)+" L" : "—";
-  var og     = tq.og || "—";
-  var tanque = tq.nome || "—";
-  var estagio = (tq.estagioIcone||"")+" "+(tq.estagioLabel||"");
-  var dias    = (tq.diasTanque !== null && tq.diasTanque !== undefined) ? tq.diasTanque+"d" : "—";
+/* ---- helpers da ficha interativa (prefixo fp_ para não colidir) ---- */
+function fp_toggleSec(head){ head.closest('.fp-sec').classList.toggle('collapsed'); }
+function fp_delRow(btn){ btn.closest('tr').remove(); fp_markDirty(); }
+function fp_delLog(btn){ btn.closest('.fp-mlog-row,.fp-log-row').remove(); fp_markDirty(); }
+function fp_addRow(tblId){
+  var vals=Array.from(arguments).slice(1);
+  var tbl=document.getElementById(tblId); if(!tbl) return;
+  var cols=tbl.querySelector('thead tr').cells.length;
+  var tr=document.createElement('tr');
+  for(var i=0;i<cols-1;i++){
+    var td=document.createElement('td');
+    var inp=document.createElement('input');
+    inp.value=vals[i]||''; td.appendChild(inp); tr.appendChild(td);
+  }
+  var tdDel=document.createElement('td');
+  tdDel.innerHTML='<button class="fp-del-btn" onclick="fp_delRow(this)">✕</button>';
+  tr.appendChild(tdDel);
+  tbl.querySelector('tbody').appendChild(tr);
+  fp_markDirty();
+}
+function fp_addMaturRow(){
+  var now=new Date(), local=now.toISOString().slice(0,16);
+  var c=document.getElementById('fp-matur-log');
+  var row=document.createElement('div'); row.className='fp-mlog-row';
+  row.innerHTML='<div class="fp-log-cell"><input type="datetime-local" value="'+local+'"></div>'+
+    '<div class="fp-log-cell"><input placeholder="°P"></div>'+
+    '<div class="fp-log-cell"><input placeholder="°C"></div>'+
+    '<div class="fp-log-cell"><input placeholder="bar"></div>'+
+    '<div class="fp-log-cell"><input placeholder="vol"></div>'+
+    '<div class="fp-log-cell"><input placeholder="pH"></div>'+
+    '<div class="fp-log-cell"><input placeholder="obs…"></div>'+
+    '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
+  c.appendChild(row); fp_markDirty();
+}
+function fp_addEnzRow(){
+  var c=document.getElementById('fp-enz-extra');
+  var row=document.createElement('div'); row.style.display='contents';
+  row.innerHTML=
+    '<div class="fp-enz-cell" style="display:flex;align-items:center;gap:4px;">'+
+      '<input placeholder="Nome do produto" style="flex:1">'+
+      '<button onclick="this.closest(\'[style*=contents]\').remove();fp_markDirty()" style="background:none;border:none;cursor:pointer;color:var(--fp-fg3);font-size:13px;padding:0 2px" title="Remover">✕</button>'+
+    '</div>'+
+    '<div class="fp-enz-cell"><input placeholder="dose"></div>'+
+    '<div class="fp-enz-cell"><input placeholder="0"></div>'+
+    '<div class="fp-enz-cell"><input placeholder="momento"></div>';
+  c.appendChild(row); fp_markDirty();
+}
+function fp_addBatelada(){
+  var list=document.getElementById('fp-bat-list');
+  var num=list.querySelectorAll('.fp-bat-card').length+1;
+  var card=document.createElement('div'); card.className='fp-bat-card';
+  card.innerHTML='<div class="fp-bat-header"><span class="fp-bat-num">⚗️ Batelada 0'+num+'</span><span class="fp-bat-status">⏳ Nova</span></div>'+
+    '<div class="fp-bat-body">'+
+    '<div class="fp-small-label">Etapas da brassagem</div>'+
+    '<div class="fp-etapas-grid">'+
+    '<div class="fp-etapa-row header"><div class="fp-etapa-cell">Etapa</div><div class="fp-etapa-cell">Início</div><div class="fp-etapa-cell">Fim</div><div class="fp-etapa-cell">Duração real (min)</div><div class="fp-etapa-cell">Rampa real (min)</div><div class="fp-etapa-cell">Temp real (°C)</div></div>'+
+    ['Mostura','Lauter','Fervura','Whirlpool','Resfriamento'].map(function(e){
+      return '<div class="fp-etapa-row"><div class="fp-etapa-cell fp-etapa-nome">'+e+'</div>'+
+        '<div class="fp-etapa-cell"><input type="time" placeholder="--:--"></div>'+
+        '<div class="fp-etapa-cell"><input type="time" placeholder="--:--"></div>'+
+        '<div class="fp-etapa-cell"><input placeholder="—"></div>'+
+        '<div class="fp-etapa-cell"><input placeholder="—"></div>'+
+        '<div class="fp-etapa-cell"><input placeholder="—"></div></div>';
+    }).join('')+'</div>'+
+    '<div class="fp-divider"></div>'+
+    '<div class="fp-small-label">Volumes e densidades</div>'+
+    '<div class="fp-vol-row">'+
+    ['Água arriada (L)','Vol. pré-fervura (L)','OG pré-fervura','Extrato pré-ferv. (°P)','Vol. pós-fervura (L)','OG pós-fervura','Vol. no tanque (L)','pH mosto','Eficiência (%)','O₂ (mg/L)'].map(function(l){
+      return '<div class="fp-field"><label>'+l+'</label><input placeholder="—"></div>';
+    }).join('')+'</div>'+
+    '<div class="fp-divider"></div>'+
+    '<div class="fp-small-label">Observações</div>'+
+    '<textarea class="fp-obs-field" placeholder="Observações…"></textarea>'+
+    '</div>';
+  list.appendChild(card);
+  fp_markDirty();
+}
+var fp_dirty=false;
+function fp_markDirty(){
+  fp_dirty=true;
+  var s=document.getElementById('fp-saveStatus');
+  if(s){s.textContent='● Alterações não salvas';s.className='fp-unsaved dirty';}
+}
+function fp_simSave(btn){
+  btn.textContent='⏳ Salvando…'; btn.disabled=true;
+  setTimeout(function(){
+    fp_dirty=false;
+    var s=document.getElementById('fp-saveStatus');
+    if(s){s.textContent='✓ Salvo agora mesmo';s.className='fp-unsaved';}
+    btn.textContent='💾 Salvar Ficha'; btn.disabled=false;
+    setTimeout(function(){if(!fp_dirty&&s) s.textContent='';},3000);
+  },900);
+}
 
-  // data de entrada no tanque
+function abrirFichaLote(tq){
+  /* — dados do cabeçalho vindos do objeto tq — */
+  var lote    = tq.lote   || "—";
+  var estilo  = tq.estilo || "—";
+  var volume  = tq.volume ? fmtNum(tq.volume)+" L" : "—";
+  var og      = tq.og     || "—";
+  var tanque  = tq.nome   || "—";
+  var dias    = (tq.diasTanque !== null && tq.diasTanque !== undefined) ? tq.diasTanque+"d" : "—";
   var dataEntradaFmt = "—";
   if (tq.brassadoEm) {
     var p = tq.brassadoEm.split("-");
     if (p.length === 3) dataEntradaFmt = p[2]+"/"+p[1]+"/"+p[0];
   }
 
-  // histórico de envasamentos deste lote
+  /* — papel do utilizador logado — */
+  var fichaRole = (sessao && ["admin","gestor"].includes(sessao.papel)) ? "gestor" : "executor";
+  var modoClass = fichaRole === "gestor" ? "modo-gestor" : "modo-executor";
+  var dicaTxt   = fichaRole === "gestor"
+    ? "🛡 Modo Gestor — receita editável, campos operacionais liberados"
+    : "👷 Modo Executor — receita bloqueada, preencha apenas campos operacionais";
+
+  /* — envasamentos para a aba Resultado — */
   var loteUp = lote.trim().toUpperCase();
   var envasamentos = [];
   if (tq.historico && tq.historico.length) {
@@ -8931,173 +9203,426 @@ function abrirFichaLote(tq){
       return (!mLote || mLote === loteUp) && (m.qtd || m.litrosFim || m.temResultado);
     }).sort(function(a,b){ return (a.dataISO||"").localeCompare(b.dataISO||""); });
   }
+  var envasesFileiras = envasamentos.length
+    ? envasamentos.map(function(m,i){
+        var df=""; if(m.dataISO){var pp=m.dataISO.split("-");df=pp[2]+"/"+pp[1]+"/"+pp[0];}
+        var lit=""; if(m.litrosInicio||m.litrosFim) lit=(m.litrosInicio?fmtNum(m.litrosInicio)+" L":"?")+" → "+(m.litrosFim?fmtNum(m.litrosFim)+" L":"?");
+        return "<tr><td>"+(i+1)+"</td><td>"+esc(df)+"</td><td>"+esc(m.formato||"—")+"</td><td style='text-align:right'>"+(m.qtd?fmtNum(m.qtd)+" un":"—")+"</td><td>"+esc(lit||"—")+"</td></tr>";
+      }).join("")
+    : "<tr><td colspan='5' style='text-align:center;color:var(--fp-fg3);font-style:italic;padding:12px'>Nenhum envasamento registrado ainda.</td></tr>";
 
-  // obs do lote (buscar no historico de brassagem)
-  var obsLote = "";
-  if (tq.historico) {
-    var brass = tq.historico.find(function(m){ return m.tipo==="brassagem" && (m.lote||"").trim().toUpperCase()===loteUp; });
-    if (brass && brass.obs) obsLote = brass.obs;
-  }
+  /* ================================================================
+     HTML interativo da ficha
+     ================================================================ */
+  var html = '<div class="fp-app '+modoClass+'" id="fp-app">'+
 
-  // linha de envases
-  var envasesHtml = "";
-  if (envasamentos.length) {
-    var rows = envasamentos.map(function(m, i){
-      var df = ""; if (m.dataISO){ var p=m.dataISO.split("-"); df=p[2]+"/"+p[1]+"/"+p[0]; }
-      var diasTq = tq.brassadoEm && m.dataISO ? (function(){
-        var a=new Date(tq.brassadoEm+"T00:00:00"), b=new Date(m.dataISO+"T00:00:00");
-        var d=Math.floor((b-a)/86400000); return (!isNaN(d)&&d>=0)?d+"d":"—";
-      })() : "—";
-      var litros = "";
-      if (m.litrosInicio || m.litrosFim) litros = (m.litrosInicio?fmtNum(m.litrosInicio)+" L":"?")+" → "+(m.litrosFim?fmtNum(m.litrosFim)+" L":"?");
-      return "<tr><td>"+(i+1)+"</td><td>"+esc(df)+"</td><td>"+esc(m.formato||"—")+"</td>"+
-        "<td style='text-align:right'>"+(m.qtd?fmtNum(m.qtd)+" un":"—")+"</td>"+
-        "<td>"+esc(litros||"—")+"</td>"+
-        "<td style='text-align:center'>"+esc(diasTq)+"</td></tr>";
-    }).join("");
-    envasesHtml =
-      "<div class='fp-section'>"+
-        "<div class='fp-section-title azul'>📦 Envasamentos</div>"+
-        "<table class='fp-table'>"+
-          "<thead><tr><th>#</th><th>Data</th><th>Formato</th><th>Qtd</th><th>Tanque</th><th>Dias no tanque</th></tr></thead>"+
-          "<tbody>"+rows+"</tbody>"+
-        "</table>"+
-      "</div>";
-  } else {
-    envasesHtml =
-      "<div class='fp-section'>"+
-        "<div class='fp-section-title azul'>📦 Envasamentos</div>"+
-        "<p style='font-size:.82rem;color:#6E7568;font-style:italic;padding:8px 0'>Nenhum envasamento registrado ainda.</p>"+
-      "</div>";
-  }
+  /* — dica de papel — */
+  '<div class="fp-role-dica" id="fp-role-dica">'+dicaTxt+'</div>'+
 
-  // obs
-  var obsHtml = "";
-  if (obsLote) {
-    obsHtml = "<div class='fp-section'>"+
-      "<div class='fp-section-title' style='background:#6E7568'>📝 Observações</div>"+
-      "<p style='font-size:.85rem;line-height:1.5;padding:8px 4px'>"+esc(obsLote)+"</p>"+
-    "</div>";
-  }
+  /* — tabs — */
+  '<div class="fp-tabs-wrap"><div class="fp-tabs" id="fp-tabs">'+
+    '<button class="fp-tab active" data-fp-panel="receita">📋 Receita</button>'+
+    '<button class="fp-tab" data-fp-panel="bateladas">⚗️ Bateladas</button>'+
+    '<button class="fp-tab" data-fp-panel="fermentacao">🧫 Ferment. / Maturação</button>'+
+    '<button class="fp-tab" data-fp-panel="resultado">🏆 Resultado Final</button>'+
+  '</div></div>'+
 
-  var html =
-    "<div style='padding:20px 20px 0'>"+
-      // cabeçalho marca + título
-      "<div class='fp-header'>"+
-        "<div style='display:flex;align-items:center;gap:12px;margin-bottom:8px'>"+
-          "<div><div class='fp-marca'>HBier</div><div class='fp-sub'>Ficha de Produção</div></div>"+
-          "<div style='flex:1;border-top:2px solid #E4E1D5'></div>"+
-          "<div style='font-size:.75rem;color:#6E7568'>"+esc(new Date().toLocaleDateString("pt-BR"))+"</div>"+
-        "</div>"+
-        "<div class='fp-titulo'>"+esc(estilo)+"</div>"+
-        "<div style='font-size:.8rem;color:#6E7568;margin-top:4px'>Lote <b style='color:#1a1a1a'>"+esc(lote)+"</b> · "+esc(tanque)+"</div>"+
-      "</div>"+
+  '<div class="fp-content">'+
 
-      // stats
-      "<div class='fp-stats'>"+
-        "<div class='fp-stat'><div class='fp-stat-label'>Volume</div><div class='fp-stat-val'>"+esc(volume)+"</div></div>"+
-        "<div class='fp-stat'><div class='fp-stat-label'>OG</div><div class='fp-stat-val'>"+esc(og)+"</div></div>"+
-        "<div class='fp-stat'><div class='fp-stat-label'>Brassado em</div><div class='fp-stat-val' style='font-size:.95rem'>"+esc(dataEntradaFmt)+"</div></div>"+
-        "<div class='fp-stat'><div class='fp-stat-label'>Dias no tanque</div><div class='fp-stat-val'>"+esc(dias)+"</div></div>"+
-        "<div class='fp-stat'><div class='fp-stat-label'>Estágio</div><div class='fp-stat-val' style='font-size:.85rem'>"+esc(estagio.trim())+"</div></div>"+
-      "</div>"+
+  /* ══════════ ABA RECEITA ══════════ */
+  '<div class="fp-panel active" id="fp-panel-receita">'+
 
-      // campos editáveis de receita (para preenchimento na impressão)
-      "<div class='fp-section'>"+
-        "<div class='fp-section-title dourado'>🍺 Dados da Receita</div>"+
-        "<div class='fp-linha'>"+
-          "<div class='fp-campo'><div class='fp-campo-label'>Estilo</div><div class='fp-campo-val'>"+esc(estilo)+"</div></div>"+
-          "<div class='fp-campo'><div class='fp-campo-label'>FG (previsto)</div><div class='fp-campo-val'></div></div>"+
-          "<div class='fp-campo'><div class='fp-campo-label'>ABV (%)</div><div class='fp-campo-val'></div></div>"+
-        "</div>"+
-        "<div class='fp-linha'>"+
-          "<div class='fp-campo'><div class='fp-campo-label'>IBU</div><div class='fp-campo-val'></div></div>"+
-          "<div class='fp-campo'><div class='fp-campo-label'>EBC / SRM</div><div class='fp-campo-val'></div></div>"+
-          "<div class='fp-campo'><div class='fp-campo-label'>Eficiência (%)</div><div class='fp-campo-val'></div></div>"+
-        "</div>"+
-      "</div>"+
+  /* Dados Gerais */
+  '<div class="fp-sec fp-gestor-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">📌</span><span class="fp-sec-title marrom">Dados Gerais</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-fg-grid wide">'+
+        '<div class="fp-field"><label>Nome do lote</label><input value="'+esc(lote)+'"></div>'+
+        '<div class="fp-field"><label>Estilo</label><input value="'+esc(estilo)+'"></div>'+
+        '<div class="fp-field"><label>Volume total (L)</label><input type="number" value="'+esc(volume.replace(' L',''))+'"></div>'+
+        '<div class="fp-field"><label>Nº de bateladas</label><input type="number" value=""></div>'+
+        '<div class="fp-field"><label>Data início</label><input type="date" value="'+esc(tq.brassadoEm||'')+'"></div>'+
+        '<div class="fp-field"><label>Tanque</label><input value="'+esc(tanque)+'"></div>'+
+      '</div>'+
+      '<div class="fp-divider"></div>'+
+      '<div class="fp-fg-grid tight">'+
+        '<div class="fp-field"><label>OG alvo</label><input value="'+esc(og)+'"></div>'+
+        '<div class="fp-field"><label>FG alvo</label><input placeholder="1.012"></div>'+
+        '<div class="fp-field"><label>ABV alvo (%)</label><input placeholder="5,5"></div>'+
+        '<div class="fp-field"><label>IBU</label><input type="number" placeholder="30"></div>'+
+        '<div class="fp-field"><label>EBC</label><input type="number" placeholder="8"></div>'+
+        '<div class="fp-field"><label>Eficiência (%)</label><input type="number" placeholder="75"></div>'+
+        '<div class="fp-field"><label>Taxa evap. (%/h)</label><input type="number" placeholder="8"></div>'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
 
-      // fermentáveis
-      "<div class='fp-section'>"+
-        "<div class='fp-section-title'>🌾 Fermentáveis (Matérias-Primas)</div>"+
-        "<table class='fp-table'>"+
-          "<thead><tr><th>Nome</th><th>Tipo</th><th>Fornecedor</th><th>Pot.</th><th>EBC</th><th>Qtd</th></tr></thead>"+
-          "<tbody>"+
-            "<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>"+
-            "<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>"+
-            "<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>"+
-          "</tbody>"+
-        "</table>"+
-      "</div>"+
+  /* Tratamento de Água */
+  '<div class="fp-sec collapsed fp-gestor-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">💧</span><span class="fp-sec-title azul">Tratamento de Água</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-fg-grid tight" style="margin-bottom:10px">'+
+        '<div class="fp-field"><label>pH água bruta</label><input placeholder="7,2"></div>'+
+        '<div class="fp-field"><label>pH cervejeiro alvo</label><input placeholder="5,4 – 5,6"></div>'+
+        '<div class="fp-field"><label>Ác. Lático (mL/bat)</label><input placeholder="—"></div>'+
+      '</div>'+
+      '<div class="fp-small-label">Sais adicionados — por batelada</div>'+
+      '<div class="fp-tbl-wrap">'+
+        '<table class="fp-data" id="fp-tbl-sais">'+
+          '<thead><tr><th>Sal</th><th>Qtd (g/bat)</th><th>Momento</th><th>Alvo</th><th></th></tr></thead>'+
+          '<tbody>'+
+            '<tr><td><input value="Sulfato de Cálcio"></td><td><input type="number" value="20"></td><td><input value="Arriada + fervura"></td><td><input value="Ca: 100 ppm"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+            '<tr><td><input value="Cloreto de Cálcio"></td><td><input type="number" value="20"></td><td><input value="Arriada + fervura"></td><td><input value="Cl: 35 ppm"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+          '</tbody>'+
+        '</table>'+
+      '</div>'+
+      '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-sais\',\'Sal\',\'0\',\'Arriada\',\'—\')">＋ Adicionar sal</button>'+
+    '</div>'+
+  '</div>'+
 
-      // lúpulos
-      "<div class='fp-section'>"+
-        "<div class='fp-section-title'>🌿 Lúpulos</div>"+
-        "<table class='fp-table'>"+
-          "<thead><tr><th>Nome</th><th>Momento</th><th>Forma</th><th>Origem</th><th>AA%</th><th>Qtd</th></tr></thead>"+
-          "<tbody>"+
-            "<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>"+
-            "<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>"+
-          "</tbody>"+
-        "</table>"+
-      "</div>"+
+  /* Fermentáveis */
+  '<div class="fp-sec fp-gestor-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">🌾</span><span class="fp-sec-title marrom">Fermentáveis</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-tbl-wrap">'+
+        '<table class="fp-data" id="fp-tbl-ferm">'+
+          '<thead><tr><th>Ingrediente</th><th>Tipo</th><th>Lote / Data</th><th>Qtd/bat (kg)</th><th>% grist</th><th>EBC</th><th></th></tr></thead>'+
+          '<tbody>'+
+            '<tr><td><input placeholder="Pale Ale Malt"></td><td><input value="Base"></td><td><input placeholder="L24xx"></td><td><input type="number" placeholder="18"></td><td><input placeholder="80%"></td><td><input placeholder="7"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+          '</tbody>'+
+        '</table>'+
+      '</div>'+
+      '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-ferm\',\'Fermentável\',\'Base\',\'—\',\'0\',\'0%\',\'0\')">＋ Adicionar fermentável</button>'+
+    '</div>'+
+  '</div>'+
 
-      // leveduras + diversos
-      "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px'>"+
-        "<div class='fp-section'>"+
-          "<div class='fp-section-title'>🦠 Leveduras</div>"+
-          "<table class='fp-table'>"+
-            "<thead><tr><th>Nome</th><th>Lab.</th><th>Qtd</th></tr></thead>"+
-            "<tbody><tr><td>&nbsp;</td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td></tr></tbody>"+
-          "</table>"+
-        "</div>"+
-        "<div class='fp-section'>"+
-          "<div class='fp-section-title' style='background:#4B5563'>⚗️ Diversos / Adjuntos</div>"+
-          "<table class='fp-table'>"+
-            "<thead><tr><th>Nome</th><th>Tipo</th><th>Qtd</th></tr></thead>"+
-            "<tbody><tr><td>&nbsp;</td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td></tr></tbody>"+
-          "</table>"+
-        "</div>"+
-      "</div>"+
+  /* Lúpulos */
+  '<div class="fp-sec fp-gestor-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">🌿</span><span class="fp-sec-title verde">Lúpulos</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-tbl-wrap">'+
+        '<table class="fp-data" id="fp-tbl-lup">'+
+          '<thead><tr><th>Variedade</th><th>Alpha (%)</th><th>Uso</th><th>Tempo (min)</th><th>Qtd/bat (g)</th><th></th></tr></thead>'+
+          '<tbody>'+
+            '<tr><td><input placeholder="Cascade"></td><td><input value="6,0"></td><td><input value="Fervura"></td><td><input value="60"></td><td><input value="120"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+          '</tbody>'+
+        '</table>'+
+      '</div>'+
+      '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-lup\',\'Variedade\',\'0%\',\'Fervura\',\'60\',\'0\')">＋ Adicionar lúpulo</button>'+
+    '</div>'+
+  '</div>'+
 
-      // mash
-      "<div class='fp-section'>"+
-        "<div class='fp-section-title' style='background:#92400E'>🌡 Perfil de Mostura (Mash)</div>"+
-        "<table class='fp-table'>"+
-          "<thead><tr><th>Estágio</th><th>Temp. (°C)</th><th>Tempo (min)</th></tr></thead>"+
-          "<tbody>"+
-            "<tr><td>&nbsp;</td><td></td><td></td></tr>"+
-            "<tr><td>&nbsp;</td><td></td><td></td></tr>"+
-            "<tr><td>&nbsp;</td><td></td><td></td></tr>"+
-            "<tr><td>&nbsp;</td><td></td><td></td></tr>"+
-          "</tbody>"+
-        "</table>"+
-      "</div>"+
+  /* Leveduras + Adjuntos */
+  '<div class="fp-two-col fp-gestor-sec">'+
+    '<div class="fp-sec">'+
+      '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+        '<div class="fp-sec-head-left"><span class="fp-sec-icon">🧬</span><span class="fp-sec-title">Leveduras</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
+        '<span class="fp-sec-toggle">▾</span></div>'+
+      '<div class="fp-sec-body">'+
+        '<div class="fp-fg-grid">'+
+          '<div class="fp-field span2"><label>Cepa</label><input placeholder="US-05 Fermentis"></div>'+
+          '<div class="fp-field"><label>Qtd total (un)</label><input type="number" placeholder="12"></div>'+
+          '<div class="fp-field"><label>Temp pitching (°C)</label><input type="number" placeholder="18"></div>'+
+          '<div class="fp-field"><label>O₂ dissolvido (mg/L)</label><input placeholder="7 – 9"></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="fp-sec">'+
+      '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+        '<div class="fp-sec-head-left"><span class="fp-sec-icon">🧂</span><span class="fp-sec-title">Adjuntos</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
+        '<span class="fp-sec-toggle">▾</span></div>'+
+      '<div class="fp-sec-body">'+
+        '<div class="fp-tbl-wrap">'+
+          '<table class="fp-data" id="fp-tbl-adj">'+
+            '<thead><tr><th>Item</th><th>Qtd/bat</th><th>Uso</th><th></th></tr></thead>'+
+            '<tbody>'+
+              '<tr><td><input value="Whirlfloc"></td><td><input value="1 tab"></td><td><input value="Fervura 10\'"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+            '</tbody>'+
+          '</table>'+
+        '</div>'+
+        '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-adj\',\'Item\',\'Qtd\',\'Uso\')">＋</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
 
-      // fermentação
-      "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px'>"+
-        "<div class='fp-section'>"+
-          "<div class='fp-section-title' style='background:#1D4ED8'>❄ Perfil de Fermentação</div>"+
-          "<table class='fp-table'>"+
-            "<thead><tr><th>Estágio</th><th>Temp.</th><th>Tempo</th></tr></thead>"+
-            "<tbody><tr><td>&nbsp;</td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td></tr></tbody>"+
-          "</table>"+
-        "</div>"+
-        "<div class='fp-section'>"+
-          "<div class='fp-section-title' style='background:#1D4ED8'>🧊 Perfil de Maturação</div>"+
-          "<table class='fp-table'>"+
-            "<thead><tr><th>Estágio</th><th>Temp.</th><th>Tempo</th></tr></thead>"+
-            "<tbody><tr><td>&nbsp;</td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td></tr></tbody>"+
-          "</table>"+
-        "</div>"+
-      "</div>"+
+  /* Auxiliares de Brassagem (Enzimas) */
+  '<div class="fp-sec collapsed fp-gestor-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">🔬</span><span class="fp-sec-title dourado">Auxiliares de Brassagem (Enzimas)</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div style="overflow-x:auto">'+
+        '<div class="fp-enz-grid">'+
+          '<div class="fp-enz-row" style="display:contents"><div class="fp-enz-cell head">Produto</div><div class="fp-enz-cell head">Dose</div><div class="fp-enz-cell head">Qtd/bat (g)</div><div class="fp-enz-cell head">Momento</div></div>'+
+          '<div class="fp-enz-row" style="display:contents"><div class="fp-enz-cell">MalteZyn HT</div><div class="fp-enz-cell"><input value="0,5 g/kg malte"></div><div class="fp-enz-cell"><input placeholder="—"></div><div class="fp-enz-cell"><input value="5 min após arriada"></div></div>'+
+          '<div class="fp-enz-row" style="display:contents"><div class="fp-enz-cell">StarMax BG Super</div><div class="fp-enz-cell"><input value="0,8 g/kg malte"></div><div class="fp-enz-cell"><input placeholder="—"></div><div class="fp-enz-cell"><input value="5 min após arriada"></div></div>'+
+          '<div class="fp-enz-row" style="display:contents"><div class="fp-enz-cell">ClearMax MF</div><div class="fp-enz-cell"><input value="3 g/hL"></div><div class="fp-enz-cell"><input placeholder="—"></div><div class="fp-enz-cell"><input value="Água de arriada"></div></div>'+
+          '<div class="fp-enz-row" style="display:contents"><div class="fp-enz-cell">Servomyces</div><div class="fp-enz-cell"><input value="1 g/hL"></div><div class="fp-enz-cell"><input placeholder="—"></div><div class="fp-enz-cell"><input value="10 min fim fervura"></div></div>'+
+          '<div id="fp-enz-extra"></div>'+
+        '</div>'+
+      '</div>'+
+      '<button class="fp-add-row-btn" onclick="fp_addEnzRow()" style="margin-top:8px">＋ Adicionar auxiliar</button>'+
+    '</div>'+
+  '</div>'+
 
-      envasesHtml+
-      obsHtml+
-    "<div style='height:20px'></div>"+
-    "</div>";
+  /* Perfil de Mostura */
+  '<div class="fp-sec fp-gestor-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">🌡</span><span class="fp-sec-title azul">Perfil de Mostura</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-fg-grid tight" style="margin-bottom:10px">'+
+        '<div class="fp-field"><label>Vol. strike/bat (L)</label><input placeholder="—"></div>'+
+        '<div class="fp-field"><label>Vol. sparge total (L)</label><input placeholder="—"></div>'+
+        '<div class="fp-field"><label>pH mostura alvo</label><input placeholder="5,4 – 5,6"></div>'+
+      '</div>'+
+      '<div class="fp-tbl-wrap">'+
+        '<table class="fp-data" id="fp-tbl-mash">'+
+          '<thead><tr><th>Etapa</th><th>Temp. alvo (°C)</th><th>Rampa alvo (min)</th><th>Tempo alvo (min)</th><th>Descrição</th><th></th></tr></thead>'+
+          '<tbody>'+
+            '<tr><td><input value="Sacarificação β"></td><td><input type="number" value="64"></td><td><input type="number" value="8"></td><td><input type="number" value="40"></td><td><input value="Fermentabilidade"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+            '<tr><td><input value="Sacarificação α"></td><td><input type="number" value="72"></td><td><input type="number" value="6"></td><td><input type="number" value="20"></td><td><input value="Corpo residual"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+            '<tr><td><input value="Mash-out"></td><td><input type="number" value="78"></td><td><input type="number" value="5"></td><td><input type="number" value="10"></td><td><input value="Encerrar enzimas"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+          '</tbody>'+
+        '</table>'+
+      '</div>'+
+      '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-mash\',\'Nova Etapa\',\'65\',\'5\',\'30\',\'\')">＋ Adicionar etapa</button>'+
+    '</div>'+
+  '</div>'+
+
+  /* Perfis Ferm / Maturação */
+  '<div class="fp-two-col fp-gestor-sec">'+
+    '<div class="fp-sec">'+
+      '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+        '<div class="fp-sec-head-left"><span class="fp-sec-icon">🧫</span><span class="fp-sec-title verde">Perfil de Fermentação</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
+        '<span class="fp-sec-toggle">▾</span></div>'+
+      '<div class="fp-sec-body">'+
+        '<div class="fp-tbl-wrap">'+
+          '<table class="fp-data" id="fp-tbl-pferm">'+
+            '<thead><tr><th>Etapa</th><th>Temp (°C)</th><th>Dias</th><th></th></tr></thead>'+
+            '<tbody>'+
+              '<tr><td><input value="Pitching"></td><td><input value="18"></td><td><input value="1"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+              '<tr><td><input value="Fermentação ativa"></td><td><input value="20"></td><td><input value="5"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+            '</tbody>'+
+          '</table>'+
+        '</div>'+
+        '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-pferm\',\'Etapa\',\'20\',\'3\')">＋</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="fp-sec">'+
+      '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+        '<div class="fp-sec-head-left"><span class="fp-sec-icon">❄️</span><span class="fp-sec-title azul">Perfil de Maturação</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
+        '<span class="fp-sec-toggle">▾</span></div>'+
+      '<div class="fp-sec-body">'+
+        '<div class="fp-tbl-wrap">'+
+          '<table class="fp-data" id="fp-tbl-pmatur">'+
+            '<thead><tr><th>Etapa</th><th>Temp (°C)</th><th>Dias</th><th>Pressão (bar)</th><th></th></tr></thead>'+
+            '<tbody>'+
+              '<tr><td><input value="Carbonatação forçada"></td><td><input value="4"></td><td><input value="5"></td><td><input value="1,5"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+              '<tr><td><input value="Guarda / Brilho"></td><td><input value="2"></td><td><input value="7"></td><td><input value="1,5"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+            '</tbody>'+
+          '</table>'+
+        '</div>'+
+        '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-pmatur\',\'Etapa\',\'4\',\'5\',\'1,5\')">＋</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
+
+  '</div>'+/* /fp-panel-receita */
+
+  /* ══════════ ABA BATELADAS ══════════ */
+  '<div class="fp-panel" id="fp-panel-bateladas">'+
+    '<div class="fp-exec-banner">👷 Aba de preenchimento pelo <strong>Executor</strong> — tempos, volumes e medições reais de cada batelada</div>'+
+    '<div class="fp-bat-list" id="fp-bat-list"></div>'+
+    '<button class="fp-add-bat-btn" onclick="fp_addBatelada()" style="margin-top:10px">＋ Adicionar batelada</button>'+
+  '</div>'+
+
+  /* ══════════ ABA FERMENTAÇÃO ══════════ */
+  '<div class="fp-panel" id="fp-panel-fermentacao">'+
+
+  /* Log dia a dia */
+  '<div class="fp-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">📈</span><span class="fp-sec-title verde">Acompanhamento — Dia a Dia</span><span class="fp-role-badge e">👷 Executor</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-flog-wrap">'+
+        '<table class="fp-flog-table" id="fp-flog-table">'+
+          '<thead><tr>'+
+            '<th style="text-align:left">Parâmetro</th>'+
+            '<th>Dia 1</th><th>Dia 2</th><th>Dia 3</th><th>Dia 4</th>'+
+            '<th>Dia 5</th><th>Dia 6</th><th>Dia 7</th><th>Dia 8</th>'+
+            '<th>Dia 9</th><th>Dia 10</th><th>Dia 11</th><th>Dia 12</th>'+
+            '<th>Dia 13</th><th>Dia 14</th><th>Dia 15</th><th>Dia 16</th>'+
+          '</tr></thead>'+
+          '<tbody>'+
+            '<tr><td class="fp-row-label">Data</td>'+Array(16).fill('<td><input placeholder="—"></td>').join('')+'</tr>'+
+            '<tr><td class="fp-row-label">Extrato °P</td>'+Array(16).fill('<td><input placeholder="—"></td>').join('')+'</tr>'+
+            '<tr><td class="fp-row-label">Temp. alvo (°C)</td>'+Array(16).fill('<td><input placeholder="—"></td>').join('')+'</tr>'+
+            '<tr><td class="fp-row-label">Temp. real (°C)</td>'+Array(16).fill('<td><input placeholder="—"></td>').join('')+'</tr>'+
+            '<tr><td class="fp-row-label">Pressão (bar)</td>'+Array(16).fill('<td><input placeholder="—"></td>').join('')+'</tr>'+
+            '<tr><td class="fp-row-label">pH</td>'+Array(16).fill('<td><input placeholder="—"></td>').join('')+'</tr>'+
+          '</tbody>'+
+        '</table>'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
+
+  /* Dry Hop */
+  '<div class="fp-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">🌿</span><span class="fp-sec-title verde">Dry Hop</span><span class="fp-role-badge e">👷 Executor</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-tbl-wrap">'+
+        '<table class="fp-data" id="fp-tbl-dryhop">'+
+          '<thead><tr><th>Fase</th><th>Data</th><th>Lúpulo(s)</th><th>Qtd (kg)</th><th>Temp (°C)</th><th>Dias</th><th>Observação</th><th></th></tr></thead>'+
+          '<tbody>'+
+            '<tr><td><input placeholder="Fase…"></td><td><input type="date"></td><td><input placeholder="Variedade"></td><td><input placeholder="0"></td><td><input placeholder="18"></td><td><input placeholder="3"></td><td><input placeholder="Obs…"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+          '</tbody>'+
+        '</table>'+
+      '</div>'+
+      '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-dryhop\',\'—\',\'\',\'\',\'0\',\'18\',\'3\',\'\')">＋ Adicionar dry hop</button>'+
+    '</div>'+
+  '</div>'+
+
+  /* Recolha de Fermento */
+  '<div class="fp-sec collapsed">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">🧪</span><span class="fp-sec-title">Recolha de Fermento / Trub</span><span class="fp-role-badge e">👷 Executor</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-tbl-wrap">'+
+        '<table class="fp-data" id="fp-tbl-trub">'+
+          '<thead><tr><th>Tipo</th><th>Data / Hora</th><th>Volume (L)</th><th>Aspecto</th><th></th></tr></thead>'+
+          '<tbody>'+
+            '<tr><td><input value="Trub frio — purga 24h"></td><td><input type="datetime-local"></td><td><input placeholder="12"></td><td><input placeholder="Aspecto…"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+          '</tbody>'+
+        '</table>'+
+      '</div>'+
+      '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-trub\',\'Tipo\',\'\',\'0\',\'\')">＋</button>'+
+    '</div>'+
+  '</div>'+
+
+  /* Log de Maturação */
+  '<div class="fp-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">❄️</span><span class="fp-sec-title azul">Log de Maturação</span><span class="fp-role-badge e">👷 Executor</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-log-table"><div class="fp-log-scroll">'+
+        '<div class="fp-mlog-row header">'+
+          '<div class="fp-log-cell">Data / Hora</div>'+
+          '<div class="fp-log-cell">Extrato °P</div>'+
+          '<div class="fp-log-cell">Temp (°C)</div>'+
+          '<div class="fp-log-cell">Pressão (bar)</div>'+
+          '<div class="fp-log-cell">CO₂ (vol)</div>'+
+          '<div class="fp-log-cell">pH</div>'+
+          '<div class="fp-log-cell">Observação</div>'+
+          '<div class="fp-log-cell"></div>'+
+        '</div>'+
+        '<div id="fp-matur-log"></div>'+
+      '</div></div>'+
+      '<button class="fp-add-row-btn" onclick="fp_addMaturRow()" style="margin-top:8px">＋ Adicionar leitura</button>'+
+    '</div>'+
+  '</div>'+
+
+  /* Degustação Final */
+  '<div class="fp-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">👃</span><span class="fp-sec-title">Degustação Final da Fermentação</span><span class="fp-role-badge e">👷 Executor</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-fg-grid">'+
+        '<div class="fp-field"><label>Data</label><input type="date"></div>'+
+        '<div class="fp-field"><label>Resultado geral</label><select><option value="">— selecionar —</option><option>✅ Normal</option><option>⚠️ Anormal</option></select></div>'+
+        '<div class="fp-field full"><label>Observações sensoriais</label><textarea class="fp-obs-field" placeholder="Aroma, sabor, off-flavors…"></textarea></div>'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
+
+  '</div>'+/* /fp-panel-fermentacao */
+
+  /* ══════════ ABA RESULTADO ══════════ */
+  '<div class="fp-panel" id="fp-panel-resultado">'+
+    '<div class="fp-result-grid">'+
+      '<div class="fp-result-card"><span class="fp-rc-label">FG Medida</span><input class="fp-rc-val" placeholder="—" style="background:none;border:none;font-size:22px;font-weight:700;color:var(--fp-dourado);font-family:Barlow,sans-serif;width:100%"></div>'+
+      '<div class="fp-result-card"><span class="fp-rc-label">ABV Real (%)</span><input class="fp-rc-val" placeholder="—" style="background:none;border:none;font-size:22px;font-weight:700;color:var(--fp-dourado);font-family:Barlow,sans-serif;width:100%"></div>'+
+      '<div class="fp-result-card"><span class="fp-rc-label">Atenuação Real (%)</span><input class="fp-rc-val" placeholder="—" style="background:none;border:none;font-size:22px;font-weight:700;color:var(--fp-dourado);font-family:Barlow,sans-serif;width:100%"></div>'+
+      '<div class="fp-result-card"><span class="fp-rc-label">Eficiência média (%)</span><input class="fp-rc-val" placeholder="—" style="background:none;border:none;font-size:22px;font-weight:700;color:var(--fp-dourado);font-family:Barlow,sans-serif;width:100%"></div>'+
+      '<div class="fp-result-card"><span class="fp-rc-label">Vol. total tanque (L)</span><input class="fp-rc-val" placeholder="—" style="background:none;border:none;font-size:22px;font-weight:700;color:var(--fp-dourado);font-family:Barlow,sans-serif;width:100%"></div>'+
+      '<div class="fp-result-card"><span class="fp-rc-label">CO₂ (vol)</span><input class="fp-rc-val" placeholder="—" style="background:none;border:none;font-size:22px;font-weight:700;color:var(--fp-dourado);font-family:Barlow,sans-serif;width:100%"></div>'+
+    '</div>'+
+
+    '<div class="fp-sec">'+
+      '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+        '<div class="fp-sec-head-left"><span class="fp-sec-icon">📦</span><span class="fp-sec-title azul">Envasamentos Realizados</span></div>'+
+        '<span class="fp-sec-toggle">▾</span></div>'+
+      '<div class="fp-sec-body">'+
+        '<div class="fp-tbl-wrap">'+
+          '<table class="fp-data">'+
+            '<thead><tr><th>#</th><th>Data</th><th>Formato</th><th>Qtd</th><th>Litros</th></tr></thead>'+
+            '<tbody>'+envasesFileiras+'</tbody>'+
+          '</table>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="fp-sec">'+
+      '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+        '<div class="fp-sec-head-left"><span class="fp-sec-icon">📝</span><span class="fp-sec-title">Conclusão e Avaliação</span></div>'+
+        '<span class="fp-sec-toggle">▾</span></div>'+
+      '<div class="fp-sec-body">'+
+        '<div class="fp-fg-grid wide">'+
+          '<div class="fp-field full"><label>Desvios do processo e ações corretivas</label><textarea class="fp-obs-field" placeholder="Desvios, ajustes, pontos de melhoria…"></textarea></div>'+
+          '<div class="fp-field full"><label>Avaliação sensorial (ao envasar)</label><textarea class="fp-obs-field" placeholder="Aroma, cor, limpidez, sabor, carbonatação…"></textarea></div>'+
+          '<div class="fp-field"><label>Nota final (0–10)</label><input type="number" min="0" max="10" placeholder="—"></div>'+
+          '<div class="fp-field"><label>Mestre Cervejeiro</label><input placeholder="Nome"></div>'+
+          '<div class="fp-field"><label>Data de conclusão</label><input type="date"></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+
+  '</div>'+/* /fp-panel-resultado */
+
+  '</div>'+/* /fp-content */
+
+  /* save bar */
+  '<div class="fp-save-bar">'+
+    '<span class="fp-unsaved" id="fp-saveStatus"></span>'+
+    '<div style="display:flex;gap:8px">'+
+      '<button class="fp-btn fp-btn-primary" onclick="fp_simSave(this)">💾 Salvar Ficha</button>'+
+    '</div>'+
+  '</div>'+
+
+  '</div>';/* /fp-app */
 
   $("fichaConteudo").innerHTML = html;
+
+  /* — inicializar tabs interativas — */
+  document.getElementById('fp-tabs').addEventListener('click', function(e){
+    var t = e.target.closest('.fp-tab'); if(!t) return;
+    var app = document.getElementById('fp-app');
+    app.querySelectorAll('.fp-tab').forEach(function(x){ x.classList.remove('active'); });
+    app.querySelectorAll('.fp-panel').forEach(function(x){ x.classList.remove('active'); });
+    t.classList.add('active');
+    var p = document.getElementById('fp-panel-'+t.dataset.fpPanel);
+    if(p) p.classList.add('active');
+  });
+
+  /* — escuta inputs da ficha para marcar dirty — */
+  document.getElementById('fp-app').addEventListener('input', function(e){
+    if(e.target.matches('input,textarea,select')) fp_markDirty();
+  });
+
   $("modalFicha").hidden = false;
 }
 
