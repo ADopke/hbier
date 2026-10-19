@@ -2883,7 +2883,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.5.6";
+var VERSAO = "3.5.7";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5688,8 +5688,12 @@ async function carregarProgMensal(){
         if(expandido){
           // Campos de edição por tipo
           var camposHtml="";
+          var dataAtualIso = it.dataISO || _detDiaIso || "";
+          var campoDt="<div class='ddep-row'><span class='ddep-label'>Data prevista</span>"+
+            "<input class='ddep-input' id='ddep_dataISO' type='date' value='"+esc(dataAtualIso)+"'></div>";
           if(it.tipo==="brassagem"){
             camposHtml+=
+              campoDt+
               "<div class='ddep-row'><span class='ddep-label'>Estilo</span>"+
               "<input class='ddep-input' id='ddep_estilo' value='"+esc(it.estilo||"")+"'></div>"+
               "<div class='ddep-row'><span class='ddep-label'>Tanque</span>"+
@@ -5700,6 +5704,7 @@ async function carregarProgMensal(){
               "<input class='ddep-input' id='ddep_volPrev' placeholder='ex: 2000' value='"+esc(it.volPrev||"")+"'></div>";
           } else if(it.tipo==="envase"){
             camposHtml+=
+              campoDt+
               "<div class='ddep-row'><span class='ddep-label'>Produto</span>"+
               "<input class='ddep-input' id='ddep_produto' value='"+esc(it.produto||"")+"'></div>"+
               "<div class='ddep-row'><span class='ddep-label'>Estilo</span>"+
@@ -5796,7 +5801,13 @@ async function carregarProgMensal(){
           var id    = btn.dataset.ddepSalvar;
           var sem   = btn.dataset.ddepSemana;
           var tipo  = btn.dataset.ddepTipo;
+          // Calcular nova data/semana se o campo de data foi alterado
+          var novaDataISO = ($("ddep_dataISO")||{value:""}).value.trim();
+          var novaSemCalc = novaDataISO ? chaveSemana(segundaDe(new Date(novaDataISO+"T00:00:00"))) : null;
+          var NOMES_DIA_DDEP = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+          var novoDia = novaDataISO ? NOMES_DIA_DDEP[new Date(novaDataISO+"T00:00:00").getDay()] : null;
           var body  = {acao:"editar",id:id,semana:sem};
+          if(novaSemCalc) body.novaSemana = novaSemCalc;
           if(tipo==="brassagem"){
             body.estilo   = ($("ddep_estilo")||{value:""}).value.trim();
             body.tanque   = ($("ddep_tanque")||{value:""}).value.trim();
@@ -5810,14 +5821,31 @@ async function carregarProgMensal(){
             body.formato      = ($("ddep_formato")||{value:""}).value.trim();
             body.qtd          = ($("ddep_qtd")||{value:""}).value.trim();
           }
-          // Preservar dataISO do item
+          // Usar nova data se foi alterada, senão preservar a original
           var it=_detDiaItens.find(function(x){return x.id===id;});
-          if(it&&it.dataISO) body.dataISO=it.dataISO;
-          if(it&&it.dia) body.dia=it.dia;
+          body.dataISO = novaDataISO || (it&&it.dataISO) || "";
+          body.dia     = novoDia    || (it&&it.dia)     || "";
           try{
             btn.textContent="Salvando..."; btn.disabled=true;
             var r=await api("/api/prog",{method:"POST",body:body});
-            // Atualizar item local
+            // Se mudou de dia, atualizar o painel do dia atual
+            var movido = r && r.movido;
+            if(movido && novaDataISO && novaDataISO !== (it&&it.dataISO)){
+              // Item mudou de dia — remover do painel atual e fechar se vazio
+              _detDiaItens = _detDiaItens.filter(function(x){ return x.id !== id; });
+              if(_detExpandidoId === id) _detExpandidoId = null;
+              if(_detDiaItens.length === 0){
+                $("progDetDia").hidden = true;
+                if(_calDiaSel) _calDiaSel.classList.remove("sel-cal");
+                _calDiaSel = null;
+              } else {
+                _atualizarDetDia();
+              }
+              toast("Data atualizada — item movido para "+novaDataISO.split("-").reverse().join("/")+".");
+              carregarProgMensal();
+              return;
+            }
+            // Atualizar item local (mesma data)
             var idx=_detDiaItens.findIndex(function(x){return x.id===id;});
             if(idx>=0&&r.itens){
               var novo=r.itens.find(function(x){return x.id===id;});
