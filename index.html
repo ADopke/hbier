@@ -10367,52 +10367,115 @@ function fp_aplicarReceita(rec){
   if(rec.fg){ var el=document.getElementById('fp-fg-alvo'); if(el) el.value=rec.fg; }
   fp_calcAbv();
 
-  // tabelas
-  function preencherTabRecRec(tblId, linhas){
-    var tbl = document.getElementById(tblId); if(!tbl||!linhas||!linhas.length) return;
-    var tbody = tbl.querySelector('tbody'); if(!tbody) return;
-    // limpa apenas se tiver dados novos
+  // helper robusto: limpa tbody, adiciona uma linha por array, preenche inputs
+  function preencherTblFicha(tblId, linhas){
+    if(!linhas||!linhas.length) return;
+    var tbl=document.getElementById(tblId); if(!tbl) return;
+    var tbody=tbl.querySelector('tbody'); if(!tbody) return;
     tbody.innerHTML='';
-    linhas.forEach(function(row){
-      // descobrir nr de colunas data do header
-      var nCols = tbl.querySelectorAll('thead th').length - 1;
-      var args=[tblId]; for(var i=0;i<nCols;i++) args.push(row[i]||'');
-      fp_addRow.apply(null,args);
+    linhas.forEach(function(cols){
+      fp_addRow(tblId); // cria linha vazia com nCols inputs
       var tr=tbody.querySelector('tr:last-child'); if(!tr) return;
       var inputs=tr.querySelectorAll('input,select,textarea');
-      row.forEach(function(v,i){ if(inputs[i]) inputs[i].value=v; });
+      cols.forEach(function(v,i){ if(inputs[i]&&v!=null) inputs[i].value=v; });
     });
   }
 
-  if(rec.sais)         preencherTabRecRec('fp-tbl-sais',rec.sais);
-  if(rec.fermentaveis) preencherTabRecRec('fp-tbl-ferm',rec.fermentaveis);
-  if(rec.lupulos)      preencherTabRecRec('fp-tbl-lup',rec.lupulos);
-  if(rec.adjuntos)     preencherTabRecRec('fp-tbl-adj',rec.adjuntos);
-  if(rec.mash)         preencherTabRecRec('fp-tbl-mash',rec.mash);
+  // --- Fermentáveis ---
+  // rec-tbl-ferm colunas: [nome, tipo, EBC, %, extrato%, kg/bat]
+  // fp-tbl-ferm  colunas: [ingrediente, tipo, lote/data, qtd/bat(kg), %grist, EBC]
+  // Mapeamento:            rec[0]       rec[1]  ''         rec[5]       rec[3]  rec[2]
+  if(rec.fermentaveis && rec.fermentaveis.length){
+    var fermMapped = rec.fermentaveis.map(function(r){
+      return [r[0]||'', r[1]||'', '', r[5]||'', r[3]||'', r[2]||''];
+    });
+    preencherTblFicha('fp-tbl-ferm', fermMapped);
+  }
 
-  // levedura (campos individuais na ficha)
+  // --- Lúpulos ---
+  // rec-tbl-lup colunas: [variedade, AA%, adição, tempo(min), g/bat]
+  // fp-tbl-lup  colunas: [variedade, alpha(%), uso, tempo(min), qtd/bat(g)]
+  // Mapeamento direta: posições idênticas
+  if(rec.lupulos && rec.lupulos.length){
+    preencherTblFicha('fp-tbl-lup', rec.lupulos);
+  }
+
+  // --- Mash ---
+  // rec-tbl-mash colunas: [etapa, temp alvo(°C), rampa alvo(min), tempo alvo(min), descrição]
+  // fp-tbl-mash  colunas: [etapa, temp. alvo(°C), rampa alvo(min), tempo alvo(min), descrição]
+  // Mapeamento direta: posições idênticas
+  if(rec.mash && rec.mash.length){
+    preencherTblFicha('fp-tbl-mash', rec.mash);
+  }
+
+  // --- Sais ---
+  // rec-tbl-sais colunas: [sal, g/HL, adição, observação]
+  // fp-tbl-sais  colunas: [sal, qtd(g/bat), momento, alvo]
+  // Mapeamento direta: posições compatíveis
+  if(rec.sais && rec.sais.length){
+    preencherTblFicha('fp-tbl-sais', rec.sais);
+  }
+
+  // --- Adjuntos ---
+  // rec-tbl-adj colunas: [ingrediente, tipo, adição, tempo/etapa, qtde/bat]
+  // fp-tbl-adj  colunas: [item, qtd/bat, uso]
+  // Mapeamento:           rec[0]  rec[4]   rec[2]
+  if(rec.adjuntos && rec.adjuntos.length){
+    var adjMapped = rec.adjuntos.map(function(r){
+      return [r[0]||'', r[4]||'', r[2]||''];
+    });
+    preencherTblFicha('fp-tbl-adj', adjMapped);
+  }
+
+  // --- Levedura (seção na ficha tem campos individuais de inputs) ---
+  // A ficha de produção usa uma seção com inputs livres (Cepa, Qtd, Temp, O2)
+  // A receita salva: {linhagem, fabricante, pitch, temp}
+  // Preenche o primeiro input livre da seção de leveduras da ficha
   var lev = rec.levedura||{};
-  [
-    ['fp-lev-linhagem', lev.linhagem],
-    ['fp-lev-fab',      lev.fabricante],
-    ['fp-lev-pitch',    lev.pitch],
-    ['fp-lev-temp',     lev.temp],
-  ].forEach(function(p){
-    var el=document.getElementById(p[0]); if(el&&p[1]!=null) el.value=p[1];
+  // Tenta encontrar os inputs da seção de leveduras via seletores conhecidos
+  // Seção levedura na ficha: .fp-sec com inputs na ordem [Cepa, Qtd total, Temp pitching, O2]
+  var levSecInputs = [];
+  document.querySelectorAll('.fp-sec').forEach(function(sec){
+    if(sec.textContent.indexOf('Levedura') >= 0 && sec.querySelector('.fp-sec-title')){
+      var t = sec.querySelector('.fp-sec-title');
+      if(t && t.textContent.indexOf('Levedura') >= 0){
+        levSecInputs = Array.from(sec.querySelectorAll('.fp-fg-grid input'));
+      }
+    }
   });
+  // levSecInputs[0]=Cepa, [1]=Qtd total, [2]=Temp pitching, [3]=O2
+  var levVals = [
+    (lev.linhagem||'') + (lev.fabricante ? ' ('+lev.fabricante+')' : ''),
+    lev.pitch||'',
+    lev.temp||'',
+    ''
+  ];
+  levVals.forEach(function(v,i){ if(levSecInputs[i]&&v) levSecInputs[i].value=v; });
 
-  // água
+  // --- Água (campos individuais na ficha) ---
   if(rec.agua){
-    var el=document.getElementById('fp-agua-fonte'); if(el&&rec.agua.fonte) el.value=rec.agua.fonte;
-    var el=document.getElementById('fp-agua-ph');    if(el&&rec.agua.ph)    el.value=rec.agua.ph;
-    var el=document.getElementById('fp-agua-vol');   if(el&&rec.agua.vol)   el.value=rec.agua.vol;
+    // A ficha tem inputs de vol. strike, vol. sparge, pH na seção mostura
+    // rec.agua = {fonte, ph, vol}
+    // Tenta preencher o pH da seção de mostura
+    var phInputs = [];
+    document.querySelectorAll('.fp-sec').forEach(function(sec){
+      var t = sec.querySelector('.fp-sec-title');
+      if(t && t.textContent.indexOf('Mostura') >= 0){
+        phInputs = Array.from(sec.querySelectorAll('.fp-fg-grid input'));
+      }
+    });
+    // phInputs[0]=vol.strike, [1]=vol.sparge, [2]=pH
+    if(rec.agua.ph && phInputs[2]) phInputs[2].value = rec.agua.ph;
+    if(rec.agua.vol && phInputs[0]) phInputs[0].value = rec.agua.vol;
   }
 
   // grava qual receita foi usada
+  var selRec = document.getElementById('fp-sel-receita');
   var hidRec = document.getElementById('fp-receita-id-usado');
-  if(hidRec) hidRec.value = rec.meta && rec.meta.id || document.getElementById('fp-sel-receita').value || '';
+  if(hidRec) hidRec.value = (selRec && selRec.value) || '';
 
   fp_markDirty();
+
   // feedback visual
   var info = document.getElementById('fp-receita-info');
   if(info) info.textContent = '✅ Receita "'+esc(rec.nome||'')+'" carregada com sucesso!';
