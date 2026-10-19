@@ -8102,11 +8102,44 @@ async function carregarTanques(){
           ? todosBarril.filter(function(r){ return r.lote && r.lote === tq.lote; })
           : []; // sem lote no tanque: não vincula nenhum barril
         if (regsBarril.length){
-          var totalL = regsBarril.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
+          // ordenar por data
+          var regsOrdenados = regsBarril.slice().sort(function(a,b){
+            return (a.dataISO||a.semana||"").localeCompare(b.dataISO||b.semana||"");
+          });
+          var totalL = regsOrdenados.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
+          // calcular dias no tanque para cada registro
+          function diasEntreBarril(ini, fim){
+            if (!ini||!fim) return null;
+            var a=new Date(ini+"T00:00:00"), b=new Date(fim+"T00:00:00");
+            return Math.max(0,Math.floor((b-a)/86400000));
+          }
+          var linhasBarril = regsOrdenados.map(function(r){
+            var dataR = r.dataISO || r.semana || "";
+            var dataFmt = "";
+            if (dataR){ var p=dataR.split("-"); dataFmt=p[2]+"/"+p[1]+"/"+p[0].slice(2); }
+            var dias = tq.brassadoEm ? diasEntreBarril(tq.brassadoEm, dataR) : null;
+            var descLinhas = (r.linhas||[]).map(function(l){ return esc(l.formato)+" ×"+l.qtd; }).join(" · ");
+            return "<div style='display:flex;align-items:center;justify-content:space-between;"+
+              "padding:3px 0;border-bottom:1px solid rgba(212,144,90,.25);font-size:.7rem'>"+
+              "<div style='display:flex;align-items:center;gap:5px'>"+
+                "<span style='color:#7A4500;font-weight:600;white-space:nowrap'>"+dataFmt+"</span>"+
+                "<span style='color:#92400E'>"+descLinhas+"</span>"+
+                "<span style='font-weight:700;color:#7A4500'>= "+fmtNum(r.total)+" L</span>"+
+              "</div>"+
+              (dias !== null ? "<span style='background:rgba(212,144,90,.2);border-radius:4px;padding:1px 5px;"+
+                "font-weight:800;color:#7A4500;white-space:nowrap'>"+dias+"d</span>" : "")+
+            "</div>";
+          }).join("");
           presenteConteudo +=
-            "<div style='margin-top:5px;font-size:.72rem;color:#7A4500;background:rgba(212,144,90,.1);"+
-            "border:1px solid #D4905A;border-radius:5px;padding:3px 7px'>"+
-            "🛢 Barril: "+fmtNum(totalL)+" L envasados</div>";
+            "<div style='margin-top:6px;background:rgba(212,144,90,.08);"+
+            "border:1px solid #D4905A;border-radius:6px;padding:5px 8px'>"+
+            "<div style='font-size:.72rem;font-weight:700;color:#7A4500;margin-bottom:4px'>🛢 Barreis envasados</div>"+
+            linhasBarril+
+            "<div style='display:flex;justify-content:flex-end;margin-top:4px;padding-top:3px;"+
+              "border-top:1.5px solid rgba(212,144,90,.4);font-size:.73rem;font-weight:800;color:#7A4500'>"+
+              "Total: "+fmtNum(totalL)+" L"+
+            "</div>"+
+            "</div>";
         }
       }
 
