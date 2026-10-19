@@ -2024,6 +2024,34 @@
           <button class="btn mini secundario" id="btnExportarTanquesExcel">📊 Excel</button>
         </div>
       </section>
+      <!-- Busca de lotes encerrados -->
+      <section id="secaoBuscaLotes" style="margin-top:0;border-top:2px solid var(--linha)">
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px;cursor:pointer" id="buscaLotesCabecalho">
+          <span class="sec-title">🔍 Busca de Lotes</span>
+          <span style="font-size:.8rem;color:var(--muted);margin-left:auto">Todos os lotes encerrados</span>
+          <span id="buscaLotesChevron" style="font-size:.9rem;color:var(--muted);transition:transform .2s">▼</span>
+        </div>
+        <div id="buscaLotesConteudo" hidden>
+          <div style="padding:10px 14px 6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <input id="buscaLoteInput" type="search" placeholder="Buscar por lote, estilo, tanque…"
+              style="flex:1;min-width:180px;padding:8px 12px;border:1.5px solid var(--linha);
+                border-radius:8px;font-size:.88rem;background:var(--card);color:var(--ink)">
+            <select id="buscaLoteTanque"
+              style="padding:8px 10px;border:1.5px solid var(--linha);border-radius:8px;
+                font-size:.85rem;background:var(--card);color:var(--ink)">
+              <option value="">Todos os tanques</option>
+            </select>
+            <button id="btnBuscaLotes" class="btn mini"
+              style="white-space:nowrap">🔍 Buscar</button>
+          </div>
+          <div id="buscaLotesResultados" style="padding:0 14px 14px">
+            <div style="color:var(--muted);font-size:.85rem;padding:16px 0;text-align:center">
+              Clique em Buscar para carregar os lotes encerrados.
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- modal de observação de tanque -->
       <div class="modal-overlay" id="modalObsTanque" hidden>
         <div class="modal-box" style="max-width:340px">
@@ -2855,7 +2883,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.5.0";
+var VERSAO = "3.5.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8402,6 +8430,7 @@ async function carregarTanques(){
           }
           await api("/api/tanques",{method:"POST",body:{acao:"marcarZerado",tanqueId:tqId,snapshot:snapshot}});
           toast(btn.dataset.tqNome+" zerado — disponível para nova brassagem! ✅","ok");
+          if (window._invalidarCacheLotes) _invalidarCacheLotes();
           carregarTanques();
         }catch(e){ toast(e.message,"erro"); }
       });
@@ -9996,6 +10025,197 @@ async function abrirModalHistTanque(tanqueId, tanqueNome){
       "<div style='text-align:center;color:#EF4444;padding:30px;font-size:.9rem'>Erro ao carregar histórico: "+esc(e.message)+"</div>";
   }
 }
+
+// ── Busca global de lotes encerrados ────────────────────────────────
+(function(){
+  var TANQUES_IDS = [
+    {id:"tq01",nome:"TQ01"},{id:"tq02",nome:"TQ02"},{id:"tq03",nome:"TQ03"},
+    {id:"tq04",nome:"TQ04"},{id:"tq05",nome:"TQ05"},{id:"tq06",nome:"TQ06"},
+    {id:"tq07",nome:"TQ07"},{id:"tq08",nome:"TQ08"},
+  ];
+  var _lotesCache = null; // { tq01: [...], tq02: [...], ... }
+
+  // Expandir/recolher seção
+  document.getElementById("buscaLotesCabecalho").addEventListener("click", function(){
+    var c = document.getElementById("buscaLotesConteudo");
+    var ch = document.getElementById("buscaLotesChevron");
+    c.hidden = !c.hidden;
+    ch.style.transform = c.hidden ? "" : "rotate(180deg)";
+    // popular select de tanques
+    var sel = document.getElementById("buscaLoteTanque");
+    if (sel.options.length === 1){
+      TANQUES_IDS.forEach(function(t){
+        var o = document.createElement("option");
+        o.value = t.id; o.textContent = t.nome;
+        sel.appendChild(o);
+      });
+    }
+  });
+
+  // Buscar
+  document.getElementById("btnBuscaLotes").addEventListener("click", function(){
+    executarBuscaLotes();
+  });
+  document.getElementById("buscaLoteInput").addEventListener("keydown", function(e){
+    if (e.key === "Enter") executarBuscaLotes();
+  });
+
+  async function executarBuscaLotes(){
+    var res = document.getElementById("buscaLotesResultados");
+    res.innerHTML = "<div style='color:var(--muted);font-size:.85rem;padding:20px 0;text-align:center'>Carregando…</div>";
+
+    // Buscar todos os tanques se cache vazio
+    if (!_lotesCache){
+      _lotesCache = {};
+      try {
+        await Promise.all(TANQUES_IDS.map(async function(t){
+          var r = await api("/api/tanques?acao=historico&tanqueId="+t.id);
+          _lotesCache[t.id] = (r.historico || []).map(function(l){ return Object.assign({},l,{tanqueId:t.id,tanqueNome:t.nome}); });
+        }));
+      } catch(e){
+        res.innerHTML = "<div style='color:#EF4444;font-size:.85rem;padding:16px 0;text-align:center'>Erro ao carregar: "+esc(e.message)+"</div>";
+        return;
+      }
+    }
+
+    // Filtrar
+    var termo = (document.getElementById("buscaLoteInput").value || "").trim().toLowerCase();
+    var tanqueFiltro = document.getElementById("buscaLoteTanque").value;
+
+    var todos = [];
+    TANQUES_IDS.forEach(function(t){
+      if (tanqueFiltro && tanqueFiltro !== t.id) return;
+      (_lotesCache[t.id]||[]).forEach(function(l){ todos.push(l); });
+    });
+
+    // Filtrar por termo
+    if (termo){
+      todos = todos.filter(function(l){
+        return (l.lote||"").toLowerCase().includes(termo) ||
+               (l.estilo||"").toLowerCase().includes(termo) ||
+               (l.tanqueNome||"").toLowerCase().includes(termo);
+      });
+    }
+
+    // Ordenar: mais recente primeiro (por data de encerramento)
+    todos.sort(function(a,b){
+      return (b.encerradoEm||"").localeCompare(a.encerradoEm||"");
+    });
+
+    if (!todos.length){
+      res.innerHTML = "<div style='color:var(--muted);font-size:.85rem;padding:24px 0;text-align:center'>"+
+        "<div style='font-size:1.8rem;margin-bottom:6px'>📭</div>"+
+        "Nenhum lote encontrado"+(termo?" para \""+esc(termo)+"\"":"")+
+        "<br><span style='font-size:.78rem;opacity:.7'>O histórico é gravado a partir do próximo Tanque zerado.</span>"+
+        "</div>";
+      return;
+    }
+
+    res.innerHTML = "<div style='font-size:.78rem;color:var(--muted);padding:6px 0 10px'>"+todos.length+" lote"+(todos.length>1?"s":"")+" encontrado"+(todos.length>1?"s":"")+"</div>"+
+      todos.map(function(lote){
+        // Datas formatadas
+        var brassadoFmt="", encerradoFmt="";
+        if(lote.brassadoEm){ var bp=lote.brassadoEm.split("-"); brassadoFmt=bp[2]+"/"+bp[1]+"/"+bp[0].slice(2); }
+        if(lote.encerradoEm){ var ep=lote.encerradoEm.slice(0,10).split("-"); encerradoFmt=ep[2]+"/"+ep[1]+"/"+ep[0].slice(2); }
+
+        // Dias totais no tanque
+        var diasTotal=null;
+        if(lote.brassadoEm&&lote.encerradoEm){
+          var a=new Date(lote.brassadoEm+"T00:00:00"),b=new Date(lote.encerradoEm.slice(0,10)+"T00:00:00");
+          diasTotal=Math.max(0,Math.floor((b-a)/86400000));
+        }
+
+        // Total barris
+        var regsBarril=(lote.barris||[]).slice().sort(function(a,b){
+          return (a.dataISO||a.semana||"").localeCompare(b.dataISO||b.semana||"");
+        });
+        var totalBarrilL=regsBarril.reduce(function(s,r){ return s+(parseFloat(r.total)||0); },0);
+
+        // Barris por dia
+        var barrisHtml="";
+        if(regsBarril.length){
+          var linhas=regsBarril.map(function(r){
+            var dataR=r.dataISO||r.semana||"";
+            var dataFmt2=""; if(dataR){ var p=dataR.split("-"); dataFmt2=p[2]+"/"+p[1]; }
+            var diasB=null;
+            if(lote.brassadoEm&&dataR){
+              var a2=new Date(lote.brassadoEm+"T00:00:00"),b2=new Date(dataR+"T00:00:00");
+              diasB=Math.max(0,Math.floor((b2-a2)/86400000));
+            }
+            var chips=(r.linhas||[]).map(function(l){
+              return "<span style='background:rgba(212,144,90,.18);border-radius:3px;padding:1px 4px;font-size:.67rem;white-space:nowrap'>"+esc(l.formato)+" \xd7"+l.qtd+"</span>";
+            }).join(" ");
+            return "<div style='padding:4px 0;border-bottom:1px solid rgba(212,144,90,.15)'>"+
+              "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:2px'>"+
+                "<span style='font-size:.7rem;font-weight:700;color:#92400E'>📅 "+dataFmt2+"</span>"+
+                (diasB!==null?"<span style='font-size:.66rem;background:#7A4500;color:#fff;border-radius:3px;padding:0 5px;font-weight:700'>"+diasB+"d</span>":"")+
+              "</div>"+
+              "<div style='display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:2px'>"+
+                "<div style='display:flex;flex-wrap:wrap;gap:2px'>"+chips+"</div>"+
+                "<span style='font-size:.7rem;font-weight:800;color:#7A4500;white-space:nowrap'>→ "+fmtNum(r.total)+" L</span>"+
+              "</div>"+
+            "</div>";
+          }).join("");
+          barrisHtml=
+            "<div style='margin-top:7px;background:rgba(212,144,90,.06);border:1px solid rgba(212,144,90,.35);border-radius:6px;padding:5px 8px'>"+
+            "<div style='font-size:.69rem;font-weight:800;color:#7A4500;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em'>🛢 Barris envasados</div>"+
+            linhas+
+            "<div style='display:flex;align-items:center;justify-content:space-between;margin-top:3px;padding-top:3px;border-top:1px solid rgba(212,144,90,.25)'>"+
+              "<span style='font-size:.67rem;color:#92400E'>"+regsBarril.length+" envase"+(regsBarril.length>1?"s":"")+"</span>"+
+              "<span style='font-size:.71rem;font-weight:900;color:#7A4500'>Total: "+fmtNum(totalBarrilL)+" L</span>"+
+            "</div></div>";
+        }
+
+        // Envases PET
+        var petHtml="";
+        var regsPet=lote.encasePet||[];
+        if(regsPet.length){
+          var petLinhas=regsPet.map(function(m){
+            var dataFmt3=""; if(m.dataISO){ var p=m.dataISO.split("-"); dataFmt3=p[2]+"/"+p[1]; }
+            var diasB2=null;
+            if(lote.brassadoEm&&m.dataISO){
+              var a3=new Date(lote.brassadoEm+"T00:00:00"),b3=new Date(m.dataISO+"T00:00:00");
+              diasB2=Math.max(0,Math.floor((b3-a3)/86400000));
+            }
+            return "<div style='padding:3px 0;border-bottom:1px solid rgba(79,130,200,.12);"+
+              "display:flex;align-items:center;justify-content:space-between'>"+
+              "<span style='font-size:.7rem;color:#1e40af;font-weight:600'>📅 "+dataFmt3+(m.formato?" · "+esc(m.formato):"")+"</span>"+
+              "<div style='display:flex;align-items:center;gap:5px'>"+
+                (diasB2!==null?"<span style='font-size:.66rem;background:#1e3a8a;color:#fff;border-radius:3px;padding:0 5px;font-weight:700'>"+diasB2+"d</span>":"")+
+                "<span style='font-size:.7rem;font-weight:800;color:#1e40af'>"+esc(String(m.qtd||""))+" un</span>"+
+              "</div></div>";
+          }).join("");
+          petHtml="<div style='margin-top:5px;background:rgba(79,130,200,.06);border:1px solid rgba(79,130,200,.3);border-radius:6px;padding:5px 8px'>"+
+            "<div style='font-size:.69rem;font-weight:800;color:#1e40af;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em'>🍶 Envase PET</div>"+
+            petLinhas+"</div>";
+        }
+
+        return "<div style='border:1.5px solid #E5E7EB;border-radius:10px;padding:10px 12px;background:#FAFAFA;margin-bottom:10px'>"+
+          "<div style='display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px'>"+
+            "<div>"+
+              "<div style='font-family:\"Barlow Condensed\",sans-serif;font-size:.98rem;font-weight:800;color:#111;text-transform:uppercase'>"+esc(lote.estilo||"")+"</div>"+
+              "<div style='font-size:.73rem;color:#6B7280;margin-top:1px'>"+esc(lote.lote||"")+"</div>"+
+            "</div>"+
+            "<div style='display:flex;flex-direction:column;align-items:flex-end;gap:3px'>"+
+              "<span style='font-size:.72rem;background:#374151;color:#fff;border-radius:4px;padding:1px 7px;font-weight:700;white-space:nowrap'>"+esc(lote.tanqueNome||"")+"</span>"+
+              (diasTotal!==null?"<span style='font-size:.69rem;background:#6B7280;color:#fff;border-radius:4px;padding:1px 6px;font-weight:600;white-space:nowrap'>"+diasTotal+"d no tanque</span>":"")+
+            "</div>"+
+          "</div>"+
+          "<div style='display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px'>"+
+            (lote.volume?"<span style='background:#F3F4F6;border-radius:4px;padding:2px 6px;font-size:.71rem;color:#374151;font-weight:600'>🍺 "+esc(String(lote.volume))+" L</span>":"")+
+            (lote.og?"<span style='background:#F3F4F6;border-radius:4px;padding:2px 6px;font-size:.71rem;color:#374151;font-weight:600'>OG "+esc(String(lote.og))+"</span>":"")+
+            (brassadoFmt?"<span style='background:#F3F4F6;border-radius:4px;padding:2px 6px;font-size:.71rem;color:#374151'>🗓 "+brassadoFmt+"</span>":"")+
+            (encerradoFmt?"<span style='background:#F3F4F6;border-radius:4px;padding:2px 6px;font-size:.71rem;color:#374151'>🫙 "+encerradoFmt+"</span>":"")+
+            (lote.encerradoPor?"<span style='background:#F3F4F6;border-radius:4px;padding:2px 6px;font-size:.71rem;color:#374151'>👤 "+esc(lote.encerradoPor)+"</span>":"")+
+          "</div>"+
+          barrisHtml+petHtml+
+        "</div>";
+      }).join("");
+  }
+
+  // Invalidar cache quando tanque for zerado (para busca refletir novos dados)
+  window._invalidarCacheLotes = function(){ _lotesCache = null; };
+})();
 
 function abrirModalObs(tid, dia, nomeT){
   _obsCtx = {tid:tid, dia:dia};
