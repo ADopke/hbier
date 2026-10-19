@@ -6070,10 +6070,14 @@ $("btnBrassSalvar").addEventListener("click", async function(){
     var diaBrass = _db.nome;
     // Semana correta = semana do dataISO escolhido (não necessariamente a semana visível)
     var semBrass = _db.dataISO ? chaveSemana(segundaDe(new Date(_db.dataISO+"T00:00:00"))) : chaveSemana(segProg);
+    // Ao editar: semana = semana original onde o item está salvo (para o backend encontrá-lo)
+    // novaSemana = semana destino (caso o dia tenha mudado para outra semana)
+    var semParaApi = _brasseditando ? _brasseditando.semana : semBrass;
     var rBrass = await api("/api/prog", {method:"POST", body:{
       acao: _brasseditando ? "editar" : "criar",
       id:   _brasseditando ? _brasseditando.id : undefined,
-      semana: semBrass,
+      semana: semParaApi,
+      novaSemana: _brasseditando ? semBrass : undefined,
       tipo: "brassagem",
       estilo: estilo,
       tanque:    $("brassTanque").value.trim(),
@@ -6173,10 +6177,13 @@ $("btnEnvSalvar").addEventListener("click", async function(){
     var diaEnv = _de.nome;
     // Semana correta = semana do dataISO escolhido (não necessariamente a semana visível)
     var semEnv = _de.dataISO ? chaveSemana(segundaDe(new Date(_de.dataISO+"T00:00:00"))) : chaveSemana(segProg);
+    // Ao editar: semana = semana original onde o item está salvo (para o backend encontrá-lo)
+    var semParaApiEnv = _enveditando ? _enveditando.semana : semEnv;
     var rEnv = await api("/api/prog", {method:"POST", body:{
       acao:     _enveditando ? "editar" : "criar",
       id:       _enveditando ? _enveditando.id : undefined,
-      semana:   semEnv,
+      semana:   semParaApiEnv,
+      novaSemana: _enveditando ? semEnv : undefined,
       tipo:     "envase",
       produto:  produto,
       lote:     $("envLote").value.trim(),
