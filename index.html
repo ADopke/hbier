@@ -10149,14 +10149,14 @@ function fp_preencherFicha(ficha){
     if(!linhas || !linhas.length) return;
     var tbl=document.getElementById(tblId); if(!tbl) return;
     var tbody=tbl.querySelector('tbody');
-    // limpa linhas existentes exceto a primeira (template)
-    var rows=tbody.querySelectorAll('tr');
-    // adiciona linhas faltantes
-    while(tbody.querySelectorAll('tr').length < linhas.length) fp_addRow(tblId);
-    tbody.querySelectorAll('tr').forEach(function(tr,i){
-      if(!linhas[i]) return;
+    // limpa tudo (inclusive linhas template do HTML) para evitar sobreposição
+    tbody.innerHTML='';
+    // adiciona exatamente as linhas salvas
+    linhas.forEach(function(cols){
+      fp_addRow(tblId);
+      var tr=tbody.querySelector('tr:last-child'); if(!tr) return;
       tr.querySelectorAll('input,select,textarea').forEach(function(el,j){
-        if(linhas[i][j] !== undefined) el.value=linhas[i][j];
+        if(cols[j] !== undefined) el.value=cols[j];
       });
     });
   }
