@@ -8125,8 +8125,13 @@ async function carregarTanques(){
         // ── Histórico de movimentações do lote atual ──────────────
         (tq.historico && tq.historico.length ? (function(){
           var loteAtual = (tq.lote || "").trim().toUpperCase();
-          // DEBUG TEMPORÁRIO: mostra todos os não-brassagem para verificar lotes
-          var hist = tq.historico.filter(function(m){ return m.tipo !== "brassagem"; });
+          var hist = tq.historico.filter(function(m){
+            if (m.tipo === "brassagem") return false;
+            if (loteAtual) {
+              return (m.lote || "").trim().toUpperCase() === loteAtual;
+            }
+            return true;
+          });
           if (!hist.length) return "";
           var linhas = hist.slice(0, 20).map(function(m){
             var icone = m.tipo === "barril" ? "🛢" : "📦";
