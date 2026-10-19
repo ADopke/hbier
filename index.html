@@ -2220,9 +2220,11 @@
           <div>
             <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">
               Lote</label>
-            <input type="text" id="barrilLote" placeholder="Ex.: HELLES 59/26T05"
+            <select id="barrilLote"
               style="width:100%;padding:9px;border:1.5px solid var(--linha);
-              border-radius:8px;font-size:.9rem">
+              border-radius:8px;font-size:.9rem;background:#fff">
+              <option value="">Selecione o tanque primeiro…</option>
+            </select>
           </div>
         </div>
         <div>
@@ -2648,8 +2650,10 @@
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Lote</label>
-          <input type="text" id="envLote" placeholder="Ex.: LOT37/26TQ03VAL01/27"
-            style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem">
+          <select id="envLote"
+            style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem;background:#fff">
+            <option value="">Selecione o tanque primeiro…</option>
+          </select>
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Tanque de origem</label>
@@ -4393,7 +4397,7 @@ function abrirModalBarril(){
   _barrilSegProg = segundaDe(new Date());
   $("barrilProduto").value = "";
   $("barrilTanque").value = "";
-  $("barrilLote").value = "";
+  $("barrilLote").innerHTML = "<option value=''>Selecione o tanque primeiro…</option>";
   $("barrilSemanaSelector").hidden = true;
   atualizarBarrilSemana();
   $("barrilDia").value = "";
@@ -4401,6 +4405,44 @@ function abrirModalBarril(){
   $("modalBarril").hidden = false;
   setTimeout(function(){ $("barrilProduto").focus(); }, 80);
 }
+
+// Popular select de lote baseado no tanque selecionado
+function popularLotesPorTanque(tanqueVal, selectId, corBorda) {
+  var sel = $(selectId);
+  if (!sel) return;
+  var tqNorm = (tanqueVal||"").toUpperCase().replace(/[-\s]/g,"");
+  if (!tqNorm || !_dadosTanques) {
+    sel.innerHTML = "<option value=''>Selecione o tanque primeiro…</option>";
+    return;
+  }
+  var tq = _dadosTanques.find(function(t){ return t.nome.toUpperCase() === tqNorm; });
+  var opts = "<option value=''>Sem lote</option>";
+  if (tq && tq.lote) {
+    opts = "<option value='"+esc(tq.lote)+"'>"+esc(tq.lote)+"</option>";
+    // adicionar opção de lote previsto (próxima brassagem), se existir
+    if (tq.proximaBrass && tq.proximaBrass.lote && tq.proximaBrass.lote !== tq.lote) {
+      opts += "<option value='"+esc(tq.proximaBrass.lote)+"'>"+esc(tq.proximaBrass.lote)+" (próximo)</option>";
+    }
+    opts += "<option value=''>— Sem lote —</option>";
+  } else {
+    opts = "<option value=''>Nenhuma brassagem ativa neste tanque</option>";
+  }
+  sel.innerHTML = opts;
+  // pre-selecionar automaticamente o primeiro lote
+  if (tq && tq.lote) sel.value = tq.lote;
+}
+
+$("barrilTanque").addEventListener("change", function(){
+  popularLotesPorTanque(this.value, "barrilLote", "var(--linha)");
+  // preencher produto automaticamente se tiver lote
+  var tqNorm = (this.value||"").toUpperCase().replace(/[-\s]/g,"");
+  if (tqNorm && _dadosTanques) {
+    var tq = _dadosTanques.find(function(t){ return t.nome.toUpperCase() === tqNorm; });
+    if (tq && tq.estilo && !$("barrilProduto").value) {
+      $("barrilProduto").value = tq.estilo;
+    }
+  }
+});
 
 $("btnBarrilTrocarSemana").addEventListener("click", function(){
   $("barrilSemanaSelector").hidden = !$("barrilSemanaSelector").hidden;
@@ -5982,7 +6024,7 @@ $("btnAddEnvase").addEventListener("click", function(){
   _enveditando = null;
   $("envFormTitulo").textContent = "\uD83D\uDCE6 Novo Envase";
   $("envProduto").value = "";
-  $("envLote").value = "";
+  $("envLote").innerHTML = "<option value=''>Selecione o tanque primeiro…</option>";
   $("envFormato").value = "";
   $("envQtd").value = "";
   $("envObs").value = "";
@@ -5994,6 +6036,19 @@ $("btnAddEnvase").addEventListener("click", function(){
   $("modalEnvase").hidden = false;
   setTimeout(function(){ $("envProduto").focus(); }, 80);
 });
+// Quando tanque de envase mudar, popular lotes disponíveis
+$("envTanque").addEventListener("change", function(){
+  popularLotesPorTanque(this.value, "envLote", "#B3C8F5");
+  // preencher produto automaticamente se tiver estilo
+  var tqNorm = (this.value||"").toUpperCase().replace(/[-\s]/g,"");
+  if (tqNorm && _dadosTanques) {
+    var tq = _dadosTanques.find(function(t){ return t.nome.toUpperCase() === tqNorm; });
+    if (tq && tq.estilo && !$("envProduto").value) {
+      $("envProduto").value = tq.estilo;
+    }
+  }
+});
+
 var ENV_ESTILOS = {
   "PET 500ml": ["Helles","Red Ale","IPA","Sem Álcool"],
   "PET 1L":    ["Helles","Oktoberfest"]
@@ -6080,7 +6135,6 @@ $("progLista").addEventListener("click", async function(ev){
       _enveditando = {id: it.id, semana};
       $("envFormTitulo").textContent = "\uD83D\uDCE6 Editar Envase";
       $("envProduto").value = it.produto||"";
-      $("envLote").value    = it.lote||"";
       $("envFormato").value = it.formato||"";
       $("envQtd").value     = it.qtd||"";
       $("envObs").value     = it.obs||"";
@@ -6088,6 +6142,16 @@ $("progLista").addEventListener("click", async function(ev){
       if (it.dataISO) $("envDia").value=(it.dia||"")+"|"+it.dataISO; else $("envDia").value=it.dia||"";
       setTimeout(function(){ atualizarEnvEstilo(); if(it.estilo) $("envEstilo").value=it.estilo; },0);
       popularSelectTanques("envTanque", true, (it.tanqueOrigem||"").toUpperCase());
+      // Popular select de lote para o tanque e pre-selecionar o lote salvo
+      popularLotesPorTanque((it.tanqueOrigem||"").toUpperCase(), "envLote", "#B3C8F5");
+      var loteSalvoEnv = it.lote||"";
+      if (loteSalvoEnv && $("envLote").value !== loteSalvoEnv) {
+        var optExtraEnv = document.createElement("option");
+        optExtraEnv.value = loteSalvoEnv;
+        optExtraEnv.textContent = loteSalvoEnv;
+        $("envLote").insertBefore(optExtraEnv, $("envLote").firstChild);
+        $("envLote").value = loteSalvoEnv;
+      }
       $("modalEnvase").hidden = false;
     } else {
       _brasseditando = {id: it.id, semana};
@@ -6147,7 +6211,17 @@ $("progLista").addEventListener("click", async function(ev){
       atualizarBarrilSemana();
       $("barrilProduto").value = reg.produto||"";
       $("barrilTanque").value  = reg.tanque||"";
-      $("barrilLote").value    = reg.lote||"";
+      // Popular select de lote para o tanque e pre-selecionar o lote salvo
+      popularLotesPorTanque(reg.tanque||"", "barrilLote", "var(--linha)");
+      // Tentar selecionar o lote exato do registro; se não encontrar, adicionar como opção
+      var loteSalvo = reg.lote||"";
+      if (loteSalvo && $("barrilLote").value !== loteSalvo) {
+        var optExtra = document.createElement("option");
+        optExtra.value = loteSalvo;
+        optExtra.textContent = loteSalvo;
+        $("barrilLote").insertBefore(optExtra, $("barrilLote").firstChild);
+        $("barrilLote").value = loteSalvo;
+      }
       $("barrilDia").value = reg.dia||"";
       // preencher quantidades
       renderBarrilLinhas();
@@ -8132,15 +8206,10 @@ async function carregarTanques(){
         obsHtml+
         botoesHtml+
 
-        // ── Histórico de movimentações do lote atual ──────────────
+        // ── Histórico de movimentações do tanque ──────────────
         (tq.historico && tq.historico.length ? (function(){
-          var loteAtual = (tq.lote || "").trim().toUpperCase();
           var hist = tq.historico.filter(function(m){
-            if (m.tipo === "brassagem") return false;
-            if (loteAtual) {
-              return (m.lote || "").trim().toUpperCase() === loteAtual;
-            }
-            return true;
+            return m.tipo !== "brassagem";
           });
           if (!hist.length) return "";
           var linhas = hist.slice(0, 20).map(function(m){
