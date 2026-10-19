@@ -2883,7 +2883,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.5.2";
+var VERSAO = "3.5.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8197,6 +8197,89 @@ async function carregarTanques(){
             "</div>"+
             "</div>";
         }
+
+        // ── Envases PET do lote atual ─────────────────────────────
+        if (tq.lote && tq.historico && tq.historico.length) {
+          var loteAtualPET = (tq.lote || "").trim().toUpperCase();
+          var regsPET = tq.historico.filter(function(m){
+            if (m.tipo !== "envase") return false;
+            var mLote = (m.lote || "").trim().toUpperCase();
+            if (mLote && mLote !== loteAtualPET) return false;
+            return !!(m.qtd || m.litrosFim || m.temResultado);
+          }).sort(function(a,b){
+            return (a.dataISO||"").localeCompare(b.dataISO||"");
+          });
+          if (regsPET.length) {
+            var totalUnPET  = 0;
+            var totalLitPET = 0;
+            var linhasPET = regsPET.map(function(m){
+              var dataFmt = "";
+              if (m.dataISO){ var p=m.dataISO.split("-"); dataFmt=p[2]+"/"+p[1]; }
+              var dias = tq.brassadoEm ? (function(){
+                var a=new Date(tq.brassadoEm+"T00:00:00"), b=new Date((m.dataISO||"")+"T00:00:00");
+                var d=Math.max(0,Math.floor((b-a)/86400000));
+                return !isNaN(d)&&m.dataISO ? d : null;
+              })() : null;
+
+              // calcular litros desta linha: qtd × ml do formato
+              var qtdN  = parseInt(m.qtd) || 0;
+              var mlFmt = (typeof LITROS_FORMATO !== "undefined" && m.formato)
+                          ? (LITROS_FORMATO[m.formato] || 0) : 0;
+              var litLinha = qtdN * mlFmt;
+              totalUnPET  += qtdN;
+              totalLitPET += litLinha;
+
+              // consumo do tanque neste envase (litrosInicio - litrosFim)
+              var consumo = (m.litrosInicio && m.litrosFim)
+                ? (parseFloat(m.litrosInicio) - parseFloat(m.litrosFim))
+                : null;
+
+              // linha de tags: formato + unidades + = litros
+              var tagsFmt = "<span style='background:rgba(179,200,245,.35);border-radius:3px;padding:1px 5px;white-space:nowrap;font-size:.69rem'>"+esc(m.formato||"PET")+"</span>";
+              var tagsQtd = qtdN
+                ? "<span style='background:rgba(179,200,245,.35);border-radius:3px;padding:1px 5px;white-space:nowrap;font-size:.69rem'><b>×"+qtdN+"</b> un</span>"
+                : "";
+              var tagsLit = litLinha
+                ? "<span style='background:#003E99;color:#fff;border-radius:3px;padding:1px 6px;white-space:nowrap;font-size:.69rem;font-weight:800'>= "+fmtNum(litLinha)+" L</span>"
+                : "";
+
+              // info tanque: litros início → fim
+              var tanqueInfo = (m.litrosInicio || m.litrosFim)
+                ? "<div style='font-size:.68rem;color:#6B7280;margin-top:3px'>"+
+                    "Tanque: "+(m.litrosInicio ? fmtNum(m.litrosInicio)+" L" : "?")+" → "+
+                    (m.litrosFim  ? fmtNum(m.litrosFim)+" L" : "?")+
+                    (consumo !== null && consumo > 0 ? " <b style='color:#003E99'>(−"+fmtNum(consumo)+" L)</b>" : "")+
+                  "</div>"
+                : "";
+
+              return "<div style='padding:6px 0;border-bottom:1px solid rgba(179,200,245,.35)'>"+
+                "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:4px'>"+
+                  "<span style='font-size:.72rem;font-weight:700;color:#1E40AF'>📅 "+dataFmt+"</span>"+
+                  (dias !== null
+                    ? "<span style='font-size:.69rem;background:#003E99;color:#fff;border-radius:4px;padding:1px 7px;font-weight:700'>"+dias+"d no tanque</span>"
+                    : "")+
+                "</div>"+
+                "<div style='display:flex;align-items:center;flex-wrap:wrap;gap:3px'>"+
+                  tagsFmt+tagsQtd+tagsLit+
+                "</div>"+
+                tanqueInfo+
+              "</div>";
+            }).join("");
+
+            presenteConteudo +=
+              "<div style='margin-top:6px;background:rgba(179,200,245,.12);"+
+              "border:1px solid #B3C8F5;border-radius:7px;padding:6px 9px'>"+
+              "<div style='font-size:.71rem;font-weight:800;color:#003E99;margin-bottom:5px;"+
+                "text-transform:uppercase;letter-spacing:.05em'>📦 PET envasado</div>"+
+              linhasPET+
+              "<div style='display:flex;align-items:center;justify-content:space-between;"+
+                "margin-top:5px;padding-top:4px;border-top:1.5px solid rgba(179,200,245,.5)'>"+
+                "<span style='font-size:.69rem;color:#1E40AF;font-weight:600'>"+regsPET.length+" envase"+(regsPET.length>1?"s":"")+" · "+fmtNum(totalUnPET)+" un</span>"+
+                (totalLitPET ? "<span style='font-size:.75rem;font-weight:900;color:#003E99'>Total: "+fmtNum(totalLitPET)+" L</span>" : "")+
+              "</div>"+
+              "</div>";
+          }
+        }
       }
 
       // ── BLOCO PRÓXIMO ────────────────────────────────────────────
@@ -8296,41 +8379,33 @@ async function carregarTanques(){
         obsHtml+
         botoesHtml+
 
-        // ── Histórico de movimentações do lote atual ──────────────
+        // ── Histórico de lotes anteriores neste tanque ────────────
         (tq.historico && tq.historico.length ? (function(){
           var loteAtual = (tq.lote || "").trim().toUpperCase();
+          // só movimentos de lotes DIFERENTES do atual (histórico passado)
           var hist = tq.historico.filter(function(m){
             if (m.tipo === "brassagem") return false;
-            // envases PET sem resultado ainda (só previsão) — não mostrar
             if (m.tipo === "envase" && !m.temResultado && !m.qtd && !m.litrosFim) return false;
-            if (!loteAtual) return true;
             var mLote = (m.lote || "").trim().toUpperCase();
-            // match exato
-            if (mLote === loteAtual) return true;
-            // fallback: envase sem lote definido mas do mesmo tanque (dados antigos)
-            if (m.tipo === "envase" && !mLote) return true;
-            return false;
+            // se não há lote atual, mostrar tudo; se há, excluir o lote atual (já exibido nos blocos dedicados)
+            if (!loteAtual) return true;
+            return mLote !== loteAtual && mLote !== "";
           });
           if (!hist.length) return "";
-          var linhas = hist.slice(0, 20).map(function(m){
+          var linhas = hist.slice(0, 30).map(function(m){
             var icone = m.tipo === "barril" ? "🛢" : "📦";
-            var corBg = m.tipo === "barril" ? "#FFF3E8" : "#F0F9FF";
-            var corBd = m.tipo === "barril" ? "#D4905A" : "#7DD3FC";
-            var corTx = m.tipo === "barril" ? "#7A4500" : "#0369A1";
+            var corBg = m.tipo === "barril" ? "#FFF3E8" : "#E8F0FF";
+            var corBd = m.tipo === "barril" ? "#D4905A" : "#B3C8F5";
+            var corTx = m.tipo === "barril" ? "#7A4500" : "#003E99";
 
-            // data formatada dd/mm/aa
             var dataFmt = "";
             if (m.dataISO) {
               var p = m.dataISO.split("-");
               dataFmt = p[2]+"/"+p[1]+"/"+p[0].slice(2);
             }
-
-            // dias no tanque
             var diasStr = m.diasNoBrassar !== null && m.diasNoBrassar !== undefined
               ? "<span style='font-weight:800;color:"+corTx+";font-size:.75rem'>"+m.diasNoBrassar+"d</span>"
               : "";
-
-            // descrição do conteúdo
             var desc = "";
             if (m.tipo === "barril") {
               var linhasBarril = (m.linhas||[]).map(function(l){
@@ -8338,17 +8413,11 @@ async function carregarTanques(){
               }).join(" · ");
               desc = linhasBarril + (m.totalL ? " <b>= "+fmtNum(m.totalL)+" L</b>" : "");
             } else {
-              // envase PET: mostrar qtd e litros do tanque
               var partes = [];
               if (m.formato) partes.push(esc(m.formato));
-              if (m.qtd) partes.push("<b>×"+m.qtd+" un</b>");
-              if (m.litrosInicio && m.litrosFim) {
-                partes.push(fmtNum(m.litrosInicio)+"→"+fmtNum(m.litrosFim)+" L");
-              } else if (m.litrosFim) {
-                partes.push("→"+fmtNum(m.litrosFim)+" L restantes");
-              }
-              if (!m.qtd && !m.litrosFim) partes.push("envase lançado");
-              desc = partes.join(" · ");
+              if (m.qtd) partes.push("<b>×"+m.qtd+"</b> un");
+              if (m.litrosFim) partes.push("→"+fmtNum(m.litrosFim)+" L rest.");
+              desc = partes.join(" · ") || "envase lançado";
             }
 
             return "<div style='display:flex;align-items:center;gap:8px;padding:5px 8px;"+
@@ -8369,7 +8438,7 @@ async function carregarTanques(){
           return "<details style='margin-top:8px'>"+
             "<summary style='cursor:pointer;font-size:.72rem;font-weight:700;color:var(--muted);"+
               "padding:4px 2px;list-style:none;display:flex;align-items:center;gap:4px'>"+
-              "<span>📋 Histórico de envases ("+hist.length+")</span>"+
+              "<span>🗂 Lotes anteriores neste tanque ("+hist.length+")</span>"+
             "</summary>"+
             "<div style='display:flex;flex-direction:column;gap:4px;margin-top:6px'>"+
               linhas+
