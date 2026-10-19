@@ -2883,7 +2883,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.5.5";
+var VERSAO = "3.5.6";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4978,11 +4978,12 @@ async function carregarProg(){
     semViz.push(chaveSemana(sv1), chaveSemana(sv2));
 
     var extras = await Promise.all(semViz.map(function(s){
-      return api("/api/prog?semana="+s).then(function(rv){ return rv.itens||[]; }).catch(function(){ return []; });
+      return api("/api/prog?semana="+s).then(function(rv){ return {s:s, itens:rv.itens||[]}; }).catch(function(){ return {s:s,itens:[]}; });
     }));
-    extras.forEach(function(lista){
-      lista.forEach(function(it){
+    extras.forEach(function(res){
+      res.itens.forEach(function(it){
         if (!idsPresentes[it.id] && pertenceASemana(it)){
+          it._semanaReal = res.s; // semana onde o item está salvo no Redis
           itens.push(it);
           if (it.id) idsPresentes[it.id] = true;
         }
@@ -5472,12 +5473,13 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
       ? renderResultadoEnvase(it.resultado)
       : renderResultadoBrassagem(it.resultado);
 
+    var semItem = it._semanaReal || semana; // semana real onde o item está salvo
     var btnResultado = !it.resultado
       ? "<button class='btn-mini' style='background:var(--dourado);border-color:var(--dourado);"+
-        "color:#3A2D00' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+esc(semana)+"' "+
+        "color:#3A2D00' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+esc(semItem)+"' "+
         "data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"'>📋 Lançar resultado</button>"
       : "<button class='btn-mini secundario' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+
-        esc(semana)+"' data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"'>✏ Editar resultado</button>";
+        esc(semItem)+"' data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"'>✏ Editar resultado</button>";
 
     // separador de dia
     if (it.dia !== diaGrupo){
@@ -5517,9 +5519,9 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
 
         (podeEditar?
           "<button class='btn-mini secundario' data-prog-edit='"+esc(it.id)+"' data-prog-semana='"+
-          esc(semana)+"'>editar</button>"+
+          esc(semItem)+"'>editar</button>"+
           "<button class='btn-mini perigo' data-prog-del='"+esc(it.id)+"' data-prog-semana='"+
-          esc(semana)+"'>remover</button>" : "")+
+          esc(semItem)+"'>remover</button>" : "")+
         "</div>"+
       "</div>"+
     "</div>";
