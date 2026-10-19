@@ -8125,17 +8125,15 @@ async function carregarTanques(){
         // ── Histórico de movimentações do lote atual ──────────────
         (tq.historico && tq.historico.length ? (function(){
           var loteAtual = (tq.lote || "").trim().toUpperCase();
-          console.log("[hist]", tq.nome, "loteAtual="+loteAtual, "historico=", tq.historico);
+          var _naoLote = tq.historico.filter(function(m){ return m.tipo !== "brassagem"; });
+          console.log("[hist]", tq.nome, "loteAtual=«"+loteAtual+"»", "lotes nos movimentos:", _naoLote.map(function(m){ return "«"+(m.lote||"")+"»"; }));
           var hist = tq.historico.filter(function(m){
             if (m.tipo === "brassagem") return false;
-            // Se tem lote no tanque, filtra só os do mesmo lote
             if (loteAtual) {
               return (m.lote || "").trim().toUpperCase() === loteAtual;
             }
-            // Sem lote definido: mostra tudo
             return true;
           });
-          console.log("[hist] após filtro:", hist.length, hist);
           if (!hist.length) return "";
           var linhas = hist.slice(0, 20).map(function(m){
             var icone = m.tipo === "barril" ? "🛢" : "📦";
