@@ -232,8 +232,10 @@ export default protegido(async function handler(req, res) {
       const overrideAtivo = manual[tq.id] && manual[tq.id].estagio;
       const overrideEhLivre = overrideAtivo && (manual[tq.id].estagio === "livre");
       const overrideEhPronto = overrideAtivo && (manual[tq.id].estagio === "pronto");
-      // "pronto" sempre tem prioridade; "livre" cede se há brassagem
-      const usarOverride = overrideEhPronto || (overrideEhLivre && !brass && !brassHoje);
+      const overrideEhZerado = overrideEhLivre && !!(manual[tq.id].zerado);
+      // "pronto" sempre tem prioridade; "zerado" também (sobrepõe brassagens antigas);
+      // "livre manual" cede se há brassagem ativa
+      const usarOverride = overrideEhPronto || overrideEhZerado || (overrideEhLivre && !brass && !brassHoje);
 
       let estagio, estagioLabel, estagioIcone, estagioCorBg, estagioCorBorda;
       if (usarOverride) {
@@ -282,16 +284,18 @@ export default protegido(async function handler(req, res) {
       }
 
       // referência de conteúdo: brassagem de hoje tem prioridade sobre anterior em maturação
-      const ref = brassHoje || brass || null;
+      // quando o tanque foi zerado, ignorar brassagens antigas como referência
+      const refBrass = overrideEhZerado ? null : (brassHoje || brass || null);
+      const ref = refBrass;
 
       // envases vinculados ao lote da brassagem atual (para exibição)
-      const envase = brass && !brassHoje
+      const envase = brass && !brassHoje && !overrideEhZerado
         ? envases
             .filter(e => e.lote && brass.lote && e.lote === brass.lote)
             .sort((a, b) => b.em.localeCompare(a.em))[0] || null
         : null;
 
-      const diasTanque = brass && !brassHoje ? diasDesde(brass.em) : null;
+      const diasTanque = brass && !brassHoje && !overrideEhZerado ? diasDesde(brass.em) : null;
 
       return {
         id:           tq.id,
@@ -305,7 +309,7 @@ export default protegido(async function handler(req, res) {
         lote:         ref ? ref.lote   : "",
         estilo:       ref ? ref.estilo : "",
         volume:       ref ? ref.volume : "",
-        og:           brass && !brassHoje ? brass.og : "",
+        og:           ref && !brassHoje ? (brass ? brass.og : "") : "",
         diasTanque,
         brassadoEm:   ref ? ref.em     : "",
         brassadoSem:  ref ? ref.semana : "",
@@ -476,6 +480,7 @@ export default protegido(async function handler(req, res) {
         estagio:      "livre",
         estagioLabel: "Livre (zerado)",
         estagioIcone: "✅",
+        zerado:       true,   // flag: sobrepõe brassagens antigas
         por:          sessao.usuario || sessao.login,
         em:           new Date().toISOString(),
       };
