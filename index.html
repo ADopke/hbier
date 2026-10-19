@@ -4956,7 +4956,40 @@ async function carregarProg(){
 
   try{
     var r = await api("/api/prog?semana="+seg+"&tarefas=1");
-    renderProg(r.itens, seg, segProg, r.tarefasVinculadas||{}, r.barreis||{});
+    var itens = r.itens || [];
+
+    // Fallback: buscar semanas adjacentes e incluir itens cujo dataISO pertença a esta semana
+    // (resolve itens salvos com chave errada — semana visível ≠ semana do dataISO)
+    var segTs  = segProg.getTime();
+    var fimTs  = segTs + 6 * 86400000;
+    function pertenceASemana(it){
+      if (!it.dataISO) return false;
+      var t = new Date(it.dataISO + "T00:00:00").getTime();
+      return t >= segTs && t <= fimTs;
+    }
+    // IDs já presentes para evitar duplicatas
+    var idsPresentes = {};
+    itens.forEach(function(it){ if(it.id) idsPresentes[it.id] = true; });
+
+    // Verifica semana anterior e próxima
+    var semViz = [];
+    var sv1 = new Date(segProg); sv1.setDate(sv1.getDate() - 7);
+    var sv2 = new Date(segProg); sv2.setDate(sv2.getDate() + 7);
+    semViz.push(chaveSemana(sv1), chaveSemana(sv2));
+
+    var extras = await Promise.all(semViz.map(function(s){
+      return api("/api/prog?semana="+s).then(function(rv){ return rv.itens||[]; }).catch(function(){ return []; });
+    }));
+    extras.forEach(function(lista){
+      lista.forEach(function(it){
+        if (!idsPresentes[it.id] && pertenceASemana(it)){
+          itens.push(it);
+          if (it.id) idsPresentes[it.id] = true;
+        }
+      });
+    });
+
+    renderProg(itens, seg, segProg, r.tarefasVinculadas||{}, r.barreis||{});
   }catch(e){ $("progLista").innerHTML="<div class='vazio'>"+esc(e.message)+"</div>"; }
 }
 
