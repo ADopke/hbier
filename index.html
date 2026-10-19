@@ -3116,7 +3116,7 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.6.1";
+var VERSAO = "3.6.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9234,6 +9234,19 @@ async function abrirFichaPorLote(lote){
 }
 
 function fp_toggleSec(head){ head.closest('.fp-sec').classList.toggle('collapsed'); }
+function fp_calcAbv(){
+  var ogEl  = document.getElementById('fp-og-alvo');
+  var fgEl  = document.getElementById('fp-fg-alvo');
+  var abvEl = document.getElementById('fp-abv-alvo');
+  if (!ogEl || !fgEl || !abvEl) return;
+  var og = parseFloat((ogEl.value  || '').replace(',','.'));
+  var fg = parseFloat((fgEl.value  || '').replace(',','.'));
+  if (!isNaN(og) && !isNaN(fg) && og > fg) {
+    abvEl.value = ((og - fg) * 131.25).toFixed(1);
+  } else {
+    abvEl.value = '';
+  }
+}
 function fp_delRow(btn){ btn.closest('tr').remove(); fp_markDirty(); }
 function fp_delLog(btn){ btn.closest('.fp-mlog-row,.fp-log-row').remove(); fp_markDirty(); }
 function fp_addRow(tblId){
@@ -9343,7 +9356,9 @@ function fp_simSave(btn){
       volume:     coletarGrid('#fp-panel-receita .fp-fg-grid input')[2] || "",
       dataInicio: coletarGrid('#fp-panel-receita .fp-fg-grid input')[4] || "",
       tanque:     coletarGrid('#fp-panel-receita .fp-fg-grid input')[5] || "",
-      og:         coletarGrid('#fp-panel-receita .fp-fg-grid.tight input')[0] || "",
+      og:         (document.getElementById('fp-og-alvo')||{}).value  || coletarGrid('#fp-panel-receita .fp-fg-grid.tight input')[0] || "",
+      fg:         (document.getElementById('fp-fg-alvo')||{}).value  || "",
+      abv:        (document.getElementById('fp-abv-alvo')||{}).value || "",
     },
     sais:        coletarTabela('fp-tbl-sais'),
     fermentaveis:coletarTabela('fp-tbl-ferm'),
@@ -9457,9 +9472,9 @@ function abrirFichaLote(tq){
       '</div>'+
       '<div class="fp-divider"></div>'+
       '<div class="fp-fg-grid tight">'+
-        '<div class="fp-field"><label>OG alvo</label><input value="'+esc(og)+'"></div>'+
-        '<div class="fp-field"><label>FG alvo</label><input placeholder="1.012"></div>'+
-        '<div class="fp-field"><label>ABV alvo (%)</label><input placeholder="5,5"></div>'+
+        '<div class="fp-field"><label>OG alvo</label><input id="fp-og-alvo" value="'+esc(og)+'" oninput="fp_calcAbv()"></div>'+
+        '<div class="fp-field"><label>FG alvo</label><input id="fp-fg-alvo" placeholder="1.012" oninput="fp_calcAbv()"></div>'+
+        '<div class="fp-field"><label>ABV alvo (%)</label><input id="fp-abv-alvo" placeholder="—" readonly style="background:var(--fp-bg3);cursor:default" title="Calculado automaticamente: (OG − FG) × 131,25"></div>'+
         '<div class="fp-field"><label>IBU</label><input type="number" placeholder="30"></div>'+
         '<div class="fp-field"><label>EBC</label><input type="number" placeholder="8"></div>'+
         '<div class="fp-field"><label>Eficiência (%)</label><input type="number" placeholder="75"></div>'+
@@ -9878,6 +9893,14 @@ function fp_preencherFicha(ficha){
     var vals=[ficha.resultado.fg,ficha.resultado.abv,ficha.resultado.atenuacao,
               ficha.resultado.eficiencia,ficha.resultado.volume,ficha.resultado.co2];
     cards.forEach(function(el,i){ if(vals[i]!==undefined) el.value=vals[i]; });
+  }
+  // restaura FG e ABV do cabeçalho (se salvos) e recalcula
+  if(ficha.cabecalho){
+    var fgEl  = document.getElementById('fp-fg-alvo');
+    var ogEl  = document.getElementById('fp-og-alvo');
+    if(fgEl && ficha.cabecalho.fg) fgEl.value = ficha.cabecalho.fg;
+    if(ogEl && ficha.cabecalho.og) ogEl.value = ficha.cabecalho.og;
+    fp_calcAbv();
   }
   // indicador de salvo
   if(ficha.meta && ficha.meta.salvoEm){
