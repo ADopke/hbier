@@ -9912,6 +9912,20 @@ function fp_preencherFicha(ficha){
   fp_dirty=false;
 }
 
+/* — expõe funções fp_ no window para que onclick inline as encontre — */
+window.fp_toggleSec   = fp_toggleSec;
+window.fp_calcAbv     = fp_calcAbv;
+window.fp_delRow      = fp_delRow;
+window.fp_delLog      = fp_delLog;
+window.fp_addRow      = fp_addRow;
+window.fp_addMaturRow = fp_addMaturRow;
+window.fp_addEnzRow   = fp_addEnzRow;
+window.fp_addBatelada = fp_addBatelada;
+window.fp_markDirty   = fp_markDirty;
+window.fp_simSave     = fp_simSave;
+window.abrirFichaLote = abrirFichaLote;
+window.abrirFichaPorLote = abrirFichaPorLote;
+
 /* ==================================================================
    Acompanhamento e relatórios
    ================================================================== */
