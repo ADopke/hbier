@@ -9,6 +9,7 @@ import { ler, gravar, exigirLogin, corpo, erro, protegido } from "./_lib.js";
 
 const CHAVE_OBS    = "tanques:obs";      // { tq01: { obs, atualizadoPor, em }, ... }
 const CHAVE_MANUAL = "tanques:manual";   // sobrescritas manuais de situação (raro)
+const CHAVE_HIST   = (id) => `tanques:historico:${id}`;  // array de lotes encerrados por tanque
 
 // Cadastro fixo dos tanques
 export const TANQUES = [
@@ -363,6 +364,15 @@ export default protegido(async function handler(req, res) {
       tq.historico = historicoPorTanque[tq.nome.toUpperCase()] || [];
     });
 
+    // Rota especial: ?acao=historico&tanqueId=tqXX
+    const url = new URL(req.url, "http://x");
+    if (url.searchParams.get("acao") === "historico") {
+      const tanqueId = url.searchParams.get("tanqueId") || "";
+      if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
+      const hist = (await ler(CHAVE_HIST(tanqueId))) || [];
+      return res.json({ ok: true, historico: hist });
+    }
+
     return res.json({
       ok: true,
       tanques: tanquesEstado,
@@ -438,8 +448,20 @@ export default protegido(async function handler(req, res) {
     if (dados.acao === "marcarZerado") {
       if (!["admin", "gestor"].includes(sessao.papel))
         return erro(res, 403, "Apenas admin ou gestor.");
-      const { tanqueId } = dados;
+      const { tanqueId, snapshot } = dados;
       if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
+
+      // Salvar snapshot do lote encerrado no histórico do tanque
+      if (snapshot && snapshot.lote) {
+        const hist = (await ler(CHAVE_HIST(tanqueId))) || [];
+        hist.unshift({
+          ...snapshot,
+          encerradoPor: sessao.usuario || sessao.login,
+          encerradoEm:  new Date().toISOString(),
+        });
+        await gravar(CHAVE_HIST(tanqueId), hist);
+      }
+
       const mapa = (await ler(CHAVE_MANUAL)) || {};
       mapa[tanqueId] = {
         estagio:      "livre",
