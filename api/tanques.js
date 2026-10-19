@@ -122,29 +122,37 @@ export default protegido(async function handler(req, res) {
               });
             }
           }
-          if (it.tipo === "envase" && it.resultado) {
+          if (it.tipo === "envase") {
             const tanqueNorm = (it.tanqueOrigem || "").toUpperCase().replace(/[-\s]/g, "");
             const emEnvase = it.dataISO || sem;
-            envases.push({
-              tanqueOrigem: tanqueNorm,
-              lote:         it.lote          || "",
-              estilo:       it.estilo        || "",
-              formato:      it.formato       || "",
-              qtd:          it.resultado.qtdReal || it.qtd || "",
-              em:           it.resultado.em  || it.resultado.emReal || "",
-              semana:       sem,
-            });
+            // Inclui mesmo sem resultado para mostrar previsões; filtramos depois no histórico
+            const temResultado = !!(it.resultado && (it.resultado.qtdEnvasada || it.resultado.litrosFim));
+            if (temResultado) {
+              envases.push({
+                tanqueOrigem: tanqueNorm,
+                lote:         it.lote          || "",
+                estilo:       it.estilo        || "",
+                formato:      it.formato       || "",
+                qtd:          it.resultado.qtdEnvasada || it.qtd || "",
+                litrosInicio: it.resultado.litrosInicio || "",
+                litrosFim:    it.resultado.litrosFim    || "",
+                em:           it.resultado.em  || it.resultado.emReal || "",
+                semana:       sem,
+              });
+            }
             movimentos.push({
-              tipo:      "envase",
-              tanque:    tanqueNorm,
-              lote:      it.lote    || "",
-              estilo:    it.estilo  || "",
-              em:        emEnvase,
-              dataISO:   emEnvase,
-              formato:   it.formato || "",
-              qtd:       it.resultado.qtdEnvasada || it.resultado.qtdReal || it.qtd || "",
-              volume:    it.resultado.volume || "",
-              semana:    sem,
+              tipo:        "envase",
+              tanque:      tanqueNorm,
+              lote:        it.lote    || "",
+              estilo:      it.estilo  || "",
+              em:          emEnvase,
+              dataISO:     emEnvase,
+              formato:     it.formato || "",
+              qtd:         it.resultado ? (it.resultado.qtdEnvasada || it.qtd || "") : "",
+              litrosInicio:it.resultado ? (it.resultado.litrosInicio || "") : "",
+              litrosFim:   it.resultado ? (it.resultado.litrosFim    || "") : "",
+              temResultado,
+              semana:      sem,
             });
           }
         });
@@ -361,7 +369,8 @@ export default protegido(async function handler(req, res) {
 
     // Associar histórico a cada tanque
     tanquesEstado.forEach(tq => {
-      tq.historico = historicoPorTanque[tq.nome.toUpperCase()] || [];
+      const nomeNorm = tq.nome.toUpperCase().replace(/[-\s]/g, "");
+      tq.historico = historicoPorTanque[nomeNorm] || [];
     });
 
     // Rota especial: ?acao=historico&tanqueId=tqXX
