@@ -2883,7 +2883,7 @@
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.5.7";
+var VERSAO = "3.5.8";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8419,7 +8419,13 @@ async function carregarTanques(){
             "color:#4338CA;cursor:pointer;font-weight:600'>✏️ editar brassagem</button>" : "");
       } else {
         proximoConteudo =
-          "<div style='color:#A5B4FC;font-size:.75rem;font-style:italic;padding-top:4px'>Sem previsão</div>";
+          "<div style='color:#A5B4FC;font-size:.75rem;font-style:italic;padding-top:4px;margin-bottom:8px'>Sem previsão</div>"+
+          (podeEditar
+            ? "<button data-tq-prog-brass='"+esc(tq.id)+"' data-tq-prog-nome='"+esc(tq.nome)+"' "+
+              "style='background:#4338CA;border:none;border-radius:6px;padding:5px 10px;font-size:.72rem;"+
+              "color:#fff;cursor:pointer;font-weight:700;font-family:\"Barlow Condensed\",sans-serif;"+
+              "letter-spacing:.03em;white-space:nowrap'>＋ Programar brassagem</button>"
+            : "");
       }
 
       // ── Observação ───────────────────────────────────────────────
@@ -8697,6 +8703,30 @@ async function carregarTanques(){
     $("tanquesLista").querySelectorAll("[data-brass-nav-id]").forEach(function(btn){
       btn.addEventListener("click", function(){
         irParaBrassagem(btn.dataset.brassNavSem, btn.dataset.brassNavId);
+      });
+    });
+
+    // Botão "+ Programar brassagem" no bloco PRÓXIMO
+    $("tanquesLista").querySelectorAll("[data-tq-prog-brass]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var tqNome = btn.dataset.tqProgNome; // ex: "TQ03"
+        // Mudar para aba Programação (mesmo padrão de irParaBrassagem)
+        var btnProg = document.querySelector(".abas button[data-aba='prog']");
+        if (btnProg) btnProg.click();
+        // Aguardar render e abrir modal de nova brassagem com tanque pré-selecionado
+        setTimeout(function(){
+          _brasseditando = null;
+          $("brassFormTitulo").textContent = "🍺 Nova Brassagem";
+          $("brassEstilo").value  = "";
+          $("brassLote").value    = "";
+          $("brassObs").value     = "";
+          $("brassVolPrev").value = "";
+          preencherDias("brassDia");
+          $("brassDia").value = "";
+          popularSelectTanques("brassTanque", false, tqNome.toUpperCase());
+          $("modalBrassagem").hidden = false;
+          setTimeout(function(){ $("brassEstilo").focus(); }, 80);
+        }, 300);
       });
     });
 
