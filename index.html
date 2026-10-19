@@ -6030,14 +6030,15 @@ $("btnBrassSalvar").addEventListener("click", async function(){
   if (!brassLt)  { toast("Informe o lote.","erro"); $("brassLote").focus(); return; }
   if (!brassVol) { toast("Informe o volume previsto.","erro"); $("brassVolPrev").focus(); return; }
   if (!brassDv)  { toast("Selecione o dia previsto.","erro"); $("brassDia").focus(); return; }
-  var seg = chaveSemana(segProg);
   try{
     var _db = parseDiaSelect($("brassDia").value);
     var diaBrass = _db.nome;
+    // Semana correta = semana do dataISO escolhido (não necessariamente a semana visível)
+    var semBrass = _db.dataISO ? chaveSemana(segundaDe(new Date(_db.dataISO+"T00:00:00"))) : chaveSemana(segProg);
     var rBrass = await api("/api/prog", {method:"POST", body:{
       acao: _brasseditando ? "editar" : "criar",
       id:   _brasseditando ? _brasseditando.id : undefined,
-      semana: seg,
+      semana: semBrass,
       tipo: "brassagem",
       estilo: estilo,
       tanque:    $("brassTanque").value.trim(),
@@ -6050,7 +6051,9 @@ $("btnBrassSalvar").addEventListener("click", async function(){
     $("modalBrassagem").hidden = true;
     var eraEdicao = !!_brasseditando;
     _brasseditando = null;
-    if (rBrass && rBrass.movido){ segProg = segundaDe(new Date(rBrass.movido+"T00:00:00")); }
+    // Navegar para a semana do item (seja pelo movido do servidor ou pelo dataISO local)
+    var semDestino = (rBrass && rBrass.movido) ? rBrass.movido : (_db.dataISO || null);
+    if (semDestino) segProg = segundaDe(new Date(semDestino+"T00:00:00"));
     carregarProg();
     // Só abre tarefas auto ao criar (não ao editar)
     if (!eraEdicao){
@@ -6130,14 +6133,15 @@ $("btnEnvSalvar").addEventListener("click", async function(){
   if (ENV_ESTILOS[envFmt]&&!envEstiloVal){ toast("Selecione o estilo.","erro"); $("envEstilo").focus(); return; }
   if (!envQt)   { toast("Informe a qtd prevista.","erro"); $("envQtd").focus(); return; }
   if (!envDv)   { toast("Selecione o dia previsto.","erro"); $("envDia").focus(); return; }
-  var seg = chaveSemana(segProg);
   try{
     var _de = parseDiaSelect($("envDia").value);
     var diaEnv = _de.nome;
+    // Semana correta = semana do dataISO escolhido (não necessariamente a semana visível)
+    var semEnv = _de.dataISO ? chaveSemana(segundaDe(new Date(_de.dataISO+"T00:00:00"))) : chaveSemana(segProg);
     var rEnv = await api("/api/prog", {method:"POST", body:{
       acao:     _enveditando ? "editar" : "criar",
       id:       _enveditando ? _enveditando.id : undefined,
-      semana:   seg,
+      semana:   semEnv,
       tipo:     "envase",
       produto:  produto,
       lote:     $("envLote").value.trim(),
@@ -6152,7 +6156,9 @@ $("btnEnvSalvar").addEventListener("click", async function(){
     $("modalEnvase").hidden = true;
     var eraEdicaoEnv = !!_enveditando;
     _enveditando = null;
-    if (rEnv && rEnv.movido){ segProg = segundaDe(new Date(rEnv.movido+"T00:00:00")); }
+    // Navegar para a semana do item
+    var semDestinoEnv = (rEnv && rEnv.movido) ? rEnv.movido : (_de.dataISO || null);
+    if (semDestinoEnv) segProg = segundaDe(new Date(semDestinoEnv+"T00:00:00"));
     carregarProg();
     if (!eraEdicaoEnv){
       var dataISOEnv = "";
