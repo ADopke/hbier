@@ -3116,7 +3116,7 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.6.2";
+var VERSAO = "3.6.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9294,6 +9294,7 @@ function fp_addEnzRow(){
 }
 function fp_addBatelada(){
   var list=document.getElementById('fp-bat-list');
+  if(!list){ console.error('fp-bat-list não encontrado'); return; }
   var num=list.querySelectorAll('.fp-bat-card').length+1;
   var card=document.createElement('div'); card.className='fp-bat-card';
   card.innerHTML='<div class="fp-bat-header"><span class="fp-bat-num">⚗️ Batelada 0'+num+'</span><span class="fp-bat-status">⏳ Nova</span></div>'+
@@ -9335,7 +9336,7 @@ function fp_simSave(btn){
   var loteEl = app.querySelector('#fp-panel-receita .fp-fg-grid input');
   // tenta pegar o lote do atributo data que guardamos ao abrir
   var loteVal = (app.dataset.fpLote || "").trim();
-  if (!loteVal) { toast("Não foi possível identificar o lote."); return; }
+  if (!loteVal || loteVal === "—") { toast("Não foi possível identificar o lote."); return; }
 
   // serializa todos os inputs/textareas/selects para um objeto plano
   function coletarTabela(tblId){
