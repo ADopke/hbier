@@ -1344,6 +1344,7 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
         <button data-aba="prog">Programação</button>
         <button data-aba="tanques">🍺 Tanques</button>
         <button data-aba="lotes" id="abaLotes" hidden>📋 Lotes</button>
+        <button data-aba="receitas" id="abaReceitas" hidden>📖 Receitas</button>
         <button data-aba="metas">🎯 Metas</button>
         <button data-aba="limpeza">🧹 Limpeza</button>
         <button data-aba="manut">Manutenções</button>
@@ -2321,6 +2322,115 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
             </thead>
             <tbody id="lotesCorpo"></tbody>
           </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========== ABA RECEITAS ========== -->
+    <div id="painelReceitas" hidden>
+      <section>
+        <div class="sec-head">
+          <span class="sec-title">📖 Receitas</span>
+          <button class="btn mini" onclick="rec_novaReceita()" style="margin-top:0">＋ Nova receita</button>
+        </div>
+
+        <!-- lista de receitas -->
+        <div id="recListaWrap">
+          <div id="recCarregando" style="padding:24px;text-align:center;color:var(--muted);font-size:.9rem">⏳ Carregando receitas…</div>
+          <div id="recVazio" hidden style="padding:24px;text-align:center;color:var(--muted);font-size:.9rem">Nenhuma receita cadastrada ainda. Clique em <b>＋ Nova receita</b> para começar.</div>
+          <div id="recLista" style="display:grid;gap:10px;margin-top:4px"></div>
+        </div>
+
+        <!-- formulário de edição (inicialmente oculto) -->
+        <div id="recForm" hidden style="margin-top:16px">
+          <div class="sec-head" style="margin-bottom:12px">
+            <span class="sec-title" id="recFormTitulo">Nova Receita</span>
+            <button class="btn mini secundario" onclick="rec_cancelar()">← Voltar</button>
+          </div>
+          <input type="hidden" id="recId">
+
+          <div class="form-grid">
+            <div><label>Nome da receita *</label><input type="text" id="recNome" placeholder="ex: Helles Verão 2026"></div>
+            <div><label>Estilo</label><input type="text" id="recEstilo" placeholder="ex: Munich Helles"></div>
+            <div><label>Volume previsto (L)</label><input type="number" id="recVolume" placeholder="1000"></div>
+            <div><label>OG alvo</label><input type="text" id="recOg" placeholder="1.050"></div>
+            <div><label>FG alvo</label><input type="text" id="recFg" placeholder="1.012"></div>
+            <div><label>ABV alvo (%)</label><input type="text" id="recAbv" placeholder="—" readonly style="background:#f5f5f0;cursor:default"></div>
+          </div>
+
+          <!-- fermentáveis -->
+          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">🌾 Fermentáveis</span></div>
+          <div class="grade-wrap" style="margin-bottom:6px">
+            <table class="fp-data" id="rec-tbl-ferm" style="width:100%">
+              <thead><tr><th>Fermentável</th><th>Tipo</th><th>EBC</th><th>%</th><th>Extrato (%)</th><th>kg/batelada</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <button class="fp-add-row-btn" onclick="rec_addRow('rec-tbl-ferm','Fermentável','Base','—','0','0%','0')">＋ Fermentável</button>
+
+          <!-- lúpulos -->
+          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">🌿 Lúpulos</span></div>
+          <div class="grade-wrap" style="margin-bottom:6px">
+            <table class="fp-data" id="rec-tbl-lup" style="width:100%">
+              <thead><tr><th>Variedade</th><th>AA%</th><th>Adição</th><th>Tempo (min)</th><th>g/batelada</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <button class="fp-add-row-btn" onclick="rec_addRow('rec-tbl-lup','Variedade','0%','Fervura','60','0')">＋ Lúpulo</button>
+
+          <!-- levedura -->
+          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">🧫 Levedura</span></div>
+          <div class="form-grid">
+            <div><label>Linhagem</label><input type="text" id="recLevLinhagem" placeholder="ex: W-34/70"></div>
+            <div><label>Fabricante</label><input type="text" id="recLevFab" placeholder="ex: Fermentis"></div>
+            <div><label>Pitching (g/batelada)</label><input type="number" id="recLevPitch" placeholder="0"></div>
+            <div><label>Temp. fermentação (°C)</label><input type="text" id="recLevTemp" placeholder="ex: 9–12"></div>
+          </div>
+
+          <!-- perfil de mostura -->
+          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">🌡️ Perfil de mostura</span></div>
+          <div class="grade-wrap" style="margin-bottom:6px">
+            <table class="fp-data" id="rec-tbl-mash" style="width:100%">
+              <thead><tr><th>Etapa</th><th>Temp alvo (°C)</th><th>Rampa alvo (min)</th><th>Tempo alvo (min)</th><th>Descrição</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <button class="fp-add-row-btn" onclick="rec_addRow('rec-tbl-mash','Nova Etapa','65','5','30','')">＋ Etapa</button>
+
+          <!-- tratamento de água -->
+          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">💧 Tratamento de Água</span></div>
+          <div class="form-grid" style="margin-bottom:8px">
+            <div><label>Fonte da água</label><input type="text" id="recAguaFonte" placeholder="ex: Poço / DMAE"></div>
+            <div><label>pH alvo</label><input type="text" id="recAguaPh" placeholder="ex: 5.3–5.5"></div>
+            <div><label>Volume arriada (L)</label><input type="number" id="recAguaVol" placeholder="0"></div>
+          </div>
+          <div class="grade-wrap" style="margin-bottom:6px">
+            <table class="fp-data" id="rec-tbl-sais" style="width:100%">
+              <thead><tr><th>Sal</th><th>g/HL</th><th>Adição</th><th>Observação</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <button class="fp-add-row-btn" onclick="rec_addRow('rec-tbl-sais','Sal','0','Arriada','—')">＋ Sal</button>
+
+          <!-- adjuntos -->
+          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">🧪 Adjuntos / Dry-hop</span></div>
+          <div class="grade-wrap" style="margin-bottom:6px">
+            <table class="fp-data" id="rec-tbl-adj" style="width:100%">
+              <thead><tr><th>Ingrediente</th><th>Tipo</th><th>Adição</th><th>Tempo/Etapa</th><th>Qtde/bat</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <button class="fp-add-row-btn" onclick="rec_addRow('rec-tbl-adj','Ingrediente','Dry-hop','Pós-ferm','0')">＋ Adjunto</button>
+
+          <!-- obs -->
+          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">📝 Notas do mestre</span></div>
+          <textarea id="recObs" rows="3" placeholder="Notas gerais, cuidados especiais, histórico de ajustes…" style="width:100%;padding:10px 12px;border:1.5px solid var(--linha);border-radius:8px;font-family:'Barlow',sans-serif;font-size:.95rem;resize:vertical"></textarea>
+
+          <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+            <button class="btn" onclick="rec_salvar()" style="flex:1;min-width:140px">💾 Salvar receita</button>
+            <button class="btn perigo" id="recBtnDeletar" onclick="rec_deletar()" style="flex:none;width:auto;padding:12px 18px" hidden>🗑 Excluir</button>
+          </div>
+          <div id="recMsgForm" style="margin-top:10px"></div>
         </div>
       </section>
     </div>
@@ -3338,7 +3448,8 @@ async function abrirApp(){
   $("userPapel").textContent = sessao.papel === "admin" ? "administrador" : "colaborador";
   $("abaEquipe").hidden = !["admin","gestor"].includes(sessao.papel);
   $("abaRelatorios").hidden = sessao.papel !== "admin";
-  $("abaLotes").hidden = !["admin","gestor"].includes(sessao.papel);
+  $("abaLotes").hidden    = !["admin","gestor"].includes(sessao.papel);
+  $("abaReceitas").hidden = !["admin","gestor"].includes(sessao.papel);
   $("campoPara").hidden = !["admin","gestor"].includes(sessao.papel);
   donoAtual = sessao.login;
   relCarregado = false;
@@ -4207,6 +4318,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
     $("painelMetas").hidden      = b.dataset.aba !== "metas";
     $("painelLimpeza").hidden    = b.dataset.aba !== "limpeza";
     $("painelLotes").hidden      = b.dataset.aba !== "lotes";
+    $("painelReceitas").hidden   = b.dataset.aba !== "receitas";
     if (b.dataset.aba === "base" && !baseCarregada) carregarBase();
     if (b.dataset.aba === "tanques") carregarTanques();
     if (b.dataset.aba === "prog") carregarProg();
@@ -4216,6 +4328,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
     if (b.dataset.aba === "metas") carregarMetas();
     if (b.dataset.aba === "limpeza") setTimeout(function(){ carregarLimpeza(); }, 0);
     if (b.dataset.aba === "lotes") carregarLotes();
+    if (b.dataset.aba === "receitas") rec_carregarLista();
   });
 });
 
@@ -9492,6 +9605,7 @@ function fp_simSave(btn){
       og:         (document.getElementById('fp-og-alvo')||{}).value  || coletarGrid('#fp-panel-receita .fp-fg-grid.tight input')[0] || "",
       fg:         (document.getElementById('fp-fg-alvo')||{}).value  || "",
       abv:        (document.getElementById('fp-abv-alvo')||{}).value || "",
+      receitaId:  (document.getElementById('fp-receita-id-usado')||{}).value || "",
     },
     bateladas: (function(){
       var list = document.getElementById('fp-bat-list'); if(!list) return [];
@@ -9602,6 +9716,25 @@ function abrirFichaLote(tq){
 
   /* ══════════ ABA RECEITA ══════════ */
   '<div class="fp-panel active" id="fp-panel-receita">'+
+
+  /* Seletor de Receita */
+  '<div class="fp-sec" id="fp-sec-seletor-receita">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">📖</span><span class="fp-sec-title">Carregar Receita</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">'+
+        '<div class="fp-field" style="flex:1;min-width:180px"><label>Receita cadastrada</label>'+
+          '<select id="fp-sel-receita" onchange="fp_onSelecionarReceita()">'+
+            '<option value="">— selecione para carregar —</option>'+
+          '</select>'+
+        '</div>'+
+        '<button class="fp-btn fp-btn-primary" onclick="fp_carregarReceitaSelecionada()" style="white-space:nowrap">⬇️ Carregar</button>'+
+      '</div>'+
+      '<div id="fp-receita-info" style="margin-top:8px;font-size:11px;color:var(--fp-fg3)"></div>'+
+      '<input type="hidden" id="fp-receita-id-usado">'+
+    '</div>'+
+  '</div>'+
 
   /* Dados Gerais */
   '<div class="fp-sec fp-gestor-sec">'+
@@ -9996,6 +10129,9 @@ function abrirFichaLote(tq){
 
   $("modalFicha").hidden = false;
 
+  /* — popula select de receitas na ficha — */
+  rec_initFichaSelect();
+
   /* — carregar dados salvos se existirem (ou dados pré-carregados da aba Lotes) — */
   var fichaPrecarregada = tq._fichaPrecarregada || null;
   if (fichaPrecarregada) {
@@ -10082,6 +10218,17 @@ function fp_preencherFicha(ficha){
     if(fgEl && ficha.cabecalho.fg) fgEl.value = ficha.cabecalho.fg;
     if(ogEl && ficha.cabecalho.og) ogEl.value = ficha.cabecalho.og;
     fp_calcAbv();
+    // restaura receita usada no select
+    if(ficha.cabecalho.receitaId){
+      var hidRec = document.getElementById('fp-receita-id-usado');
+      if(hidRec) hidRec.value = ficha.cabecalho.receitaId;
+      // tenta selecionar no dropdown após cache carregar
+      setTimeout(function(){
+        var sel = document.getElementById('fp-sel-receita');
+        if(sel && ficha.cabecalho.receitaId) sel.value = ficha.cabecalho.receitaId;
+        fp_onSelecionarReceita();
+      }, 800);
+    }
   }
   // indicador de salvo
   if(ficha.meta && ficha.meta.salvoEm){
@@ -10091,6 +10238,385 @@ function fp_preencherFicha(ficha){
   }
   fp_dirty=false;
 }
+
+/* ==================================================================
+   Módulo de Receitas
+   ================================================================== */
+var recListaCache = null; // cache em memória para popular o select na ficha
+
+/* — helpers de tabela reutilizáveis para o formulário de receita — */
+function rec_addRow(tblId){
+  var args = Array.from(arguments).slice(1);
+  fp_addRow.apply(null, [tblId].concat(args));
+}
+
+function rec_tabelaParaArray(tblId){
+  var tbl = document.getElementById(tblId); if(!tbl) return [];
+  return Array.from(tbl.querySelectorAll('tbody tr')).map(function(tr){
+    return Array.from(tr.querySelectorAll('input,select,textarea')).map(function(el){ return el.value; });
+  });
+}
+
+function rec_arrayParaTabela(tblId, linhas){
+  var tbl = document.getElementById(tblId); if(!tbl||!linhas||!linhas.length) return;
+  tbl.querySelector('tbody').innerHTML='';
+  // descobre o número de colunas pelo header
+  var nCols = tbl.querySelectorAll('thead th').length - 1; // -1 col de ação
+  linhas.forEach(function(row){
+    var args=[tblId]; for(var i=0;i<nCols;i++) args.push(row[i]||'');
+    fp_addRow.apply(null,args);
+    // preenche valores reais
+    var tr = tbl.querySelector('tbody tr:last-child');
+    if(!tr) return;
+    var inputs = tr.querySelectorAll('input,select,textarea');
+    row.forEach(function(v,i){ if(inputs[i]) inputs[i].value = v; });
+  });
+}
+
+/* carrega lista de receitas e popula o painel + select da ficha */
+async function rec_carregarLista(){
+  var listaEl = document.getElementById('recLista');
+  var vazioEl = document.getElementById('recVazio');
+  var loadEl  = document.getElementById('recCarregando');
+  if(loadEl) loadEl.hidden = false;
+  if(listaEl) listaEl.innerHTML='';
+  if(vazioEl) vazioEl.hidden = true;
+
+  try{
+    var r = await fetch('/api/receita?lista=1',{credentials:'include'});
+    var json = await r.json();
+    var lista = (json.receitas||[]);
+    recListaCache = lista;
+    rec_popularSelectFicha(); // atualiza o select dentro da ficha aberta, se existir
+
+    if(loadEl) loadEl.hidden = true;
+    if(!lista.length){
+      if(vazioEl) vazioEl.hidden = false;
+      return;
+    }
+    if(!listaEl) return;
+    listaEl.innerHTML = lista.map(function(rec){
+      return '<div style="background:var(--card);border:1px solid var(--linha);border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">'+
+        '<div>'+
+          '<div style="font-weight:700;font-size:.95rem">'+esc(rec.nome)+'</div>'+
+          '<div style="font-size:.8rem;color:var(--muted);margin-top:2px">'+
+            esc(rec.estilo||'')+(rec.og?' · OG '+esc(rec.og):'')+
+            (rec.abv?' · '+esc(rec.abv)+'% ABV':'')+
+            (rec.volume?' · '+esc(rec.volume)+' L':'')+'</div>'+
+        '</div>'+
+        '<button class="btn mini" onclick="rec_editarReceita(\''+esc(rec.id)+'\')">✏️ Editar</button>'+
+      '</div>';
+    }).join('');
+  }catch(e){
+    if(loadEl){ loadEl.hidden=false; loadEl.textContent='Erro ao carregar receitas: '+e.message; }
+  }
+}
+
+/* popula o select na ficha de produção com a lista de receitas */
+function rec_popularSelectFicha(){
+  var sel = document.getElementById('fp-sel-receita');
+  if(!sel) return;
+  var atual = sel.value;
+  sel.innerHTML = '<option value="">— selecione para carregar —</option>';
+  (recListaCache||[]).forEach(function(rec){
+    var opt = document.createElement('option');
+    opt.value = rec.id;
+    opt.textContent = rec.nome + (rec.estilo?' ('+rec.estilo+')':'');
+    sel.appendChild(opt);
+  });
+  if(atual) sel.value = atual;
+}
+
+/* mostra info ao selecionar no select */
+function fp_onSelecionarReceita(){
+  var sel = document.getElementById('fp-sel-receita');
+  var info = document.getElementById('fp-receita-info');
+  if(!info) return;
+  if(!sel||!sel.value){ info.textContent=''; return; }
+  var rec = (recListaCache||[]).find(function(r){ return r.id===sel.value; });
+  if(!rec){ info.textContent=''; return; }
+  info.textContent = [
+    rec.estilo||'',
+    rec.og?'OG '+rec.og:'',
+    rec.fg?'FG '+rec.fg:'',
+    rec.abv?rec.abv+'% ABV':'',
+    rec.volume?rec.volume+' L':''
+  ].filter(Boolean).join(' · ');
+}
+
+/* carrega receita e preenche a ficha */
+async function fp_carregarReceitaSelecionada(){
+  var sel = document.getElementById('fp-sel-receita');
+  if(!sel||!sel.value){ return; }
+  var id = sel.value;
+  try{
+    var r = await fetch('/api/receita?id='+encodeURIComponent(id),{credentials:'include'});
+    var json = await r.json();
+    var rec = json.receita;
+    if(!rec){ alert('Receita não encontrada.'); return; }
+    fp_aplicarReceita(rec);
+  }catch(e){
+    alert('Erro ao carregar receita: '+e.message);
+  }
+}
+
+/* preenche a ficha com dados de uma receita */
+function fp_aplicarReceita(rec){
+  // OG/FG/ABV alvo
+  if(rec.og){ var el=document.getElementById('fp-og-alvo'); if(el) el.value=rec.og; }
+  if(rec.fg){ var el=document.getElementById('fp-fg-alvo'); if(el) el.value=rec.fg; }
+  fp_calcAbv();
+
+  // tabelas
+  function preencherTabRecRec(tblId, linhas){
+    var tbl = document.getElementById(tblId); if(!tbl||!linhas||!linhas.length) return;
+    var tbody = tbl.querySelector('tbody'); if(!tbody) return;
+    // limpa apenas se tiver dados novos
+    tbody.innerHTML='';
+    linhas.forEach(function(row){
+      // descobrir nr de colunas data do header
+      var nCols = tbl.querySelectorAll('thead th').length - 1;
+      var args=[tblId]; for(var i=0;i<nCols;i++) args.push(row[i]||'');
+      fp_addRow.apply(null,args);
+      var tr=tbody.querySelector('tr:last-child'); if(!tr) return;
+      var inputs=tr.querySelectorAll('input,select,textarea');
+      row.forEach(function(v,i){ if(inputs[i]) inputs[i].value=v; });
+    });
+  }
+
+  if(rec.sais)         preencherTabRecRec('fp-tbl-sais',rec.sais);
+  if(rec.fermentaveis) preencherTabRecRec('fp-tbl-ferm',rec.fermentaveis);
+  if(rec.lupulos)      preencherTabRecRec('fp-tbl-lup',rec.lupulos);
+  if(rec.adjuntos)     preencherTabRecRec('fp-tbl-adj',rec.adjuntos);
+  if(rec.mash)         preencherTabRecRec('fp-tbl-mash',rec.mash);
+
+  // levedura (campos individuais na ficha)
+  var lev = rec.levedura||{};
+  [
+    ['fp-lev-linhagem', lev.linhagem],
+    ['fp-lev-fab',      lev.fabricante],
+    ['fp-lev-pitch',    lev.pitch],
+    ['fp-lev-temp',     lev.temp],
+  ].forEach(function(p){
+    var el=document.getElementById(p[0]); if(el&&p[1]!=null) el.value=p[1];
+  });
+
+  // água
+  if(rec.agua){
+    var el=document.getElementById('fp-agua-fonte'); if(el&&rec.agua.fonte) el.value=rec.agua.fonte;
+    var el=document.getElementById('fp-agua-ph');    if(el&&rec.agua.ph)    el.value=rec.agua.ph;
+    var el=document.getElementById('fp-agua-vol');   if(el&&rec.agua.vol)   el.value=rec.agua.vol;
+  }
+
+  // grava qual receita foi usada
+  var hidRec = document.getElementById('fp-receita-id-usado');
+  if(hidRec) hidRec.value = rec.meta && rec.meta.id || document.getElementById('fp-sel-receita').value || '';
+
+  fp_markDirty();
+  // feedback visual
+  var info = document.getElementById('fp-receita-info');
+  if(info) info.textContent = '✅ Receita "'+esc(rec.nome||'')+'" carregada com sucesso!';
+}
+
+/* — painel Receitas: nova receita — */
+function rec_novaReceita(){
+  document.getElementById('recId').value='';
+  document.getElementById('recNome').value='';
+  document.getElementById('recEstilo').value='';
+  document.getElementById('recVolume').value='';
+  document.getElementById('recOg').value='';
+  document.getElementById('recFg').value='';
+  document.getElementById('recAbv').value='';
+  document.getElementById('recLevLinhagem').value='';
+  document.getElementById('recLevFab').value='';
+  document.getElementById('recLevPitch').value='';
+  document.getElementById('recLevTemp').value='';
+  document.getElementById('recAguaFonte').value='';
+  document.getElementById('recAguaPh').value='';
+  document.getElementById('recAguaVol').value='';
+  document.getElementById('recObs').value='';
+  // limpa tabelas
+  ['rec-tbl-ferm','rec-tbl-lup','rec-tbl-mash','rec-tbl-sais','rec-tbl-adj'].forEach(function(id){
+    var t=document.getElementById(id); if(t) t.querySelector('tbody').innerHTML='';
+  });
+  document.getElementById('recFormTitulo').textContent='Nova Receita';
+  document.getElementById('recBtnDeletar').hidden=true;
+  document.getElementById('recMsgForm').innerHTML='';
+  document.getElementById('recListaWrap').hidden=true;
+  document.getElementById('recForm').hidden=false;
+}
+
+/* carrega receita para edição */
+async function rec_editarReceita(id){
+  try{
+    var r = await fetch('/api/receita?id='+encodeURIComponent(id),{credentials:'include'});
+    var json = await r.json();
+    var rec = json.receita;
+    if(!rec){ alert('Receita não encontrada.'); return; }
+
+    document.getElementById('recId').value=id;
+    document.getElementById('recNome').value=rec.nome||'';
+    document.getElementById('recEstilo').value=rec.estilo||'';
+    document.getElementById('recVolume').value=rec.volume||'';
+    document.getElementById('recOg').value=rec.og||'';
+    document.getElementById('recFg').value=rec.fg||'';
+    document.getElementById('recAbv').value=rec.abv||'';
+
+    var lev=rec.levedura||{};
+    document.getElementById('recLevLinhagem').value=lev.linhagem||'';
+    document.getElementById('recLevFab').value=lev.fabricante||'';
+    document.getElementById('recLevPitch').value=lev.pitch||'';
+    document.getElementById('recLevTemp').value=lev.temp||'';
+
+    var agua=rec.agua||{};
+    document.getElementById('recAguaFonte').value=agua.fonte||'';
+    document.getElementById('recAguaPh').value=agua.ph||'';
+    document.getElementById('recAguaVol').value=agua.vol||'';
+    document.getElementById('recObs').value=rec.obs||'';
+
+    // tabelas
+    function carregarTabRec(tblId, linhas){
+      var t=document.getElementById(tblId); if(!t) return;
+      t.querySelector('tbody').innerHTML='';
+      if(!linhas||!linhas.length) return;
+      var nCols = t.querySelectorAll('thead th').length-1;
+      linhas.forEach(function(row){
+        var args=[tblId]; for(var i=0;i<nCols;i++) args.push(row[i]||'');
+        fp_addRow.apply(null,args);
+        var tr=t.querySelector('tbody tr:last-child'); if(!tr) return;
+        var inputs=tr.querySelectorAll('input,select,textarea');
+        row.forEach(function(v,i){ if(inputs[i]) inputs[i].value=v; });
+      });
+    }
+    carregarTabRec('rec-tbl-ferm',rec.fermentaveis);
+    carregarTabRec('rec-tbl-lup',rec.lupulos);
+    carregarTabRec('rec-tbl-mash',rec.mash);
+    carregarTabRec('rec-tbl-sais',rec.sais);
+    carregarTabRec('rec-tbl-adj',rec.adjuntos);
+
+    document.getElementById('recFormTitulo').textContent='Editando: '+esc(rec.nome||'');
+    document.getElementById('recBtnDeletar').hidden=false;
+    document.getElementById('recMsgForm').innerHTML='';
+    document.getElementById('recListaWrap').hidden=true;
+    document.getElementById('recForm').hidden=false;
+  }catch(e){
+    alert('Erro: '+e.message);
+  }
+}
+
+function rec_cancelar(){
+  document.getElementById('recForm').hidden=true;
+  document.getElementById('recListaWrap').hidden=false;
+}
+
+/* ABV automático no formulário de receita */
+document.addEventListener('input', function(e){
+  if(e.target.id==='recOg'||e.target.id==='recFg'){
+    var og=parseFloat((document.getElementById('recOg').value||'').replace(',','.'));
+    var fg=parseFloat((document.getElementById('recFg').value||'').replace(',','.'));
+    var el=document.getElementById('recAbv');
+    if(el) el.value = (og&&fg) ? ((og-fg)*131.25).toFixed(1) : '';
+  }
+});
+
+async function rec_salvar(){
+  var nome = (document.getElementById('recNome').value||'').trim();
+  var msg  = document.getElementById('recMsgForm');
+  if(!nome){ msg.innerHTML='<div class="aviso">Informe o nome da receita.</div>'; return; }
+
+  var dados = {
+    nome:     nome,
+    estilo:   document.getElementById('recEstilo').value.trim(),
+    volume:   document.getElementById('recVolume').value.trim(),
+    og:       document.getElementById('recOg').value.trim(),
+    fg:       document.getElementById('recFg').value.trim(),
+    abv:      document.getElementById('recAbv').value.trim(),
+    levedura: {
+      linhagem:   document.getElementById('recLevLinhagem').value.trim(),
+      fabricante: document.getElementById('recLevFab').value.trim(),
+      pitch:      document.getElementById('recLevPitch').value.trim(),
+      temp:       document.getElementById('recLevTemp').value.trim(),
+    },
+    agua: {
+      fonte: document.getElementById('recAguaFonte').value.trim(),
+      ph:    document.getElementById('recAguaPh').value.trim(),
+      vol:   document.getElementById('recAguaVol').value.trim(),
+    },
+    fermentaveis: rec_tabelaParaArray('rec-tbl-ferm'),
+    lupulos:      rec_tabelaParaArray('rec-tbl-lup'),
+    mash:         rec_tabelaParaArray('rec-tbl-mash'),
+    sais:         rec_tabelaParaArray('rec-tbl-sais'),
+    adjuntos:     rec_tabelaParaArray('rec-tbl-adj'),
+    obs:          document.getElementById('recObs').value.trim(),
+  };
+
+  var id = document.getElementById('recId').value.trim();
+  var payload = { dados: dados };
+  if(id) payload.id = id;
+
+  try{
+    var r = await fetch('/api/receita',{
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    var json = await r.json();
+    if(!r.ok) throw new Error(json.erro||'Erro ao salvar');
+    document.getElementById('recId').value = json.id;
+    document.getElementById('recFormTitulo').textContent='Editando: '+esc(nome);
+    document.getElementById('recBtnDeletar').hidden=false;
+    msg.innerHTML='<div class="aviso ok">✅ Receita salva com sucesso!</div>';
+    recListaCache=null; // invalida cache
+    setTimeout(function(){ msg.innerHTML=''; },3000);
+  }catch(e){
+    msg.innerHTML='<div class="aviso">Erro: '+esc(e.message)+'</div>';
+  }
+}
+
+async function rec_deletar(){
+  if(!confirm('Excluir esta receita permanentemente?')) return;
+  var id = document.getElementById('recId').value.trim();
+  if(!id) return;
+  try{
+    var r = await fetch('/api/receita',{
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id:id, deletar:true})
+    });
+    var json = await r.json();
+    if(!r.ok) throw new Error(json.erro||'Erro');
+    recListaCache=null;
+    rec_cancelar();
+    rec_carregarLista();
+  }catch(e){
+    alert('Erro: '+e.message);
+  }
+}
+
+/* ao abrir a ficha, popula o select de receitas */
+var _recFichaInited = false;
+function rec_initFichaSelect(){
+  if(!recListaCache){
+    fetch('/api/receita?lista=1',{credentials:'include'})
+      .then(function(r){ return r.json(); })
+      .then(function(json){
+        recListaCache = json.receitas||[];
+        rec_popularSelectFicha();
+      }).catch(function(){});
+  } else {
+    rec_popularSelectFicha();
+  }
+}
+
+/* — expõe no window — */
+window.rec_novaReceita          = rec_novaReceita;
+window.rec_editarReceita        = rec_editarReceita;
+window.rec_cancelar             = rec_cancelar;
+window.rec_salvar               = rec_salvar;
+window.rec_deletar              = rec_deletar;
+window.rec_addRow               = rec_addRow;
+window.fp_onSelecionarReceita   = fp_onSelecionarReceita;
+window.fp_carregarReceitaSelecionada = fp_carregarReceitaSelecionada;
 
 /* — expõe funções fp_ no window para que onclick inline as encontre — */
 window.fp_toggleSec        = fp_toggleSec;
