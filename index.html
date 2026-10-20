@@ -1176,6 +1176,8 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
 .fp-mlog-row.ferm{grid-template-columns:150px 70px 80px 80px 60px 1fr 28px}
 /* maturação log (8 cols: datetime, temp, kgf, pH, co2, clarif, obs, del) */
 .fp-mlog-row.matur{grid-template-columns:150px 80px 80px 60px 60px 90px 1fr 28px}
+/* lavagens log (4 cols: hora, vol, responsável, del) */
+.fp-mlog-row.lav{grid-template-columns:100px 80px 1fr 28px}
 /* stats banner acima dos logs */
 .fp-log-stats{display:flex;gap:16px;flex-wrap:wrap;background:var(--fp-bg3);border-radius:8px;padding:8px 14px;margin-bottom:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px}
 .fp-log-stat{display:flex;flex-direction:column;align-items:center;gap:1px}
@@ -3259,7 +3261,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.5";
+var VERSAO = "3.7.6";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9489,6 +9491,27 @@ function fp_addMaturRow(){
     '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
   c.appendChild(row); fp_markDirty();
 }
+/* Adiciona linha ao log de lavagens de uma batelada */
+function fp_addLavRow(btn){
+  /* btn pode ser o botão clicado (onclick) ou o container .fp-lav-log (ao desserializar) */
+  var card = btn ? btn.closest('.fp-bat-card') : null;
+  if(!card) return;
+  var c = card.querySelector('.fp-lav-log');
+  if(!c) return;
+  var now = new Date();
+  var hhmm = now.toTimeString().slice(0,5);
+  /* Usa a mesma variável sessao do app principal */
+  var usuario = (typeof sessao !== 'undefined' && sessao && sessao.login) ? sessao.login : '';
+  var row = document.createElement('div'); row.className = 'fp-mlog-row lav';
+  row.innerHTML =
+    '<div class="fp-log-cell"><input type="time" value="'+hhmm+'"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="1" placeholder="L"></div>'+
+    '<div class="fp-log-cell"><input placeholder="'+usuario+'" value="'+usuario+'"></div>'+
+    '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
+  c.appendChild(row);
+  fp_markDirty();
+}
+
 /* Calcula OG média das bateladas e ABV estimado pela última leitura de SG */
 function fp_calcFermStats(){
   // OG = média dos campos "OG real (no tanque)" de cada batelada (resumo)
@@ -9794,11 +9817,19 @@ function fp_addBatelada(){
       '<div class="fp-field"><label>Freq. bomba transf. (Hz)</label><input type="number" placeholder="14"></div>'+
     '</div>'+
     '<div class="fp-vol-row">'+
-      '<div class="fp-field"><label>1ª lavagem (hh:mm)</label><input type="time"></div>'+
-      '<div class="fp-field"><label>2ª lavagem (hh:mm)</label><input type="time"></div>'+
       '<div class="fp-field"><label>Finalização lauter (hh:mm)</label><input type="time" data-resumo="lauter-fim"></div>'+
-      '<div class="fp-field"><label>Tempo total lauter (min)</label><input type="number" placeholder="—"></div>'+
     '</div>'+
+    '<div class="fp-small-label" style="margin-top:8px">Lavagens</div>'+
+    '<div class="fp-log-table"><div class="fp-log-scroll">'+
+      '<div class="fp-mlog-row lav header">'+
+        '<div class="fp-log-cell">Hora</div>'+
+        '<div class="fp-log-cell">Vol. (L)</div>'+
+        '<div class="fp-log-cell">Responsável</div>'+
+        '<div class="fp-log-cell"></div>'+
+      '</div>'+
+      '<div class="fp-lav-log"></div>'+
+    '</div></div>'+
+    '<button class="fp-add-row-btn fp-add-lav-btn" onclick="fp_addLavRow(this)">＋ Adicionar lavagem</button>'+
 
     /* ── FERVURA ── */
     '<div class="fp-divider"></div>'+
@@ -10248,7 +10279,14 @@ function fp_simSave(btn){
         // adições de fervura: tabela fp-tbl-adic-NN dentro do card
         var adicTbl = card.querySelector('table[id^="fp-tbl-adic-"]');
         var adicoes = adicTbl ? coletarTabela(adicTbl.id) : [];
-        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey, adicoes: adicoes };
+        // log de lavagens: linhas .fp-mlog-row.lav dentro do card
+        var lavLog = [];
+        card.querySelectorAll('.fp-lav-log .fp-mlog-row:not(.header)').forEach(function(row){
+          var vals=[];
+          row.querySelectorAll('input').forEach(function(el){ vals.push(el.value); });
+          lavLog.push(vals);
+        });
+        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog };
       });
     })(),
     sais:        coletarTabela('fp-tbl-sais'),
@@ -10919,6 +10957,20 @@ function fp_preencherFicha(ficha){
           var adicTbl = card.querySelector('table[id^="fp-tbl-adic-"]');
           if(adicTbl) preencherTabela(adicTbl.id, bat.adicoes);
         }
+        // log de lavagens
+        if(bat.lavLog && bat.lavLog.length){
+          var lavCont = card.querySelector('.fp-lav-log');
+          if(lavCont){
+            bat.lavLog.forEach(function(vals){
+              fp_addLavRow(card.querySelector('.fp-add-lav-btn'));
+              var row = lavCont.querySelector('.fp-mlog-row:last-child');
+              if(!row) return;
+              row.querySelectorAll('input').forEach(function(el,i){
+                if(vals[i]!==undefined) el.value = vals[i];
+              });
+            });
+          }
+        }
       });
       fp_atualizarNumBateladas();
     }
@@ -11477,6 +11529,7 @@ window.fp_delLog           = fp_delLog;
 window.fp_addRow           = fp_addRow;
 window.fp_addFermRow       = fp_addFermRow;
 window.fp_addMaturRow      = fp_addMaturRow;
+window.fp_addLavRow        = fp_addLavRow;
 window.fp_calcFermStats    = fp_calcFermStats;
 window.fp_aprovarLote      = fp_aprovarLote;
 window.fp_addEnzRow        = fp_addEnzRow;
