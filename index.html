@@ -1174,8 +1174,8 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
 .fp-mlog-row{display:grid;grid-template-columns:150px 70px 80px 80px 60px 1fr 28px;gap:0;border-bottom:1px solid var(--fp-border);align-items:center}
 /* fermentação log (7 cols: datetime, SG, temp_real, kgf, pH, obs, del) */
 .fp-mlog-row.ferm{grid-template-columns:150px 70px 80px 80px 60px 1fr 28px}
-/* maturação log (9 cols: datetime, SG, temp, kgf, pH, co2, clarif, obs, del) */
-.fp-mlog-row.matur{grid-template-columns:150px 70px 80px 80px 60px 60px 90px 1fr 28px}
+/* maturação log (8 cols: datetime, temp, kgf, pH, co2, clarif, obs, del) */
+.fp-mlog-row.matur{grid-template-columns:150px 80px 80px 60px 60px 90px 1fr 28px}
 /* stats banner acima dos logs */
 .fp-log-stats{display:flex;gap:16px;flex-wrap:wrap;background:var(--fp-bg3);border-radius:8px;padding:8px 14px;margin-bottom:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px}
 .fp-log-stat{display:flex;flex-direction:column;align-items:center;gap:1px}
@@ -3259,7 +3259,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.4";
+var VERSAO = "3.7.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9388,6 +9388,12 @@ async function abrirFichaPorLote(lote){
 }
 
 function fp_toggleSec(head){ head.closest('.fp-sec').classList.toggle('collapsed'); }
+function fp_recalcEficTodas(){
+  document.querySelectorAll('#fp-bat-list .fp-bat-card').forEach(function(card){
+    fp_calcEficienciaReal(card);
+  });
+}
+
 function fp_calcAbv(){
   var ogEl  = document.getElementById('fp-og-alvo');
   var fgEl  = document.getElementById('fp-fg-alvo');
@@ -9400,6 +9406,7 @@ function fp_calcAbv(){
   } else {
     abvEl.value = '';
   }
+  fp_recalcEficTodas();
 }
 function fp_delRow(btn){ btn.closest('tr').remove(); fp_markDirty(); }
 function fp_delLog(btn){ btn.closest('.fp-mlog-row,.fp-log-row').remove(); fp_markDirty(); }
@@ -9419,8 +9426,15 @@ function preencherLogDivs(containerId, rows, addFn){
   rows.forEach(function(vals){
     addFn();
     var row=c.querySelector('.fp-mlog-row:last-child'); if(!row) return;
-    row.querySelectorAll('input,select,textarea').forEach(function(el,i){
-      if(vals[i]!==undefined) el.value=vals[i];
+    var inputs=row.querySelectorAll('input,select,textarea');
+    /* Migração: log de maturação com 9 cols (formato antigo com SG na col 1)
+       → remove col 1 (SG) para encaixar nos 8 inputs atuais */
+    var valsAdj = vals;
+    if(containerId==='fp-matur-log' && vals.length===9 && inputs.length===8){
+      valsAdj = [vals[0]].concat(vals.slice(2));
+    }
+    inputs.forEach(function(el,i){
+      if(valsAdj[i]!==undefined) el.value=valsAdj[i];
     });
   });
 }
@@ -9466,7 +9480,6 @@ function fp_addMaturRow(){
   var c=document.getElementById('fp-matur-log');
   var row=document.createElement('div'); row.className='fp-mlog-row matur';
   row.innerHTML='<div class="fp-log-cell"><input type="datetime-local" value="'+local+'"></div>'+
-    '<div class="fp-log-cell"><input type="number" step="0.001" placeholder="1.010"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.01" placeholder="kgf/cm²"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="pH"></div>'+
@@ -9690,6 +9703,33 @@ function fp_atualizarResumoEtapas(card){
   }
 }
 
+/* ── EFICIÊNCIA REAL AUTO ──────────────────────────────────────────────── */
+function fp_calcEficienciaReal(card){
+  if(!card) return;
+  /* Lê campos da batelada */
+  var volFerv    = parseFloat((card.querySelector('.fp-vol-ferv')||{}).value);
+  var extrato    = parseFloat((card.querySelector('.fp-extrato-ferv')||{}).value);
+  /* Lê campos globais */
+  var ogAlvoEl   = document.getElementById('fp-og-alvo');
+  var ogAlvo     = parseFloat((ogAlvoEl||{}).value);
+  /* Volume total: índice 2 no grid wide */
+  var volInputs  = document.querySelectorAll('#fp-panel-receita .fp-fg-grid.wide input');
+  var volTotal   = parseFloat((volInputs[2]||{}).value);
+  var eficEl     = card.querySelector('.fp-efic-real');
+  if(!eficEl) return;
+  /* Validar tudo */
+  if(isNaN(volFerv)||volFerv<=0||isNaN(extrato)||extrato<=0||
+     isNaN(ogAlvo)||ogAlvo<=1||isNaN(volTotal)||volTotal<=0){
+    eficEl.value=''; return;
+  }
+  /* OG alvo SG → °Plato via fórmula simplificada: (SG-1)*259 ≈ °P */
+  var platAlvo = (ogAlvo - 1) * 259;
+  if(platAlvo <= 0){ eficEl.value=''; return; }
+  /* Fórmula: efic = (extrato_real × vol_fervura) / (plato_alvo × vol_total) × 100 */
+  var efic = (extrato * volFerv) / (platAlvo * volTotal) * 100;
+  eficEl.value = Math.round(efic * 10) / 10;
+}
+
 function fp_addBatelada(){
   var list=document.getElementById('fp-bat-list');
   if(!list){ console.error('fp-bat-list não encontrado'); return; }
@@ -9766,8 +9806,8 @@ function fp_addBatelada(){
     '<div class="fp-vol-row">'+
       '<div class="fp-field"><label>Início da fervura (hh:mm)</label><input type="time" data-resumo="fervura-ini"></div>'+
       '<div class="fp-field"><label>Término da fervura (hh:mm)</label><input type="time" data-resumo="fervura-fim whirlpool-ini"></div>'+
-      '<div class="fp-field"><label>Vol. início fervura (L)</label><input type="number" placeholder="1630"></div>'+
-      '<div class="fp-field"><label>Extrato pré-ferv. (°B) — 2 min</label><input type="number" step="0.1" placeholder="11,2"></div>'+
+      '<div class="fp-field"><label>Vol. início fervura (L)</label><input type="number" placeholder="1630" class="fp-vol-ferv"></div>'+
+      '<div class="fp-field"><label>Extrato pré-ferv. (°B) — 2 min</label><input type="number" step="0.1" placeholder="11,2" class="fp-extrato-ferv"></div>'+
     '</div>'+
     '<div class="fp-small-label" style="margin-top:8px">Adições de lúpulo / adjuntos</div>'+
     '<div class="fp-tbl-wrap">'+
@@ -9810,16 +9850,15 @@ function fp_addBatelada(){
       '<div class="fp-field"><label>Temp. tanque inoculado (°C)</label><input type="number" placeholder="18"></div>'+
       '<div class="fp-field"><label>Vol. inicial tanque (L)</label><input type="number" placeholder="—"></div>'+
       '<div class="fp-field"><label>Vol. final tanque (L)</label><input type="number" placeholder="—"></div>'+
-      '<div class="fp-field"><label>Tempo total processo (hh:mm)</label><input type="time"></div>'+
     '</div>'+
 
     /* ── VOLUMES E DENSIDADES (resumo) ── */
     '<div class="fp-divider"></div>'+
     '<div class="fp-small-label">📊 Resumo — Volumes e Densidades</div>'+
     '<div class="fp-vol-row">'+
-    ['OG real (no tanque)','FG real','ABV real (%)','pH mosto final','Eficiência real (%)'].map(function(l){
-      return '<div class="fp-field"><label>'+l+'</label><input placeholder="—"></div>';
-    }).join('')+
+      '<div class="fp-field"><label>OG real (no tanque)</label><input class="fp-og-real" placeholder="—" data-resumo-efic="og"></div>'+
+      '<div class="fp-field"><label>pH mosto final</label><input placeholder="—"></div>'+
+      '<div class="fp-field"><label>Eficiência real (%)</label><input class="fp-efic-real" placeholder="—" readonly style="background:var(--fp-bg3);cursor:default" title="Calculado automaticamente"></div>'+
     '</div>'+
 
     '<div class="fp-divider"></div>'+
@@ -10346,7 +10385,7 @@ function abrirFichaLote(tq){
       '<div class="fp-fg-grid wide">'+
         '<div class="fp-field"><label>Nome do lote</label><input value="'+esc(lote)+'"></div>'+
         '<div class="fp-field"><label>Estilo</label><input value="'+esc(estilo)+'"></div>'+
-        '<div class="fp-field"><label>Volume total (L)</label><input type="number" value="'+esc(volume.replace(' L',''))+'"></div>'+
+        '<div class="fp-field"><label>Volume total (L)</label><input type="number" value="'+esc(volume.replace(' L',''))+'" oninput="fp_recalcEficTodas()"></div>'+
         '<div class="fp-field"><label>Nº de bateladas</label><input id="fp-num-bateladas" type="number" value="" readonly style="background:var(--fp-bg3);cursor:default" title="Atualizado automaticamente"></div>'+
         '<div class="fp-field"><label>Data início</label><input type="date" value="'+esc(tq.brassadoEm||'')+'"></div>'+
         '<div class="fp-field"><label>Tanque</label><input value="'+esc(tanque)+'"></div>'+
@@ -10673,7 +10712,6 @@ function abrirFichaLote(tq){
       '<div class="fp-log-table"><div class="fp-log-scroll">'+
         '<div class="fp-mlog-row matur header">'+
           '<div class="fp-log-cell">Data / Hora</div>'+
-          '<div class="fp-log-cell">SG</div>'+
           '<div class="fp-log-cell">Temp. real (°C)</div>'+
           '<div class="fp-log-cell">Kgf/cm²</div>'+
           '<div class="fp-log-cell">pH</div>'+
@@ -10796,6 +10834,10 @@ function abrirFichaLote(tq){
     if(e.target.hasAttribute('data-resumo')){
       fp_atualizarResumoEtapas(e.target.closest('.fp-bat-card'));
     }
+    // recalcula eficiência real quando campos de fervura mudam
+    if(e.target.matches('.fp-vol-ferv,.fp-extrato-ferv')){
+      fp_calcEficienciaReal(e.target.closest('.fp-bat-card'));
+    }
   });
 
   /* — inicia sistema de auditoria — */
@@ -10864,6 +10906,8 @@ function fp_preencherFicha(ficha){
         }
         // atualiza resumo automático de etapas
         fp_atualizarResumoEtapas(card);
+        // calcula eficiência real
+        fp_calcEficienciaReal(card);
         // obs
         var obsEl = card.querySelector('.fp-obs-field');
         if(obsEl){
