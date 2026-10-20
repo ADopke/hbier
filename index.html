@@ -9603,6 +9603,28 @@ function fp_markDirty(){
 var fp_audit = {};          // { [auditKey]: [{por, em, val}] }
 var fp_auditCounter = 0;    // contador para gerar chaves únicas
 
+/* ── Cálculo automático de duração (Início → Fim) ─────────────────────
+   Campos com class="fp-dur-auto" ficam dentro de .fp-etapa-row.
+   Estrutura de cada linha: [nome | início(time) | fim(time) | dur-auto | rampa | temp]
+   Ao alterar qualquer input[type=time] da linha, recalcula o campo dur-auto.
+   ─────────────────────────────────────────────────────────────────── */
+function fp_calcDuracao(timeInput){
+  var row = timeInput.closest('.fp-etapa-row');
+  if(!row) return;
+  var times = row.querySelectorAll('input[type="time"]');
+  var durField = row.querySelector('.fp-dur-auto');
+  if(!times.length || !durField) return;
+  var inicio = times[0] ? times[0].value : '';
+  var fim    = times[1] ? times[1].value : '';
+  if(!inicio || !fim){ durField.value = ''; return; }
+  // converte "HH:MM" → minutos desde meia-noite
+  function toMin(t){ var p=t.split(':'); return parseInt(p[0],10)*60+parseInt(p[1],10); }
+  var diff = toMin(fim) - toMin(inicio);
+  if(diff < 0) diff += 1440; // virada de meia-noite
+  durField.value = diff;
+  fp_markDirty();
+}
+
 /* Gera ou retorna a audit-key de um elemento */
 function fp_auditKey(el){
   if(!el.dataset.auditKey){
@@ -10383,6 +10405,10 @@ function abrirFichaLote(tq){
     if(e.target.matches('input,textarea,select')){
       fp_auditKey(e.target); // garante que tem key antes de registrar
       fp_registrarLancamento(e.target);
+    }
+    // cálculo automático de duração em linhas de etapa
+    if(e.target.matches('.fp-etapa-row input[type="time"]')){
+      fp_calcDuracao(e.target);
     }
   });
 
