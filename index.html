@@ -1195,6 +1195,11 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
 /* add batelada btn */
 .fp-add-bat-btn{border:2px dashed var(--fp-border);border-radius:10px;padding:14px;width:100%;background:none;cursor:pointer;color:var(--fp-fg3);font-size:13px;font-family:'Barlow',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
 .fp-add-bat-btn:hover{border-color:var(--fp-marrom);color:var(--fp-marrom)}
+/* totalizadores de duração */
+.fp-dur-total-bat{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:5px 10px 2px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--fp-fg3)}
+.fp-dur-total-bat span{background:var(--fp-bg3);border:1px solid var(--fp-border);border-radius:8px;padding:2px 10px;font-size:13px;font-weight:700;color:var(--fp-marrom);letter-spacing:.02em;min-width:60px;text-align:center}
+.fp-dur-total-geral{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px 0 4px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fp-fg2);border-top:2px solid var(--fp-border);margin-top:4px}
+.fp-dur-total-geral span{background:var(--fp-marrom);color:#fff;border-radius:8px;padding:3px 14px;font-size:15px;font-weight:700;letter-spacing:.02em;min-width:70px;text-align:center}
 /* roles */
 .fp-role-badge{display:inline-flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
 /* audit badges */
@@ -9542,6 +9547,7 @@ function fp_addBatelada(){
       linhasMash+
       linhasFixas+
     '</div>'+
+    '<div class="fp-dur-total-bat">Total da batelada: <span class="fp-bat-dur-total">—</span></div>'+
     '<div class="fp-divider"></div>'+
     '<div class="fp-small-label">Volumes e densidades</div>'+
     '<div class="fp-vol-row">'+
@@ -9587,6 +9593,7 @@ function fp_removerBatelada(btn){
     });
   }
   fp_atualizarNumBateladas();
+  fp_atualizarTotaisDuracao(null);
   fp_markDirty();
 }
 var fp_dirty=false;
@@ -9616,13 +9623,56 @@ function fp_calcDuracao(timeInput){
   if(!times.length || !durField) return;
   var inicio = times[0] ? times[0].value : '';
   var fim    = times[1] ? times[1].value : '';
-  if(!inicio || !fim){ durField.value = ''; return; }
+  if(!inicio || !fim){ durField.value = ''; fp_atualizarTotaisDuracao(timeInput); return; }
   // converte "HH:MM" → minutos desde meia-noite
   function toMin(t){ var p=t.split(':'); return parseInt(p[0],10)*60+parseInt(p[1],10); }
   var diff = toMin(fim) - toMin(inicio);
   if(diff < 0) diff += 1440; // virada de meia-noite
   durField.value = diff;
+  fp_atualizarTotaisDuracao(timeInput);
   fp_markDirty();
+}
+
+/* — formata minutos em "Xh Ymin" (ex: 125 → "2h 05min") ─────────── */
+function fp_formatarDuracao(min){
+  if(!min || isNaN(min)) return '—';
+  var h = Math.floor(min/60), m = min%60;
+  if(h===0) return m+'min';
+  return h+'h '+(m<10?'0':'')+m+'min';
+}
+
+/* — atualiza o total da batelada e o total geral ─────────────────── */
+function fp_atualizarTotaisDuracao(el){
+  // total da batelada que contém o campo alterado
+  var card = el ? el.closest('.fp-bat-card') : null;
+  if(card){
+    var totalBat = 0;
+    card.querySelectorAll('.fp-dur-auto').forEach(function(inp){
+      var v = parseInt(inp.value, 10);
+      if(!isNaN(v) && v > 0) totalBat += v;
+    });
+    var badgeBat = card.querySelector('.fp-bat-dur-total');
+    if(badgeBat) badgeBat.textContent = totalBat > 0 ? fp_formatarDuracao(totalBat) : '—';
+  }
+  // total geral: soma de todas as bateladas
+  var totalGeral = 0;
+  var list = document.getElementById('fp-bat-list');
+  var wrap = document.getElementById('fp-dur-total-geral');
+  if(!list) return;
+  list.querySelectorAll('.fp-bat-card').forEach(function(c){
+    c.querySelectorAll('.fp-dur-auto').forEach(function(inp){
+      var v = parseInt(inp.value, 10);
+      if(!isNaN(v) && v > 0) totalGeral += v;
+    });
+  });
+  if(wrap){
+    if(totalGeral > 0){
+      wrap.style.display = 'flex';
+      wrap.querySelector('span').textContent = fp_formatarDuracao(totalGeral);
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
 }
 
 /* Gera ou retorna a audit-key de um elemento */
@@ -10220,6 +10270,7 @@ function abrirFichaLote(tq){
     '<div class="fp-exec-banner">👷 Aba de preenchimento pelo <strong>Executor</strong> — tempos, volumes e medições reais de cada batelada</div>'+
     '<div class="fp-bat-list" id="fp-bat-list"></div>'+
     '<button class="fp-add-bat-btn" onclick="fp_addBatelada()" style="margin-top:10px">＋ Adicionar batelada</button>'+
+    '<div class="fp-dur-total-geral" id="fp-dur-total-geral" style="display:none">⏱ Tempo total de brassagem: <span>—</span></div>'+
   '</div>'+
 
   /* ══════════ ABA FERMENTAÇÃO ══════════ */
@@ -10551,6 +10602,8 @@ function fp_preencherFicha(ficha){
   // estratégia: campos com valores salvos recebem a mesma chave do audit pelo índice posicional
   fp_religarAudit();
   fp_injetarBotoesHistorico();
+  // recalcula totais de duração a partir dos valores restaurados
+  fp_atualizarTotaisDuracao(null);
   fp_dirty=false;
 }
 
