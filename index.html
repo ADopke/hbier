@@ -4831,20 +4831,25 @@ function popularLotesPorTanque(tanqueVal, selectId, corBorda) {
     return;
   }
   var tq = _dadosTanques.find(function(t){ return t.nome.toUpperCase() === tqNorm; });
-  var opts = "<option value=''>Sem lote</option>";
   if (tq && tq.lote) {
-    opts = "<option value='"+esc(tq.lote)+"'>"+esc(tq.lote)+"</option>";
-    // adicionar opção de lote previsto (próxima brassagem), se existir
+    var opts = "<option value='"+esc(tq.lote)+"'>"+esc(tq.lote)+"</option>";
     if (tq.proximaBrass && tq.proximaBrass.lote && tq.proximaBrass.lote !== tq.lote) {
       opts += "<option value='"+esc(tq.proximaBrass.lote)+"'>"+esc(tq.proximaBrass.lote)+" (próximo)</option>";
     }
     opts += "<option value=''>— Sem lote —</option>";
+    sel.innerHTML = opts;
+    sel.value = tq.lote;
   } else {
-    opts = "<option value=''>Nenhuma brassagem ativa neste tanque</option>";
+    // tanque sem lote associado: substituir select por input de texto
+    var input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "Digite o lote (ex: HELLES 01/25T01)";
+    input.id = selectId;
+    var st = sel.getAttribute("style") || "";
+    if (corBorda) st = st.replace(/border:[^;]+;/, "") + ";border:1.5px solid "+corBorda+";";
+    input.setAttribute("style", st || "width:100%;padding:9px;border:1.5px solid "+(corBorda||"#B3C8F5")+";border-radius:8px;font-size:.9rem;background:#fff");
+    sel.parentNode.replaceChild(input, sel);
   }
-  sel.innerHTML = opts;
-  // pre-selecionar automaticamente o primeiro lote
-  if (tq && tq.lote) sel.value = tq.lote;
 }
 
 $("barrilTanque").addEventListener("change", function(){
@@ -6391,6 +6396,7 @@ async function popularSelectTanques(selectId, modoEnvase, valorAtual) {
   try {
     var r = await api("/api/tanques");
     var tqs = (r && r.tanques) || [];
+    _dadosTanques = tqs; // atualiza cache global para popularLotesPorTanque
     var opts = ["<option value=''>\u2014 Selecione o tanque \u2014</option>"];
     tqs.forEach(function(tq) {
       var nome = tq.nome; // "TQ01"
