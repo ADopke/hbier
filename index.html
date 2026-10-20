@@ -2456,6 +2456,13 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           </div>
           <button class="fp-add-row-btn" onclick="rec_addRow('rec-tbl-adj','Ingrediente','Dry-hop','Pós-ferm','0')">＋ Adjunto</button>
 
+          <!-- lauter -->
+          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">🔽 Lauter</span></div>
+          <div class="form-grid" style="margin-bottom:8px">
+            <div><label>Vol. 1ª lavagem (L)</label><input type="number" id="recLavVol1" placeholder="ex: 400"></div>
+            <div><label>Vol. 2ª lavagem (L)</label><input type="number" id="recLavVol2" placeholder="ex: 150"></div>
+          </div>
+
           <!-- obs -->
           <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">📝 Notas do mestre</span></div>
           <textarea id="recObs" rows="3" placeholder="Notas gerais, cuidados especiais, histórico de ajustes…" style="width:100%;padding:10px 12px;border:1.5px solid var(--linha);border-radius:8px;font-family:'Barlow',sans-serif;font-size:.95rem;resize:vertical"></textarea>
@@ -3261,7 +3268,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.6";
+var VERSAO = "3.7.7";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10307,13 +10314,12 @@ function fp_simSave(btn){
       var ok   = !!(document.getElementById('fp-aprovacao-status')||{}).classList && (document.getElementById('fp-aprovacao-status')||{}).classList.contains('ok');
       return { dt: dt, resp: resp, obs: obs, aprovado: ok };
     })(),
-    resultado: {
-      fg:         (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(1) input')||{}).value||"",
-      abv:        (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(2) input')||{}).value||"",
-      atenuacao:  (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(3) input')||{}).value||"",
-      eficiencia: (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(4) input')||{}).value||"",
-      volume:     (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(5) input')||{}).value||"",
-      co2:        (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(6) input')||{}).value||"",
+    conclusao: {
+      desvios:  (document.getElementById('fp-conclusao-desvios')||{}).value||"",
+      sensorial:(document.getElementById('fp-conclusao-sensorial')||{}).value||"",
+      nota:     (document.getElementById('fp-conclusao-nota')||{}).value||"",
+      mestre:   (document.getElementById('fp-conclusao-mestre')||{}).value||"",
+      dt:       (document.getElementById('fp-conclusao-dt')||{}).value||"",
     },
     meta: { status: "em andamento" },
     audit: fp_audit
@@ -10387,7 +10393,6 @@ function abrirFichaLote(tq){
     '<button class="fp-tab active" data-fp-panel="receita">📋 Receita</button>'+
     '<button class="fp-tab" data-fp-panel="bateladas">⚗️ Bateladas</button>'+
     '<button class="fp-tab" data-fp-panel="fermentacao">🧫 Ferment. / Maturação</button>'+
-    '<button class="fp-tab" data-fp-panel="resultado">🏆 Resultado Final</button>'+
   '</div></div>'+
 
   '<div class="fp-content">'+
@@ -10764,6 +10769,37 @@ function abrirFichaLote(tq){
     '</div>'+
   '</div>'+
 
+  /* Envasamentos */
+  '<div class="fp-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">📦</span><span class="fp-sec-title azul">Envasamentos Realizados</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-tbl-wrap">'+
+        '<table class="fp-data">'+
+          '<thead><tr><th>#</th><th>Data</th><th>Formato</th><th>Qtd</th><th>Litros</th></tr></thead>'+
+          '<tbody>'+envasesFileiras+'</tbody>'+
+        '</table>'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
+
+  /* Conclusão e Avaliação */
+  '<div class="fp-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">📝</span><span class="fp-sec-title">Conclusão e Avaliação</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-fg-grid wide">'+
+        '<div class="fp-field full"><label>Desvios do processo e ações corretivas</label><textarea id="fp-conclusao-desvios" class="fp-obs-field" placeholder="Desvios, ajustes, pontos de melhoria…"></textarea></div>'+
+        '<div class="fp-field full"><label>Avaliação sensorial (ao envasar)</label><textarea id="fp-conclusao-sensorial" class="fp-obs-field" placeholder="Aroma, cor, limpidez, sabor, carbonatação…"></textarea></div>'+
+        '<div class="fp-field"><label>Nota final (0–10)</label><input id="fp-conclusao-nota" type="number" min="0" max="10" placeholder="—"></div>'+
+        '<div class="fp-field"><label>Mestre Cervejeiro</label><input id="fp-conclusao-mestre" placeholder="Nome"></div>'+
+        '<div class="fp-field"><label>Data de conclusão</label><input id="fp-conclusao-dt" type="date"></div>'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
+
   /* Aprovação Final */
   '<div class="fp-sec">'+
     '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
@@ -10775,60 +10811,19 @@ function abrirFichaLote(tq){
           '<span class="fp-aprovacao-status" id="fp-aprovacao-status">⏳ Aguardando aprovação</span>'+
         '</div>'+
         '<div class="fp-vol-row">'+
-          '<div class="fp-field"><label>Data / Hora da aprovação</label><input type="datetime-local" id="fp-aprov-dt"></div>'+
-          '<div class="fp-field"><label>Responsável</label><input id="fp-aprov-resp" placeholder="Login do responsável"></div>'+
+          '<div class="fp-field"><label>Data / Hora da aprovação</label><input type="datetime-local" id="fp-aprov-dt" onchange="fp_registrarLancamento(this)"></div>'+
+          '<div class="fp-field"><label>Responsável</label><input id="fp-aprov-resp" placeholder="Login do responsável" onchange="fp_registrarLancamento(this)"></div>'+
         '</div>'+
-        '<div class="fp-field full"><label>Observação</label><textarea id="fp-aprov-obs" style="width:100%;min-height:60px;resize:vertical;padding:8px;border:1.5px solid var(--fp-border);border-radius:8px;font-size:.9rem;background:var(--fp-bg);color:var(--fp-fg)" placeholder="Observações finais sobre o lote…"></textarea></div>'+
-        '<div>'+
+        '<div class="fp-field full"><label>Observação</label><textarea id="fp-aprov-obs" onchange="fp_registrarLancamento(this)" style="width:100%;min-height:60px;resize:vertical;padding:8px;border:1.5px solid var(--fp-border);border-radius:8px;font-size:.9rem;background:var(--fp-bg);color:var(--fp-fg)" placeholder="Observações finais sobre o lote…"></textarea></div>'+
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
           '<button class="fp-btn-aprovar" onclick="fp_aprovarLote()">✅ Aprovar Lote</button>'+
+          '<span style="font-size:11px;color:var(--fp-fg3)">Alterações são registradas automaticamente no histórico desta seção.</span>'+
         '</div>'+
       '</div>'+
     '</div>'+
   '</div>'+
 
   '</div>'+/* /fp-panel-fermentacao */
-
-  /* ══════════ ABA RESULTADO ══════════ */
-  '<div class="fp-panel" id="fp-panel-resultado">'+
-    '<div class="fp-result-grid">'+
-      '<div class="fp-result-card"><span class="fp-rc-label">FG Medida</span><input class="fp-rc-val" placeholder="—" style="background:none;border:none;font-size:22px;font-weight:700;color:var(--fp-dourado);font-family:Barlow,sans-serif;width:100%"></div>'+
-      '<div class="fp-result-card"><span class="fp-rc-label">ABV Real (%)</span><input class="fp-rc-val" placeholder="—" style="background:none;border:none;font-size:22px;font-weight:700;color:var(--fp-dourado);font-family:Barlow,sans-serif;width:100%"></div>'+
-      '<div class="fp-result-card"><span class="fp-rc-label">Atenuação Real (%)</span><input class="fp-rc-val" placeholder="—" style="background:none;border:none;font-size:22px;font-weight:700;color:var(--fp-dourado);font-family:Barlow,sans-serif;width:100%"></div>'+
-      '<div class="fp-result-card"><span class="fp-rc-label">Eficiência média (%)</span><input class="fp-rc-val" placeholder="—" style="background:none;border:none;font-size:22px;font-weight:700;color:var(--fp-dourado);font-family:Barlow,sans-serif;width:100%"></div>'+
-      '<div class="fp-result-card"><span class="fp-rc-label">Vol. total tanque (L)</span><input class="fp-rc-val" placeholder="—" style="background:none;border:none;font-size:22px;font-weight:700;color:var(--fp-dourado);font-family:Barlow,sans-serif;width:100%"></div>'+
-      '<div class="fp-result-card"><span class="fp-rc-label">CO₂ (vol)</span><input class="fp-rc-val" placeholder="—" style="background:none;border:none;font-size:22px;font-weight:700;color:var(--fp-dourado);font-family:Barlow,sans-serif;width:100%"></div>'+
-    '</div>'+
-
-    '<div class="fp-sec">'+
-      '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
-        '<div class="fp-sec-head-left"><span class="fp-sec-icon">📦</span><span class="fp-sec-title azul">Envasamentos Realizados</span></div>'+
-        '<span class="fp-sec-toggle">▾</span></div>'+
-      '<div class="fp-sec-body">'+
-        '<div class="fp-tbl-wrap">'+
-          '<table class="fp-data">'+
-            '<thead><tr><th>#</th><th>Data</th><th>Formato</th><th>Qtd</th><th>Litros</th></tr></thead>'+
-            '<tbody>'+envasesFileiras+'</tbody>'+
-          '</table>'+
-        '</div>'+
-      '</div>'+
-    '</div>'+
-
-    '<div class="fp-sec">'+
-      '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
-        '<div class="fp-sec-head-left"><span class="fp-sec-icon">📝</span><span class="fp-sec-title">Conclusão e Avaliação</span></div>'+
-        '<span class="fp-sec-toggle">▾</span></div>'+
-      '<div class="fp-sec-body">'+
-        '<div class="fp-fg-grid wide">'+
-          '<div class="fp-field full"><label>Desvios do processo e ações corretivas</label><textarea class="fp-obs-field" placeholder="Desvios, ajustes, pontos de melhoria…"></textarea></div>'+
-          '<div class="fp-field full"><label>Avaliação sensorial (ao envasar)</label><textarea class="fp-obs-field" placeholder="Aroma, cor, limpidez, sabor, carbonatação…"></textarea></div>'+
-          '<div class="fp-field"><label>Nota final (0–10)</label><input type="number" min="0" max="10" placeholder="—"></div>'+
-          '<div class="fp-field"><label>Mestre Cervejeiro</label><input placeholder="Nome"></div>'+
-          '<div class="fp-field"><label>Data de conclusão</label><input type="date"></div>'+
-        '</div>'+
-      '</div>'+
-    '</div>'+
-
-  '</div>'+/* /fp-panel-resultado */
 
   '</div>'+/* /fp-content */
 
@@ -11008,13 +11003,14 @@ function fp_preencherFicha(ficha){
       }
     }
   }
-  // resultado
-  if(ficha.resultado){
-    var app=document.getElementById('fp-app');
-    var cards=app.querySelectorAll('#fp-panel-resultado .fp-result-card input');
-    var vals=[ficha.resultado.fg,ficha.resultado.abv,ficha.resultado.atenuacao,
-              ficha.resultado.eficiencia,ficha.resultado.volume,ficha.resultado.co2];
-    cards.forEach(function(el,i){ if(vals[i]!==undefined) el.value=vals[i]; });
+  // conclusao
+  if(ficha.conclusao){
+    var c=ficha.conclusao;
+    if(c.desvios  !== undefined){ var el=document.getElementById('fp-conclusao-desvios');  if(el) el.value=c.desvios; }
+    if(c.sensorial!== undefined){ var el=document.getElementById('fp-conclusao-sensorial');if(el) el.value=c.sensorial; }
+    if(c.nota     !== undefined){ var el=document.getElementById('fp-conclusao-nota');     if(el) el.value=c.nota; }
+    if(c.mestre   !== undefined){ var el=document.getElementById('fp-conclusao-mestre');   if(el) el.value=c.mestre; }
+    if(c.dt       !== undefined){ var el=document.getElementById('fp-conclusao-dt');       if(el) el.value=c.dt; }
   }
   // restaura FG e ABV do cabeçalho (se salvos) e recalcula
   if(ficha.cabecalho){
@@ -11336,6 +11332,8 @@ function rec_novaReceita(){
   document.getElementById('recAguaFonte').value='';
   document.getElementById('recAguaPh').value='';
   document.getElementById('recAguaVol').value='';
+  document.getElementById('recLavVol1').value='';
+  document.getElementById('recLavVol2').value='';
   document.getElementById('recObs').value='';
   // limpa tabelas
   ['rec-tbl-ferm','rec-tbl-lup','rec-tbl-mash','rec-tbl-sais','rec-tbl-adj'].forEach(function(id){
@@ -11374,6 +11372,9 @@ async function rec_editarReceita(id){
     document.getElementById('recAguaFonte').value=agua.fonte||'';
     document.getElementById('recAguaPh').value=agua.ph||'';
     document.getElementById('recAguaVol').value=agua.vol||'';
+    var lauter=rec.lauter||{};
+    document.getElementById('recLavVol1').value=lauter.lav1||'';
+    document.getElementById('recLavVol2').value=lauter.lav2||'';
     document.getElementById('recObs').value=rec.obs||'';
 
     // tabelas
@@ -11443,6 +11444,10 @@ async function rec_salvar(){
       fonte: document.getElementById('recAguaFonte').value.trim(),
       ph:    document.getElementById('recAguaPh').value.trim(),
       vol:   document.getElementById('recAguaVol').value.trim(),
+    },
+    lauter: {
+      lav1: document.getElementById('recLavVol1').value.trim(),
+      lav2: document.getElementById('recLavVol2').value.trim(),
     },
     fermentaveis: rec_tabelaParaArray('rec-tbl-ferm'),
     lupulos:      rec_tabelaParaArray('rec-tbl-lup'),
