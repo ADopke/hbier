@@ -1096,6 +1096,17 @@
 .fp-tab{flex-shrink:0;padding:10px 14px;border:none;background:none;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--fp-fg3);border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s;display:flex;align-items:center;gap:5px}
 .fp-tab.active{color:var(--fp-marrom);border-bottom-color:var(--fp-marrom)}
 .fp-tab:hover:not(.active){color:var(--fp-fg2)}
+/* badges de progresso nas tabs */
+.fp-tab-pct{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:16px;border-radius:8px;font-size:10px;font-weight:700;padding:0 5px;background:var(--fp-bg3);color:var(--fp-fg3);border:1px solid var(--fp-border);transition:background .2s,color .2s;letter-spacing:0;font-family:system-ui,sans-serif}
+.fp-tab-pct.pct-low{background:#d63031;color:#fff;border-color:#b52626}
+.fp-tab-pct.pct-mid{background:#e17055;color:#fff;border-color:#c45a38}
+.fp-tab-pct.pct-good{background:#00b894;color:#fff;border-color:#009e7a}
+.fp-tab-pct.pct-full{background:#2ecc71;color:#fff;border-color:#27ae60}
+/* barra de progresso geral da ficha */
+.fp-prog-bar-wrap{padding:6px 16px 0;background:var(--fp-bg)}
+.fp-prog-bar-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--fp-fg3)}
+.fp-prog-bar-track{flex:1;height:4px;background:var(--fp-bg3);border-radius:4px;overflow:hidden;border:1px solid var(--fp-border)}
+.fp-prog-bar-fill{height:100%;border-radius:4px;background:var(--fp-marrom);transition:width .3s ease}
 /* content */
 .fp-content{padding:14px 16px;background:var(--fp-bg)}
 .fp-panel{display:none}
@@ -3368,7 +3379,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.39";
+var VERSAO = "3.7.40";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9800,12 +9811,19 @@ function fp_addMaturRow(){
   c.appendChild(row); fp_markDirty();
 }
 function fp_recCO2(inp){
-  /* Se chamado sem argumento, busca o último valor CO₂ preenchido no log */
-  if(!inp){
-    /* Busca pelo class fp-matur-co2 — mais confiável que índice */
+  /* Se chamado sem argumento (ou com evento de restore), busca o último valor CO₂ preenchido */
+  if(!inp || typeof inp !== 'object' || !inp.value){
     var allCO2 = document.querySelectorAll('#fp-matur-log .fp-matur-co2');
     var lastInp = null;
-    allCO2.forEach(function(el){ if(el.value !== '') lastInp = el; });
+    allCO2.forEach(function(el){ if(el.value !== '' && el.value !== undefined) lastInp = el; });
+    if(!lastInp){
+      /* Tenta buscar por índice de coluna (col 4 = CO₂, 0-based) como fallback */
+      var rows = document.querySelectorAll('#fp-matur-log .fp-mlog-row:not(.header)');
+      rows.forEach(function(row){
+        var inps = row.querySelectorAll('input');
+        if(inps[4] && inps[4].value !== '') lastInp = inps[4];
+      });
+    }
     if(!lastInp){ var box=document.getElementById('fp-co2-rec-box'); if(box) box.style.display='none'; return; }
     inp = lastInp;
   }
@@ -10523,6 +10541,140 @@ function fp_markDirty(){
   fp_dirty=true;
   var s=document.getElementById('fp-saveStatus');
   if(s){s.textContent='● Alterações não salvas';s.className='fp-unsaved dirty';}
+  fp_calcProgresso();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   INDICADOR DE PROGRESSO DE PREENCHIMENTO POR ABA
+   Calcula % de campos-chave preenchidos em Bateladas e Fermentação.
+   ══════════════════════════════════════════════════════════════════════ */
+function fp_calcProgresso(){
+  /* ── BATELADAS ── */
+  var batCards = document.querySelectorAll('#fp-bat-list .fp-bat-card');
+  var batPreen = 0, batTotal = 0;
+  batCards.forEach(function(card){
+    // Campos obrigatórios por batelada (pesos iguais)
+    var checks = [
+      // Mostura
+      card.querySelector('[data-resumo="mostura-ini"]'),           // hora arriada malte
+      card.querySelector('.fp-vol-row input[placeholder="5,4"]'),  // pH após 5 min
+      // Lauter — início transf. mosto
+      card.querySelector('[data-resumo~="lauter-ini"]'),
+      // Fervura
+      card.querySelector('[data-resumo="fervura-ini"]'),
+      card.querySelector('[data-resumo^="fervura-fim"]'),
+      // Volume tanque
+      card.querySelector('.fp-bat-vol-ini'),
+      card.querySelector('.fp-bat-vol-fim'),
+      // OG real
+      card.querySelector('.fp-og-real'),
+    ];
+    checks.forEach(function(el){
+      batTotal++;
+      if(el && el.value && el.value.trim()!=='') batPreen++;
+    });
+    // Lavagens: pelo menos 1 linha preenchida conta como ok
+    var lavRows = card.querySelectorAll('.fp-lav-log .fp-mlog-row:not(.header)');
+    batTotal++;
+    var lavOk = false;
+    lavRows.forEach(function(row){
+      var inp = row.querySelectorAll('input');
+      if(inp[0]&&inp[0].value) lavOk=true;
+    });
+    if(lavOk) batPreen++;
+    // Iodo — teste selecionado
+    var iodoSel = card.querySelector('[placeholder="5,4"]'); // mesmo row — buscamos o select de iodo
+    var iodoSelect = null;
+    card.querySelectorAll('select').forEach(function(s){
+      if(s.querySelector('option[value=""]')) iodoSelect=s; // primeiro select com opção vazia = iodo
+    });
+    batTotal++;
+    if(iodoSelect && iodoSelect.value && iodoSelect.value!=='') batPreen++;
+  });
+  var pctBat = batTotal>0 ? Math.round(batPreen/batTotal*100) : 0;
+  if(batCards.length===0) pctBat = 0;
+
+  /* ── FERMENTAÇÃO / MATURAÇÃO ── */
+  var fermPreen=0, fermTotal=0;
+  // 1. Levedura confirmada
+  fermTotal++;
+  var levBloco = document.getElementById('fp-bloco-lev');
+  if(levBloco && levBloco.dataset.confirmado==='1') fermPreen++;
+  // 2. Data + hora levedura
+  var levData = document.getElementById('fp-lev-data');
+  var levHora = document.getElementById('fp-lev-hora');
+  fermTotal+=2;
+  if(levData && levData.value) fermPreen++;
+  if(levHora && levHora.value) fermPreen++;
+  // 3. Log fermentação: ao menos 3 leituras com data+SG
+  var fermRows = document.querySelectorAll('#fp-ferm-log .fp-mlog-row:not(.header)');
+  fermTotal+=3; // espera pelo menos 3 leituras
+  var fermRowsOk=0;
+  fermRows.forEach(function(row){
+    var inps=row.querySelectorAll('input');
+    if(inps[0]&&inps[0].value && inps[1]&&inps[1].value) fermRowsOk++;
+  });
+  fermPreen+=Math.min(3,fermRowsOk);
+  // 4. Log maturação: ao menos 2 leituras com data+temp
+  var maturRows = document.querySelectorAll('#fp-matur-log .fp-mlog-row:not(.header)');
+  fermTotal+=2;
+  var maturRowsOk=0;
+  maturRows.forEach(function(row){
+    var inps=row.querySelectorAll('input');
+    if(inps[0]&&inps[0].value && inps[1]&&inps[1].value) maturRowsOk++;
+  });
+  fermPreen+=Math.min(2,maturRowsOk);
+  // 5. Clearmax Pro confirmado
+  fermTotal++;
+  var cxBloco = document.getElementById('fp-bloco-clearmax');
+  if(cxBloco && cxBloco.dataset.confirmado==='1') fermPreen++;
+  // 6. Clearmax L confirmado (opcional mas conta)
+  fermTotal++;
+  var cxLBloco = document.getElementById('fp-bloco-clearmax-l');
+  if(cxLBloco && cxLBloco.dataset.confirmado==='1') fermPreen++;
+  // 7. Aprovação final
+  fermTotal++;
+  var apBox = document.getElementById('fp-aprovacao-box');
+  if(apBox && apBox.classList.contains('aprovado')) fermPreen++;
+  // 8. Responsável e data da aprovação
+  var apDt   = document.getElementById('fp-aprov-dt');
+  var apResp = document.getElementById('fp-aprov-resp');
+  fermTotal+=2;
+  if(apDt && apDt.value) fermPreen++;
+  if(apResp && apResp.value) fermPreen++;
+
+  var pctFerm = Math.round(fermPreen/fermTotal*100);
+
+  /* ── TOTAL GERAL ── */
+  var totalPreen = batPreen + fermPreen;
+  var totalTotal = batTotal + fermTotal;
+  var pctGeral = totalTotal>0 ? Math.round(totalPreen/totalTotal*100) : 0;
+
+  /* ── ATUALIZA DOM ── */
+  function aplicarBadge(elId, pct, semDados){
+    var el = document.getElementById(elId);
+    if(!el) return;
+    if(semDados){ el.textContent='—'; el.className='fp-tab-pct'; return; }
+    el.textContent=pct+'%';
+    el.className='fp-tab-pct'+(pct>=100?' pct-full':pct>=70?' pct-good':pct>=40?' pct-mid':' pct-low');
+  }
+  aplicarBadge('fp-pct-bat',  pctBat,  batCards.length===0);
+  aplicarBadge('fp-pct-ferm', pctFerm, false);
+
+  // barra geral
+  var wrap = document.getElementById('fp-prog-bar-wrap');
+  var fill = document.getElementById('fp-prog-bar-fill');
+  var lbl  = document.getElementById('fp-prog-pct');
+  if(wrap && (batCards.length>0 || fermPreen>0)){
+    wrap.style.display='block';
+    if(fill) fill.style.width=pctGeral+'%';
+    if(lbl)  lbl.textContent=pctGeral+'%';
+    if(fill){
+      fill.style.background=pctGeral>=100?'#2ecc71':pctGeral>=70?'#00b894':pctGeral>=40?'#e17055':'#d63031';
+    }
+  } else if(wrap){
+    wrap.style.display='none';
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -10984,10 +11136,16 @@ function abrirFichaLote(tq){
   /* — tabs — */
   '<div class="fp-tabs-wrap"><div class="fp-tabs" id="fp-tabs">'+
     '<button class="fp-tab active" data-fp-panel="receita">📋 Receita</button>'+
-    '<button class="fp-tab" data-fp-panel="bateladas">⚗️ Bateladas</button>'+
-    '<button class="fp-tab" data-fp-panel="fermentacao">🧫 Ferment. / Maturação</button>'+
+    '<button class="fp-tab" data-fp-panel="bateladas">⚗️ Bateladas <span class="fp-tab-pct" id="fp-pct-bat">—</span></button>'+
+    '<button class="fp-tab" data-fp-panel="fermentacao">🧫 Ferment. / Maturação <span class="fp-tab-pct" id="fp-pct-ferm">—</span></button>'+
     '<button class="fp-tab" data-fp-panel="graficos">📊 Gráficos</button>'+
   '</div></div>'+
+  '<div class="fp-prog-bar-wrap" id="fp-prog-bar-wrap" style="display:none">'+
+    '<div class="fp-prog-bar-row">'+
+      '<span id="fp-prog-label" style="white-space:nowrap">Preenchimento: <strong id="fp-prog-pct">0%</strong></span>'+
+      '<div class="fp-prog-bar-track"><div class="fp-prog-bar-fill" id="fp-prog-bar-fill" style="width:0%"></div></div>'+
+    '</div>'+
+  '</div>'+
 
   '<div class="fp-content">'+
 
@@ -11655,7 +11813,7 @@ function fp_preencherFicha(ficha){
   if(ficha.dryhop)       preencherTabela('fp-tbl-dryhop',ficha.dryhop);
   if(ficha.trub)         preencherTabela('fp-tbl-trub',ficha.trub);
   if(ficha.fermLog && ficha.fermLog.length)   preencherLogDivs('fp-ferm-log', ficha.fermLog, fp_addFermRow);
-  if(ficha.maturLog && ficha.maturLog.length){ preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow); setTimeout(fp_recCO2, 300); }
+  if(ficha.maturLog && ficha.maturLog.length){ preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow); setTimeout(fp_recCO2, 500); }
   // restaura adições ao tanque (clearmax + levedura)
   if(ficha.adicoesTanque){
     var at = ficha.adicoesTanque;
@@ -11781,6 +11939,8 @@ function fp_preencherFicha(ficha){
   // recalcula totais de duração a partir dos valores restaurados
   fp_atualizarTotaisDuracao(null);
   fp_dirty=false;
+  // atualiza progresso após restaurar todos os campos
+  setTimeout(fp_calcProgresso, 350);
 }
 
 /* ── Relier audit keys após restaurar ficha ─────────────────────────
@@ -12448,6 +12608,7 @@ window.fp_addRow           = fp_addRow;
 window.fp_addFermRow       = fp_addFermRow;
 window.fp_addMaturRow      = fp_addMaturRow;
 window.fp_recCO2           = fp_recCO2;
+window.fp_calcProgresso    = fp_calcProgresso;
 window.fp_calcIodo         = fp_calcIodo;
 window.fp_addLavRow        = fp_addLavRow;
 window.fp_calcFermStats    = fp_calcFermStats;
