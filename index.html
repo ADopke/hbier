@@ -9550,12 +9550,107 @@ function fp_addBatelada(){
       linhasFixas+
     '</div>'+
     '<div class="fp-dur-total-bat">Total da batelada: <span class="fp-bat-dur-total">—</span></div>'+
+
+    /* ── MOSTURA ── */
     '<div class="fp-divider"></div>'+
-    '<div class="fp-small-label">Volumes e densidades</div>'+
+    '<div class="fp-small-label">🌡️ Mostura</div>'+
     '<div class="fp-vol-row">'+
-    ['Água arriada (L)','Vol. pré-fervura (L)','OG pré-fervura','Extrato pré-ferv. (°P)','Vol. pós-fervura (L)','OG pós-fervura','Vol. no tanque (L)','pH mosto','Eficiência (%)','O₂ (mg/L)'].map(function(l){
+      '<div class="fp-field"><label>Hora acion. caldeira</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Hora arriada do malte</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Temp. entrada água (°C)</label><input type="number" placeholder="55"></div>'+
+      '<div class="fp-field"><label>Vel. agitador (Hz)</label><input type="number" placeholder="45"></div>'+
+    '</div>'+
+    '<div class="fp-vol-row">'+
+      '<div class="fp-field"><label>pH após 5 min</label><input type="number" step="0.1" placeholder="5,4"></div>'+
+      '<div class="fp-field"><label>Previsão iodo (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Teste iodo</label><select><option value="">—</option><option>✅ Negativo (ok)</option><option>⚠️ Positivo (amilase)</option></select></div>'+
+      '<div class="fp-field"><label>Vel. agitador transf. (Hz)</label><input type="number" placeholder="15"></div>'+
+    '</div>'+
+
+    /* ── LAUTER ── */
+    '<div class="fp-divider"></div>'+
+    '<div class="fp-small-label">🔽 Lauter</div>'+
+    '<div class="fp-vol-row">'+
+      '<div class="fp-field"><label>Enxague da tina (L)</label><input type="number" placeholder="30"></div>'+
+      '<div class="fp-field"><label>Água de lastro (L)</label><input type="number" placeholder="70"></div>'+
+      '<div class="fp-field"><label>Início transf. mosto (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Fim transf. mosto prim. (hh:mm)</label><input type="time"></div>'+
+    '</div>'+
+    '<div class="fp-vol-row">'+
+      '<div class="fp-field"><label>Extrato mosto prim. (°B)</label><input type="number" step="0.1" placeholder="15"></div>'+
+      '<div class="fp-field"><label>Vol. mosto primário (L)</label><input type="number" placeholder="750"></div>'+
+      '<div class="fp-field"><label>Extrato tina (°B)</label><input type="number" step="0.1" placeholder="14"></div>'+
+      '<div class="fp-field"><label>Freq. bomba transf. (Hz)</label><input type="number" placeholder="14"></div>'+
+    '</div>'+
+    '<div class="fp-vol-row">'+
+      '<div class="fp-field"><label>1ª lavagem (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>2ª lavagem (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Finalização lauter (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Tempo total lauter (min)</label><input type="number" placeholder="—"></div>'+
+    '</div>'+
+
+    /* ── FERVURA ── */
+    '<div class="fp-divider"></div>'+
+    '<div class="fp-small-label">🔥 Fervura</div>'+
+    '<div class="fp-vol-row">'+
+      '<div class="fp-field"><label>Início da fervura (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Término da fervura (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Vol. início fervura (L)</label><input type="number" placeholder="1630"></div>'+
+      '<div class="fp-field"><label>Extrato pré-ferv. (°B) — 2 min</label><input type="number" step="0.1" placeholder="11,2"></div>'+
+    '</div>'+
+    '<div class="fp-small-label" style="margin-top:8px">Adições de lúpulo / adjuntos</div>'+
+    '<div class="fp-tbl-wrap">'+
+      '<table class="fp-data" id="fp-tbl-adic-'+numStr+'">'+
+        '<thead><tr><th>Ingrediente</th><th>Horário</th><th>Min restantes</th><th>Qtd real</th><th></th></tr></thead>'+
+        '<tbody>'+
+          '<tr><td><input placeholder="Lúpulo/adjunto"></td><td><input type="time"></td><td><input type="number" placeholder="60"></td><td><input placeholder="g / unid."></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
+        '</tbody>'+
+      '</table>'+
+    '</div>'+
+    '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-adic-'+numStr+'\',\'\',\'\',\'\',\'\')">＋ Adição</button>'+
+    '<div class="fp-vol-row" style="margin-top:10px">'+
+      '<div class="fp-field"><label>Apronte fim fervura (L)</label><input type="number" placeholder="1550"></div>'+
+      '<div class="fp-field"><label>Extrato fim fervura (°B)</label><input type="number" step="0.1" placeholder="11,6"></div>'+
+      '<div class="fp-field"><label>Rendimento mostura (%)</label><input type="number" step="0.1" placeholder="83"></div>'+
+      '<div class="fp-field"><label>Tx. evap. horária (%)</label><input type="number" step="0.1" placeholder="8"></div>'+
+    '</div>'+
+    '<div class="fp-vol-row">'+
+      '<div class="fp-field"><label>Perda trub estimada (L)</label><input type="number" placeholder="130"></div>'+
+      '<div class="fp-field"><label>Perda encolhimento 4% (L)</label><input type="number" placeholder="78"></div>'+
+      '<div class="fp-field"><label>Acion. whirlpool (hh:mm)</label><input type="time"></div>'+
+    '</div>'+
+
+    /* ── RESFRIAMENTO + INOCULAÇÃO ── */
+    '<div class="fp-divider"></div>'+
+    '<div class="fp-small-label">❄️ Resfriamento e Inoculação</div>'+
+    '<div class="fp-vol-row">'+
+      '<div class="fp-field"><label>Início resfriamento (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Fim resfriamento (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Temp. mosto entrada (°C)</label><input type="number" placeholder="95"></div>'+
+      '<div class="fp-field"><label>Temp. mosto saída trocador (°C)</label><input type="number" placeholder="18"></div>'+
+    '</div>'+
+    '<div class="fp-vol-row">'+
+      '<div class="fp-field"><label>Vel. bomba resfr. (Hz)</label><input type="number" placeholder="—"></div>'+
+      '<div class="fp-field"><label>Vazão O₂ (L/min)</label><input type="number" step="0.1" placeholder="—"></div>'+
+      '<div class="fp-field"><label>Hora inoculação</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Geração levedura</label><input placeholder="12ª"></div>'+
+    '</div>'+
+    '<div class="fp-vol-row">'+
+      '<div class="fp-field"><label>Temp. tanque inoculado (°C)</label><input type="number" placeholder="18"></div>'+
+      '<div class="fp-field"><label>Vol. inicial tanque (L)</label><input type="number" placeholder="—"></div>'+
+      '<div class="fp-field"><label>Vol. final tanque (L)</label><input type="number" placeholder="—"></div>'+
+      '<div class="fp-field"><label>Tempo total processo (hh:mm)</label><input type="time"></div>'+
+    '</div>'+
+
+    /* ── VOLUMES E DENSIDADES (resumo) ── */
+    '<div class="fp-divider"></div>'+
+    '<div class="fp-small-label">📊 Resumo — Volumes e Densidades</div>'+
+    '<div class="fp-vol-row">'+
+    ['OG real (no tanque)','FG real','ABV real (%)','pH mosto final','Eficiência real (%)'].map(function(l){
       return '<div class="fp-field"><label>'+l+'</label><input placeholder="—"></div>';
-    }).join('')+'</div>'+
+    }).join('')+
+    '</div>'+
+
     '<div class="fp-divider"></div>'+
     '<div class="fp-small-label">Observações</div>'+
     '<textarea class="fp-obs-field" placeholder="Observações…"></textarea>'+
@@ -10293,6 +10388,53 @@ function abrirFichaLote(tq){
           '</table>'+
         '</div>'+
         '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-pmatur\',\'Etapa\',\'4\',\'5\',\'1,5\')">＋</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
+
+  /* Programação do Sistema */
+  '<div class="fp-sec collapsed fp-gestor-sec">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">⚙️</span><span class="fp-sec-title">Programação do Sistema</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
+      '<span class="fp-sec-toggle">▾</span></div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-small-label">Moagem</div>'+
+      '<div class="fp-fg-grid tight" style="margin-bottom:10px">'+
+        '<div class="fp-field"><label>Regulagem moagem (mm)</label><input type="number" placeholder="0,6" step="0.1"></div>'+
+      '</div>'+
+      '<div class="fp-small-label">Mostura</div>'+
+      '<div class="fp-fg-grid tight" style="margin-bottom:10px">'+
+        '<div class="fp-field"><label>Vol. arriada malte (L)</label><input type="number" placeholder="1150"></div>'+
+        '<div class="fp-field"><label>Vol. p/ lavagem tina (L)</label><input type="number" placeholder="0"></div>'+
+        '<div class="fp-field"><label>Vel. agitador (Hz)</label><input type="number" placeholder="45"></div>'+
+      '</div>'+
+      '<div class="fp-small-label">Lauter</div>'+
+      '<div class="fp-fg-grid tight" style="margin-bottom:10px">'+
+        '<div class="fp-field"><label>Vol. mosto primário (L)</label><input type="number" placeholder="750"></div>'+
+        '<div class="fp-field"><label>Nível seg. mosto primário (L)</label><input type="number" placeholder="570"></div>'+
+        '<div class="fp-field"><label>Vol. lavagem 1 (L)</label><input type="number" placeholder="400"></div>'+
+        '<div class="fp-field"><label>Vol. lavagem 2 (L)</label><input type="number" placeholder="150"></div>'+
+        '<div class="fp-field"><label>Vol. lavagem contínua (L)</label><input type="number" placeholder="400"></div>'+
+        '<div class="fp-field"><label>Qt. lavagens</label><input type="number" placeholder="2"></div>'+
+        '<div class="fp-field"><label>Freq. bomba Lauter (Hz)</label><input type="number" placeholder="12"></div>'+
+        '<div class="fp-field"><label>Tempo recirc. Lauter (min)</label><input type="number" placeholder="7"></div>'+
+        '<div class="fp-field"><label>Tempo ag. pós transf. (min)</label><input type="number" placeholder="1"></div>'+
+        '<div class="fp-field"><label>Tempo descanso pós lavagem (min)</label><input type="number" placeholder="5"></div>'+
+        '<div class="fp-field"><label>Tempo descanso (min)</label><input type="number" placeholder="5"></div>'+
+      '</div>'+
+      '<div class="fp-small-label">Fervura</div>'+
+      '<div class="fp-fg-grid tight" style="margin-bottom:10px">'+
+        '<div class="fp-field"><label>Setpoint pré-fervura (°C)</label><input type="number" placeholder="98"></div>'+
+        '<div class="fp-field"><label>Setpoint fervura (°C)</label><input type="number" placeholder="99,3"></div>'+
+        '<div class="fp-field"><label>Vol. pré-fervura alvo (L)</label><input type="number" placeholder="350"></div>'+
+        '<div class="fp-field"><label>Tempo fervura (min)</label><input type="number" placeholder="60"></div>'+
+        '<div class="fp-field"><label>Vol. troca de válvulas (L)</label><input type="number" placeholder="250"></div>'+
+      '</div>'+
+      '<div class="fp-small-label">Whirlpool</div>'+
+      '<div class="fp-fg-grid tight">'+
+        '<div class="fp-field"><label>Tempo atraso bomba (min)</label><input type="number" placeholder="1"></div>'+
+        '<div class="fp-field"><label>Tempo whirlpool (min)</label><input type="number" placeholder="5"></div>'+
+        '<div class="fp-field"><label>Tempo descanso (min)</label><input type="number" placeholder="10"></div>'+
       '</div>'+
     '</div>'+
   '</div>'+
