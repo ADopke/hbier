@@ -3366,7 +3366,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.26";
+var VERSAO = "3.7.27";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8735,9 +8735,12 @@ async function carregarTanques(){
             var volTotal = parseFloat(tq.volume) || parseFloat(tq.capacidade) || 0;
             if (!volTotal) return "";
             // litros saídos = soma dos barrils + soma dos PETs do lote atual
-            var nomeUpV = tq.nome.toUpperCase();
+            var nomeUpV = tq.nome.toUpperCase().replace(/[-\s]/g,"");
             var barrilsLote = (barrisPorTanque[nomeUpV]||[]).filter(function(r){
-              return r.lote && tq.lote && r.lote === tq.lote;
+              if(!r.lote || !tq.lote) return false;
+              var rl = r.lote.trim().toUpperCase();
+              var tl = tq.lote.trim().toUpperCase();
+              return rl === tl || tl.startsWith(rl);
             });
             var saidoBarril = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
             // PETs: último litrosFim registrado (é o que sobrou no tanque)
@@ -8766,10 +8769,16 @@ async function carregarTanques(){
             "color:#374151;cursor:pointer;font-weight:600'>✏️ editar brassagem</button>" : "");
 
         // barreis envasados — só vincula se o lote do barril bate com o lote do tanque
-        var nomeUp = tq.nome.toUpperCase();
+        var nomeUp = tq.nome.toUpperCase().replace(/[-\s]/g,"");
         var todosBarril = barrisPorTanque[nomeUp] || [];
         var regsBarril = tq.lote
-          ? todosBarril.filter(function(r){ return r.lote && r.lote === tq.lote; })
+          ? todosBarril.filter(function(r){
+              if(!r.lote) return false;
+              var rl = r.lote.trim().toUpperCase();
+              var tl = tq.lote.trim().toUpperCase();
+              // aceita: lote exato OU lote do tanque começa com o lote do barril
+              return rl === tl || tl.startsWith(rl);
+            })
           : []; // sem lote no tanque: não vincula nenhum barril
         if (regsBarril.length){
           // ordenar por data
@@ -9146,7 +9155,7 @@ async function carregarTanques(){
             var tqObj = _dadosTanques.find(function(t){ return t.id === tqId; });
             if (tqObj && tqObj.lote) {
               // Coletar barris do lote atual
-              var nomeUp = tqObj.nome.toUpperCase();
+              var nomeUp = tqObj.nome.toUpperCase().replace(/[-\s]/g,"");
               var todosBarril = barrisPorTanque[nomeUp] || [];
               var regsBarril = todosBarril.filter(function(r){ return r.lote && r.lote === tqObj.lote; });
               // Calcular litros saídos em barris
