@@ -3348,7 +3348,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.15";
+var VERSAO = "3.7.16";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4958,14 +4958,27 @@ function popularLotesPorTanque(tanqueVal, selectId, corBorda) {
 }
 
 $("barrilTanque").addEventListener("change", function(){
-  popularLotesPorTanque(this.value, "barrilLote", "var(--linha)");
-  // preencher produto automaticamente se tiver lote
-  var tqNorm = (this.value||"").toUpperCase().replace(/[-\s]/g,"");
-  if (tqNorm && _dadosTanques) {
-    var tq = _dadosTanques.find(function(t){ return t.nome.toUpperCase() === tqNorm; });
-    if (tq && tq.estilo && !$("barrilProduto").value) {
-      $("barrilProduto").value = tq.estilo;
+  var self = this;
+  var tanqueVal = self.value;
+  function _popularEProduto(){
+    popularLotesPorTanque(tanqueVal, "barrilLote", "var(--linha)");
+    var tqNorm = (tanqueVal||"").toUpperCase().replace(/[-\s]/g,"");
+    if (tqNorm && _dadosTanques) {
+      var tq = _dadosTanques.find(function(t){ return t.nome.toUpperCase() === tqNorm; });
+      if (tq && tq.estilo && !$("barrilProduto").value) {
+        $("barrilProduto").value = tq.estilo;
+      }
     }
+  }
+  if (!_dadosTanques) {
+    // mobile: _dadosTanques ainda não carregado — busca agora
+    $("barrilLote").innerHTML = "<option value=''>Carregando…</option>";
+    api("/api/tanques").then(function(r){
+      _dadosTanques = (r && r.tanques) || [];
+      _popularEProduto();
+    }).catch(function(){ _popularEProduto(); });
+  } else {
+    _popularEProduto();
   }
 });
 
