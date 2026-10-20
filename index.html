@@ -6505,7 +6505,7 @@ $("btnBrassSalvar").addEventListener("click", async function(){
 });
 
 // ===== ENVASE =====
-$("btnAddEnvase").addEventListener("click", function(){
+$("btnAddEnvase").addEventListener("click", async function(){
   _enveditando = null;
   $("envFormTitulo").textContent = "\uD83D\uDCE6 Novo Envase";
   $("envProduto").value = "";
@@ -6517,7 +6517,9 @@ $("btnAddEnvase").addEventListener("click", function(){
   $("envDia").value = "";
   $("envEstiloWrap").hidden = true;
   $("envEstilo").value = "";
-  popularSelectTanques("envTanque", true, "");
+  await popularSelectTanques("envTanque", true, "");
+  var tqSel = $("envTanque").value;
+  if (tqSel) popularLotesPorTanque(tqSel, "envLote", "#B3C8F5");
   $("modalEnvase").hidden = false;
   setTimeout(function(){ $("envProduto").focus(); }, 80);
 });
