@@ -3368,7 +3368,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.38";
+var VERSAO = "3.7.39";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9743,8 +9743,8 @@ function preencherLogDivs(containerId, rows, addFn){
       if(valsAdj[i]!==undefined) el.value=valsAdj[i];
     });
   });
-  /* Após restaurar log de maturação, atualiza banner CO₂ */
-  if(containerId==='fp-matur-log') fp_recCO2();
+  /* Após restaurar log de maturação, atualiza banner CO₂ (após todos os valores preenchidos) */
+  if(containerId==='fp-matur-log') setTimeout(fp_recCO2, 0);
 }
 function fp_addRow(tblId){
   var vals=Array.from(arguments).slice(1);
@@ -11655,7 +11655,7 @@ function fp_preencherFicha(ficha){
   if(ficha.dryhop)       preencherTabela('fp-tbl-dryhop',ficha.dryhop);
   if(ficha.trub)         preencherTabela('fp-tbl-trub',ficha.trub);
   if(ficha.fermLog && ficha.fermLog.length)   preencherLogDivs('fp-ferm-log', ficha.fermLog, fp_addFermRow);
-  if(ficha.maturLog && ficha.maturLog.length){ preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow); setTimeout(fp_recCO2, 200); }
+  if(ficha.maturLog && ficha.maturLog.length){ preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow); setTimeout(fp_recCO2, 300); }
   // restaura adições ao tanque (clearmax + levedura)
   if(ficha.adicoesTanque){
     var at = ficha.adicoesTanque;
@@ -12447,6 +12447,7 @@ window.fp_delLog           = fp_delLog;
 window.fp_addRow           = fp_addRow;
 window.fp_addFermRow       = fp_addFermRow;
 window.fp_addMaturRow      = fp_addMaturRow;
+window.fp_recCO2           = fp_recCO2;
 window.fp_calcIodo         = fp_calcIodo;
 window.fp_addLavRow        = fp_addLavRow;
 window.fp_calcFermStats    = fp_calcFermStats;
