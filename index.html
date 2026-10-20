@@ -1251,18 +1251,16 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
 #fp-panel-receita.fp-receita-travada .fp-gestor-sec .fp-del-btn{display:none}
 #fp-panel-receita.fp-receita-travada .fp-gestor-sec .fp-enz-cell button{display:none}
 #fp-panel-receita.fp-receita-travada .fp-receita-aviso{display:flex}
-/* clearmax pro — bloco de confirmação obrigatória */
-.fp-clearmax-bloco{display:flex;align-items:center;flex-wrap:wrap;gap:10px;background:var(--fp-bg3);border:1px solid var(--fp-border);border-radius:8px;padding:10px 12px;margin-bottom:8px}
-.fp-clearmax-dose{font-size:13px;font-weight:600;color:var(--fp-fg);white-space:nowrap}
-.fp-clearmax-dose span{color:var(--fp-marrom);font-size:15px}
-.fp-clearmax-ok{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--fp-verde);font-weight:600}
-.fp-clearmax-ok.pendente{color:var(--fp-fg3)}
-.fp-btn-clearmax{background:var(--fp-marrom);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'Barlow',sans-serif}
-.fp-btn-clearmax:hover{filter:brightness(1.1)}
-.fp-btn-clearmax:disabled{background:var(--fp-bg2);color:var(--fp-fg3);cursor:default;filter:none}
-.fp-clearmax-quem{font-size:11px;color:var(--fp-fg3);margin-left:4px}
-/* fim do resfriamento bloqueado até clearmax */
-.fp-resf-fim-bloqueado{pointer-events:none;opacity:.45;cursor:not-allowed}
+/* bloco de confirmação adições ao tanque (clearmax e levedura) */
+.fp-aplic-bloco{display:flex;align-items:flex-start;flex-wrap:wrap;gap:10px;background:var(--fp-bg3);border:1px solid var(--fp-border);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.fp-aplic-info{font-size:13px;font-weight:600;color:var(--fp-fg);line-height:1.4}
+.fp-aplic-ok{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--fp-verde);font-weight:600}
+.fp-aplic-ok.pendente{color:var(--fp-fg3)}
+.fp-btn-aplic{background:var(--fp-marrom);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'Barlow',sans-serif}
+.fp-btn-aplic:hover{filter:brightness(1.1)}
+.fp-btn-aplic:disabled{background:var(--fp-bg2);color:var(--fp-fg3);cursor:default;filter:none}
+.fp-aplic-quem{font-size:11px;color:var(--fp-fg3);margin-left:4px}
+.fp-aplic-extra{display:flex;flex-wrap:wrap;gap:8px;width:100%;margin-top:4px}
 .fp-app.modo-executor .fp-role-dica{background:rgba(2,95,29,.1);border-bottom-color:rgba(2,95,29,.25);color:var(--fp-verde)}
 /* misc */
 .fp-two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -3368,7 +3366,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.18";
+var VERSAO = "3.7.19";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9518,58 +9516,103 @@ function fp_recalcEficTodas(){
   document.querySelectorAll('#fp-bat-list .fp-bat-card').forEach(function(card){
     fp_calcEficienciaReal(card);
   });
-  fp_atualizarDoseClearmax();
+  fp_atualizarVolTotalBateladas();
 }
 
 /* ── Clearmax Pro ─────────────────────────────────────────── */
 /* Atualiza a dose exibida em todos os blocos clearmax */
-function fp_atualizarDoseClearmax(){
-  var volEl = document.querySelector('#fp-panel-receita .fp-fg-grid input:nth-child(1)');
-  // o terceiro input do fp-fg-grid wide é Volume total (L)
-  var inputs = document.querySelectorAll('#fp-panel-receita .fp-fg-grid.wide input');
-  var vol = inputs && inputs[2] ? parseFloat(inputs[2].value) : NaN;
-  var dose = isNaN(vol) || vol <= 0 ? null : Math.round(vol * 4 / 100 * 10) / 10; // 4g/hL
-  document.querySelectorAll('.fp-clearmax-dose-val').forEach(function(el){
-    el.textContent = dose !== null ? dose + ' g' : '—';
-  });
+/* ── Volume por batelada + soma total ────────────────────── */
+function fp_calcVolBatelada(input){
+  var card = input.closest('.fp-bat-card');
+  if(!card) return;
+  var ini = parseFloat((card.querySelector('.fp-bat-vol-ini')||{}).value);
+  var fim = parseFloat((card.querySelector('.fp-bat-vol-fim')||{}).value);
+  var res = card.querySelector('.fp-bat-vol-result');
+  if(res){
+    if(!isNaN(ini) && !isNaN(fim) && fim >= ini){
+      res.value = (fim - ini).toFixed(0);
+    } else {
+      res.value = '';
+    }
+  }
+  fp_atualizarVolTotalBateladas();
 }
 
-/* Confirma uso do Clearmax Pro na batelada */
-function fp_confirmarClearmax(btn){
-  var bloco = btn.closest('.fp-clearmax-bloco');
-  if(!bloco) return;
-  var now = new Date();
+function fp_atualizarVolTotalBateladas(){
+  var cards = document.querySelectorAll('#fp-bat-list .fp-bat-card');
+  var partes = [];
+  var total = 0;
+  cards.forEach(function(card, i){
+    var v = parseFloat((card.querySelector('.fp-bat-vol-result')||{}).value);
+    if(!isNaN(v) && v > 0){
+      partes.push('Bat.'+(i+1)+': '+v+' L');
+      total += v;
+    }
+  });
+  var temDados = partes.length > 0;
+  // rodapé da aba bateladas
+  var rodape = document.getElementById('fp-vol-total-bat');
+  var valEl  = document.getElementById('fp-vol-total-bat-val');
+  var detEl  = document.getElementById('fp-vol-total-bat-det');
+  if(rodape){ rodape.style.display = temDados ? '' : 'none'; }
+  if(valEl)  valEl.textContent  = temDados ? total.toFixed(0)+' L' : '—';
+  if(detEl)  detEl.textContent  = temDados ? '('+partes.join(' + ')+')' : '';
+  // espelho no topo da aba fermentação
+  var fermVol = document.getElementById('fp-ferm-vol-total');
+  var fermDet = document.getElementById('fp-ferm-vol-det');
+  if(fermVol) fermVol.textContent = temDados ? total.toFixed(0)+' L' : '—';
+  if(fermDet) fermDet.textContent = temDados ? '('+partes.join(' + ')+')' : '';
+  // atualiza dose clearmax (4 g/hL)
+  var dose = total > 0 ? Math.round(total * 4 / 100 * 10) / 10 : null;
+  var doseEl = document.getElementById('fp-clearmax-dose-ferm');
+  if(doseEl) doseEl.textContent = dose !== null ? dose+' g' : '—';
+}
+
+/* ── Confirmação Clearmax / Levedura na aba Fermentação ───── */
+function fp_confirmarAplic(tipo){
+  var now  = new Date();
   var hora = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
   var quem = (sessao && sessao.nome) ? sessao.nome : 'Operador';
 
-  // registra dados no bloco
-  bloco.dataset.clearmaxConfirmado = '1';
-  bloco.dataset.clearmaxHora = hora;
-  bloco.dataset.clearmaxQuem = quem;
-
-  // atualiza UI
-  btn.disabled = true;
-  btn.textContent = '✅ Confirmado';
-  var okDiv = bloco.querySelector('.fp-clearmax-ok');
-  if(okDiv){
-    okDiv.classList.remove('pendente');
-    okDiv.querySelector('.fp-clearmax-status-ico').textContent = '✅';
-    okDiv.querySelector('.fp-clearmax-status-txt').textContent = 'Clearmax Pro confirmado às '+hora;
-    okDiv.querySelector('.fp-clearmax-quem').textContent = ' · '+quem;
-  }
-
-  // desbloqueia o campo fim do resfriamento da mesma batelada
-  var card = btn.closest('.fp-bat-card');
-  if(card){
-    var fimResf = card.querySelector('input[data-resumo="resfriamento-fim"]');
-    if(fimResf){
-      fimResf.classList.remove('fp-resf-fim-bloqueado');
-      fimResf.removeAttribute('title');
+  if(tipo === 'clearmax'){
+    var bloco  = document.getElementById('fp-bloco-clearmax');
+    var btn    = document.getElementById('fp-btn-clearmax-ferm');
+    var status = document.getElementById('fp-clearmax-status');
+    if(!bloco) return;
+    bloco.dataset.confirmado = '1';
+    bloco.dataset.hora = hora;
+    bloco.dataset.quem = quem;
+    if(btn){ btn.disabled = true; btn.textContent = '✅ Confirmado'; }
+    if(status){
+      status.classList.remove('pendente');
+      status.querySelector('.fp-aplic-status-ico').textContent = '✅';
+      status.querySelector('.fp-aplic-status-txt').textContent = 'Clearmax Pro confirmado às '+hora;
+      status.querySelector('.fp-aplic-quem').textContent = ' · '+quem;
     }
+  } else if(tipo === 'lev'){
+    var bloco  = document.getElementById('fp-bloco-lev');
+    var btn    = document.getElementById('fp-btn-lev-ferm');
+    var status = document.getElementById('fp-lev-status');
+    if(!bloco) return;
+    // captura hora digitada ou usa agora
+    var horaLev = (document.getElementById('fp-lev-hora')||{}).value || hora;
+    bloco.dataset.confirmado = '1';
+    bloco.dataset.hora = horaLev;
+    bloco.dataset.quem = quem;
+    if(btn){ btn.disabled = true; btn.textContent = '✅ Confirmado'; }
+    if(status){
+      status.classList.remove('pendente');
+      status.querySelector('.fp-aplic-status-ico').textContent = '✅';
+      status.querySelector('.fp-aplic-status-txt').textContent = 'Levedura inoculada às '+horaLev;
+      status.querySelector('.fp-aplic-quem').textContent = ' · '+quem;
+    }
+    // preenche hora no campo se estava vazio
+    var horaEl = document.getElementById('fp-lev-hora');
+    if(horaEl && !horaEl.value) horaEl.value = hora;
   }
   fp_markDirty();
 }
-/* ── fim Clearmax Pro ─────────────────────────────────────── */
+/* ── fim Adições ao Tanque ────────────────────────────────── */
 
 function fp_calcAbv(){
   var ogEl  = document.getElementById('fp-og-alvo');
@@ -10275,29 +10318,21 @@ function fp_addBatelada(){
 
     /* ── RESFRIAMENTO + INOCULAÇÃO ── */
     '<div class="fp-divider"></div>'+
-    '<div class="fp-small-label">❄️ Resfriamento e Inoculação</div>'+
-    /* bloco clearmax pro */
-    '<div class="fp-clearmax-bloco">'+
-      '<div class="fp-clearmax-dose">🧪 Clearmax Pro — Dose: <span class="fp-clearmax-dose-val">—</span></div>'+
-      '<button type="button" class="fp-btn-clearmax" onclick="fp_confirmarClearmax(this)">✅ Confirmar uso</button>'+
-      '<div class="fp-clearmax-ok pendente"><span class="fp-clearmax-status-ico">⏳</span> <span class="fp-clearmax-status-txt">Aguardando confirmação</span><span class="fp-clearmax-quem"></span></div>'+
-    '</div>'+
+    '<div class="fp-small-label">❄️ Resfriamento</div>'+
     '<div class="fp-vol-row">'+
       '<div class="fp-field"><label>Início resfriamento (hh:mm)</label><input type="time" data-resumo="resfriamento-ini"></div>'+
-      '<div class="fp-field"><label>Fim resfriamento (hh:mm)</label><input type="time" data-resumo="resfriamento-fim" class="fp-resf-fim-bloqueado" title="Confirme o uso do Clearmax Pro antes de preencher o fim do resfriamento"></div>'+
+      '<div class="fp-field"><label>Fim resfriamento (hh:mm)</label><input type="time" data-resumo="resfriamento-fim"></div>'+
       '<div class="fp-field"><label>Temp. mosto entrada (°C)</label><input type="number" placeholder="95"></div>'+
       '<div class="fp-field"><label>Temp. mosto saída trocador (°C)</label><input type="number" placeholder="18"></div>'+
     '</div>'+
     '<div class="fp-vol-row">'+
       '<div class="fp-field"><label>Vel. bomba resfr. (Hz)</label><input type="number" placeholder="—"></div>'+
       '<div class="fp-field"><label>Vazão O₂ (L/min)</label><input type="number" step="0.1" placeholder="—"></div>'+
-      '<div class="fp-field"><label>Hora inoculação</label><input type="time"></div>'+
-      '<div class="fp-field"><label>Geração levedura</label><input placeholder="12ª"></div>'+
     '</div>'+
     '<div class="fp-vol-row">'+
-      '<div class="fp-field"><label>Temp. tanque inoculado (°C)</label><input type="number" placeholder="18"></div>'+
-      '<div class="fp-field"><label>Vol. inicial tanque (L)</label><input type="number" placeholder="—"></div>'+
-      '<div class="fp-field"><label>Vol. final tanque (L)</label><input type="number" placeholder="—"></div>'+
+      '<div class="fp-field"><label>Vol. inicial tanque (L)</label><input type="number" placeholder="—" class="fp-bat-vol-ini" oninput="fp_calcVolBatelada(this)"></div>'+
+      '<div class="fp-field"><label>Vol. final tanque (L)</label><input type="number" placeholder="—" class="fp-bat-vol-fim" oninput="fp_calcVolBatelada(this)"></div>'+
+      '<div class="fp-field"><label>Vol. batelada (L)</label><input type="number" placeholder="—" class="fp-bat-vol-result" readonly style="background:var(--fp-bg3);cursor:default" title="Calculado: Vol. final − Vol. inicial"></div>'+
     '</div>'+
 
     /* ── VOLUMES E DENSIDADES (resumo) ── */
@@ -10703,14 +10738,7 @@ function fp_simSave(btn){
           row.querySelectorAll('input').forEach(function(el){ vals.push(el.value); });
           lavLog.push(vals);
         });
-        // clearmax pro
-        var clBloco = card.querySelector('.fp-clearmax-bloco');
-        var clearmax = clBloco && clBloco.dataset.clearmaxConfirmado ? {
-          confirmado: true,
-          hora: clBloco.dataset.clearmaxHora || '',
-          quem: clBloco.dataset.clearmaxQuem || ''
-        } : null;
-        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog, clearmax: clearmax };
+        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog };
       });
     })(),
     sais:        coletarTabela('fp-tbl-sais'),
@@ -10724,6 +10752,18 @@ function fp_simSave(btn){
     trub:        coletarTabela('fp-tbl-trub'),
     fermLog:     coletarLogDivs('fp-ferm-log'),
     maturLog:    coletarLogDivs('fp-matur-log'),
+    adicoesTanque: (function(){
+      var clBloco = document.getElementById('fp-bloco-clearmax');
+      var levBloco = document.getElementById('fp-bloco-lev');
+      return {
+        clearmax: clBloco && clBloco.dataset.confirmado ? { confirmado:true, hora:clBloco.dataset.hora||'', quem:clBloco.dataset.quem||'' } : null,
+        lev: levBloco && levBloco.dataset.confirmado ? {
+          confirmado:true, hora:levBloco.dataset.hora||'', quem:levBloco.dataset.quem||'',
+          geracao:(document.getElementById('fp-lev-geracao')||{}).value||'',
+          temp:(document.getElementById('fp-lev-temp')||{}).value||''
+        } : null
+      };
+    })(),
     aprovacao: (function(){
       var dt   = (document.getElementById('fp-aprov-dt')||{}).value   || '';
       var resp = (document.getElementById('fp-aprov-resp')||{}).value || '';
@@ -11095,10 +11135,57 @@ function abrirFichaLote(tq){
     '<div class="fp-bat-list" id="fp-bat-list"></div>'+
     '<button class="fp-add-bat-btn" onclick="fp_addBatelada()" style="margin-top:10px">＋ Adicionar batelada</button>'+
     '<div class="fp-dur-total-geral" id="fp-dur-total-geral" style="display:none">⏱ Tempo total de brassagem: <span>—</span></div>'+
+    '<div class="fp-vol-total-bat" id="fp-vol-total-bat" style="display:none;margin-top:10px;background:var(--fp-bg3);border:1px solid var(--fp-border);border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;color:var(--fp-fg)">'+
+      '🍺 Volume total acumulado: <span id="fp-vol-total-bat-val" style="color:var(--fp-marrom);font-size:15px">—</span>'+
+      '<span id="fp-vol-total-bat-det" style="font-size:11px;font-weight:400;color:var(--fp-fg3);margin-left:8px"></span>'+
+    '</div>'+
   '</div>'+
 
   /* ══════════ ABA FERMENTAÇÃO ══════════ */
   '<div class="fp-panel" id="fp-panel-fermentacao">'+
+
+  /* ── Resumo volumes + Clearmax + Levedura ── */
+  '<div class="fp-sec" id="fp-sec-aplic">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">🧪</span><span class="fp-sec-title marrom">Adições ao Tanque</span><span class="fp-role-badge e">👷 Executor</span></div>'+
+      '<span class="fp-sec-toggle">▾</span>'+
+    '</div>'+
+    '<div class="fp-sec-body">'+
+      /* resumo volume vindo das bateladas */
+      '<div style="background:var(--fp-bg3);border:1px solid var(--fp-border);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px">'+
+        '<span style="font-weight:600;color:var(--fp-fg)">🍺 Volume total das bateladas:</span> '+
+        '<span id="fp-ferm-vol-total" style="font-size:15px;font-weight:700;color:var(--fp-marrom)">—</span>'+
+        '<span id="fp-ferm-vol-det" style="font-size:11px;color:var(--fp-fg3);margin-left:8px"></span>'+
+      '</div>'+
+      /* bloco clearmax pro */
+      '<div class="fp-aplic-bloco" id="fp-bloco-clearmax">'+
+        '<div>'+
+          '<div class="fp-aplic-info">🧪 Clearmax Pro — Dose calculada: <span id="fp-clearmax-dose-ferm" style="color:var(--fp-marrom);font-size:15px">—</span></div>'+
+          '<div style="font-size:11px;color:var(--fp-fg3);margin-top:2px">4 g por hL de mosto · baseado no volume total das bateladas</div>'+
+        '</div>'+
+        '<button type="button" class="fp-btn-aplic" id="fp-btn-clearmax-ferm" onclick="fp_confirmarAplic(\'clearmax\')">✅ Confirmar uso</button>'+
+        '<div class="fp-aplic-ok pendente" id="fp-clearmax-status">'+
+          '<span class="fp-aplic-status-ico">⏳</span> <span class="fp-aplic-status-txt">Aguardando confirmação</span><span class="fp-aplic-quem"></span>'+
+        '</div>'+
+      '</div>'+
+      /* bloco levedura */
+      '<div class="fp-aplic-bloco" id="fp-bloco-lev" style="margin-top:10px">'+
+        '<div>'+
+          '<div class="fp-aplic-info">🍺 Inoculação de Levedura</div>'+
+          '<div style="font-size:11px;color:var(--fp-fg3);margin-top:2px">Registre quando for inocular o tanque</div>'+
+        '</div>'+
+        '<button type="button" class="fp-btn-aplic" id="fp-btn-lev-ferm" onclick="fp_confirmarAplic(\'lev\')">✅ Confirmar inoculação</button>'+
+        '<div class="fp-aplic-ok pendente" id="fp-lev-status">'+
+          '<span class="fp-aplic-status-ico">⏳</span> <span class="fp-aplic-status-txt">Aguardando confirmação</span><span class="fp-aplic-quem"></span>'+
+        '</div>'+
+        '<div class="fp-aplic-extra" style="width:100%;margin-top:8px">'+
+          '<div class="fp-field"><label>Hora inoculação</label><input type="time" id="fp-lev-hora"></div>'+
+          '<div class="fp-field"><label>Geração levedura</label><input placeholder="12ª" id="fp-lev-geracao"></div>'+
+          '<div class="fp-field"><label>Temp. tanque inoculado (°C)</label><input type="number" placeholder="18" id="fp-lev-temp"></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
 
   /* Log dia a dia */
   '<div class="fp-sec">'+
@@ -11391,27 +11478,10 @@ function fp_preencherFicha(ficha){
             });
           }
         }
-        // clearmax pro — restaura confirmação se já foi feita
-        if(bat.clearmax && bat.clearmax.confirmado){
-          var clBloco = card.querySelector('.fp-clearmax-bloco');
-          if(clBloco){
-            clBloco.dataset.clearmaxConfirmado = '1';
-            clBloco.dataset.clearmaxHora = bat.clearmax.hora || '';
-            clBloco.dataset.clearmaxQuem = bat.clearmax.quem || '';
-            var clBtn = clBloco.querySelector('.fp-btn-clearmax');
-            if(clBtn){ clBtn.disabled = true; clBtn.textContent = '✅ Confirmado'; }
-            var okDiv = clBloco.querySelector('.fp-clearmax-ok');
-            if(okDiv){
-              okDiv.classList.remove('pendente');
-              okDiv.querySelector('.fp-clearmax-status-ico').textContent = '✅';
-              okDiv.querySelector('.fp-clearmax-status-txt').textContent = 'Clearmax Pro confirmado às '+(bat.clearmax.hora||'—');
-              okDiv.querySelector('.fp-clearmax-quem').textContent = bat.clearmax.quem ? ' · '+bat.clearmax.quem : '';
-            }
-            // desbloqueia fim do resfriamento
-            var fimResf = card.querySelector('input[data-resumo="resfriamento-fim"]');
-            if(fimResf){ fimResf.classList.remove('fp-resf-fim-bloqueado'); fimResf.removeAttribute('title'); }
-          }
-        }
+        // recalcula volume da batelada
+        var ini = card.querySelector('.fp-bat-vol-ini');
+        var fim = card.querySelector('.fp-bat-vol-fim');
+        if(ini || fim) fp_calcVolBatelada(ini || fim);
       });
       fp_atualizarNumBateladas();
     }
@@ -11427,9 +11497,45 @@ function fp_preencherFicha(ficha){
   if(ficha.trub)         preencherTabela('fp-tbl-trub',ficha.trub);
   if(ficha.fermLog && ficha.fermLog.length)   preencherLogDivs('fp-ferm-log', ficha.fermLog, fp_addFermRow);
   if(ficha.maturLog && ficha.maturLog.length) preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow);
-  // recalcula stats e dose clearmax após restaurar
+  // restaura adições ao tanque (clearmax + levedura)
+  if(ficha.adicoesTanque){
+    var at = ficha.adicoesTanque;
+    if(at.clearmax && at.clearmax.confirmado){
+      var clB = document.getElementById('fp-bloco-clearmax');
+      var clBtn = document.getElementById('fp-btn-clearmax-ferm');
+      var clSt  = document.getElementById('fp-clearmax-status');
+      if(clB){ clB.dataset.confirmado='1'; clB.dataset.hora=at.clearmax.hora||''; clB.dataset.quem=at.clearmax.quem||''; }
+      if(clBtn){ clBtn.disabled=true; clBtn.textContent='✅ Confirmado'; }
+      if(clSt){
+        clSt.classList.remove('pendente');
+        clSt.querySelector('.fp-aplic-status-ico').textContent='✅';
+        clSt.querySelector('.fp-aplic-status-txt').textContent='Clearmax Pro confirmado às '+(at.clearmax.hora||'—');
+        clSt.querySelector('.fp-aplic-quem').textContent=at.clearmax.quem?' · '+at.clearmax.quem:'';
+      }
+    }
+    if(at.lev && at.lev.confirmado){
+      var levB = document.getElementById('fp-bloco-lev');
+      var levBtn = document.getElementById('fp-btn-lev-ferm');
+      var levSt  = document.getElementById('fp-lev-status');
+      if(levB){ levB.dataset.confirmado='1'; levB.dataset.hora=at.lev.hora||''; levB.dataset.quem=at.lev.quem||''; }
+      if(levBtn){ levBtn.disabled=true; levBtn.textContent='✅ Confirmado'; }
+      if(levSt){
+        levSt.classList.remove('pendente');
+        levSt.querySelector('.fp-aplic-status-ico').textContent='✅';
+        levSt.querySelector('.fp-aplic-status-txt').textContent='Levedura inoculada às '+(at.lev.hora||'—');
+        levSt.querySelector('.fp-aplic-quem').textContent=at.lev.quem?' · '+at.lev.quem:'';
+      }
+      var horaEl = document.getElementById('fp-lev-hora');
+      var gerEl  = document.getElementById('fp-lev-geracao');
+      var tmpEl  = document.getElementById('fp-lev-temp');
+      if(horaEl && at.lev.hora) horaEl.value = at.lev.hora;
+      if(gerEl  && at.lev.geracao) gerEl.value = at.lev.geracao;
+      if(tmpEl  && at.lev.temp)    tmpEl.value = at.lev.temp;
+    }
+  }
+  // recalcula stats e volumes após restaurar
   setTimeout(fp_calcFermStats, 100);
-  setTimeout(fp_atualizarDoseClearmax, 100);
+  setTimeout(fp_atualizarVolTotalBateladas, 100);
   // restaura aprovação
   if(ficha.aprovacao){
     var ap = ficha.aprovacao;
@@ -12133,8 +12239,9 @@ window.fp_addEnzRow        = fp_addEnzRow;
 window.fp_addBatelada      = fp_addBatelada;
 window.fp_removerBatelada  = fp_removerBatelada;
 window.fp_markDirty        = fp_markDirty;
-window.fp_confirmarClearmax = fp_confirmarClearmax;
-window.fp_atualizarDoseClearmax = fp_atualizarDoseClearmax;
+window.fp_confirmarAplic = fp_confirmarAplic;
+window.fp_calcVolBatelada = fp_calcVolBatelada;
+window.fp_atualizarVolTotalBateladas = fp_atualizarVolTotalBateladas;
 window.fp_simSave          = fp_simSave;
 window.abrirFichaLote      = abrirFichaLote;
 window.abrirFichaPorLote   = abrirFichaPorLote;
