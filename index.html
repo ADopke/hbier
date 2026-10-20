@@ -3368,7 +3368,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.37";
+var VERSAO = "3.7.38";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9743,6 +9743,8 @@ function preencherLogDivs(containerId, rows, addFn){
       if(valsAdj[i]!==undefined) el.value=valsAdj[i];
     });
   });
+  /* Após restaurar log de maturação, atualiza banner CO₂ */
+  if(containerId==='fp-matur-log') fp_recCO2();
 }
 function fp_addRow(tblId){
   var vals=Array.from(arguments).slice(1);
@@ -9790,7 +9792,7 @@ function fp_addMaturRow(){
     '<div class="fp-log-cell"><input type="number" step="0.01" placeholder="kgf/cm²"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="pH"></div>'+
     '<div class="fp-log-cell">'+
-      '<input type="number" step="0.1" min="0" max="5" placeholder="vol" oninput="fp_recCO2(this)">'+
+      '<input type="number" step="0.1" min="0" max="5" placeholder="vol" class="fp-matur-co2" oninput="fp_recCO2(this)">'+
     '</div>'+
     '<div class="fp-log-cell"><select style="width:100%;background:var(--fp-bg);color:var(--fp-fg);border:none;font-size:11px;padding:2px"><option value="">—</option><option>Turva</option><option>Média</option><option>Clarificada</option></select></div>'+
     '<div class="fp-log-cell"><input placeholder="obs…"></div>'+
@@ -9800,13 +9802,10 @@ function fp_addMaturRow(){
 function fp_recCO2(inp){
   /* Se chamado sem argumento, busca o último valor CO₂ preenchido no log */
   if(!inp){
-    var rows = document.querySelectorAll('#fp-matur-log .fp-mlog-row.matur');
+    /* Busca pelo class fp-matur-co2 — mais confiável que índice */
+    var allCO2 = document.querySelectorAll('#fp-matur-log .fp-matur-co2');
     var lastInp = null;
-    rows.forEach(function(row){
-      /* Col 5 = Vol CO₂ (índice 4, 0-based: datetime,temp,kgf,pH,co2) */
-      var inputs = row.querySelectorAll('input');
-      if(inputs[4] && inputs[4].value !== '') lastInp = inputs[4];
-    });
+    allCO2.forEach(function(el){ if(el.value !== '') lastInp = el; });
     if(!lastInp){ var box=document.getElementById('fp-co2-rec-box'); if(box) box.style.display='none'; return; }
     inp = lastInp;
   }
@@ -11656,7 +11655,7 @@ function fp_preencherFicha(ficha){
   if(ficha.dryhop)       preencherTabela('fp-tbl-dryhop',ficha.dryhop);
   if(ficha.trub)         preencherTabela('fp-tbl-trub',ficha.trub);
   if(ficha.fermLog && ficha.fermLog.length)   preencherLogDivs('fp-ferm-log', ficha.fermLog, fp_addFermRow);
-  if(ficha.maturLog && ficha.maturLog.length){ preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow); setTimeout(fp_recCO2, 50); }
+  if(ficha.maturLog && ficha.maturLog.length){ preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow); setTimeout(fp_recCO2, 200); }
   // restaura adições ao tanque (clearmax + levedura)
   if(ficha.adicoesTanque){
     var at = ficha.adicoesTanque;
