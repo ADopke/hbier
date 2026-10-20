@@ -3366,7 +3366,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.24";
+var VERSAO = "3.7.25";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11727,7 +11727,10 @@ async function rec_carregarLista(){
             (rec.abv?' · '+esc(rec.abv)+'% ABV':'')+
             (rec.volume?' · '+esc(rec.volume)+' L':'')+'</div>'+
         '</div>'+
-        '<button class="btn mini" onclick="rec_editarReceita(\''+esc(rec.id)+'\')">✏️ Editar</button>'+
+        '<div style="display:flex;gap:6px">'+
+          '<button class="btn mini" onclick="rec_editarReceita(\''+esc(rec.id)+'\')">✏️ Editar</button>'+
+          '<button class="btn mini secundario" onclick="rec_copiarReceita(\''+esc(rec.id)+'\')" title="Duplicar esta receita">📋 Copiar</button>'+
+        '</div>'+
       '</div>';
     }).join('');
   }catch(e){
@@ -12103,6 +12106,31 @@ async function rec_editarReceita(id){
     document.getElementById('recForm').hidden=false;
   }catch(e){
     alert('Erro: '+e.message);
+  }
+}
+
+/* duplica uma receita: carrega todos os dados mas limpa o ID e ajusta o nome */
+async function rec_copiarReceita(id){
+  try{
+    var r = await fetch('/api/receita?id='+encodeURIComponent(id),{credentials:'include'});
+    var json = await r.json();
+    var rec = json.receita;
+    if(!rec){ alert('Receita não encontrada.'); return; }
+
+    // usa rec_editarReceita para preencher o formulário completo
+    await rec_editarReceita(id);
+
+    // depois limpa o ID (vira receita nova) e ajusta nome
+    document.getElementById('recId').value = '';
+    var nomeAtual = document.getElementById('recNome').value;
+    document.getElementById('recNome').value = nomeAtual + ' (cópia)';
+    document.getElementById('recFormTitulo').textContent = 'Nova Receita (cópia de "'+esc(nomeAtual)+'")';
+    document.getElementById('recBtnDeletar').hidden = true;
+    document.getElementById('recMsgForm').innerHTML =
+      '<div class="aviso" style="background:var(--fp-bg3,#f5f0e8);border:1px solid var(--linha);border-radius:6px;padding:8px 12px;font-size:.85rem;margin-bottom:8px">'+
+      '📋 Cópia de <strong>'+esc(nomeAtual)+'</strong> — ajuste o nome e salve para criar a nova receita.</div>';
+  }catch(e){
+    alert('Erro ao copiar: '+e.message);
   }
 }
 
