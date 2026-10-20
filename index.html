@@ -3348,7 +3348,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.14";
+var VERSAO = "3.7.15";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6802,8 +6802,12 @@ $("progLista").addEventListener("click", async function(ev){
   if (b.dataset.barrilEditar){
     var semEditar = b.dataset.barrilSemana;
     var chaveEditar = "barril-"+semEditar;
-    // buscar o registro pelo id
-    api("/api/prog?semana="+semEditar+"&tarefas=1").then(function(r){
+    // buscar o registro pelo id; garante _dadosTanques carregado em paralelo
+    var p1 = api("/api/prog?semana="+semEditar+"&tarefas=1");
+    var p2 = _dadosTanques ? Promise.resolve({tanques:_dadosTanques}) : api("/api/tanques");
+    Promise.all([p1, p2]).then(function(results){
+      var r = results[0], rt = results[1];
+      if (!_dadosTanques && rt && rt.tanques) _dadosTanques = rt.tanques;
       var regs = (r.barreis && r.barreis[chaveEditar]) ? r.barreis[chaveEditar] : [];
       var reg = regs.find(function(x){ return x.id === b.dataset.barrilEditar; });
       if (!reg){ toast("Registro não encontrado.","erro"); return; }
