@@ -1243,6 +1243,14 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
 .fp-app.modo-executor .fp-gestor-sec .fp-add-row-btn,
 .fp-app.modo-executor .fp-gestor-sec .fp-del-btn{display:none}
 .fp-app.modo-executor .fp-gestor-sec .fp-enz-cell button{display:none}
+/* receita carregada na ficha: somente leitura para todos os papéis */
+#fp-panel-receita.fp-receita-travada .fp-gestor-sec input,
+#fp-panel-receita.fp-receita-travada .fp-gestor-sec select,
+#fp-panel-receita.fp-receita-travada .fp-gestor-sec textarea{pointer-events:none;opacity:.6;background:var(--fp-bg3)!important;border-style:dashed!important;cursor:not-allowed}
+#fp-panel-receita.fp-receita-travada .fp-gestor-sec .fp-add-row-btn,
+#fp-panel-receita.fp-receita-travada .fp-gestor-sec .fp-del-btn{display:none}
+#fp-panel-receita.fp-receita-travada .fp-gestor-sec .fp-enz-cell button{display:none}
+#fp-panel-receita.fp-receita-travada .fp-receita-aviso{display:flex}
 .fp-app.modo-executor .fp-role-dica{background:rgba(2,95,29,.1);border-bottom-color:rgba(2,95,29,.25);color:var(--fp-verde)}
 /* misc */
 .fp-two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -3348,7 +3356,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.16";
+var VERSAO = "3.7.17";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10727,6 +10735,12 @@ function abrirFichaLote(tq){
   /* ══════════ ABA RECEITA ══════════ */
   '<div class="fp-panel active" id="fp-panel-receita">'+
 
+  /* Aviso receita somente leitura (aparece só quando travada) */
+  '<div class="fp-receita-aviso" style="display:none;align-items:center;gap:8px;background:var(--fp-bg3);border:1px solid var(--fp-border);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--fp-fg2)">'+
+    '<span style="font-size:16px">🔒</span>'+
+    '<span>Receita carregada — somente leitura. Para alterar, edite na aba <b>Receitas</b>.</span>'+
+  '</div>'+
+
   /* Seletor de Receita */
   '<div class="fp-sec" id="fp-sec-seletor-receita">'+
     '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
@@ -11354,6 +11368,9 @@ function fp_preencherFicha(ficha){
         var sel = document.getElementById('fp-sel-receita');
         if(sel && ficha.cabecalho.receitaId) sel.value = ficha.cabecalho.receitaId;
         fp_onSelecionarReceita();
+        // trava o painel de receita como somente leitura (ficha restaurada já tem receita)
+        var painelRec = document.getElementById('fp-panel-receita');
+        if(painelRec) painelRec.classList.add('fp-receita-travada');
       }, 800);
     }
   }
@@ -11682,6 +11699,10 @@ function fp_aplicarReceita(rec){
   var selRec = document.getElementById('fp-sel-receita');
   var hidRec = document.getElementById('fp-receita-id-usado');
   if(hidRec) hidRec.value = (selRec && selRec.value) || '';
+
+  // trava o painel de receita como somente leitura
+  var painelRec = document.getElementById('fp-panel-receita');
+  if(painelRec) painelRec.classList.add('fp-receita-travada');
 
   fp_markDirty();
 
