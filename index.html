@@ -3348,7 +3348,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.12";
+var VERSAO = "3.7.13";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9667,7 +9667,12 @@ function fp_renderGraficos(){
     var canvas = document.getElementById(canvasId);
     if(!canvas) return;
     var dpr = window.devicePixelRatio || 1;
-    var W = canvas.parentElement.clientWidth || 600;
+    // Calcula largura disponível: sobe na árvore até achar algo com largura real
+    var W = 0;
+    var el = canvas.parentElement;
+    while(el && W < 10){ W = el.offsetWidth || el.clientWidth || 0; el = el.parentElement; }
+    if(W < 10) W = 600;
+    W = Math.min(W, 900); // máximo razoável
     canvas.width  = W * dpr;
     canvas.height = 220 * dpr;
     canvas.style.width  = W + 'px';
@@ -9695,8 +9700,13 @@ function fp_renderGraficos(){
 
     // eixo X: tempo
     var t0 = pts[0].dt.getTime(), t1 = pts[pts.length-1].dt.getTime();
-    var tRange = t1 - t0 || 1;
-    function tx(d){ return ml + (d.getTime()-t0)/tRange * cw; }
+    var tRange = t1 - t0;
+    // Se todos os pontos têm o mesmo timestamp, distribui uniformemente pelo eixo
+    var useIndex = (tRange < 1000); // menos de 1 segundo de diferença
+    function tx(d, idx){
+      if(useIndex) return ml + idx/(pts.length-1||1) * cw;
+      return ml + (d.getTime()-t0)/tRange * cw;
+    }
 
     // título
     ctx.fillStyle = titleColor;
@@ -9718,7 +9728,7 @@ function fp_renderGraficos(){
     ctx.font = '10px system-ui,sans-serif';
     ctx.textAlign = 'center';
     for(var pi=0; pi<pts.length; pi+=step){
-      var px2 = tx(pts[pi]);
+      var px2 = tx(pts[pi], pi);
       ctx.beginPath(); ctx.moveTo(px2, mt+ch); ctx.lineTo(px2, mt+ch+4);
       ctx.strokeStyle = gridColor; ctx.lineWidth=1; ctx.stroke();
       ctx.fillText(fmtDt(pts[pi]), px2, mt+ch+16);
@@ -9758,9 +9768,9 @@ function fp_renderGraficos(){
       ctx.lineJoin = 'round';
       ctx.beginPath();
       var first=true;
-      pts.forEach(function(p){
+      pts.forEach(function(p, pidx){
         if(isNaN(p[s.key])) return;
-        var px3 = tx(p), py3 = vy(p[s.key]);
+        var px3 = tx(p, pidx), py3 = vy(p[s.key]);
         if(first){ ctx.moveTo(px3,py3); first=false; } else { ctx.lineTo(px3,py3); }
       });
       ctx.stroke();
@@ -9769,28 +9779,26 @@ function fp_renderGraficos(){
       if(si===0){
         ctx.beginPath();
         first=true;
-        pts.forEach(function(p){
+        var lastValidIdx = -1;
+        pts.forEach(function(p, pidx){ if(!isNaN(p[s.key])) lastValidIdx=pidx; });
+        pts.forEach(function(p, pidx){
           if(isNaN(p[s.key])) return;
-          var px3=tx(p), py3=vy(p[s.key]);
+          var px3=tx(p,pidx), py3=vy(p[s.key]);
           if(first){ ctx.moveTo(px3,mt+ch); ctx.lineTo(px3,py3); first=false; }
           else { ctx.lineTo(px3,py3); }
         });
-        var lastPt = pts.filter(function(p){ return !isNaN(p[s.key]); }).slice(-1)[0];
-        if(lastPt) ctx.lineTo(tx(lastPt), mt+ch);
+        if(lastValidIdx>=0) ctx.lineTo(tx(pts[lastValidIdx],lastValidIdx), mt+ch);
         ctx.closePath();
-        ctx.fillStyle = s.color.replace(')',',0.10)').replace('rgb(','rgba(').replace('#','rgba(').replace('rgba(#','rgba(').replace(/rgba\(([0-9a-fA-F]{6}),/,function(_,hex){
-          var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);
-          return 'rgba('+r+','+g+','+b+',';
-        });
+        ctx.fillStyle = s.fill || 'rgba(200,200,200,0.10)';
         ctx.fill();
       }
 
       // pontos
       ctx.fillStyle = s.color;
-      pts.forEach(function(p){
+      pts.forEach(function(p, pidx){
         if(isNaN(p[s.key])) return;
         ctx.beginPath();
-        ctx.arc(tx(p), vy(p[s.key]), 3, 0, 2*Math.PI);
+        ctx.arc(tx(p, pidx), vy(p[s.key]), 3, 0, 2*Math.PI);
         ctx.fill();
       });
       ctx.restore();
@@ -9807,7 +9815,7 @@ function fp_renderGraficos(){
     document.querySelector('#fp-panel-graficos .fp-sec:first-child').style.display='';
     drawChart('fp-chart-ferm', fermPts,
       [
-        { key:'sg',   label:'SG',    color:'#E67E22', dec:3 },
+        { key:'sg',   label:'SG',    color:'#E67E22', fill:'rgba(230,126,34,0.12)',  dec:3 },
         { key:'temp', label:'°C',    color:'#2980B9', dec:1 }
       ], 'Fermentação — SG e Temperatura');
   } else {
@@ -9819,7 +9827,7 @@ function fp_renderGraficos(){
     document.querySelectorAll('#fp-panel-graficos .fp-sec')[1].style.display='';
     drawChart('fp-chart-matur', maturPts,
       [
-        { key:'temp', label:'°C',        color:'#27AE60', dec:1 },
+        { key:'temp', label:'°C',        color:'#27AE60', fill:'rgba(39,174,96,0.12)',  dec:1 },
         { key:'kgf',  label:'kgf/cm²',   color:'#8E44AD', dec:2 }
       ], 'Maturação — Temperatura e Pressão');
   } else {
