@@ -3348,7 +3348,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.10";
+var VERSAO = "3.7.11";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9578,6 +9578,26 @@ function fp_addMaturRow(){
     '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
   c.appendChild(row); fp_markDirty();
 }
+/* Calcula previsão do iodo: arriada + 1h10min */
+function fp_calcIodo(inputArriada){
+  var card = inputArriada.closest('.fp-bat-card');
+  if(!card) return;
+  var val = inputArriada.value; // "HH:MM"
+  if(!val) return;
+  var parts = val.split(':');
+  var h = parseInt(parts[0],10);
+  var m = parseInt(parts[1],10);
+  // +1h10min
+  m += 70;
+  h += Math.floor(m/60);
+  m = m % 60;
+  h = h % 24;
+  var hh = String(h).padStart(2,'0');
+  var mm = String(m).padStart(2,'0');
+  var iodoEl = card.querySelector('[data-iodo]');
+  if(iodoEl) iodoEl.value = hh+':'+mm;
+  fp_markDirty();
+}
 /* Adiciona linha ao log de lavagens de uma batelada */
 function fp_addLavRow(btn){
   /* btn pode ser o botão clicado (onclick) ou o container .fp-lav-log (ao desserializar) */
@@ -9877,13 +9897,13 @@ function fp_addBatelada(){
     '<div class="fp-small-label">🌡️ Mostura</div>'+
     '<div class="fp-vol-row">'+
       (num===1?'<div class="fp-field"><label>Hora acion. caldeira</label><input type="time"></div>':'')+
-      '<div class="fp-field"><label>Hora arriada do malte</label><input type="time" data-resumo="mostura-ini"></div>'+
+      '<div class="fp-field"><label>Hora arriada do malte</label><input type="time" data-resumo="mostura-ini" oninput="fp_calcIodo(this)"></div>'+
       '<div class="fp-field"><label>Temp. entrada água (°C)</label><input type="number" placeholder="55"></div>'+
       '<div class="fp-field"><label>Vel. agitador (Hz)</label><input type="number" placeholder="45"></div>'+
     '</div>'+
     '<div class="fp-vol-row">'+
       '<div class="fp-field"><label>pH após 5 min</label><input type="number" step="0.1" placeholder="5,4"></div>'+
-      '<div class="fp-field"><label>Previsão iodo (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Previsão iodo (hh:mm)</label><input type="time" data-iodo></div>'+
       '<div class="fp-field"><label>Teste iodo</label><select><option value="">—</option><option>✅ Negativo (ok)</option><option>⚠️ Positivo (amilase)</option></select></div>'+
       '<div class="fp-field"><label>Vel. agitador transf. (Hz)</label><input type="number" placeholder="15"></div>'+
     '</div>'+
@@ -11712,6 +11732,7 @@ window.fp_delLog           = fp_delLog;
 window.fp_addRow           = fp_addRow;
 window.fp_addFermRow       = fp_addFermRow;
 window.fp_addMaturRow      = fp_addMaturRow;
+window.fp_calcIodo         = fp_calcIodo;
 window.fp_addLavRow        = fp_addLavRow;
 window.fp_calcFermStats    = fp_calcFermStats;
 window.fp_aprovarLote      = fp_aprovarLote;
