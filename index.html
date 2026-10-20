@@ -3348,7 +3348,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.13";
+var VERSAO = "3.7.14";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9660,7 +9660,8 @@ function fp_renderGraficos(){
   if(vazioEl) vazioEl.style.display = 'none';
 
   // ── helpers de canvas ──
-  function fmtDt(d){
+  function fmtDt(pt){
+    var d = pt.dt;
     return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+'h';
   }
   function drawChart(canvasId, pts, series, title){
@@ -9703,9 +9704,9 @@ function fp_renderGraficos(){
     var tRange = t1 - t0;
     // Se todos os pontos têm o mesmo timestamp, distribui uniformemente pelo eixo
     var useIndex = (tRange < 1000); // menos de 1 segundo de diferença
-    function tx(d, idx){
+    function tx(pt, idx){
       if(useIndex) return ml + idx/(pts.length-1||1) * cw;
-      return ml + (d.getTime()-t0)/tRange * cw;
+      return ml + (pt.dt.getTime()-t0)/tRange * cw;
     }
 
     // título
@@ -11152,8 +11153,8 @@ function abrirFichaLote(tq){
     t.classList.add('active');
     var p = document.getElementById('fp-panel-'+t.dataset.fpPanel);
     if(p) p.classList.add('active');
-    // renderiza gráficos ao abrir a aba
-    if(t.dataset.fpPanel === 'graficos') fp_renderGraficos();
+    // renderiza gráficos ao abrir a aba (setTimeout 0 p/ o browser aplicar o display antes de medir)
+    if(t.dataset.fpPanel === 'graficos') setTimeout(fp_renderGraficos, 0);
   });
 
   /* — escuta inputs da ficha para marcar dirty — */
