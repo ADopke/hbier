@@ -3243,7 +3243,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.0";
+var VERSAO = "3.7.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9387,6 +9387,27 @@ function fp_calcAbv(){
 }
 function fp_delRow(btn){ btn.closest('tr').remove(); fp_markDirty(); }
 function fp_delLog(btn){ btn.closest('.fp-mlog-row,.fp-log-row').remove(); fp_markDirty(); }
+/* Serializa linhas de um log div (fp-mlog-row) */
+function coletarLogDivs(containerId){
+  var c=document.getElementById(containerId); if(!c) return [];
+  return Array.from(c.querySelectorAll('.fp-mlog-row:not(.header)')).map(function(row){
+    var vals=[];
+    row.querySelectorAll('input,select,textarea').forEach(function(el){ vals.push(el.value); });
+    return vals;
+  });
+}
+/* Restaura linhas de um log div usando a função addRow correspondente */
+function preencherLogDivs(containerId, rows, addFn){
+  var c=document.getElementById(containerId); if(!c||!rows||!rows.length) return;
+  c.innerHTML='';
+  rows.forEach(function(vals){
+    addFn();
+    var row=c.querySelector('.fp-mlog-row:last-child'); if(!row) return;
+    row.querySelectorAll('input,select,textarea').forEach(function(el,i){
+      if(vals[i]!==undefined) el.value=vals[i];
+    });
+  });
+}
 function fp_addRow(tblId){
   var vals=Array.from(arguments).slice(1);
   var tbl=document.getElementById(tblId); if(!tbl) return;
@@ -9405,6 +9426,21 @@ function fp_addRow(tblId){
   tr.appendChild(tdDel);
   tbl.querySelector('tbody').appendChild(tr);
   fp_markDirty();
+}
+function fp_addFermRow(){
+  var now=new Date(), local=now.toISOString().slice(0,16);
+  var c=document.getElementById('fp-ferm-log');
+  var row=document.createElement('div'); row.className='fp-mlog-row';
+  row.innerHTML='<div class="fp-log-cell"><input type="datetime-local" value="'+local+'"></div>'+
+    '<div class="fp-log-cell"><input type="number" placeholder="1"></div>'+
+    '<div class="fp-log-cell"><input placeholder="°P"></div>'+
+    '<div class="fp-log-cell"><input placeholder="°C"></div>'+
+    '<div class="fp-log-cell"><input placeholder="°C"></div>'+
+    '<div class="fp-log-cell"><input placeholder="bar"></div>'+
+    '<div class="fp-log-cell"><input placeholder="pH"></div>'+
+    '<div class="fp-log-cell"><input placeholder="obs…"></div>'+
+    '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
+  c.appendChild(row); fp_markDirty();
 }
 function fp_addMaturRow(){
   var now=new Date(), local=now.toISOString().slice(0,16);
@@ -10077,7 +10113,10 @@ function fp_simSave(btn){
         var obsEl = card.querySelector('.fp-obs-field');
         var obs = obsEl ? obsEl.value : '';
         var obsKey = obsEl ? (obsEl.dataset.auditKey||null) : null;
-        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey };
+        // adições de fervura: tabela fp-tbl-adic-NN dentro do card
+        var adicTbl = card.querySelector('table[id^="fp-tbl-adic-"]');
+        var adicoes = adicTbl ? coletarTabela(adicTbl.id) : [];
+        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey, adicoes: adicoes };
       });
     })(),
     sais:        coletarTabela('fp-tbl-sais'),
@@ -10089,6 +10128,8 @@ function fp_simSave(btn){
     perfMatur:   coletarTabela('fp-tbl-pmatur'),
     dryhop:      coletarTabela('fp-tbl-dryhop'),
     trub:        coletarTabela('fp-tbl-trub'),
+    fermLog:     coletarLogDivs('fp-ferm-log'),
+    maturLog:    coletarLogDivs('fp-matur-log'),
     resultado: {
       fg:         (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(1) input')||{}).value||"",
       abv:        (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(2) input')||{}).value||"",
@@ -10466,25 +10507,21 @@ function abrirFichaLote(tq){
       '<div class="fp-sec-head-left"><span class="fp-sec-icon">📈</span><span class="fp-sec-title verde">Acompanhamento — Dia a Dia</span><span class="fp-role-badge e">👷 Executor</span></div>'+
       '<span class="fp-sec-toggle">▾</span></div>'+
     '<div class="fp-sec-body">'+
-      '<div class="fp-flog-wrap">'+
-        '<table class="fp-flog-table" id="fp-flog-table">'+
-          '<thead><tr>'+
-            '<th style="text-align:left">Parâmetro</th>'+
-            '<th>Dia 1</th><th>Dia 2</th><th>Dia 3</th><th>Dia 4</th>'+
-            '<th>Dia 5</th><th>Dia 6</th><th>Dia 7</th><th>Dia 8</th>'+
-            '<th>Dia 9</th><th>Dia 10</th><th>Dia 11</th><th>Dia 12</th>'+
-            '<th>Dia 13</th><th>Dia 14</th><th>Dia 15</th><th>Dia 16</th>'+
-          '</tr></thead>'+
-          '<tbody>'+
-            '<tr><td class="fp-row-label">Data</td>'+Array(16).fill('<td><input placeholder="—"></td>').join('')+'</tr>'+
-            '<tr><td class="fp-row-label">Extrato °P</td>'+Array(16).fill('<td><input placeholder="—"></td>').join('')+'</tr>'+
-            '<tr><td class="fp-row-label">Temp. alvo (°C)</td>'+Array(16).fill('<td><input placeholder="—"></td>').join('')+'</tr>'+
-            '<tr><td class="fp-row-label">Temp. real (°C)</td>'+Array(16).fill('<td><input placeholder="—"></td>').join('')+'</tr>'+
-            '<tr><td class="fp-row-label">Pressão (bar)</td>'+Array(16).fill('<td><input placeholder="—"></td>').join('')+'</tr>'+
-            '<tr><td class="fp-row-label">pH</td>'+Array(16).fill('<td><input placeholder="—"></td>').join('')+'</tr>'+
-          '</tbody>'+
-        '</table>'+
-      '</div>'+
+      '<div class="fp-log-table"><div class="fp-log-scroll">'+
+        '<div class="fp-mlog-row header">'+
+          '<div class="fp-log-cell">Data / Hora</div>'+
+          '<div class="fp-log-cell">Dia</div>'+
+          '<div class="fp-log-cell">Extrato (°P)</div>'+
+          '<div class="fp-log-cell">Temp. alvo (°C)</div>'+
+          '<div class="fp-log-cell">Temp. real (°C)</div>'+
+          '<div class="fp-log-cell">Pressão (bar)</div>'+
+          '<div class="fp-log-cell">pH</div>'+
+          '<div class="fp-log-cell">Observação</div>'+
+          '<div class="fp-log-cell"></div>'+
+        '</div>'+
+        '<div id="fp-ferm-log"></div>'+
+      '</div></div>'+
+      '<button class="fp-add-row-btn" onclick="fp_addFermRow()" style="margin-top:8px">＋ Adicionar leitura</button>'+
     '</div>'+
   '</div>'+
 
@@ -10734,6 +10771,11 @@ function fp_preencherFicha(ficha){
           if(bat.obs) obsEl.value = bat.obs;
           if(bat.obsKey) obsEl.dataset.auditKey = bat.obsKey;
         }
+        // adições de fervura
+        if(bat.adicoes && bat.adicoes.length){
+          var adicTbl = card.querySelector('table[id^="fp-tbl-adic-"]');
+          if(adicTbl) preencherTabela(adicTbl.id, bat.adicoes);
+        }
       });
       fp_atualizarNumBateladas();
     }
@@ -10747,6 +10789,8 @@ function fp_preencherFicha(ficha){
   if(ficha.perfMatur)    preencherTabela('fp-tbl-pmatur',ficha.perfMatur);
   if(ficha.dryhop)       preencherTabela('fp-tbl-dryhop',ficha.dryhop);
   if(ficha.trub)         preencherTabela('fp-tbl-trub',ficha.trub);
+  if(ficha.fermLog && ficha.fermLog.length)   preencherLogDivs('fp-ferm-log', ficha.fermLog, fp_addFermRow);
+  if(ficha.maturLog && ficha.maturLog.length) preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow);
   // resultado
   if(ficha.resultado){
     var app=document.getElementById('fp-app');
@@ -11266,6 +11310,7 @@ window.fp_calcAbv          = fp_calcAbv;
 window.fp_delRow           = fp_delRow;
 window.fp_delLog           = fp_delLog;
 window.fp_addRow           = fp_addRow;
+window.fp_addFermRow       = fp_addFermRow;
 window.fp_addMaturRow      = fp_addMaturRow;
 window.fp_addEnzRow        = fp_addEnzRow;
 window.fp_addBatelada      = fp_addBatelada;
