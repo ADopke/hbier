@@ -1143,20 +1143,19 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
 .fp-bat-status.ok{background:var(--fp-verde)}.fp-bat-status.prog{background:var(--fp-dourado);color:#fff}
 .fp-bat-body{padding:12px 14px}
 /* etapas */
-.fp-etapas-grid{border:1px solid var(--fp-border);border-radius:7px;overflow:hidden;margin-bottom:10px}
-.fp-etapa-row{display:grid;grid-template-columns:130px 1fr 1fr 90px 70px 1fr;gap:0;border-bottom:1px solid var(--fp-border);align-items:center}
-.fp-etapa-row:last-child{border-bottom:none}
-.fp-etapa-row.header{background:var(--fp-bg3)}
-.fp-etapa-row.header .fp-etapa-cell{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3);padding:5px 8px}
-.fp-etapa-cell{padding:4px 8px;border-right:1px solid var(--fp-border);min-width:0}
-.fp-etapa-cell:last-child{border-right:none}
-.fp-etapa-nome{font-weight:600;font-size:12px;color:var(--fp-fg2)}
-.fp-etapa-alvo{font-weight:400;font-size:10px;color:var(--fp-fg3);letter-spacing:.01em}
-.fp-etapa-cell input{background:transparent;border:none;font-family:'Barlow',sans-serif;font-size:12px;color:var(--fp-fg);width:100%;font-variant-numeric:tabular-nums}
-.fp-etapa-cell input:focus{outline:1px solid var(--fp-marrom);border-radius:3px;padding:1px 3px}
+.fp-etapas-resumo{border:1px solid var(--fp-border);border-radius:7px;overflow:hidden;margin-bottom:10px}
+.fp-er-row{display:grid;grid-template-columns:110px 80px 80px 1fr;gap:0;border-bottom:1px solid var(--fp-border);align-items:center}
+.fp-er-row:last-child{border-bottom:none}
+.fp-er-row.header{background:var(--fp-bg3)}
+.fp-er-row.header .fp-er-cell{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3);padding:5px 8px}
+.fp-er-cell{padding:5px 8px;border-right:1px solid var(--fp-border);min-width:0}
+.fp-er-cell:last-child{border-right:none}
+.fp-er-nome{font-weight:700;font-size:12px;color:var(--fp-fg2);font-family:'Barlow Condensed',sans-serif;letter-spacing:.03em;text-transform:uppercase}
+.fp-er-val{font-family:'Barlow',sans-serif;font-size:12px;color:var(--fp-fg3);font-variant-numeric:tabular-nums}
+.fp-er-row.fp-er-preenchido .fp-er-val{color:var(--fp-fg)}
+.fp-er-row.fp-er-preenchido .fp-er-dur{color:var(--fp-marrom);font-weight:700}
 @media(max-width:520px){
-  .fp-etapa-row{grid-template-columns:100px 1fr 1fr}
-  .fp-etapa-cell:nth-child(4),.fp-etapa-cell:nth-child(5),.fp-etapa-cell:nth-child(6){display:none}
+  .fp-er-row{grid-template-columns:90px 70px 70px 1fr}
 }
 /* vol row */
 .fp-vol-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:8px}
@@ -3260,7 +3259,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.3";
+var VERSAO = "3.7.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9624,51 +9623,78 @@ function fp_bindEtapaCalc(row){
   if (fimEl) fimEl.addEventListener('change', recalc);
 }
 
+/* ── Atualiza tabela de resumo de etapas a partir dos campos operacionais ─
+   Lê os inputs marcados com data-resumo="<etapa>-<ini|fim>" dentro do card
+   e preenche os spans .fp-er-val nos rows data-etapa="<etapa>".
+   ─────────────────────────────────────────────────────────────────────── */
+function fp_atualizarResumoEtapas(card){
+  if(!card) return;
+  /* coleta todos os valores por role */
+  var vals = {};
+  card.querySelectorAll('[data-resumo]').forEach(function(el){
+    var roles = el.getAttribute('data-resumo').split(/\s+/);
+    roles.forEach(function(role){
+      if(role) vals[role] = el.value || '';
+    });
+  });
+
+  function setRow(etapa, ini, fim){
+    var row = card.querySelector('.fp-er-row[data-etapa="'+etapa+'"]');
+    if(!row) return;
+    var iniSpan = row.querySelector('.fp-er-ini');
+    var fimSpan = row.querySelector('.fp-er-fim');
+    var durSpan = row.querySelector('.fp-er-dur');
+    var iniVal = vals[ini] || '';
+    var fimVal = vals[fim] || '';
+    if(iniSpan) iniSpan.textContent = iniVal || '—';
+    if(fimSpan) fimSpan.textContent = fimVal || '—';
+    var dur = (iniVal && fimVal) ? fp_diffMin(iniVal, fimVal) : null;
+    if(durSpan) durSpan.textContent = (dur !== null && dur >= 0) ? dur+' min' : '—';
+    /* coloração: preenche quando tem dados */
+    if(iniVal || fimVal) row.classList.add('fp-er-preenchido');
+    else row.classList.remove('fp-er-preenchido');
+    return dur;
+  }
+
+  var durMos  = setRow('mostura',     'mostura-ini',     'mostura-fim');
+  var durLau  = setRow('lauter',      'lauter-ini',      'lauter-fim');
+  var durFer  = setRow('fervura',     'fervura-ini',     'fervura-fim');
+  var durWhi  = setRow('whirlpool',   'whirlpool-ini',   'whirlpool-fim');
+  var durRes  = setRow('resfriamento','resfriamento-ini','resfriamento-fim');
+
+  /* total da batelada */
+  var total = 0;
+  [durMos, durLau, durFer, durWhi, durRes].forEach(function(d){
+    if(d !== null && d > 0) total += d;
+  });
+  var badge = card.querySelector('.fp-bat-dur-total');
+  if(badge) badge.textContent = total > 0 ? fp_formatarDuracao(total) : '—';
+
+  /* recalcula total geral */
+  var totalGeral = 0;
+  var allCards = document.querySelectorAll('#fp-bat-list .fp-bat-card');
+  allCards.forEach(function(c){
+    c.querySelectorAll('.fp-er-dur').forEach(function(sp){
+      var v = parseInt(sp.textContent, 10);
+      if(!isNaN(v) && v > 0) totalGeral += v;
+    });
+  });
+  var wrap = document.getElementById('fp-dur-total-geral');
+  if(wrap){
+    if(totalGeral > 0){
+      wrap.style.display = 'flex';
+      wrap.querySelector('span').textContent = fp_formatarDuracao(totalGeral);
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+}
+
 function fp_addBatelada(){
   var list=document.getElementById('fp-bat-list');
   if(!list){ console.error('fp-bat-list não encontrado'); return; }
   var num=list.querySelectorAll('.fp-bat-card').length+1;
   var numStr = num < 10 ? '0'+num : ''+num;
-
-  /* — lê perfil de mostura da receita — */
-  var perfilMash = fp_lerPerfilMash();
-  /* etapas fixas depois da mostura */
-  var etapasFixas = ['Lauter','Fervura','Whirlpool','Resfriamento'];
-
-  /* — gera linhas do perfil de mostura (dinâmico) — */
-  var linhasMash = perfilMash.length
-    ? perfilMash.map(function(e){
-        var alvo = [e.tempAlvo ? e.tempAlvo+'°C' : '', e.rampaAlvo ? e.rampaAlvo+'min rampa' : '', e.tempoAlvo ? e.tempoAlvo+'min' : ''].filter(Boolean).join(' / ');
-        return '<div class="fp-etapa-row" data-bat-etapa="mash">'+
-          '<div class="fp-etapa-cell fp-etapa-nome" title="'+esc(alvo)+'">'+esc(e.nome)+(alvo?'<span class="fp-etapa-alvo"> ('+esc(alvo)+')</span>':'')+'</div>'+
-          '<div class="fp-etapa-cell"><input type="time"></div>'+
-          '<div class="fp-etapa-cell"><input type="time"></div>'+
-          '<div class="fp-etapa-cell"><input class="fp-dur-auto" placeholder="—" readonly style="background:var(--fp-bg3);cursor:default" title="Calculado de Início→Fim"></div>'+
-          '<div class="fp-etapa-cell"><input placeholder="'+esc(e.rampaAlvo||'—')+'"></div>'+
-          '<div class="fp-etapa-cell"><input placeholder="'+esc(e.tempAlvo||'—')+'"></div>'+
-        '</div>';
-      }).join('')
-    : /* fallback se perfil ainda não preenchido */
-      '<div class="fp-etapa-row" data-bat-etapa="mash">'+
-        '<div class="fp-etapa-cell fp-etapa-nome">Mostura</div>'+
-        '<div class="fp-etapa-cell"><input type="time"></div>'+
-        '<div class="fp-etapa-cell"><input type="time"></div>'+
-        '<div class="fp-etapa-cell"><input class="fp-dur-auto" placeholder="—" readonly style="background:var(--fp-bg3);cursor:default" title="Calculado de Início→Fim"></div>'+
-        '<div class="fp-etapa-cell"><input placeholder="—"></div>'+
-        '<div class="fp-etapa-cell"><input placeholder="—"></div>'+
-      '</div>';
-
-  /* — linhas fixas: Lauter, Fervura, Whirlpool, Resfriamento — */
-  var linhasFixas = etapasFixas.map(function(e){
-    return '<div class="fp-etapa-row">'+
-      '<div class="fp-etapa-cell fp-etapa-nome">'+e+'</div>'+
-      '<div class="fp-etapa-cell"><input type="time"></div>'+
-      '<div class="fp-etapa-cell"><input type="time"></div>'+
-      '<div class="fp-etapa-cell"><input class="fp-dur-auto" placeholder="—" readonly style="background:var(--fp-bg3);cursor:default" title="Calculado de Início→Fim"></div>'+
-      '<div class="fp-etapa-cell"><input placeholder="—"></div>'+
-      '<div class="fp-etapa-cell"><input placeholder="—"></div>'+
-    '</div>';
-  }).join('');
 
   var card=document.createElement('div'); card.className='fp-bat-card';
   card.innerHTML=
@@ -9680,18 +9706,19 @@ function fp_addBatelada(){
       '</div>'+
     '</div>'+
     '<div class="fp-bat-body">'+
-    '<div class="fp-small-label">Etapas da brassagem</div>'+
-    '<div class="fp-etapas-grid">'+
-      '<div class="fp-etapa-row header">'+
-        '<div class="fp-etapa-cell">Etapa (alvo)</div>'+
-        '<div class="fp-etapa-cell">Início</div>'+
-        '<div class="fp-etapa-cell">Fim</div>'+
-        '<div class="fp-etapa-cell">Duração real (min)</div>'+
-        '<div class="fp-etapa-cell">Rampa real (min)</div>'+
-        '<div class="fp-etapa-cell">Temp real (°C)</div>'+
+    '<div class="fp-small-label">Resumo das etapas</div>'+
+    '<div class="fp-etapas-resumo">'+
+      '<div class="fp-er-row header">'+
+        '<div class="fp-er-cell">Etapa</div>'+
+        '<div class="fp-er-cell">Início</div>'+
+        '<div class="fp-er-cell">Fim</div>'+
+        '<div class="fp-er-cell">Duração (min)</div>'+
       '</div>'+
-      linhasMash+
-      linhasFixas+
+      '<div class="fp-er-row" data-etapa="mostura"><div class="fp-er-cell fp-er-nome">Mostura</div><div class="fp-er-cell"><span class="fp-er-val fp-er-ini">—</span></div><div class="fp-er-cell"><span class="fp-er-val fp-er-fim">—</span></div><div class="fp-er-cell"><span class="fp-er-val fp-er-dur">—</span></div></div>'+
+      '<div class="fp-er-row" data-etapa="lauter"><div class="fp-er-cell fp-er-nome">Lauter</div><div class="fp-er-cell"><span class="fp-er-val fp-er-ini">—</span></div><div class="fp-er-cell"><span class="fp-er-val fp-er-fim">—</span></div><div class="fp-er-cell"><span class="fp-er-val fp-er-dur">—</span></div></div>'+
+      '<div class="fp-er-row" data-etapa="fervura"><div class="fp-er-cell fp-er-nome">Fervura</div><div class="fp-er-cell"><span class="fp-er-val fp-er-ini">—</span></div><div class="fp-er-cell"><span class="fp-er-val fp-er-fim">—</span></div><div class="fp-er-cell"><span class="fp-er-val fp-er-dur">—</span></div></div>'+
+      '<div class="fp-er-row" data-etapa="whirlpool"><div class="fp-er-cell fp-er-nome">Whirlpool</div><div class="fp-er-cell"><span class="fp-er-val fp-er-ini">—</span></div><div class="fp-er-cell"><span class="fp-er-val fp-er-fim">—</span></div><div class="fp-er-cell"><span class="fp-er-val fp-er-dur">—</span></div></div>'+
+      '<div class="fp-er-row" data-etapa="resfriamento"><div class="fp-er-cell fp-er-nome">Resfriamento</div><div class="fp-er-cell"><span class="fp-er-val fp-er-ini">—</span></div><div class="fp-er-cell"><span class="fp-er-val fp-er-fim">—</span></div><div class="fp-er-cell"><span class="fp-er-val fp-er-dur">—</span></div></div>'+
     '</div>'+
     '<div class="fp-dur-total-bat">Total da batelada: <span class="fp-bat-dur-total">—</span></div>'+
 
@@ -9700,7 +9727,7 @@ function fp_addBatelada(){
     '<div class="fp-small-label">🌡️ Mostura</div>'+
     '<div class="fp-vol-row">'+
       '<div class="fp-field"><label>Hora acion. caldeira</label><input type="time"></div>'+
-      '<div class="fp-field"><label>Hora arriada do malte</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Hora arriada do malte</label><input type="time" data-resumo="mostura-ini"></div>'+
       '<div class="fp-field"><label>Temp. entrada água (°C)</label><input type="number" placeholder="55"></div>'+
       '<div class="fp-field"><label>Vel. agitador (Hz)</label><input type="number" placeholder="45"></div>'+
     '</div>'+
@@ -9717,7 +9744,7 @@ function fp_addBatelada(){
     '<div class="fp-vol-row">'+
       '<div class="fp-field"><label>Enxague da tina (L)</label><input type="number" placeholder="30"></div>'+
       '<div class="fp-field"><label>Água de lastro (L)</label><input type="number" placeholder="70"></div>'+
-      '<div class="fp-field"><label>Início transf. mosto (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Início transf. mosto (hh:mm)</label><input type="time" data-resumo="mostura-fim lauter-ini"></div>'+
       '<div class="fp-field"><label>Fim transf. mosto prim. (hh:mm)</label><input type="time"></div>'+
     '</div>'+
     '<div class="fp-vol-row">'+
@@ -9729,7 +9756,7 @@ function fp_addBatelada(){
     '<div class="fp-vol-row">'+
       '<div class="fp-field"><label>1ª lavagem (hh:mm)</label><input type="time"></div>'+
       '<div class="fp-field"><label>2ª lavagem (hh:mm)</label><input type="time"></div>'+
-      '<div class="fp-field"><label>Finalização lauter (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Finalização lauter (hh:mm)</label><input type="time" data-resumo="lauter-fim"></div>'+
       '<div class="fp-field"><label>Tempo total lauter (min)</label><input type="number" placeholder="—"></div>'+
     '</div>'+
 
@@ -9737,8 +9764,8 @@ function fp_addBatelada(){
     '<div class="fp-divider"></div>'+
     '<div class="fp-small-label">🔥 Fervura</div>'+
     '<div class="fp-vol-row">'+
-      '<div class="fp-field"><label>Início da fervura (hh:mm)</label><input type="time"></div>'+
-      '<div class="fp-field"><label>Término da fervura (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Início da fervura (hh:mm)</label><input type="time" data-resumo="fervura-ini"></div>'+
+      '<div class="fp-field"><label>Término da fervura (hh:mm)</label><input type="time" data-resumo="fervura-fim whirlpool-ini"></div>'+
       '<div class="fp-field"><label>Vol. início fervura (L)</label><input type="number" placeholder="1630"></div>'+
       '<div class="fp-field"><label>Extrato pré-ferv. (°B) — 2 min</label><input type="number" step="0.1" placeholder="11,2"></div>'+
     '</div>'+
@@ -9761,15 +9788,15 @@ function fp_addBatelada(){
     '<div class="fp-vol-row">'+
       '<div class="fp-field"><label>Perda trub estimada (L)</label><input type="number" placeholder="130"></div>'+
       '<div class="fp-field"><label>Perda encolhimento 4% (L)</label><input type="number" placeholder="78"></div>'+
-      '<div class="fp-field"><label>Acion. whirlpool (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Acion. whirlpool (hh:mm)</label><input type="time" data-resumo="whirlpool-fim"></div>'+
     '</div>'+
 
     /* ── RESFRIAMENTO + INOCULAÇÃO ── */
     '<div class="fp-divider"></div>'+
     '<div class="fp-small-label">❄️ Resfriamento e Inoculação</div>'+
     '<div class="fp-vol-row">'+
-      '<div class="fp-field"><label>Início resfriamento (hh:mm)</label><input type="time"></div>'+
-      '<div class="fp-field"><label>Fim resfriamento (hh:mm)</label><input type="time"></div>'+
+      '<div class="fp-field"><label>Início resfriamento (hh:mm)</label><input type="time" data-resumo="resfriamento-ini"></div>'+
+      '<div class="fp-field"><label>Fim resfriamento (hh:mm)</label><input type="time" data-resumo="resfriamento-fim"></div>'+
       '<div class="fp-field"><label>Temp. mosto entrada (°C)</label><input type="number" placeholder="95"></div>'+
       '<div class="fp-field"><label>Temp. mosto saída trocador (°C)</label><input type="number" placeholder="18"></div>'+
     '</div>'+
@@ -9802,8 +9829,8 @@ function fp_addBatelada(){
 
   list.appendChild(card);
 
-  /* — ativa cálculo automático em cada linha de etapa — */
-  card.querySelectorAll('.fp-etapa-row:not(.header)').forEach(fp_bindEtapaCalc);
+  /* — dispara resumo inicial (campos ainda vazios, mostra "—") — */
+  fp_atualizarResumoEtapas(card);
 
   /* — atribui audit-keys aos novos campos — */
   card.querySelectorAll('input,select,textarea').forEach(fp_auditKey);
@@ -9915,37 +9942,10 @@ function fp_formatarDuracao(min){
 }
 
 /* — atualiza o total da batelada e o total geral ─────────────────── */
+/* Mantida para compatibilidade; totais agora calculados por fp_atualizarResumoEtapas */
 function fp_atualizarTotaisDuracao(el){
-  // total da batelada que contém o campo alterado
   var card = el ? el.closest('.fp-bat-card') : null;
-  if(card){
-    var totalBat = 0;
-    card.querySelectorAll('.fp-dur-auto').forEach(function(inp){
-      var v = parseInt(inp.value, 10);
-      if(!isNaN(v) && v > 0) totalBat += v;
-    });
-    var badgeBat = card.querySelector('.fp-bat-dur-total');
-    if(badgeBat) badgeBat.textContent = totalBat > 0 ? fp_formatarDuracao(totalBat) : '—';
-  }
-  // total geral: soma de todas as bateladas
-  var totalGeral = 0;
-  var list = document.getElementById('fp-bat-list');
-  var wrap = document.getElementById('fp-dur-total-geral');
-  if(!list) return;
-  list.querySelectorAll('.fp-bat-card').forEach(function(c){
-    c.querySelectorAll('.fp-dur-auto').forEach(function(inp){
-      var v = parseInt(inp.value, 10);
-      if(!isNaN(v) && v > 0) totalGeral += v;
-    });
-  });
-  if(wrap){
-    if(totalGeral > 0){
-      wrap.style.display = 'flex';
-      wrap.querySelector('span').textContent = fp_formatarDuracao(totalGeral);
-    } else {
-      wrap.style.display = 'none';
-    }
-  }
+  if(card) fp_atualizarResumoEtapas(card);
 }
 
 /* Gera ou retorna a audit-key de um elemento */
@@ -10194,15 +10194,8 @@ function fp_simSave(btn){
     bateladas: (function(){
       var list = document.getElementById('fp-bat-list'); if(!list) return [];
       return Array.from(list.querySelectorAll('.fp-bat-card')).map(function(card){
-        // etapas: cada linha não-header
-        var etapas = Array.from(card.querySelectorAll('.fp-etapa-row:not(.header)')).map(function(row){
-          var vals=[]; var keys=[];
-          row.querySelectorAll('input,textarea').forEach(function(el){
-            vals.push(el.value);
-            keys.push(el.dataset.auditKey||null);
-          });
-          return { vals: vals, keys: keys };
-        });
+        // etapas: agora calculadas automaticamente; serializamos apenas para compatibilidade
+        var etapas = [];
         // volumes: fp-vol-row inputs
         var volVals=[]; var volKeys=[];
         card.querySelectorAll('.fp-vol-row input').forEach(function(el){
@@ -10799,9 +10792,9 @@ function abrirFichaLote(tq){
       fp_auditKey(e.target); // garante que tem key antes de registrar
       fp_registrarLancamento(e.target);
     }
-    // cálculo automático de duração em linhas de etapa
-    if(e.target.matches('.fp-etapa-row input[type="time"]')){
-      fp_calcDuracao(e.target);
+    // atualiza resumo de etapas quando um campo operacional muda
+    if(e.target.hasAttribute('data-resumo')){
+      fp_atualizarResumoEtapas(e.target.closest('.fp-bat-card'));
     }
   });
 
@@ -10857,24 +10850,7 @@ function fp_preencherFicha(ficha){
         fp_addBatelada(); // cria card vazio com perfil de mash atual
         var card = batList.querySelectorAll('.fp-bat-card')[idx];
         if(!card) return;
-        // preenche etapas
-        if(bat.etapas && bat.etapas.length){
-          var rows = card.querySelectorAll('.fp-etapa-row:not(.header)');
-          bat.etapas.forEach(function(etapa, ri){
-            var row = rows[ri]; if(!row) return;
-            var inputs = row.querySelectorAll('input,textarea');
-            // suporte a ambos formatos
-            var vals = Array.isArray(etapa) ? etapa : (etapa.vals || []);
-            var keys = Array.isArray(etapa) ? null : (etapa.keys || null);
-            vals.forEach(function(v, ci){
-              var el = inputs[ci]; if(!el) return;
-              if(!el.classList.contains('fp-dur-auto')) el.value = v;
-              else if(v) el.value = v;
-              if(keys && keys[ci]) el.dataset.auditKey = keys[ci];
-            });
-          });
-        }
-        // preenche volumes
+        // preenche volumes (inclui os campos de tempo operacionais que alimentam o resumo)
         if(bat.volumes){
           var vEls = card.querySelectorAll('.fp-vol-row input');
           var volVals = bat.volumes;
@@ -10886,6 +10862,8 @@ function fp_preencherFicha(ficha){
             }
           });
         }
+        // atualiza resumo automático de etapas
+        fp_atualizarResumoEtapas(card);
         // obs
         var obsEl = card.querySelector('.fp-obs-field');
         if(obsEl){
