@@ -3368,7 +3368,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.35";
+var VERSAO = "3.7.36";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9789,9 +9789,8 @@ function fp_addMaturRow(){
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.01" placeholder="kgf/cm²"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="pH"></div>'+
-    '<div class="fp-log-cell" style="position:relative">'+
+    '<div class="fp-log-cell">'+
       '<input type="number" step="0.1" min="0" max="5" placeholder="vol" oninput="fp_recCO2(this)">'+
-      '<div class="fp-co2-rec" style="display:none;position:absolute;left:0;top:100%;z-index:10;min-width:180px;padding:5px 8px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap;margin-top:2px"></div>'+
     '</div>'+
     '<div class="fp-log-cell"><select style="width:100%;background:var(--fp-bg);color:var(--fp-fg);border:none;font-size:11px;padding:2px"><option value="">—</option><option>Turva</option><option>Média</option><option>Clarificada</option></select></div>'+
     '<div class="fp-log-cell"><input placeholder="obs…"></div>'+
@@ -9799,21 +9798,24 @@ function fp_addMaturRow(){
   c.appendChild(row); fp_markDirty();
 }
 function fp_recCO2(inp){
-  var rec = inp.nextElementSibling;
-  if(!rec) return;
+  var box = document.getElementById('fp-co2-rec-box');
+  if(!box) return;
   var v = parseFloat(inp.value);
-  if(isNaN(v) || inp.value===''){rec.style.display='none'; return;}
+  if(isNaN(v) || inp.value===''){box.style.display='none'; return;}
   var txt, bg, cor;
   if(v < 2.3){
-    txt='⬆ Pressurize o tanque'; bg='#d63031'; cor='#fff';
+    txt='⬆ Pressurize o tanque — '+v.toFixed(1)+' vol CO₂ (abaixo de 2,3)';
+    bg='#d63031'; cor='#fff';
   } else if(v <= 2.6){
-    txt='✅ Mantenha a pressão'; bg='#00b894'; cor='#fff';
+    txt='✅ Mantenha a pressão — '+v.toFixed(1)+' vol CO₂ (faixa ideal 2,3–2,6)';
+    bg='#00b894'; cor='#fff';
   } else {
-    txt='⬇ Despressurize o tanque'; bg='#e17055'; cor='#fff';
+    txt='⬇ Despressurize o tanque — '+v.toFixed(1)+' vol CO₂ (acima de 2,6)';
+    bg='#e17055'; cor='#fff';
   }
-  rec.textContent=txt;
-  rec.style.background=bg; rec.style.color=cor;
-  rec.style.display='block';
+  box.textContent=txt;
+  box.style.background=bg; box.style.color=cor;
+  box.style.display='block';
 }
 /* Calcula previsão do iodo: arriada + 1h10min */
 function fp_calcIodo(inputArriada){
@@ -11401,6 +11403,7 @@ function abrirFichaLote(tq){
       '<div class="fp-sec-head-left"><span class="fp-sec-icon">❄️</span><span class="fp-sec-title azul">Log de Maturação</span><span class="fp-role-badge e">👷 Executor</span></div>'+
       '<span class="fp-sec-toggle">▾</span></div>'+
     '<div class="fp-sec-body">'+
+      '<div id="fp-co2-rec-box" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;margin-bottom:10px;text-align:center"></div>'+
       '<div class="fp-log-table"><div class="fp-log-scroll">'+
         '<div class="fp-mlog-row matur header">'+
           '<div class="fp-log-cell">Data / Hora</div>'+
