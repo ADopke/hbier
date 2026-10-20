@@ -2698,10 +2698,12 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         flex-shrink:0;display:flex;flex-direction:column;gap:10px">
         <div>
           <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">
-            Produto / Estilo *</label>
-          <input type="text" id="barrilProduto" placeholder="Ex.: Pilsen, Helles…"
+            Produto / Estilo</label>
+          <input type="text" id="barrilProduto" readonly
+            placeholder="Preenchido automaticamente pelo tanque"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);
-            border-radius:8px;font-size:.9rem">
+            border-radius:8px;font-size:.9rem;background:var(--bg2,#f5f5f5);
+            color:var(--txt2,#666);cursor:default">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
@@ -3366,7 +3368,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.27";
+var VERSAO = "3.7.28";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4941,7 +4943,7 @@ function abrirModalBarril(){
   $("barrilDia").value = "";
   renderBarrilLinhas();
   $("modalBarril").hidden = false;
-  setTimeout(function(){ $("barrilProduto").focus(); }, 80);
+  setTimeout(function(){ $("barrilTanque").focus(); }, 80);
 }
 
 // Popular select de lote baseado no tanque selecionado
@@ -4983,8 +4985,8 @@ $("barrilTanque").addEventListener("change", function(){
     var tqNorm = (tanqueVal||"").toUpperCase().replace(/[-\s]/g,"");
     if (tqNorm && _dadosTanques) {
       var tq = _dadosTanques.find(function(t){ return t.nome.toUpperCase() === tqNorm; });
-      if (tq && tq.estilo && !$("barrilProduto").value) {
-        $("barrilProduto").value = tq.estilo;
+      if (tq) {
+        $("barrilProduto").value = tq.estilo || tq.nome || "";
       }
     }
   }
@@ -5080,7 +5082,6 @@ $("btnBarrilSalvar").addEventListener("click", async function(){
   var resumo = calcBarril();
   if (!resumo.linhas.length){ toast("Informe pelo menos uma quantidade.","erro"); return; }
   var produto = $("barrilProduto").value.trim();
-  if (!produto){ toast("Informe o produto/estilo.","erro"); return; }
   var tanque = $("barrilTanque").value.trim();
   var lote   = $("barrilLote").value.trim();
   var dia    = $("barrilDia").value;
