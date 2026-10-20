@@ -1198,6 +1198,8 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
 /* totalizadores de duração */
 .fp-dur-total-bat{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:5px 10px 2px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--fp-fg3)}
 .fp-dur-total-bat span{background:var(--fp-bg3);border:1px solid var(--fp-border);border-radius:8px;padding:2px 10px;font-size:13px;font-weight:700;color:var(--fp-marrom);letter-spacing:.02em;min-width:60px;text-align:center}
+.fp-etapa-cell input.fp-time-erro{outline:2px solid var(--fp-vermelho,#c0392b)!important;background:rgba(192,57,43,.08)!important}
+.fp-etapa-cell .fp-time-erro-msg{font-size:9px;color:var(--fp-vermelho,#c0392b);font-family:'Barlow',sans-serif;display:block;margin-top:1px}
 .fp-dur-total-geral{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px 0 4px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fp-fg2);border-top:2px solid var(--fp-border);margin-top:4px}
 .fp-dur-total-geral span{background:var(--fp-marrom);color:#fff;border-radius:8px;padding:3px 14px;font-size:15px;font-weight:700;letter-spacing:.02em;min-width:70px;text-align:center}
 /* roles */
@@ -9623,11 +9625,43 @@ function fp_calcDuracao(timeInput){
   if(!times.length || !durField) return;
   var inicio = times[0] ? times[0].value : '';
   var fim    = times[1] ? times[1].value : '';
+
+  // limpa estado de erro anterior
+  var fimInput = times[1];
+  if(fimInput){
+    fimInput.classList.remove('fp-time-erro');
+    var oldMsg = fimInput.parentNode.querySelector('.fp-time-erro-msg');
+    if(oldMsg) oldMsg.remove();
+  }
+
   if(!inicio || !fim){ durField.value = ''; fp_atualizarTotaisDuracao(timeInput); return; }
+
   // converte "HH:MM" → minutos desde meia-noite
   function toMin(t){ var p=t.split(':'); return parseInt(p[0],10)*60+parseInt(p[1],10); }
-  var diff = toMin(fim) - toMin(inicio);
-  if(diff < 0) diff += 1440; // virada de meia-noite
+  var minIni = toMin(inicio), minFim = toMin(fim);
+  var diff = minFim - minIni;
+
+  if(diff < 0){
+    // fim anterior ao início → erro (não assumimos virada de meia-noite em brassagem)
+    durField.value = '';
+    if(fimInput){
+      fimInput.classList.add('fp-time-erro');
+      var msg = document.createElement('span');
+      msg.className = 'fp-time-erro-msg';
+      msg.textContent = 'Fim menor que início';
+      fimInput.parentNode.appendChild(msg);
+    }
+    fp_atualizarTotaisDuracao(timeInput);
+    return;
+  }
+
+  if(diff === 0){
+    // mesmos horários → provavelmente erro de digitação
+    durField.value = '';
+    fp_atualizarTotaisDuracao(timeInput);
+    return;
+  }
+
   durField.value = diff;
   fp_atualizarTotaisDuracao(timeInput);
   fp_markDirty();
