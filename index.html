@@ -3368,7 +3368,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.34";
+var VERSAO = "3.7.35";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9804,15 +9804,12 @@ function fp_recCO2(inp){
   var v = parseFloat(inp.value);
   if(isNaN(v) || inp.value===''){rec.style.display='none'; return;}
   var txt, bg, cor;
-  if(v < 2.0){
+  if(v < 2.3){
     txt='⬆ Pressurize o tanque'; bg='#d63031'; cor='#fff';
-  } else if(v >= 2.3 && v <= 2.6){
+  } else if(v <= 2.6){
     txt='✅ Mantenha a pressão'; bg='#00b894'; cor='#fff';
-  } else if(v > 2.6){
-    txt='⬇ Despressurize o tanque'; bg='#e17055'; cor='#fff';
   } else {
-    /* 2.0-2.29 — zona de subida */
-    txt='↗ Aguarde — subindo para faixa'; bg='#fdcb6e'; cor='#2d3436';
+    txt='⬇ Despressurize o tanque'; bg='#e17055'; cor='#fff';
   }
   rec.textContent=txt;
   rec.style.background=bg; rec.style.color=cor;
