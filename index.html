@@ -2390,6 +2390,10 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
             <div><label>OG alvo</label><input type="text" id="recOg" placeholder="1.050"></div>
             <div><label>FG alvo</label><input type="text" id="recFg" placeholder="1.012"></div>
             <div><label>ABV alvo (%)</label><input type="text" id="recAbv" placeholder="—" readonly style="background:#f5f5f0;cursor:default"></div>
+            <div><label>IBU</label><input type="number" id="recIbu" placeholder="30"></div>
+            <div><label>EBC</label><input type="number" id="recEbc" placeholder="8"></div>
+            <div><label>Eficiência alvo (%)</label><input type="number" id="recEfic" placeholder="75"></div>
+            <div><label>Taxa evap. (%/h)</label><input type="number" id="recEvap" placeholder="8"></div>
           </div>
 
           <!-- fermentáveis -->
@@ -2419,10 +2423,35 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
             <div><label>Fabricante</label><input type="text" id="recLevFab" placeholder="ex: Fermentis"></div>
             <div><label>Pitching (g/batelada)</label><input type="number" id="recLevPitch" placeholder="0"></div>
             <div><label>Temp. fermentação (°C)</label><input type="text" id="recLevTemp" placeholder="ex: 9–12"></div>
+            <div><label>O₂ dissolvido (mg/L)</label><input type="text" id="recLevO2" placeholder="ex: 7–9"></div>
           </div>
+
+          <!-- perfil de fermentação -->
+          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">🧫 Perfil de Fermentação</span></div>
+          <div class="grade-wrap" style="margin-bottom:6px">
+            <table class="fp-data" id="rec-tbl-pferm" style="width:100%">
+              <thead><tr><th>Etapa</th><th>Temp (°C)</th><th>Dias</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <button class="fp-add-row-btn" onclick="rec_addRow('rec-tbl-pferm','Etapa','20','3')">＋ Etapa</button>
+
+          <!-- perfil de maturação -->
+          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">❄️ Perfil de Maturação</span></div>
+          <div class="grade-wrap" style="margin-bottom:6px">
+            <table class="fp-data" id="rec-tbl-pmatur" style="width:100%">
+              <thead><tr><th>Etapa</th><th>Temp (°C)</th><th>Dias</th><th>Pressão (bar)</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <button class="fp-add-row-btn" onclick="rec_addRow('rec-tbl-pmatur','Etapa','4','5','1,5')">＋ Etapa</button>
 
           <!-- perfil de mostura -->
           <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">🌡️ Perfil de mostura</span></div>
+          <div class="form-grid" style="margin-bottom:8px">
+            <div><label>Vol. strike/bat (L)</label><input type="number" id="recMosStrike" placeholder="ex: 1150"></div>
+            <div><label>Vol. sparge total (L)</label><input type="number" id="recMosSparge" placeholder="ex: 550"></div>
+          </div>
           <div class="grade-wrap" style="margin-bottom:6px">
             <table class="fp-data" id="rec-tbl-mash" style="width:100%">
               <thead><tr><th>Etapa</th><th>Temp alvo (°C)</th><th>Rampa alvo (min)</th><th>Tempo alvo (min)</th><th>Descrição</th><th></th></tr></thead>
@@ -2435,8 +2464,10 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">💧 Tratamento de Água</span></div>
           <div class="form-grid" style="margin-bottom:8px">
             <div><label>Fonte da água</label><input type="text" id="recAguaFonte" placeholder="ex: Poço / DMAE"></div>
-            <div><label>pH alvo</label><input type="text" id="recAguaPh" placeholder="ex: 5.3–5.5"></div>
+            <div><label>pH alvo (cervejeiro)</label><input type="text" id="recAguaPh" placeholder="ex: 5.3–5.5"></div>
             <div><label>Volume arriada (L)</label><input type="number" id="recAguaVol" placeholder="0"></div>
+            <div><label>pH água bruta</label><input type="text" id="recAguaPhBruta" placeholder="ex: 7.2"></div>
+            <div><label>Ác. Lático (mL/bat)</label><input type="text" id="recAguaLactico" placeholder="ex: 12"></div>
           </div>
           <div class="grade-wrap" style="margin-bottom:6px">
             <table class="fp-data" id="rec-tbl-sais" style="width:100%">
@@ -2445,6 +2476,16 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
             </table>
           </div>
           <button class="fp-add-row-btn" onclick="rec_addRow('rec-tbl-sais','Sal','0','Arriada','—')">＋ Sal</button>
+
+          <!-- auxiliares de brassagem -->
+          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">🔬 Auxiliares de Brassagem (Enzimas)</span></div>
+          <div class="grade-wrap" style="margin-bottom:6px">
+            <table class="fp-data" id="rec-tbl-enz" style="width:100%">
+              <thead><tr><th>Produto</th><th>Dose</th><th>Qtd/bat (g)</th><th>Momento</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <button class="fp-add-row-btn" onclick="rec_addRow('rec-tbl-enz','Produto','dose','0','Momento')">＋ Auxiliar</button>
 
           <!-- adjuntos -->
           <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">🧪 Adjuntos / Dry-hop</span></div>
@@ -2456,11 +2497,50 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           </div>
           <button class="fp-add-row-btn" onclick="rec_addRow('rec-tbl-adj','Ingrediente','Dry-hop','Pós-ferm','0')">＋ Adjunto</button>
 
-          <!-- lauter -->
-          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">🔽 Lauter</span></div>
+          <!-- programação do sistema -->
+          <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">⚙️ Programação do Sistema</span></div>
+
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--texto2);margin:10px 0 4px">Moagem</div>
           <div class="form-grid" style="margin-bottom:8px">
-            <div><label>Vol. 1ª lavagem (L)</label><input type="number" id="recLavVol1" placeholder="ex: 400"></div>
-            <div><label>Vol. 2ª lavagem (L)</label><input type="number" id="recLavVol2" placeholder="ex: 150"></div>
+            <div><label>Regulagem moagem (mm)</label><input type="number" id="recSisMoagem" placeholder="0.6" step="0.1"></div>
+          </div>
+
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--texto2);margin:10px 0 4px">Mostura</div>
+          <div class="form-grid" style="margin-bottom:8px">
+            <div><label>Vol. arriada malte (L)</label><input type="number" id="recSisMosArriada" placeholder="1150"></div>
+            <div><label>Vol. p/ lavagem tina (L)</label><input type="number" id="recSisMosLavTina" placeholder="0"></div>
+            <div><label>Vel. agitador (Hz)</label><input type="number" id="recSisMosAgit" placeholder="45"></div>
+          </div>
+
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--texto2);margin:10px 0 4px">Lauter</div>
+          <div class="form-grid" style="margin-bottom:8px">
+            <div><label>Vol. mosto primário (L)</label><input type="number" id="recSisLauMostoPrim" placeholder="750"></div>
+            <div><label>Nível seg. mosto primário (L)</label><input type="number" id="recSisLauNivelSeg" placeholder="570"></div>
+            <div><label>Vol. lavagem 1 (L)</label><input type="number" id="recLavVol1" placeholder="400"></div>
+            <div><label>Vol. lavagem 2 (L)</label><input type="number" id="recLavVol2" placeholder="150"></div>
+            <div><label>Vol. lavagem contínua (L)</label><input type="number" id="recSisLauLavCont" placeholder="400"></div>
+            <div><label>Qt. lavagens</label><input type="number" id="recSisLauQtLav" placeholder="2"></div>
+            <div><label>Freq. bomba Lauter (Hz)</label><input type="number" id="recSisLauFreqBomba" placeholder="12"></div>
+            <div><label>Tempo recirc. Lauter (min)</label><input type="number" id="recSisLauTRecirc" placeholder="7"></div>
+            <div><label>Tempo ag. pós transf. (min)</label><input type="number" id="recSisLauTAgPosTransf" placeholder="1"></div>
+            <div><label>Tempo descanso pós lav. (min)</label><input type="number" id="recSisLauTDescPosLav" placeholder="5"></div>
+            <div><label>Tempo descanso (min)</label><input type="number" id="recSisLauTDesc" placeholder="5"></div>
+          </div>
+
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--texto2);margin:10px 0 4px">Fervura</div>
+          <div class="form-grid" style="margin-bottom:8px">
+            <div><label>Setpoint pré-fervura (°C)</label><input type="number" id="recSisFervSpPreFerv" placeholder="98"></div>
+            <div><label>Setpoint fervura (°C)</label><input type="number" id="recSisFervSpFerv" placeholder="99.3"></div>
+            <div><label>Vol. pré-fervura alvo (L)</label><input type="number" id="recSisFervVolPreFerv" placeholder="350"></div>
+            <div><label>Tempo fervura (min)</label><input type="number" id="recSisFervTempo" placeholder="60"></div>
+            <div><label>Vol. troca de válvulas (L)</label><input type="number" id="recSisFervVolTroca" placeholder="250"></div>
+          </div>
+
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--texto2);margin:10px 0 4px">Whirlpool</div>
+          <div class="form-grid" style="margin-bottom:8px">
+            <div><label>Tempo atraso bomba (min)</label><input type="number" id="recSisWhirlTAtraso" placeholder="1"></div>
+            <div><label>Tempo whirlpool (min)</label><input type="number" id="recSisWhirlTWhirl" placeholder="5"></div>
+            <div><label>Tempo descanso (min)</label><input type="number" id="recSisWhirlTDesc" placeholder="10"></div>
           </div>
 
           <!-- obs -->
@@ -3268,7 +3348,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.8";
+var VERSAO = "3.7.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11150,10 +11230,24 @@ async function fp_carregarReceitaSelecionada(){
 
 /* preenche a ficha com dados de uma receita */
 function fp_aplicarReceita(rec){
-  // OG/FG/ABV alvo
-  if(rec.og){ var el=document.getElementById('fp-og-alvo'); if(el) el.value=rec.og; }
-  if(rec.fg){ var el=document.getElementById('fp-fg-alvo'); if(el) el.value=rec.fg; }
+  var fv = function(id, val){ var el=document.getElementById(id); if(el&&val!=null&&val!=='') el.value=val; };
+
+  // --- OG/FG/ABV alvo ---
+  fv('fp-og-alvo', rec.og);
+  fv('fp-fg-alvo', rec.fg);
   fp_calcAbv();
+
+  // --- IBU / EBC / Eficiência / Taxa evap --- (inputs sem id na ficha: acha pelo container)
+  // Dados Gerais tight grid: [OG, FG, ABV, IBU, EBC, Efic, TaxaEvap] → índices 3,4,5,6
+  (function(){
+    var sec = document.querySelector('#fp-panel-receita .fp-sec');
+    if(!sec) return;
+    var tight = sec.querySelector('.fp-fg-grid.tight');
+    if(!tight) return;
+    var inps = tight.querySelectorAll('input');
+    var map = [[3,rec.ibu],[4,rec.ebc],[5,rec.efic],[6,rec.evap]];
+    map.forEach(function(m){ if(inps[m[0]]&&m[1]!=null&&m[1]!=='') inps[m[0]].value=m[1]; });
+  })();
 
   // helper robusto: limpa tbody, adiciona uma linha por array, preenche inputs
   function preencherTblFicha(tblId, linhas){
@@ -11162,7 +11256,7 @@ function fp_aplicarReceita(rec){
     var tbody=tbl.querySelector('tbody'); if(!tbody) return;
     tbody.innerHTML='';
     linhas.forEach(function(cols){
-      fp_addRow(tblId); // cria linha vazia com nCols inputs
+      fp_addRow(tblId);
       var tr=tbody.querySelector('tr:last-child'); if(!tr) return;
       var inputs=tr.querySelectorAll('input,select,textarea');
       cols.forEach(function(v,i){ if(inputs[i]&&v!=null) inputs[i].value=v; });
@@ -11172,7 +11266,6 @@ function fp_aplicarReceita(rec){
   // --- Fermentáveis ---
   // rec-tbl-ferm colunas: [nome, tipo, EBC, %, extrato%, kg/bat]
   // fp-tbl-ferm  colunas: [ingrediente, tipo, lote/data, qtd/bat(kg), %grist, EBC]
-  // Mapeamento:            rec[0]       rec[1]  ''         rec[5]       rec[3]  rec[2]
   if(rec.fermentaveis && rec.fermentaveis.length){
     var fermMapped = rec.fermentaveis.map(function(r){
       return [r[0]||'', r[1]||'', '', r[5]||'', r[3]||'', r[2]||''];
@@ -11181,81 +11274,116 @@ function fp_aplicarReceita(rec){
   }
 
   // --- Lúpulos ---
-  // rec-tbl-lup colunas: [variedade, AA%, adição, tempo(min), g/bat]
-  // fp-tbl-lup  colunas: [variedade, alpha(%), uso, tempo(min), qtd/bat(g)]
-  // Mapeamento direta: posições idênticas
-  if(rec.lupulos && rec.lupulos.length){
-    preencherTblFicha('fp-tbl-lup', rec.lupulos);
-  }
+  if(rec.lupulos && rec.lupulos.length){ preencherTblFicha('fp-tbl-lup', rec.lupulos); }
 
   // --- Mash ---
-  // rec-tbl-mash colunas: [etapa, temp alvo(°C), rampa alvo(min), tempo alvo(min), descrição]
-  // fp-tbl-mash  colunas: [etapa, temp. alvo(°C), rampa alvo(min), tempo alvo(min), descrição]
-  // Mapeamento direta: posições idênticas
-  if(rec.mash && rec.mash.length){
-    preencherTblFicha('fp-tbl-mash', rec.mash);
-  }
+  if(rec.mash && rec.mash.length){ preencherTblFicha('fp-tbl-mash', rec.mash); }
 
   // --- Sais ---
-  // rec-tbl-sais colunas: [sal, g/HL, adição, observação]
-  // fp-tbl-sais  colunas: [sal, qtd(g/bat), momento, alvo]
-  // Mapeamento direta: posições compatíveis
-  if(rec.sais && rec.sais.length){
-    preencherTblFicha('fp-tbl-sais', rec.sais);
-  }
+  if(rec.sais && rec.sais.length){ preencherTblFicha('fp-tbl-sais', rec.sais); }
 
   // --- Adjuntos ---
   // rec-tbl-adj colunas: [ingrediente, tipo, adição, tempo/etapa, qtde/bat]
   // fp-tbl-adj  colunas: [item, qtd/bat, uso]
-  // Mapeamento:           rec[0]  rec[4]   rec[2]
   if(rec.adjuntos && rec.adjuntos.length){
-    var adjMapped = rec.adjuntos.map(function(r){
+    preencherTblFicha('fp-tbl-adj', rec.adjuntos.map(function(r){
       return [r[0]||'', r[4]||'', r[2]||''];
-    });
-    preencherTblFicha('fp-tbl-adj', adjMapped);
+    }));
   }
 
-  // --- Levedura (seção na ficha tem campos individuais de inputs) ---
-  // A ficha de produção usa uma seção com inputs livres (Cepa, Qtd, Temp, O2)
-  // A receita salva: {linhagem, fabricante, pitch, temp}
-  // Preenche o primeiro input livre da seção de leveduras da ficha
+  // --- Perfis Fermentação e Maturação ---
+  if(rec.pferm && rec.pferm.length){ preencherTblFicha('fp-tbl-pferm', rec.pferm); }
+  if(rec.pmatur && rec.pmatur.length){ preencherTblFicha('fp-tbl-pmatur', rec.pmatur); }
+
+  // --- Enzimas (grid especial fp-enz-grid) ---
+  if(rec.enzimas && rec.enzimas.length){
+    var enzExtra = document.getElementById('fp-enz-extra');
+    if(enzExtra){
+      enzExtra.innerHTML='';
+      rec.enzimas.forEach(function(cols){
+        var row=document.createElement('div'); row.style.display='contents';
+        row.innerHTML=
+          '<div class="fp-enz-cell" style="display:flex;align-items:center;gap:4px;">'+
+            '<input value="'+esc(cols[0]||'')+'" style="flex:1">'+
+            '<button onclick="this.closest(\'[style*=contents]\').remove();fp_markDirty()" style="background:none;border:none;cursor:pointer;color:var(--fp-fg3);font-size:13px;padding:0 2px" title="Remover">✕</button>'+
+          '</div>'+
+          '<div class="fp-enz-cell"><input value="'+esc(cols[1]||'')+'"></div>'+
+          '<div class="fp-enz-cell"><input value="'+esc(cols[2]||'')+'"></div>'+
+          '<div class="fp-enz-cell"><input value="'+esc(cols[3]||'')+'"></div>';
+        enzExtra.appendChild(row);
+      });
+    }
+  }
+
+  // --- Levedura ---
   var lev = rec.levedura||{};
-  // Tenta encontrar os inputs da seção de leveduras via seletores conhecidos
-  // Seção levedura na ficha: .fp-sec com inputs na ordem [Cepa, Qtd total, Temp pitching, O2]
   var levSecInputs = [];
   document.querySelectorAll('.fp-sec').forEach(function(sec){
-    if(sec.textContent.indexOf('Levedura') >= 0 && sec.querySelector('.fp-sec-title')){
-      var t = sec.querySelector('.fp-sec-title');
-      if(t && t.textContent.indexOf('Levedura') >= 0){
-        levSecInputs = Array.from(sec.querySelectorAll('.fp-fg-grid input'));
-      }
+    var t = sec.querySelector('.fp-sec-title');
+    if(t && t.textContent.trim()==='Leveduras'){
+      levSecInputs = Array.from(sec.querySelectorAll('.fp-fg-grid input'));
     }
   });
   // levSecInputs[0]=Cepa, [1]=Qtd total, [2]=Temp pitching, [3]=O2
-  var levVals = [
-    (lev.linhagem||'') + (lev.fabricante ? ' ('+lev.fabricante+')' : ''),
-    lev.pitch||'',
-    lev.temp||'',
-    ''
-  ];
+  var levCepa = (lev.linhagem||'') + (lev.fabricante ? ' ('+lev.fabricante+')' : '');
+  var levVals = [levCepa, lev.pitch||'', lev.temp||'', lev.o2||''];
   levVals.forEach(function(v,i){ if(levSecInputs[i]&&v) levSecInputs[i].value=v; });
 
-  // --- Água (campos individuais na ficha) ---
-  if(rec.agua){
-    // A ficha tem inputs de vol. strike, vol. sparge, pH na seção mostura
-    // rec.agua = {fonte, ph, vol}
-    // Tenta preencher o pH da seção de mostura
-    var phInputs = [];
+  // --- Mostura: Vol. strike, Vol. sparge, pH mostura ---
+  (function(){
+    var mosInputs = [];
     document.querySelectorAll('.fp-sec').forEach(function(sec){
       var t = sec.querySelector('.fp-sec-title');
       if(t && t.textContent.indexOf('Mostura') >= 0){
-        phInputs = Array.from(sec.querySelectorAll('.fp-fg-grid input'));
+        mosInputs = Array.from(sec.querySelectorAll('.fp-fg-grid.tight input'));
       }
     });
-    // phInputs[0]=vol.strike, [1]=vol.sparge, [2]=pH
-    if(rec.agua.ph && phInputs[2]) phInputs[2].value = rec.agua.ph;
-    if(rec.agua.vol && phInputs[0]) phInputs[0].value = rec.agua.vol;
-  }
+    // mosInputs[0]=vol.strike, [1]=vol.sparge, [2]=pH mostura
+    if(rec.mosStrike && mosInputs[0]) mosInputs[0].value = rec.mosStrike;
+    if(rec.mosSparge && mosInputs[1]) mosInputs[1].value = rec.mosSparge;
+    if(rec.agua && rec.agua.ph && mosInputs[2]) mosInputs[2].value = rec.agua.ph;
+  })();
+
+  // --- Tratamento de Água: pH bruta, pH cervejeiro, Ác. Lático ---
+  (function(){
+    var aguaInputs = [];
+    document.querySelectorAll('.fp-sec').forEach(function(sec){
+      var t = sec.querySelector('.fp-sec-title');
+      if(t && t.textContent.indexOf('Água') >= 0){
+        aguaInputs = Array.from(sec.querySelectorAll('.fp-fg-grid.tight input'));
+      }
+    });
+    // aguaInputs[0]=pH bruta, [1]=pH cervejeiro, [2]=Ác. Lático
+    var agua = rec.agua||{};
+    if(agua.phBruta  && aguaInputs[0]) aguaInputs[0].value = agua.phBruta;
+    if(agua.ph       && aguaInputs[1]) aguaInputs[1].value = agua.ph;
+    if(agua.lactico  && aguaInputs[2]) aguaInputs[2].value = agua.lactico;
+  })();
+
+  // --- Programação do Sistema (inputs sem id — acha pela seção) ---
+  (function(){
+    var sis = rec.sistema||{};
+    var sisInputs = [];
+    document.querySelectorAll('.fp-sec').forEach(function(sec){
+      var t = sec.querySelector('.fp-sec-title');
+      if(t && t.textContent.indexOf('Programação do Sistema') >= 0){
+        sisInputs = Array.from(sec.querySelectorAll('.fp-fg-grid.tight input'));
+      }
+    });
+    // Ordem dos inputs: [moagem], [mosArriada,mosLavTina,mosAgit],
+    // [lauMostoPrim,lauNivSeg,lav1,lav2,lavCont,qtLav,freqBomba,tRecirc,tAgPosTransf,tDescPosLav,tDesc],
+    // [fervSpPre,fervSp,fervVolPre,fervTempo,fervVolTroca],
+    // [whirlTAtraso,whirlTWhirl,whirlTDesc]
+    var mos=sis.mostura||{}, lau=sis.lauter||{}, ferv=sis.fervura||{}, wh=sis.whirlpool||{}, moa=sis.moagem||{};
+    var vals=[
+      moa.regulagem,
+      mos.arriada, mos.lavTina, mos.agitador,
+      lau.mostoPrim, lau.nivelSeg, lau.lav1, lau.lav2, lau.lavCont, lau.qtLav, lau.freqBomba, lau.tRecirc, lau.tAgPosTransf, lau.tDescPosLav, lau.tDesc,
+      ferv.spPreFerv, ferv.spFerv, ferv.volPreFerv, ferv.tempo, ferv.volTroca,
+      wh.tAtraso, wh.tWhirl, wh.tDesc
+    ];
+    vals.forEach(function(v,i){ if(sisInputs[i]&&v!=null&&v!=='') sisInputs[i].value=v; });
+  })();
 
   // grava qual receita foi usada
   var selRec = document.getElementById('fp-sel-receita');
@@ -11278,18 +11406,35 @@ function rec_novaReceita(){
   document.getElementById('recOg').value='';
   document.getElementById('recFg').value='';
   document.getElementById('recAbv').value='';
+  // campos básicos
+  ['recIbu','recEbc','recEfic','recEvap'].forEach(function(id){document.getElementById(id).value='';});
+  // levedura
   document.getElementById('recLevLinhagem').value='';
   document.getElementById('recLevFab').value='';
   document.getElementById('recLevPitch').value='';
   document.getElementById('recLevTemp').value='';
+  document.getElementById('recLevO2').value='';
+  // mostura
+  document.getElementById('recMosStrike').value='';
+  document.getElementById('recMosSparge').value='';
+  // água
   document.getElementById('recAguaFonte').value='';
   document.getElementById('recAguaPh').value='';
   document.getElementById('recAguaVol').value='';
-  document.getElementById('recLavVol1').value='';
-  document.getElementById('recLavVol2').value='';
+  document.getElementById('recAguaPhBruta').value='';
+  document.getElementById('recAguaLactico').value='';
+  // programação do sistema
+  ['recSisMoagem','recSisMosArriada','recSisMosLavTina','recSisMosAgit',
+   'recSisLauMostoPrim','recSisLauNivelSeg','recLavVol1','recLavVol2',
+   'recSisLauLavCont','recSisLauQtLav','recSisLauFreqBomba','recSisLauTRecirc',
+   'recSisLauTAgPosTransf','recSisLauTDescPosLav','recSisLauTDesc',
+   'recSisFervSpPreFerv','recSisFervSpFerv','recSisFervVolPreFerv','recSisFervTempo','recSisFervVolTroca',
+   'recSisWhirlTAtraso','recSisWhirlTWhirl','recSisWhirlTDesc'
+  ].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('recObs').value='';
   // limpa tabelas
-  ['rec-tbl-ferm','rec-tbl-lup','rec-tbl-mash','rec-tbl-sais','rec-tbl-adj'].forEach(function(id){
+  ['rec-tbl-ferm','rec-tbl-lup','rec-tbl-mash','rec-tbl-sais','rec-tbl-adj',
+   'rec-tbl-pferm','rec-tbl-pmatur','rec-tbl-enz'].forEach(function(id){
     var t=document.getElementById(id); if(t) t.querySelector('tbody').innerHTML='';
   });
   document.getElementById('recFormTitulo').textContent='Nova Receita';
@@ -11315,19 +11460,58 @@ async function rec_editarReceita(id){
     document.getElementById('recFg').value=rec.fg||'';
     document.getElementById('recAbv').value=rec.abv||'';
 
+    // campos básicos extras
+    document.getElementById('recIbu').value=rec.ibu||'';
+    document.getElementById('recEbc').value=rec.ebc||'';
+    document.getElementById('recEfic').value=rec.efic||'';
+    document.getElementById('recEvap').value=rec.evap||'';
+
     var lev=rec.levedura||{};
     document.getElementById('recLevLinhagem').value=lev.linhagem||'';
     document.getElementById('recLevFab').value=lev.fabricante||'';
     document.getElementById('recLevPitch').value=lev.pitch||'';
     document.getElementById('recLevTemp').value=lev.temp||'';
+    document.getElementById('recLevO2').value=lev.o2||'';
+
+    document.getElementById('recMosStrike').value=rec.mosStrike||'';
+    document.getElementById('recMosSparge').value=rec.mosSparge||'';
 
     var agua=rec.agua||{};
     document.getElementById('recAguaFonte').value=agua.fonte||'';
     document.getElementById('recAguaPh').value=agua.ph||'';
     document.getElementById('recAguaVol').value=agua.vol||'';
-    var lauter=rec.lauter||{};
-    document.getElementById('recLavVol1').value=lauter.lav1||'';
-    document.getElementById('recLavVol2').value=lauter.lav2||'';
+    document.getElementById('recAguaPhBruta').value=agua.phBruta||'';
+    document.getElementById('recAguaLactico').value=agua.lactico||'';
+
+    var sis=rec.sistema||{};
+    var lau=sis.lauter||{};
+    document.getElementById('recSisMoagem').value=(sis.moagem||{}).regulagem||'';
+    var mos=sis.mostura||{};
+    document.getElementById('recSisMosArriada').value=mos.arriada||'';
+    document.getElementById('recSisMosLavTina').value=mos.lavTina||'';
+    document.getElementById('recSisMosAgit').value=mos.agitador||'';
+    document.getElementById('recSisLauMostoPrim').value=lau.mostoPrim||'';
+    document.getElementById('recSisLauNivelSeg').value=lau.nivelSeg||'';
+    document.getElementById('recLavVol1').value=lau.lav1||'';
+    document.getElementById('recLavVol2').value=lau.lav2||'';
+    document.getElementById('recSisLauLavCont').value=lau.lavCont||'';
+    document.getElementById('recSisLauQtLav').value=lau.qtLav||'';
+    document.getElementById('recSisLauFreqBomba').value=lau.freqBomba||'';
+    document.getElementById('recSisLauTRecirc').value=lau.tRecirc||'';
+    document.getElementById('recSisLauTAgPosTransf').value=lau.tAgPosTransf||'';
+    document.getElementById('recSisLauTDescPosLav').value=lau.tDescPosLav||'';
+    document.getElementById('recSisLauTDesc').value=lau.tDesc||'';
+    var ferv=sis.fervura||{};
+    document.getElementById('recSisFervSpPreFerv').value=ferv.spPreFerv||'';
+    document.getElementById('recSisFervSpFerv').value=ferv.spFerv||'';
+    document.getElementById('recSisFervVolPreFerv').value=ferv.volPreFerv||'';
+    document.getElementById('recSisFervTempo').value=ferv.tempo||'';
+    document.getElementById('recSisFervVolTroca').value=ferv.volTroca||'';
+    var wh=sis.whirlpool||{};
+    document.getElementById('recSisWhirlTAtraso').value=wh.tAtraso||'';
+    document.getElementById('recSisWhirlTWhirl').value=wh.tWhirl||'';
+    document.getElementById('recSisWhirlTDesc').value=wh.tDesc||'';
+
     document.getElementById('recObs').value=rec.obs||'';
 
     // tabelas
@@ -11349,6 +11533,9 @@ async function rec_editarReceita(id){
     carregarTabRec('rec-tbl-mash',rec.mash);
     carregarTabRec('rec-tbl-sais',rec.sais);
     carregarTabRec('rec-tbl-adj',rec.adjuntos);
+    carregarTabRec('rec-tbl-pferm',rec.pferm);
+    carregarTabRec('rec-tbl-pmatur',rec.pmatur);
+    carregarTabRec('rec-tbl-enz',rec.enzimas);
 
     document.getElementById('recFormTitulo').textContent='Editando: '+esc(rec.nome||'');
     document.getElementById('recBtnDeletar').hidden=false;
@@ -11380,34 +11567,72 @@ async function rec_salvar(){
   var msg  = document.getElementById('recMsgForm');
   if(!nome){ msg.innerHTML='<div class="aviso">Informe o nome da receita.</div>'; return; }
 
+  var g = function(id){ return document.getElementById(id).value.trim(); };
   var dados = {
     nome:     nome,
-    estilo:   document.getElementById('recEstilo').value.trim(),
-    volume:   document.getElementById('recVolume').value.trim(),
-    og:       document.getElementById('recOg').value.trim(),
-    fg:       document.getElementById('recFg').value.trim(),
-    abv:      document.getElementById('recAbv').value.trim(),
+    estilo:   g('recEstilo'),
+    volume:   g('recVolume'),
+    og:       g('recOg'),
+    fg:       g('recFg'),
+    abv:      g('recAbv'),
+    ibu:      g('recIbu'),
+    ebc:      g('recEbc'),
+    efic:     g('recEfic'),
+    evap:     g('recEvap'),
     levedura: {
-      linhagem:   document.getElementById('recLevLinhagem').value.trim(),
-      fabricante: document.getElementById('recLevFab').value.trim(),
-      pitch:      document.getElementById('recLevPitch').value.trim(),
-      temp:       document.getElementById('recLevTemp').value.trim(),
+      linhagem:   g('recLevLinhagem'),
+      fabricante: g('recLevFab'),
+      pitch:      g('recLevPitch'),
+      temp:       g('recLevTemp'),
+      o2:         g('recLevO2'),
     },
+    mosStrike:  g('recMosStrike'),
+    mosSparge:  g('recMosSparge'),
     agua: {
-      fonte: document.getElementById('recAguaFonte').value.trim(),
-      ph:    document.getElementById('recAguaPh').value.trim(),
-      vol:   document.getElementById('recAguaVol').value.trim(),
+      fonte:    g('recAguaFonte'),
+      ph:       g('recAguaPh'),
+      vol:      g('recAguaVol'),
+      phBruta:  g('recAguaPhBruta'),
+      lactico:  g('recAguaLactico'),
     },
-    lauter: {
-      lav1: document.getElementById('recLavVol1').value.trim(),
-      lav2: document.getElementById('recLavVol2').value.trim(),
+    sistema: {
+      moagem:   { regulagem: g('recSisMoagem') },
+      mostura:  { arriada: g('recSisMosArriada'), lavTina: g('recSisMosLavTina'), agitador: g('recSisMosAgit') },
+      lauter:   {
+        mostoPrim:    g('recSisLauMostoPrim'),
+        nivelSeg:     g('recSisLauNivelSeg'),
+        lav1:         g('recLavVol1'),
+        lav2:         g('recLavVol2'),
+        lavCont:      g('recSisLauLavCont'),
+        qtLav:        g('recSisLauQtLav'),
+        freqBomba:    g('recSisLauFreqBomba'),
+        tRecirc:      g('recSisLauTRecirc'),
+        tAgPosTransf: g('recSisLauTAgPosTransf'),
+        tDescPosLav:  g('recSisLauTDescPosLav'),
+        tDesc:        g('recSisLauTDesc'),
+      },
+      fervura: {
+        spPreFerv:  g('recSisFervSpPreFerv'),
+        spFerv:     g('recSisFervSpFerv'),
+        volPreFerv: g('recSisFervVolPreFerv'),
+        tempo:      g('recSisFervTempo'),
+        volTroca:   g('recSisFervVolTroca'),
+      },
+      whirlpool: {
+        tAtraso: g('recSisWhirlTAtraso'),
+        tWhirl:  g('recSisWhirlTWhirl'),
+        tDesc:   g('recSisWhirlTDesc'),
+      },
     },
     fermentaveis: rec_tabelaParaArray('rec-tbl-ferm'),
     lupulos:      rec_tabelaParaArray('rec-tbl-lup'),
     mash:         rec_tabelaParaArray('rec-tbl-mash'),
     sais:         rec_tabelaParaArray('rec-tbl-sais'),
     adjuntos:     rec_tabelaParaArray('rec-tbl-adj'),
-    obs:          document.getElementById('recObs').value.trim(),
+    pferm:        rec_tabelaParaArray('rec-tbl-pferm'),
+    pmatur:       rec_tabelaParaArray('rec-tbl-pmatur'),
+    enzimas:      rec_tabelaParaArray('rec-tbl-enz'),
+    obs:          g('recObs'),
   };
 
   var id = document.getElementById('recId').value.trim();
