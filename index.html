@@ -1174,8 +1174,8 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
 .fp-mlog-row{display:grid;grid-template-columns:150px 70px 80px 80px 60px 1fr 28px;gap:0;border-bottom:1px solid var(--fp-border);align-items:center}
 /* fermentação log (7 cols: datetime, SG, temp_real, kgf, pH, obs, del) */
 .fp-mlog-row.ferm{grid-template-columns:150px 70px 80px 80px 60px 1fr 28px}
-/* maturação log (8 cols: datetime, temp, kgf, pH, co2, clarif, obs, del) */
-.fp-mlog-row.matur{grid-template-columns:150px 80px 80px 60px 60px 90px 1fr 28px}
+/* maturação log (8 cols: datetime, temp, kgf, pH, co2, clareza, obs, del) */
+.fp-mlog-row.matur{grid-template-columns:150px 80px 80px 60px 80px 100px 1fr 28px}
 /* lavagens log (4 cols: hora, vol, responsável, del) */
 .fp-mlog-row.lav{grid-template-columns:100px 80px 1fr 28px}
 /* stats banner acima dos logs */
@@ -3368,7 +3368,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.33";
+var VERSAO = "3.7.34";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9599,10 +9599,17 @@ function fp_atualizarVolTotalBateladas(){
   var fermDet = document.getElementById('fp-ferm-vol-det');
   if(fermVol) fermVol.textContent = temDados ? total.toFixed(0)+' L' : '—';
   if(fermDet) fermDet.textContent = temDados ? '('+partes.join(' + ')+')' : '';
-  // atualiza dose clearmax (4 g/hL)
+  // atualiza dose clearmax Pro (4 g/hL)
   var dose = total > 0 ? Math.round(total * 4 / 100 * 10) / 10 : null;
   var doseEl = document.getElementById('fp-clearmax-dose-ferm');
   if(doseEl) doseEl.textContent = dose !== null ? dose+' g' : '—';
+  // atualiza dose clearmax L (5 g/hL)
+  var doseL = total > 0 ? Math.round(total * 5 / 100 * 10) / 10 : null;
+  var doseLEl = document.getElementById('fp-clearmax-l-dose-ferm');
+  if(doseLEl) doseLEl.textContent = doseL !== null ? doseL+' g' : '—';
+  // preenche placeholder do campo qtd Clearmax L
+  var qtdLEl = document.getElementById('fp-clearmax-l-qtd');
+  if(qtdLEl) qtdLEl.placeholder = doseL !== null ? doseL+' g (dose calculada)' : 'dose calculada';
 }
 
 /* ── Confirmação Clearmax / Levedura na aba Fermentação ───── */
@@ -9616,16 +9623,52 @@ function fp_confirmarAplic(tipo){
     var btn    = document.getElementById('fp-btn-clearmax-ferm');
     var status = document.getElementById('fp-clearmax-status');
     if(!bloco) return;
+    var horaCP = (document.getElementById('fp-clearmax-pro-hora')||{}).value || hora;
+    var today = now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
+    var dataCP = (document.getElementById('fp-clearmax-pro-data')||{}).value || today;
     bloco.dataset.confirmado = '1';
-    bloco.dataset.hora = hora;
+    bloco.dataset.hora = horaCP;
+    bloco.dataset.data = dataCP;
     bloco.dataset.quem = quem;
     if(btn){ btn.disabled = true; btn.textContent = '✅ Confirmado'; }
     if(status){
       status.classList.remove('pendente');
       status.querySelector('.fp-aplic-status-ico').textContent = '✅';
-      status.querySelector('.fp-aplic-status-txt').textContent = 'Clearmax Pro confirmado às '+hora;
+      var dataFmtCP = dataCP ? (function(d){ var p=d.split('-'); return p[2]+'/'+p[1]+' '; })(dataCP) : '';
+      status.querySelector('.fp-aplic-status-txt').textContent = 'Clearmax Pro confirmado '+dataFmtCP+horaCP;
       status.querySelector('.fp-aplic-quem').textContent = ' · '+quem;
     }
+    var dataElCP = document.getElementById('fp-clearmax-pro-data');
+    var horaElCP = document.getElementById('fp-clearmax-pro-hora');
+    if(dataElCP && !dataElCP.value) dataElCP.value = today;
+    if(horaElCP && !horaElCP.value) horaElCP.value = hora;
+  } else if(tipo === 'clearmaxL'){
+    var bloco  = document.getElementById('fp-bloco-clearmax-l');
+    var btn    = document.getElementById('fp-btn-clearmax-l-ferm');
+    var status = document.getElementById('fp-clearmax-l-status');
+    if(!bloco) return;
+    var horaL = (document.getElementById('fp-clearmax-l-hora')||{}).value || hora;
+    var today = now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
+    var dataL = (document.getElementById('fp-clearmax-l-data')||{}).value || today;
+    var qtdL  = (document.getElementById('fp-clearmax-l-qtd')||{}).value || '';
+    bloco.dataset.confirmado = '1';
+    bloco.dataset.hora = horaL;
+    bloco.dataset.data = dataL;
+    bloco.dataset.qtd  = qtdL;
+    bloco.dataset.quem = quem;
+    if(btn){ btn.disabled = true; btn.textContent = '✅ Confirmado'; }
+    if(status){
+      status.classList.remove('pendente');
+      status.querySelector('.fp-aplic-status-ico').textContent = '✅';
+      var dataFmtL = dataL ? (function(d){ var p=d.split('-'); return p[2]+'/'+p[1]+' '; })(dataL) : '';
+      var qtdTxt = qtdL ? qtdL+' g — ' : '';
+      status.querySelector('.fp-aplic-status-txt').textContent = 'Clearmax L '+qtdTxt+dataFmtL+horaL;
+      status.querySelector('.fp-aplic-quem').textContent = ' · '+quem;
+    }
+    var dataElL = document.getElementById('fp-clearmax-l-data');
+    var horaElL = document.getElementById('fp-clearmax-l-hora');
+    if(dataElL && !dataElL.value) dataElL.value = today;
+    if(horaElL && !horaElL.value) horaElL.value = hora;
   } else if(tipo === 'lev'){
     var bloco  = document.getElementById('fp-bloco-lev');
     var btn    = document.getElementById('fp-btn-lev-ferm');
@@ -9746,11 +9789,34 @@ function fp_addMaturRow(){
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.01" placeholder="kgf/cm²"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="pH"></div>'+
-    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="vol"></div>'+
-    '<div class="fp-log-cell"><input placeholder="produto/dose"></div>'+
+    '<div class="fp-log-cell" style="position:relative">'+
+      '<input type="number" step="0.1" min="0" max="5" placeholder="vol" oninput="fp_recCO2(this)">'+
+      '<div class="fp-co2-rec" style="display:none;position:absolute;left:0;top:100%;z-index:10;min-width:180px;padding:5px 8px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap;margin-top:2px"></div>'+
+    '</div>'+
+    '<div class="fp-log-cell"><select style="width:100%;background:var(--fp-bg);color:var(--fp-fg);border:none;font-size:11px;padding:2px"><option value="">—</option><option>Turva</option><option>Média</option><option>Clarificada</option></select></div>'+
     '<div class="fp-log-cell"><input placeholder="obs…"></div>'+
     '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
   c.appendChild(row); fp_markDirty();
+}
+function fp_recCO2(inp){
+  var rec = inp.nextElementSibling;
+  if(!rec) return;
+  var v = parseFloat(inp.value);
+  if(isNaN(v) || inp.value===''){rec.style.display='none'; return;}
+  var txt, bg, cor;
+  if(v < 2.0){
+    txt='⬆ Pressurize o tanque'; bg='#d63031'; cor='#fff';
+  } else if(v >= 2.3 && v <= 2.6){
+    txt='✅ Mantenha a pressão'; bg='#00b894'; cor='#fff';
+  } else if(v > 2.6){
+    txt='⬇ Despressurize o tanque'; bg='#e17055'; cor='#fff';
+  } else {
+    /* 2.0-2.29 — zona de subida */
+    txt='↗ Aguarde — subindo para faixa'; bg='#fdcb6e'; cor='#2d3436';
+  }
+  rec.textContent=txt;
+  rec.style.background=bg; rec.style.color=cor;
+  rec.style.display='block';
 }
 /* Calcula previsão do iodo: arriada + 1h10min */
 function fp_calcIodo(inputArriada){
@@ -10812,7 +10878,18 @@ function fp_simSave(btn){
       var clBloco = document.getElementById('fp-bloco-clearmax');
       var levBloco = document.getElementById('fp-bloco-lev');
       return {
-        clearmax: clBloco && clBloco.dataset.confirmado ? { confirmado:true, hora:clBloco.dataset.hora||'', quem:clBloco.dataset.quem||'' } : null,
+        clearmax: clBloco && clBloco.dataset.confirmado ? { confirmado:true, data:clBloco.dataset.data||'', hora:clBloco.dataset.hora||'', quem:clBloco.dataset.quem||'',
+          dataInp:(document.getElementById('fp-clearmax-pro-data')||{}).value||'', horaInp:(document.getElementById('fp-clearmax-pro-hora')||{}).value||'' } : null,
+        clearmaxL: (function(){
+          var clLBloco = document.getElementById('fp-bloco-clearmax-l');
+          return clLBloco && clLBloco.dataset.confirmado ? {
+            confirmado:true, data:clLBloco.dataset.data||'', hora:clLBloco.dataset.hora||'',
+            qtd:clLBloco.dataset.qtd||'', quem:clLBloco.dataset.quem||'',
+            dataInp:(document.getElementById('fp-clearmax-l-data')||{}).value||'',
+            horaInp:(document.getElementById('fp-clearmax-l-hora')||{}).value||'',
+            qtdInp:(document.getElementById('fp-clearmax-l-qtd')||{}).value||''
+          } : null;
+        })(),
         lev: levBloco && levBloco.dataset.confirmado ? {
           confirmado:true, data:levBloco.dataset.data||'', hora:levBloco.dataset.hora||'', quem:levBloco.dataset.quem||'',
           geracao:(document.getElementById('fp-lev-geracao')||{}).value||'',
@@ -11217,6 +11294,26 @@ function abrirFichaLote(tq){
         '<div class="fp-aplic-ok pendente" id="fp-clearmax-status">'+
           '<span class="fp-aplic-status-ico">⏳</span> <span class="fp-aplic-status-txt">Aguardando confirmação</span><span class="fp-aplic-quem"></span>'+
         '</div>'+
+        '<div class="fp-aplic-extra" style="width:100%;margin-top:8px">'+
+          '<div class="fp-field"><label>Data aplicação</label><input type="date" id="fp-clearmax-pro-data"></div>'+
+          '<div class="fp-field"><label>Hora aplicação</label><input type="time" id="fp-clearmax-pro-hora"></div>'+
+        '</div>'+
+      '</div>'+
+      /* bloco clearmax L */
+      '<div class="fp-aplic-bloco" id="fp-bloco-clearmax-l" style="margin-top:10px">'+
+        '<div>'+
+          '<div class="fp-aplic-info">🧊 Clearmax L — Dose calculada: <span id="fp-clearmax-l-dose-ferm" style="color:var(--fp-marrom);font-size:15px">—</span></div>'+
+          '<div style="font-size:11px;color:var(--fp-fg3);margin-top:2px">5 g por hL · clarificante líquido · adicionar na maturação</div>'+
+        '</div>'+
+        '<button type="button" class="fp-btn-aplic" id="fp-btn-clearmax-l-ferm" onclick="fp_confirmarAplic(\'clearmaxL\')">✅ Confirmar uso</button>'+
+        '<div class="fp-aplic-ok pendente" id="fp-clearmax-l-status">'+
+          '<span class="fp-aplic-status-ico">⏳</span> <span class="fp-aplic-status-txt">Aguardando confirmação</span><span class="fp-aplic-quem"></span>'+
+        '</div>'+
+        '<div class="fp-aplic-extra" style="width:100%;margin-top:8px">'+
+          '<div class="fp-field"><label>Quantidade usada (g)</label><input type="number" step="0.1" id="fp-clearmax-l-qtd" placeholder="dose calculada"></div>'+
+          '<div class="fp-field"><label>Data aplicação</label><input type="date" id="fp-clearmax-l-data"></div>'+
+          '<div class="fp-field"><label>Hora aplicação</label><input type="time" id="fp-clearmax-l-hora"></div>'+
+        '</div>'+
       '</div>'+
       /* bloco levedura */
       '<div class="fp-aplic-bloco" id="fp-bloco-lev" style="margin-top:10px">'+
@@ -11314,7 +11411,7 @@ function abrirFichaLote(tq){
           '<div class="fp-log-cell">Kgf/cm²</div>'+
           '<div class="fp-log-cell">pH</div>'+
           '<div class="fp-log-cell">Vol. CO₂</div>'+
-          '<div class="fp-log-cell">Clarificante</div>'+
+          '<div class="fp-log-cell">Clareza</div>'+
           '<div class="fp-log-cell">Observação</div>'+
           '<div class="fp-log-cell"></div>'+
         '</div>'+
@@ -11555,14 +11652,40 @@ function fp_preencherFicha(ficha){
       var clB = document.getElementById('fp-bloco-clearmax');
       var clBtn = document.getElementById('fp-btn-clearmax-ferm');
       var clSt  = document.getElementById('fp-clearmax-status');
-      if(clB){ clB.dataset.confirmado='1'; clB.dataset.hora=at.clearmax.hora||''; clB.dataset.quem=at.clearmax.quem||''; }
+      if(clB){ clB.dataset.confirmado='1'; clB.dataset.hora=at.clearmax.hora||''; clB.dataset.data=at.clearmax.data||''; clB.dataset.quem=at.clearmax.quem||''; }
       if(clBtn){ clBtn.disabled=true; clBtn.textContent='✅ Confirmado'; }
       if(clSt){
         clSt.classList.remove('pendente');
         clSt.querySelector('.fp-aplic-status-ico').textContent='✅';
-        clSt.querySelector('.fp-aplic-status-txt').textContent='Clearmax Pro confirmado às '+(at.clearmax.hora||'—');
+        var dataFmtCP2 = at.clearmax.data ? (function(d){ var p=d.split('-'); return p[2]+'/'+p[1]+' '; })(at.clearmax.data) : '';
+        clSt.querySelector('.fp-aplic-status-txt').textContent='Clearmax Pro confirmado '+dataFmtCP2+(at.clearmax.hora||'—');
         clSt.querySelector('.fp-aplic-quem').textContent=at.clearmax.quem?' · '+at.clearmax.quem:'';
       }
+      var cpDataEl = document.getElementById('fp-clearmax-pro-data');
+      var cpHoraEl = document.getElementById('fp-clearmax-pro-hora');
+      if(cpDataEl && (at.clearmax.dataInp||at.clearmax.data)) cpDataEl.value=at.clearmax.dataInp||at.clearmax.data||'';
+      if(cpHoraEl && (at.clearmax.horaInp||at.clearmax.hora)) cpHoraEl.value=at.clearmax.horaInp||at.clearmax.hora||'';
+    }
+    if(at.clearmaxL && at.clearmaxL.confirmado){
+      var clLB = document.getElementById('fp-bloco-clearmax-l');
+      var clLBtn = document.getElementById('fp-btn-clearmax-l-ferm');
+      var clLSt  = document.getElementById('fp-clearmax-l-status');
+      if(clLB){ clLB.dataset.confirmado='1'; clLB.dataset.hora=at.clearmaxL.hora||''; clLB.dataset.data=at.clearmaxL.data||''; clLB.dataset.qtd=at.clearmaxL.qtd||''; clLB.dataset.quem=at.clearmaxL.quem||''; }
+      if(clLBtn){ clLBtn.disabled=true; clLBtn.textContent='✅ Confirmado'; }
+      if(clLSt){
+        clLSt.classList.remove('pendente');
+        clLSt.querySelector('.fp-aplic-status-ico').textContent='✅';
+        var dataFmtL2 = at.clearmaxL.data ? (function(d){ var p=d.split('-'); return p[2]+'/'+p[1]+' '; })(at.clearmaxL.data) : '';
+        var qtdTxt2 = at.clearmaxL.qtd ? at.clearmaxL.qtd+' g — ' : '';
+        clLSt.querySelector('.fp-aplic-status-txt').textContent='Clearmax L '+qtdTxt2+dataFmtL2+(at.clearmaxL.hora||'—');
+        clLSt.querySelector('.fp-aplic-quem').textContent=at.clearmaxL.quem?' · '+at.clearmaxL.quem:'';
+      }
+      var clLDataEl = document.getElementById('fp-clearmax-l-data');
+      var clLHoraEl = document.getElementById('fp-clearmax-l-hora');
+      var clLQtdEl  = document.getElementById('fp-clearmax-l-qtd');
+      if(clLDataEl && (at.clearmaxL.dataInp||at.clearmaxL.data)) clLDataEl.value=at.clearmaxL.dataInp||at.clearmaxL.data||'';
+      if(clLHoraEl && (at.clearmaxL.horaInp||at.clearmaxL.hora)) clLHoraEl.value=at.clearmaxL.horaInp||at.clearmaxL.hora||'';
+      if(clLQtdEl  && (at.clearmaxL.qtdInp||at.clearmaxL.qtd))   clLQtdEl.value=at.clearmaxL.qtdInp||at.clearmaxL.qtd||'';
     }
     if(at.lev && at.lev.confirmado){
       var levB = document.getElementById('fp-bloco-lev');
