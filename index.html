@@ -3268,7 +3268,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.7";
+var VERSAO = "3.7.8";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10314,13 +10314,6 @@ function fp_simSave(btn){
       var ok   = !!(document.getElementById('fp-aprovacao-status')||{}).classList && (document.getElementById('fp-aprovacao-status')||{}).classList.contains('ok');
       return { dt: dt, resp: resp, obs: obs, aprovado: ok };
     })(),
-    conclusao: {
-      desvios:  (document.getElementById('fp-conclusao-desvios')||{}).value||"",
-      sensorial:(document.getElementById('fp-conclusao-sensorial')||{}).value||"",
-      nota:     (document.getElementById('fp-conclusao-nota')||{}).value||"",
-      mestre:   (document.getElementById('fp-conclusao-mestre')||{}).value||"",
-      dt:       (document.getElementById('fp-conclusao-dt')||{}).value||"",
-    },
     meta: { status: "em andamento" },
     audit: fp_audit
   };
@@ -10769,37 +10762,6 @@ function abrirFichaLote(tq){
     '</div>'+
   '</div>'+
 
-  /* Envasamentos */
-  '<div class="fp-sec">'+
-    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
-      '<div class="fp-sec-head-left"><span class="fp-sec-icon">📦</span><span class="fp-sec-title azul">Envasamentos Realizados</span></div>'+
-      '<span class="fp-sec-toggle">▾</span></div>'+
-    '<div class="fp-sec-body">'+
-      '<div class="fp-tbl-wrap">'+
-        '<table class="fp-data">'+
-          '<thead><tr><th>#</th><th>Data</th><th>Formato</th><th>Qtd</th><th>Litros</th></tr></thead>'+
-          '<tbody>'+envasesFileiras+'</tbody>'+
-        '</table>'+
-      '</div>'+
-    '</div>'+
-  '</div>'+
-
-  /* Conclusão e Avaliação */
-  '<div class="fp-sec">'+
-    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
-      '<div class="fp-sec-head-left"><span class="fp-sec-icon">📝</span><span class="fp-sec-title">Conclusão e Avaliação</span></div>'+
-      '<span class="fp-sec-toggle">▾</span></div>'+
-    '<div class="fp-sec-body">'+
-      '<div class="fp-fg-grid wide">'+
-        '<div class="fp-field full"><label>Desvios do processo e ações corretivas</label><textarea id="fp-conclusao-desvios" class="fp-obs-field" placeholder="Desvios, ajustes, pontos de melhoria…"></textarea></div>'+
-        '<div class="fp-field full"><label>Avaliação sensorial (ao envasar)</label><textarea id="fp-conclusao-sensorial" class="fp-obs-field" placeholder="Aroma, cor, limpidez, sabor, carbonatação…"></textarea></div>'+
-        '<div class="fp-field"><label>Nota final (0–10)</label><input id="fp-conclusao-nota" type="number" min="0" max="10" placeholder="—"></div>'+
-        '<div class="fp-field"><label>Mestre Cervejeiro</label><input id="fp-conclusao-mestre" placeholder="Nome"></div>'+
-        '<div class="fp-field"><label>Data de conclusão</label><input id="fp-conclusao-dt" type="date"></div>'+
-      '</div>'+
-    '</div>'+
-  '</div>'+
-
   /* Aprovação Final */
   '<div class="fp-sec">'+
     '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
@@ -11002,15 +10964,6 @@ function fp_preencherFicha(ficha){
         status.className = 'fp-aprovacao-status ok';
       }
     }
-  }
-  // conclusao
-  if(ficha.conclusao){
-    var c=ficha.conclusao;
-    if(c.desvios  !== undefined){ var el=document.getElementById('fp-conclusao-desvios');  if(el) el.value=c.desvios; }
-    if(c.sensorial!== undefined){ var el=document.getElementById('fp-conclusao-sensorial');if(el) el.value=c.sensorial; }
-    if(c.nota     !== undefined){ var el=document.getElementById('fp-conclusao-nota');     if(el) el.value=c.nota; }
-    if(c.mestre   !== undefined){ var el=document.getElementById('fp-conclusao-mestre');   if(el) el.value=c.mestre; }
-    if(c.dt       !== undefined){ var el=document.getElementById('fp-conclusao-dt');       if(el) el.value=c.dt; }
   }
   // restaura FG e ABV do cabeçalho (se salvos) e recalcula
   if(ficha.cabecalho){
