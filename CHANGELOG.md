@@ -44,6 +44,28 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.7.0 — 20/10/2026
+
+**Sistema de auditoria de lançamentos na Ficha de Produção**
+
+Cada campo preenchível na ficha agora registra quem fez o lançamento e quando.
+As informações ficam disponíveis inline e em painéis de histórico por seção.
+
+- Todo campo `input`, `select` e `textarea` da ficha recebe uma chave de auditoria
+  única ao ser criado
+- Ao confirmar uma alteração (ao sair do campo), o sistema registra o usuário
+  logado, o horário (ISO 8601) e o valor informado
+- Um *badge* compacto aparece abaixo de cada campo com o último editor e o horário
+  relativo ("há 2 min", "ontem", etc.)
+- Cada seção e cada batelada ganha um botão **Histórico de lançamentos** que abre
+  um painel com todos os registros daquela área, em ordem cronológica decrescente
+- As chaves de auditoria são salvas junto com os valores (`{vals, keys}` por linha)
+  para sobreviver a ciclos de salvar e restaurar fichas
+- Retrocompatível: fichas antigas no formato de array simples continuam abrindo
+  normalmente
+
+---
+
 ## 1.7.4 — 28/07/2026
 
 **Correção: procedimento não abria no celular (mesmo na versão correta)**
