@@ -1197,6 +1197,15 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
 .fp-add-bat-btn:hover{border-color:var(--fp-marrom);color:var(--fp-marrom)}
 /* roles */
 .fp-role-badge{display:inline-flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+/* audit badges */
+.fp-audit-badge{display:inline-block;font-size:10px;color:var(--fp-fg3);background:var(--fp-bg3);border:1px solid var(--fp-border);border-radius:10px;padding:1px 6px;margin-left:4px;white-space:nowrap;font-family:'Barlow',sans-serif;vertical-align:middle;cursor:default;transition:opacity .15s}
+table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padding:1px 4px}
+.fp-field .fp-audit-badge{margin-top:2px;font-size:10px}
+/* audit history */
+.fp-audit-hist-wrap{margin-top:10px;border-top:1px dashed var(--fp-border);padding-top:8px}
+.fp-audit-hist-btn{background:none;border:1px dashed var(--fp-border);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--fp-fg3);font-size:11px;font-family:'Barlow',sans-serif;transition:all .15s}
+.fp-audit-hist-btn:hover{border-color:var(--fp-marrom);color:var(--fp-marrom)}
+.fp-audit-log-panel{margin-top:8px;border:1px solid var(--fp-border);border-radius:7px;overflow:hidden;background:var(--fp-bg)}
 .fp-role-badge.g{background:rgba(201,151,0,.18);color:var(--fp-dourado)}
 .fp-role-badge.e{background:rgba(2,95,29,.15);color:var(--fp-verde)}
 .fp-lock-icon{font-size:11px;margin-left:3px;opacity:.55}
@@ -9371,7 +9380,10 @@ function fp_addRow(tblId){
   for(var i=0;i<cols-1;i++){
     var td=document.createElement('td');
     var inp=document.createElement('input');
-    inp.value=vals[i]||''; td.appendChild(inp); tr.appendChild(td);
+    inp.value=vals[i]||'';
+    // atribui audit-key imediatamente
+    fp_auditKey(inp);
+    td.appendChild(inp); tr.appendChild(td);
   }
   var tdDel=document.createElement('td');
   tdDel.innerHTML='<button class="fp-del-btn" onclick="fp_delRow(this)">✕</button>';
@@ -9546,6 +9558,15 @@ function fp_addBatelada(){
   /* — ativa cálculo automático em cada linha de etapa — */
   card.querySelectorAll('.fp-etapa-row:not(.header)').forEach(fp_bindEtapaCalc);
 
+  /* — atribui audit-keys aos novos campos — */
+  card.querySelectorAll('input,select,textarea').forEach(fp_auditKey);
+
+  /* — injeta botão de histórico no corpo da batelada — */
+  var batBody = card.querySelector('.fp-bat-body');
+  if(batBody && !batBody.querySelector('.fp-audit-hist-wrap')){
+    batBody.appendChild(fp_criarBotaoHistorico());
+  }
+
   fp_atualizarNumBateladas();
   fp_markDirty();
 }
@@ -9574,6 +9595,214 @@ function fp_markDirty(){
   var s=document.getElementById('fp-saveStatus');
   if(s){s.textContent='● Alterações não salvas';s.className='fp-unsaved dirty';}
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   SISTEMA DE AUDITORIA DE LANÇAMENTOS
+   Cada edição fica registrada com usuário + timestamp.
+   ══════════════════════════════════════════════════════════════════════ */
+var fp_audit = {};          // { [auditKey]: [{por, em, val}] }
+var fp_auditCounter = 0;    // contador para gerar chaves únicas
+
+/* Gera ou retorna a audit-key de um elemento */
+function fp_auditKey(el){
+  if(!el.dataset.auditKey){
+    el.dataset.auditKey = 'ak'+(++fp_auditCounter);
+  }
+  return el.dataset.auditKey;
+}
+
+/* Retorna o contexto legível do campo: nome da seção + label/placeholder */
+function fp_auditContexto(el){
+  // tenta obter label da coluna (th do cabeçalho)
+  var td = el.closest('td');
+  if(td){
+    var tr = td.closest('tr');
+    var tbl = td.closest('table');
+    var idx = Array.from(td.parentNode.children).indexOf(td);
+    if(tbl){
+      var th = tbl.querySelectorAll('thead th')[idx];
+      if(th) return (th.textContent||'').trim().slice(0,30);
+    }
+    // log rows (fp-log-cell / fp-mlog-row)
+    var cell = el.closest('.fp-log-cell,.fp-enz-cell');
+    if(cell){
+      var idx2 = Array.from(cell.parentNode.children).indexOf(cell);
+      return 'col '+(idx2+1);
+    }
+  }
+  // tenta fp-field > label
+  var field = el.closest('.fp-field');
+  if(field){
+    var lbl = field.querySelector('label');
+    if(lbl) return (lbl.textContent||'').trim().slice(0,30);
+  }
+  // input de etapa
+  var etCell = el.closest('.fp-etapa-cell');
+  if(etCell){
+    var etRow = etCell.closest('.fp-etapa-row');
+    var nomeTd = etRow && etRow.querySelector('.fp-etapa-nome');
+    var idx3 = etCell ? Array.from(etCell.parentNode.children).indexOf(etCell) : -1;
+    return (nomeTd?nomeTd.textContent.trim().slice(0,20):'etapa')+' c'+(idx3+1);
+  }
+  // vol-row
+  if(el.closest('.fp-vol-row')) return el.placeholder||'vol';
+  return el.placeholder||el.name||'campo';
+}
+
+/* Registra um lançamento de auditoria */
+function fp_registrarLancamento(el){
+  var user = (sessao && sessao.login) ? sessao.login : '?';
+  var key  = fp_auditKey(el);
+  var val  = el.value;
+  var entry = { por: user, em: new Date().toISOString(), val: val };
+  if(!fp_audit[key]) fp_audit[key] = [];
+  fp_audit[key].push(entry);
+  fp_atualizarBadge(el, entry);
+}
+
+/* Atualiza (ou cria) o badge inline próximo ao campo */
+function fp_atualizarBadge(el, entry){
+  var key = el.dataset.auditKey;
+  if(!key) return;
+  var badgeId = 'abadge-'+key;
+  var badge = document.getElementById(badgeId);
+
+  var hora = new Date(entry.em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  var txt  = '👤 '+entry.por+' '+hora;
+
+  if(!badge){
+    badge = document.createElement('span');
+    badge.id = badgeId;
+    badge.className = 'fp-audit-badge';
+    // insere após o elemento
+    var parent = el.parentNode;
+    // para td/input-inline: anexa na própria td
+    if(parent && parent.tagName==='TD'){
+      parent.appendChild(badge);
+    } else if(parent){
+      // para .fp-field: adiciona abaixo do input
+      var existing = parent.querySelector('.fp-audit-badge');
+      if(existing) existing.remove();
+      parent.appendChild(badge);
+    }
+  }
+  badge.textContent = txt;
+  badge.title = 'Último lançamento: '+entry.por+' em '+new Date(entry.em).toLocaleString('pt-BR');
+}
+
+/* Renderiza badges a partir do audit restaurado */
+function fp_renderizarBadges(){
+  var app = document.getElementById('fp-app');
+  if(!app) return;
+  app.querySelectorAll('[data-audit-key]').forEach(function(el){
+    var key = el.dataset.auditKey;
+    var hist = fp_audit[key];
+    if(hist && hist.length){
+      fp_atualizarBadge(el, hist[hist.length-1]);
+    }
+  });
+}
+
+/* ── Log expandível por seção ────────────────────────────────────────── */
+
+/* Coleta todas as entradas de audit dos campos dentro de um container */
+function fp_auditDaSecao(container){
+  var entries = [];
+  container.querySelectorAll('[data-audit-key]').forEach(function(el){
+    var key = el.dataset.auditKey;
+    var hist = fp_audit[key];
+    if(!hist || !hist.length) return;
+    var ctx = fp_auditContexto(el);
+    hist.forEach(function(h){
+      entries.push({ campo: ctx, por: h.por, em: h.em, val: h.val });
+    });
+  });
+  // ordena por data descendente
+  entries.sort(function(a,b){ return b.em.localeCompare(a.em); });
+  return entries;
+}
+
+/* Abre/fecha o painel de log de uma seção */
+function fp_toggleLog(btn){
+  var panel = btn.nextElementSibling;
+  if(!panel || !panel.classList.contains('fp-audit-log-panel')) return;
+  var aberto = panel.style.display !== 'none';
+  if(aberto){
+    panel.style.display = 'none';
+    btn.textContent = '📋 Histórico';
+    return;
+  }
+  // monta conteúdo
+  var sec = btn.closest('.fp-sec-body, .fp-bat-body, .fp-bat-card');
+  if(!sec) sec = btn.parentNode;
+  var entries = fp_auditDaSecao(sec);
+  if(!entries.length){
+    panel.innerHTML = '<p style="color:var(--fp-fg3);font-size:12px;font-style:italic;padding:8px 0">Nenhum lançamento registrado ainda.</p>';
+  } else {
+    panel.innerHTML =
+      '<table style="width:100%;border-collapse:collapse;font-size:11px">'+
+      '<thead><tr>'+
+        '<th style="text-align:left;padding:4px 6px;background:var(--fp-bg3);font-family:\'Barlow Condensed\',sans-serif;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--fp-fg3)">Campo</th>'+
+        '<th style="text-align:left;padding:4px 6px;background:var(--fp-bg3);font-family:\'Barlow Condensed\',sans-serif;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--fp-fg3)">Valor</th>'+
+        '<th style="text-align:left;padding:4px 6px;background:var(--fp-bg3);font-family:\'Barlow Condensed\',sans-serif;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--fp-fg3)">Por</th>'+
+        '<th style="text-align:left;padding:4px 6px;background:var(--fp-bg3);font-family:\'Barlow Condensed\',sans-serif;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--fp-fg3)">Em</th>'+
+      '</tr></thead><tbody>'+
+      entries.map(function(e){
+        var dt = new Date(e.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+        return '<tr>'+
+          '<td style="padding:4px 6px;border-bottom:1px solid var(--fp-border);color:var(--fp-fg3)">'+esc(e.campo)+'</td>'+
+          '<td style="padding:4px 6px;border-bottom:1px solid var(--fp-border);font-variant-numeric:tabular-nums;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(e.val)+'">'+esc(e.val||'—')+'</td>'+
+          '<td style="padding:4px 6px;border-bottom:1px solid var(--fp-border);font-weight:600;color:var(--fp-marrom)">'+esc(e.por)+'</td>'+
+          '<td style="padding:4px 6px;border-bottom:1px solid var(--fp-border);font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--fp-fg2)">'+esc(dt)+'</td>'+
+        '</tr>';
+      }).join('')+
+      '</tbody></table>';
+  }
+  panel.style.display = 'block';
+  btn.textContent = '▲ Fechar histórico';
+}
+
+/* Cria o botão + painel de histórico para uma seção */
+function fp_criarBotaoHistorico(){
+  var wrap = document.createElement('div');
+  wrap.className = 'fp-audit-hist-wrap';
+  var btn = document.createElement('button');
+  btn.className = 'fp-audit-hist-btn';
+  btn.textContent = '📋 Histórico';
+  btn.type = 'button';
+  btn.onclick = function(){ fp_toggleLog(this); };
+  var panel = document.createElement('div');
+  panel.className = 'fp-audit-log-panel';
+  panel.style.display = 'none';
+  wrap.appendChild(btn);
+  wrap.appendChild(panel);
+  return wrap;
+}
+
+/* Injeta botões de histórico em todas as seções da ficha */
+function fp_injetarBotoesHistorico(){
+  var app = document.getElementById('fp-app');
+  if(!app) return;
+  // seções normais (.fp-sec-body)
+  app.querySelectorAll('.fp-sec-body').forEach(function(body){
+    if(body.querySelector('.fp-audit-hist-wrap')) return; // já tem
+    body.appendChild(fp_criarBotaoHistorico());
+  });
+  // corpos de batelada (.fp-bat-body)
+  app.querySelectorAll('.fp-bat-body').forEach(function(body){
+    if(body.querySelector('.fp-audit-hist-wrap')) return;
+    body.appendChild(fp_criarBotaoHistorico());
+  });
+}
+
+/* Atribui audit-keys a todos os campos existentes */
+function fp_atribuirKeys(){
+  var app = document.getElementById('fp-app');
+  if(!app) return;
+  app.querySelectorAll('input,select,textarea').forEach(function(el){
+    if(!el.dataset.auditKey) fp_auditKey(el);
+  });
+}
 function fp_simSave(btn){
   // coleta os dados da ficha atual para enviar ao servidor
   var app = document.getElementById('fp-app');
@@ -9584,15 +9813,25 @@ function fp_simSave(btn){
   if (!loteVal || loteVal === "—") { toast("Não foi possível identificar o lote."); return; }
 
   // serializa todos os inputs/textareas/selects para um objeto plano
+  // cada linha retorna { vals: [...], keys: [...] } para preservar audit
   function coletarTabela(tblId){
     var tbl = document.getElementById(tblId); if(!tbl) return [];
     return Array.from(tbl.querySelectorAll('tbody tr')).map(function(tr){
-      return Array.from(tr.querySelectorAll('input,select,textarea')).map(function(el){ return el.value; });
+      var vals=[]; var keys=[];
+      tr.querySelectorAll('input,select,textarea').forEach(function(el){
+        vals.push(el.value);
+        keys.push(el.dataset.auditKey||null);
+      });
+      return { vals: vals, keys: keys };
     });
   }
   function coletarGrid(seletor){
     var els = app.querySelectorAll(seletor);
     return Array.from(els).map(function(el){ return el.value; });
+  }
+  function coletarGridKeys(seletor){
+    var els = app.querySelectorAll(seletor);
+    return Array.from(els).map(function(el){ return el.dataset.auditKey||null; });
   }
 
   var dados = {
@@ -9612,13 +9851,24 @@ function fp_simSave(btn){
       return Array.from(list.querySelectorAll('.fp-bat-card')).map(function(card){
         // etapas: cada linha não-header
         var etapas = Array.from(card.querySelectorAll('.fp-etapa-row:not(.header)')).map(function(row){
-          return Array.from(row.querySelectorAll('input,textarea')).map(function(el){ return el.value; });
+          var vals=[]; var keys=[];
+          row.querySelectorAll('input,textarea').forEach(function(el){
+            vals.push(el.value);
+            keys.push(el.dataset.auditKey||null);
+          });
+          return { vals: vals, keys: keys };
         });
         // volumes: fp-vol-row inputs
-        var volumes = Array.from(card.querySelectorAll('.fp-vol-row input')).map(function(el){ return el.value; });
+        var volVals=[]; var volKeys=[];
+        card.querySelectorAll('.fp-vol-row input').forEach(function(el){
+          volVals.push(el.value);
+          volKeys.push(el.dataset.auditKey||null);
+        });
         // obs
-        var obs = (card.querySelector('.fp-obs-field')||{}).value||'';
-        return { etapas: etapas, volumes: volumes, obs: obs };
+        var obsEl = card.querySelector('.fp-obs-field');
+        var obs = obsEl ? obsEl.value : '';
+        var obsKey = obsEl ? (obsEl.dataset.auditKey||null) : null;
+        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey };
       });
     })(),
     sais:        coletarTabela('fp-tbl-sais'),
@@ -9638,7 +9888,8 @@ function fp_simSave(btn){
       volume:     (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(5) input')||{}).value||"",
       co2:        (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(6) input')||{}).value||"",
     },
-    meta: { status: "em andamento" }
+    meta: { status: "em andamento" },
+    audit: fp_audit
   };
 
   btn.textContent='⏳ Salvando…'; btn.disabled=true;
@@ -10127,6 +10378,19 @@ function abrirFichaLote(tq){
     if(e.target.matches('input,textarea,select')) fp_markDirty();
   });
 
+  /* — escuta CHANGE (confirmação de edição) para registrar lançamentos de auditoria — */
+  document.getElementById('fp-app').addEventListener('change', function(e){
+    if(e.target.matches('input,textarea,select')){
+      fp_auditKey(e.target); // garante que tem key antes de registrar
+      fp_registrarLancamento(e.target);
+    }
+  });
+
+  /* — inicia sistema de auditoria — */
+  fp_audit = {};
+  fp_atribuirKeys();
+  fp_injetarBotoesHistorico();
+
   $("modalFicha").hidden = false;
 
   /* — popula select de receitas na ficha — */
@@ -10144,7 +10408,7 @@ function abrirFichaLote(tq){
 }
 
 function fp_preencherFicha(ficha){
-  // preenche tabelas simples
+  // preenche tabelas simples — suporta formato novo {vals,keys} e retrocompatível com arrays simples
   function preencherTabela(tblId, linhas){
     if(!linhas || !linhas.length) return;
     var tbl=document.getElementById(tblId); if(!tbl) return;
@@ -10152,15 +10416,20 @@ function fp_preencherFicha(ficha){
     // limpa tudo (inclusive linhas template do HTML) para evitar sobreposição
     tbody.innerHTML='';
     // adiciona exatamente as linhas salvas
-    linhas.forEach(function(cols){
+    linhas.forEach(function(linha){
       fp_addRow(tblId);
       var tr=tbody.querySelector('tr:last-child'); if(!tr) return;
+      // suporte a ambos formatos: novo {vals,keys} ou antigo array direto
+      var cols = Array.isArray(linha) ? linha : (linha.vals || []);
+      var keys = Array.isArray(linha) ? null : (linha.keys || null);
       tr.querySelectorAll('input,select,textarea').forEach(function(el,j){
         if(cols[j] !== undefined) el.value=cols[j];
+        // restaura audit-key para relinkar histórico
+        if(keys && keys[j]) el.dataset.auditKey = keys[j];
       });
     });
   }
-  // restaura bateladas
+  // restaura bateladas — suporta formato novo (etapas com {vals,keys}) e retrocompatível (arrays)
   if(ficha.bateladas && ficha.bateladas.length){
     var batList = document.getElementById('fp-bat-list');
     if(batList){
@@ -10172,24 +10441,38 @@ function fp_preencherFicha(ficha){
         // preenche etapas
         if(bat.etapas && bat.etapas.length){
           var rows = card.querySelectorAll('.fp-etapa-row:not(.header)');
-          bat.etapas.forEach(function(vals, ri){
+          bat.etapas.forEach(function(etapa, ri){
             var row = rows[ri]; if(!row) return;
             var inputs = row.querySelectorAll('input,textarea');
+            // suporte a ambos formatos
+            var vals = Array.isArray(etapa) ? etapa : (etapa.vals || []);
+            var keys = Array.isArray(etapa) ? null : (etapa.keys || null);
             vals.forEach(function(v, ci){
               var el = inputs[ci]; if(!el) return;
-              // duracao auto é readonly — só preenche se não for auto
               if(!el.classList.contains('fp-dur-auto')) el.value = v;
-              else if(v) el.value = v; // aceita valor salvo mesmo readonly
+              else if(v) el.value = v;
+              if(keys && keys[ci]) el.dataset.auditKey = keys[ci];
             });
           });
         }
         // preenche volumes
         if(bat.volumes){
           var vEls = card.querySelectorAll('.fp-vol-row input');
-          bat.volumes.forEach(function(v, i){ if(vEls[i]) vEls[i].value = v; });
+          var volVals = bat.volumes;
+          var volKeys = bat.volKeys || null;
+          volVals.forEach(function(v, i){
+            if(vEls[i]){
+              vEls[i].value = v;
+              if(volKeys && volKeys[i]) vEls[i].dataset.auditKey = volKeys[i];
+            }
+          });
         }
         // obs
-        if(bat.obs){ var obsEl = card.querySelector('.fp-obs-field'); if(obsEl) obsEl.value = bat.obs; }
+        var obsEl = card.querySelector('.fp-obs-field');
+        if(obsEl){
+          if(bat.obs) obsEl.value = bat.obs;
+          if(bat.obsKey) obsEl.dataset.auditKey = bat.obsKey;
+        }
       });
       fp_atualizarNumBateladas();
     }
@@ -10236,7 +10519,39 @@ function fp_preencherFicha(ficha){
     var hora=new Date(ficha.meta.salvoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     if(s){s.textContent='✓ Última gravação: '+hora+' por '+(ficha.meta.salvoPor||'—');s.className='fp-unsaved';}
   }
+  // restaura audit e revincula badges
+  fp_audit = (ficha.audit && typeof ficha.audit === 'object') ? ficha.audit : {};
+  // re-atribui keys: os campos foram recriados, então precisamos religar as keys
+  // estratégia: campos com valores salvos recebem a mesma chave do audit pelo índice posicional
+  fp_religarAudit();
+  fp_injetarBotoesHistorico();
   fp_dirty=false;
+}
+
+/* ── Relier audit keys após restaurar ficha ─────────────────────────
+   Como os campos são recriados no DOM (tbody.innerHTML=''), as audit-keys
+   do objeto fp_audit precisam ser revinculadas aos novos elementos DOM.
+   Fazemos isso por índice posicional: o i-ésimo campo de uma seção
+   recebe a mesma key que tinha na última gravação.
+   Para simplificar, atribuímos novas keys e copiamos as entradas
+   de audit que existiam, usando um mapeamento por índice de seção.
+   Abordagem alternativa mais robusta: salvar as keys como parte da
+   estrutura de dados (ex: ficha.auditKeys = {tblId: [key, key, ...]}).
+   Aqui usamos a abordagem mais simples: ao restaurar, não há need
+   de relinkar — os badges são recriados do fp_audit pelos elementos
+   que têm data-audit-key já atribuída. Para novos campos (ainda sem
+   key), atribuímos keys novas e os badges aparecem quando há edição.
+   ──────────────────────────────────────────────────────────────────── */
+function fp_religarAudit(){
+  var app = document.getElementById('fp-app');
+  if(!app || !Object.keys(fp_audit).length) {
+    // sem audit salvo: apenas atribui keys aos campos existentes
+    fp_atribuirKeys();
+    return;
+  }
+  // Com audit salvo: atribui keys e renderiza badges
+  fp_atribuirKeys();
+  fp_renderizarBadges();
 }
 
 /* ==================================================================
@@ -10680,6 +10995,7 @@ window.rec_deletar              = rec_deletar;
 window.rec_addRow               = rec_addRow;
 window.fp_onSelecionarReceita   = fp_onSelecionarReceita;
 window.fp_carregarReceitaSelecionada = fp_carregarReceitaSelecionada;
+window.fp_toggleLog            = fp_toggleLog;
 
 /* — expõe funções fp_ no window para que onclick inline as encontre — */
 window.fp_toggleSec        = fp_toggleSec;
