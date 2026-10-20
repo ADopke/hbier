@@ -1171,10 +1171,25 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
 .fp-log-cell:last-child{border-right:none}
 .fp-log-cell input{background:transparent;border:none;font-family:'Barlow',sans-serif;font-size:12px;color:var(--fp-fg);width:100%;font-variant-numeric:tabular-nums}
 .fp-log-cell input:focus{outline:1px solid var(--fp-marrom);border-radius:3px;padding:1px 3px}
-/* maturação log (8 cols: datetime, extrato, temp, pressão, co2, pH, obs, del) */
-.fp-mlog-row{display:grid;grid-template-columns:120px 70px 70px 70px 70px 70px 1fr 28px;gap:0;border-bottom:1px solid var(--fp-border);align-items:center}
+/* base log row */
+.fp-mlog-row{display:grid;grid-template-columns:150px 70px 80px 80px 60px 1fr 28px;gap:0;border-bottom:1px solid var(--fp-border);align-items:center}
 /* fermentação log (7 cols: datetime, SG, temp_real, kgf, pH, obs, del) */
 .fp-mlog-row.ferm{grid-template-columns:150px 70px 80px 80px 60px 1fr 28px}
+/* maturação log (9 cols: datetime, SG, temp, kgf, pH, co2, clarif, obs, del) */
+.fp-mlog-row.matur{grid-template-columns:150px 70px 80px 80px 60px 60px 90px 1fr 28px}
+/* stats banner acima dos logs */
+.fp-log-stats{display:flex;gap:16px;flex-wrap:wrap;background:var(--fp-bg3);border-radius:8px;padding:8px 14px;margin-bottom:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px}
+.fp-log-stat{display:flex;flex-direction:column;align-items:center;gap:1px}
+.fp-log-stat-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fp-fg3)}
+.fp-log-stat-val{font-size:18px;font-weight:700;color:var(--fp-dourado);font-variant-numeric:tabular-nums}
+.fp-log-stat-val.ok{color:var(--fp-verde)}
+/* aprovação final */
+.fp-aprovacao-box{background:var(--fp-bg3);border:2px solid var(--fp-border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.fp-aprovacao-box.aprovado{border-color:var(--fp-verde);background:rgba(34,197,94,.06)}
+.fp-aprovacao-status{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:20px;display:inline-block;background:var(--fp-bg3);color:var(--fp-fg3);border:1.5px solid var(--fp-border)}
+.fp-aprovacao-status.ok{background:rgba(34,197,94,.12);color:var(--fp-verde);border-color:var(--fp-verde)}
+.fp-btn-aprovar{background:var(--fp-verde,#22c55e);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.06em;cursor:pointer}
+.fp-btn-aprovar:hover{opacity:.88}
 .fp-mlog-row:last-child{border-bottom:none}
 .fp-mlog-row.header{background:var(--fp-bg3)}
 .fp-mlog-row.header .fp-log-cell{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3)}
@@ -3245,7 +3260,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.2";
+var VERSAO = "3.7.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9440,21 +9455,106 @@ function fp_addFermRow(){
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="pH"></div>'+
     '<div class="fp-log-cell"><input placeholder="obs…"></div>'+
     '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
-  c.appendChild(row); fp_markDirty();
+  c.appendChild(row);
+  // atualiza stats ao adicionar linha
+  row.querySelectorAll('input').forEach(function(inp){
+    inp.addEventListener('input', fp_calcFermStats);
+  });
+  fp_markDirty(); fp_calcFermStats();
 }
 function fp_addMaturRow(){
   var now=new Date(), local=now.toISOString().slice(0,16);
   var c=document.getElementById('fp-matur-log');
-  var row=document.createElement('div'); row.className='fp-mlog-row';
+  var row=document.createElement('div'); row.className='fp-mlog-row matur';
   row.innerHTML='<div class="fp-log-cell"><input type="datetime-local" value="'+local+'"></div>'+
-    '<div class="fp-log-cell"><input placeholder="°P"></div>'+
-    '<div class="fp-log-cell"><input placeholder="°C"></div>'+
-    '<div class="fp-log-cell"><input placeholder="bar"></div>'+
-    '<div class="fp-log-cell"><input placeholder="vol"></div>'+
-    '<div class="fp-log-cell"><input placeholder="pH"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.001" placeholder="1.010"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.01" placeholder="kgf/cm²"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="pH"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="vol"></div>'+
+    '<div class="fp-log-cell"><input placeholder="produto/dose"></div>'+
     '<div class="fp-log-cell"><input placeholder="obs…"></div>'+
     '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
   c.appendChild(row); fp_markDirty();
+}
+/* Calcula OG média das bateladas e ABV estimado pela última leitura de SG */
+function fp_calcFermStats(){
+  // OG = média dos campos "OG real (no tanque)" de cada batelada (resumo)
+  // Estratégia: pegar todos os inputs dentro de .fp-bat-card com label "OG real"
+  var ogVals = [];
+  var batList = document.getElementById('fp-bat-list');
+  if(batList){
+    batList.querySelectorAll('.fp-bat-card').forEach(function(card){
+      // O campo OG real fica nos resumo inputs do card — label "OG real (no tanque)"
+      card.querySelectorAll('.fp-field').forEach(function(f){
+        var lbl = f.querySelector('label');
+        if(lbl && /OG real/i.test(lbl.textContent)){
+          var inp = f.querySelector('input');
+          var v = inp ? parseFloat((inp.value||'').replace(',','.')) : NaN;
+          if(!isNaN(v) && v > 0.9 && v < 1.2) ogVals.push(v);
+        }
+      });
+    });
+  }
+  var ogEl = document.getElementById('fp-stat-og');
+  var sgEl = document.getElementById('fp-stat-sg');
+  var abvEl = document.getElementById('fp-stat-abv');
+  if(!ogEl) return;
+
+  var ogMedia = NaN;
+  if(ogVals.length){
+    ogMedia = ogVals.reduce(function(a,b){return a+b;},0) / ogVals.length;
+    ogEl.textContent = ogMedia.toFixed(3);
+  } else {
+    ogEl.textContent = '—';
+  }
+
+  // Última SG do log de fermentação (último input SG na última linha)
+  var fermLog = document.getElementById('fp-ferm-log');
+  var lastSG = NaN;
+  if(fermLog){
+    var rows = fermLog.querySelectorAll('.fp-mlog-row:not(.header)');
+    for(var i = rows.length-1; i >= 0; i--){
+      var inputs = rows[i].querySelectorAll('input');
+      // col 1 = SG (index 1, após datetime)
+      var v = inputs[1] ? parseFloat((inputs[1].value||'').replace(',','.')) : NaN;
+      if(!isNaN(v) && v > 0.9 && v < 1.2){ lastSG = v; break; }
+    }
+  }
+  if(!isNaN(lastSG)){
+    sgEl.textContent = lastSG.toFixed(3);
+    if(!isNaN(ogMedia)){
+      var abv = (ogMedia - lastSG) * 131.25;
+      abvEl.textContent = abv.toFixed(1) + '%';
+    } else {
+      abvEl.textContent = '—';
+    }
+  } else {
+    sgEl.textContent = '—';
+    abvEl.textContent = '—';
+  }
+}
+/* Registra aprovação final do lote */
+function fp_aprovarLote(){
+  var now = new Date();
+  var local = now.toISOString().slice(0,16);
+  var dtEl   = document.getElementById('fp-aprov-dt');
+  var respEl = document.getElementById('fp-aprov-resp');
+  // preenche data/hora atual se vazio
+  if(dtEl && !dtEl.value) dtEl.value = local;
+  // preenche responsável com login da sessão se vazio
+  if(respEl && !respEl.value && sessao && sessao.login) respEl.value = sessao.login;
+  // marca visualmente
+  var box    = document.getElementById('fp-aprovacao-box');
+  var status = document.getElementById('fp-aprovacao-status');
+  if(box) box.classList.add('aprovado');
+  if(status){
+    var resp = respEl ? respEl.value : '?';
+    var hora = new Date(dtEl ? dtEl.value : local).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    status.textContent = '✅ Aprovado — '+resp+' em '+hora;
+    status.className = 'fp-aprovacao-status ok';
+  }
+  fp_markDirty();
 }
 function fp_addEnzRow(){
   var c=document.getElementById('fp-enz-extra');
@@ -10130,6 +10230,13 @@ function fp_simSave(btn){
     trub:        coletarTabela('fp-tbl-trub'),
     fermLog:     coletarLogDivs('fp-ferm-log'),
     maturLog:    coletarLogDivs('fp-matur-log'),
+    aprovacao: (function(){
+      var dt   = (document.getElementById('fp-aprov-dt')||{}).value   || '';
+      var resp = (document.getElementById('fp-aprov-resp')||{}).value || '';
+      var obs  = (document.getElementById('fp-aprov-obs')||{}).value  || '';
+      var ok   = !!(document.getElementById('fp-aprovacao-status')||{}).classList && (document.getElementById('fp-aprovacao-status')||{}).classList.contains('ok');
+      return { dt: dt, resp: resp, obs: obs, aprovado: ok };
+    })(),
     resultado: {
       fg:         (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(1) input')||{}).value||"",
       abv:        (app.querySelector('#fp-panel-resultado .fp-result-card:nth-child(2) input')||{}).value||"",
@@ -10507,6 +10614,11 @@ function abrirFichaLote(tq){
       '<div class="fp-sec-head-left"><span class="fp-sec-icon">📈</span><span class="fp-sec-title verde">Acompanhamento — Dia a Dia</span><span class="fp-role-badge e">👷 Executor</span></div>'+
       '<span class="fp-sec-toggle">▾</span></div>'+
     '<div class="fp-sec-body">'+
+      '<div class="fp-log-stats" id="fp-ferm-stats">'+
+        '<div class="fp-log-stat"><span class="fp-log-stat-label">OG (média bateladas)</span><span class="fp-log-stat-val" id="fp-stat-og">—</span></div>'+
+        '<div class="fp-log-stat"><span class="fp-log-stat-label">Última SG</span><span class="fp-log-stat-val" id="fp-stat-sg">—</span></div>'+
+        '<div class="fp-log-stat"><span class="fp-log-stat-label">ABV estimado</span><span class="fp-log-stat-val ok" id="fp-stat-abv">—</span></div>'+
+      '</div>'+
       '<div class="fp-log-table"><div class="fp-log-scroll">'+
         '<div class="fp-mlog-row ferm header">'+
           '<div class="fp-log-cell">Data / Hora</div>'+
@@ -10566,13 +10678,14 @@ function abrirFichaLote(tq){
       '<span class="fp-sec-toggle">▾</span></div>'+
     '<div class="fp-sec-body">'+
       '<div class="fp-log-table"><div class="fp-log-scroll">'+
-        '<div class="fp-mlog-row header">'+
+        '<div class="fp-mlog-row matur header">'+
           '<div class="fp-log-cell">Data / Hora</div>'+
-          '<div class="fp-log-cell">Extrato °P</div>'+
-          '<div class="fp-log-cell">Temp (°C)</div>'+
-          '<div class="fp-log-cell">Pressão (bar)</div>'+
-          '<div class="fp-log-cell">CO₂ (vol)</div>'+
+          '<div class="fp-log-cell">SG</div>'+
+          '<div class="fp-log-cell">Temp. real (°C)</div>'+
+          '<div class="fp-log-cell">Kgf/cm²</div>'+
           '<div class="fp-log-cell">pH</div>'+
+          '<div class="fp-log-cell">Vol. CO₂</div>'+
+          '<div class="fp-log-cell">Clarificante</div>'+
           '<div class="fp-log-cell">Observação</div>'+
           '<div class="fp-log-cell"></div>'+
         '</div>'+
@@ -10582,16 +10695,24 @@ function abrirFichaLote(tq){
     '</div>'+
   '</div>'+
 
-  /* Degustação Final */
+  /* Aprovação Final */
   '<div class="fp-sec">'+
     '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
-      '<div class="fp-sec-head-left"><span class="fp-sec-icon">👃</span><span class="fp-sec-title">Degustação Final da Fermentação</span><span class="fp-role-badge e">👷 Executor</span></div>'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">✅</span><span class="fp-sec-title verde">Aprovação Final do Lote</span><span class="fp-role-badge g">🛡 Gestor</span></div>'+
       '<span class="fp-sec-toggle">▾</span></div>'+
     '<div class="fp-sec-body">'+
-      '<div class="fp-fg-grid">'+
-        '<div class="fp-field"><label>Data</label><input type="date"></div>'+
-        '<div class="fp-field"><label>Resultado geral</label><select><option value="">— selecionar —</option><option>✅ Normal</option><option>⚠️ Anormal</option></select></div>'+
-        '<div class="fp-field full"><label>Observações sensoriais</label><textarea class="fp-obs-field" placeholder="Aroma, sabor, off-flavors…"></textarea></div>'+
+      '<div class="fp-aprovacao-box" id="fp-aprovacao-box">'+
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+          '<span class="fp-aprovacao-status" id="fp-aprovacao-status">⏳ Aguardando aprovação</span>'+
+        '</div>'+
+        '<div class="fp-vol-row">'+
+          '<div class="fp-field"><label>Data / Hora da aprovação</label><input type="datetime-local" id="fp-aprov-dt"></div>'+
+          '<div class="fp-field"><label>Responsável</label><input id="fp-aprov-resp" placeholder="Login do responsável"></div>'+
+        '</div>'+
+        '<div class="fp-field full"><label>Observação</label><textarea id="fp-aprov-obs" style="width:100%;min-height:60px;resize:vertical;padding:8px;border:1.5px solid var(--fp-border);border-radius:8px;font-size:.9rem;background:var(--fp-bg);color:var(--fp-fg)" placeholder="Observações finais sobre o lote…"></textarea></div>'+
+        '<div>'+
+          '<button class="fp-btn-aprovar" onclick="fp_aprovarLote()">✅ Aprovar Lote</button>'+
+        '</div>'+
       '</div>'+
     '</div>'+
   '</div>'+
@@ -10668,6 +10789,8 @@ function abrirFichaLote(tq){
   /* — escuta inputs da ficha para marcar dirty — */
   document.getElementById('fp-app').addEventListener('input', function(e){
     if(e.target.matches('input,textarea,select')) fp_markDirty();
+    // recalcula stats quando muda SG do log de ferm ou OG real das bateladas
+    if(e.target.closest('#fp-ferm-log') || e.target.closest('.fp-bat-card')) fp_calcFermStats();
   });
 
   /* — escuta CHANGE (confirmação de edição) para registrar lançamentos de auditoria — */
@@ -10789,6 +10912,28 @@ function fp_preencherFicha(ficha){
   if(ficha.trub)         preencherTabela('fp-tbl-trub',ficha.trub);
   if(ficha.fermLog && ficha.fermLog.length)   preencherLogDivs('fp-ferm-log', ficha.fermLog, fp_addFermRow);
   if(ficha.maturLog && ficha.maturLog.length) preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow);
+  // recalcula stats após restaurar logs
+  setTimeout(fp_calcFermStats, 100);
+  // restaura aprovação
+  if(ficha.aprovacao){
+    var ap = ficha.aprovacao;
+    var dtEl   = document.getElementById('fp-aprov-dt');
+    var respEl = document.getElementById('fp-aprov-resp');
+    var obsEl  = document.getElementById('fp-aprov-obs');
+    if(dtEl && ap.dt)     dtEl.value   = ap.dt;
+    if(respEl && ap.resp) respEl.value = ap.resp;
+    if(obsEl && ap.obs)   obsEl.value  = ap.obs;
+    if(ap.aprovado){
+      var box    = document.getElementById('fp-aprovacao-box');
+      var status = document.getElementById('fp-aprovacao-status');
+      if(box) box.classList.add('aprovado');
+      if(status){
+        var hora = ap.dt ? new Date(ap.dt).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '?';
+        status.textContent = '✅ Aprovado — '+(ap.resp||'?')+' em '+hora;
+        status.className = 'fp-aprovacao-status ok';
+      }
+    }
+  }
   // resultado
   if(ficha.resultado){
     var app=document.getElementById('fp-app');
@@ -11310,6 +11455,8 @@ window.fp_delLog           = fp_delLog;
 window.fp_addRow           = fp_addRow;
 window.fp_addFermRow       = fp_addFermRow;
 window.fp_addMaturRow      = fp_addMaturRow;
+window.fp_calcFermStats    = fp_calcFermStats;
+window.fp_aprovarLote      = fp_aprovarLote;
 window.fp_addEnzRow        = fp_addEnzRow;
 window.fp_addBatelada      = fp_addBatelada;
 window.fp_removerBatelada  = fp_removerBatelada;
