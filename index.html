@@ -3348,7 +3348,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.9";
+var VERSAO = "3.7.10";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9876,7 +9876,7 @@ function fp_addBatelada(){
     '<div class="fp-divider"></div>'+
     '<div class="fp-small-label">🌡️ Mostura</div>'+
     '<div class="fp-vol-row">'+
-      '<div class="fp-field"><label>Hora acion. caldeira</label><input type="time"></div>'+
+      (num===1?'<div class="fp-field"><label>Hora acion. caldeira</label><input type="time"></div>':'')+
       '<div class="fp-field"><label>Hora arriada do malte</label><input type="time" data-resumo="mostura-ini"></div>'+
       '<div class="fp-field"><label>Temp. entrada água (°C)</label><input type="number" placeholder="55"></div>'+
       '<div class="fp-field"><label>Vel. agitador (Hz)</label><input type="number" placeholder="45"></div>'+
