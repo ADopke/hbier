@@ -3368,7 +3368,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.29";
+var VERSAO = "3.7.30";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10091,11 +10091,11 @@ function fp_aprovarLote(){
 }
 function fp_addEnzRow(){
   var c=document.getElementById('fp-enz-extra');
-  var row=document.createElement('div'); row.style.display='contents';
+  var row=document.createElement('div'); row.className='fp-enz-row'; row.style.display='contents';
   row.innerHTML=
     '<div class="fp-enz-cell" style="display:flex;align-items:center;gap:4px;">'+
       '<input placeholder="Nome do produto" style="flex:1">'+
-      '<button onclick="this.closest(\'[style*=contents]\').remove();fp_markDirty()" style="background:none;border:none;cursor:pointer;color:var(--fp-fg3);font-size:13px;padding:0 2px" title="Remover">✕</button>'+
+      '<button onclick="this.closest(\'.fp-enz-row\').remove();fp_markDirty()" style="background:none;border:none;cursor:pointer;color:var(--fp-fg3);font-size:13px;padding:0 2px" title="Remover">✕</button>'+
     '</div>'+
     '<div class="fp-enz-cell"><input placeholder="dose"></div>'+
     '<div class="fp-enz-cell"><input placeholder="0"></div>'+
@@ -11066,7 +11066,7 @@ function abrirFichaLote(tq){
           '<div class="fp-enz-row" style="display:contents"><div class="fp-enz-cell">StarMax BG Super</div><div class="fp-enz-cell"><input value="0,8 g/kg malte"></div><div class="fp-enz-cell"><input placeholder="—"></div><div class="fp-enz-cell"><input value="5 min após arriada"></div></div>'+
           '<div class="fp-enz-row" style="display:contents"><div class="fp-enz-cell">ClearMax MF</div><div class="fp-enz-cell"><input value="3 g/hL"></div><div class="fp-enz-cell"><input placeholder="—"></div><div class="fp-enz-cell"><input value="Água de arriada"></div></div>'+
           '<div class="fp-enz-row" style="display:contents"><div class="fp-enz-cell">Servomyces</div><div class="fp-enz-cell"><input value="1 g/hL"></div><div class="fp-enz-cell"><input placeholder="—"></div><div class="fp-enz-cell"><input value="10 min fim fervura"></div></div>'+
-          '<div id="fp-enz-extra"></div>'+
+          '<div id="fp-enz-extra" style="display:contents"></div>'+
         '</div>'+
       '</div>'+
       '<button class="fp-add-row-btn" onclick="fp_addEnzRow()" style="margin-top:8px">＋ Adicionar auxiliar</button>'+
@@ -11878,11 +11878,11 @@ function fp_aplicarReceita(rec){
     if(enzExtra){
       enzExtra.innerHTML='';
       rec.enzimas.forEach(function(cols){
-        var row=document.createElement('div'); row.style.display='contents';
+        var row=document.createElement('div'); row.className='fp-enz-row'; row.style.display='contents';
         row.innerHTML=
           '<div class="fp-enz-cell" style="display:flex;align-items:center;gap:4px;">'+
             '<input value="'+esc(cols[0]||'')+'" style="flex:1">'+
-            '<button onclick="this.closest(\'[style*=contents]\').remove();fp_markDirty()" style="background:none;border:none;cursor:pointer;color:var(--fp-fg3);font-size:13px;padding:0 2px" title="Remover">✕</button>'+
+            '<button onclick="this.closest(\'.fp-enz-row\').remove();fp_markDirty()" style="background:none;border:none;cursor:pointer;color:var(--fp-fg3);font-size:13px;padding:0 2px" title="Remover">✕</button>'+
           '</div>'+
           '<div class="fp-enz-cell"><input value="'+esc(cols[1]||'')+'"></div>'+
           '<div class="fp-enz-cell"><input value="'+esc(cols[2]||'')+'"></div>'+
