@@ -3366,7 +3366,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.25";
+var VERSAO = "3.7.26";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12283,6 +12283,7 @@ function rec_initFichaSelect(){
 /* — expõe no window — */
 window.rec_novaReceita          = rec_novaReceita;
 window.rec_editarReceita        = rec_editarReceita;
+window.rec_copiarReceita        = rec_copiarReceita;
 window.rec_cancelar             = rec_cancelar;
 window.rec_salvar               = rec_salvar;
 window.rec_deletar              = rec_deletar;
