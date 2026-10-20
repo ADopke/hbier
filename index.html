@@ -3366,7 +3366,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.19";
+var VERSAO = "3.7.20";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9594,20 +9594,26 @@ function fp_confirmarAplic(tipo){
     var btn    = document.getElementById('fp-btn-lev-ferm');
     var status = document.getElementById('fp-lev-status');
     if(!bloco) return;
-    // captura hora digitada ou usa agora
+    // captura data/hora digitada ou usa agora
     var horaLev = (document.getElementById('fp-lev-hora')||{}).value || hora;
+    var today = now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
+    var dataLev = (document.getElementById('fp-lev-data')||{}).value || today;
     bloco.dataset.confirmado = '1';
     bloco.dataset.hora = horaLev;
+    bloco.dataset.data = dataLev;
     bloco.dataset.quem = quem;
     if(btn){ btn.disabled = true; btn.textContent = '✅ Confirmado'; }
     if(status){
       status.classList.remove('pendente');
       status.querySelector('.fp-aplic-status-ico').textContent = '✅';
-      status.querySelector('.fp-aplic-status-txt').textContent = 'Levedura inoculada às '+horaLev;
+      var dataFmt = dataLev ? (function(d){ var p=d.split('-'); return p[2]+'/'+p[1]; })(dataLev) : '';
+      status.querySelector('.fp-aplic-status-txt').textContent = 'Levedura inoculada '+(dataFmt?dataFmt+' ':'')+horaLev;
       status.querySelector('.fp-aplic-quem').textContent = ' · '+quem;
     }
-    // preenche hora no campo se estava vazio
+    // preenche data/hora nos campos se estavam vazios
+    var dataEl = document.getElementById('fp-lev-data');
     var horaEl = document.getElementById('fp-lev-hora');
+    if(dataEl && !dataEl.value) dataEl.value = dataLev;
     if(horaEl && !horaEl.value) horaEl.value = hora;
   }
   fp_markDirty();
@@ -10758,7 +10764,7 @@ function fp_simSave(btn){
       return {
         clearmax: clBloco && clBloco.dataset.confirmado ? { confirmado:true, hora:clBloco.dataset.hora||'', quem:clBloco.dataset.quem||'' } : null,
         lev: levBloco && levBloco.dataset.confirmado ? {
-          confirmado:true, hora:levBloco.dataset.hora||'', quem:levBloco.dataset.quem||'',
+          confirmado:true, data:levBloco.dataset.data||'', hora:levBloco.dataset.hora||'', quem:levBloco.dataset.quem||'',
           geracao:(document.getElementById('fp-lev-geracao')||{}).value||'',
           temp:(document.getElementById('fp-lev-temp')||{}).value||''
         } : null
@@ -11179,6 +11185,7 @@ function abrirFichaLote(tq){
           '<span class="fp-aplic-status-ico">⏳</span> <span class="fp-aplic-status-txt">Aguardando confirmação</span><span class="fp-aplic-quem"></span>'+
         '</div>'+
         '<div class="fp-aplic-extra" style="width:100%;margin-top:8px">'+
+          '<div class="fp-field"><label>Data inoculação</label><input type="date" id="fp-lev-data"></div>'+
           '<div class="fp-field"><label>Hora inoculação</label><input type="time" id="fp-lev-hora"></div>'+
           '<div class="fp-field"><label>Geração levedura</label><input placeholder="12ª" id="fp-lev-geracao"></div>'+
           '<div class="fp-field"><label>Temp. tanque inoculado (°C)</label><input type="number" placeholder="18" id="fp-lev-temp"></div>'+
@@ -11517,16 +11524,19 @@ function fp_preencherFicha(ficha){
       var levB = document.getElementById('fp-bloco-lev');
       var levBtn = document.getElementById('fp-btn-lev-ferm');
       var levSt  = document.getElementById('fp-lev-status');
-      if(levB){ levB.dataset.confirmado='1'; levB.dataset.hora=at.lev.hora||''; levB.dataset.quem=at.lev.quem||''; }
+      if(levB){ levB.dataset.confirmado='1'; levB.dataset.data=at.lev.data||''; levB.dataset.hora=at.lev.hora||''; levB.dataset.quem=at.lev.quem||''; }
       if(levBtn){ levBtn.disabled=true; levBtn.textContent='✅ Confirmado'; }
       if(levSt){
         levSt.classList.remove('pendente');
         levSt.querySelector('.fp-aplic-status-ico').textContent='✅';
-        levSt.querySelector('.fp-aplic-status-txt').textContent='Levedura inoculada às '+(at.lev.hora||'—');
+        var dataFmtR = at.lev.data ? (function(d){ var p=d.split('-'); return p[2]+'/'+p[1]+' '; })(at.lev.data) : '';
+        levSt.querySelector('.fp-aplic-status-txt').textContent='Levedura inoculada '+dataFmtR+(at.lev.hora||'—');
         levSt.querySelector('.fp-aplic-quem').textContent=at.lev.quem?' · '+at.lev.quem:'';
       }
+      var dataEl = document.getElementById('fp-lev-data');
       var horaEl = document.getElementById('fp-lev-hora');
       var gerEl  = document.getElementById('fp-lev-geracao');
+      if(dataEl && at.lev.data) dataEl.value = at.lev.data;
       var tmpEl  = document.getElementById('fp-lev-temp');
       if(horaEl && at.lev.hora) horaEl.value = at.lev.hora;
       if(gerEl  && at.lev.geracao) gerEl.value = at.lev.geracao;
