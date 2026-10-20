@@ -3368,7 +3368,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.32";
+var VERSAO = "3.7.33";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11043,9 +11043,7 @@ function abrirFichaLote(tq){
         '<div class="fp-tbl-wrap">'+
           '<table class="fp-data" id="fp-tbl-adj">'+
             '<thead><tr><th>Item</th><th>Qtd/bat</th><th>Uso</th><th></th></tr></thead>'+
-            '<tbody>'+
-              '<tr><td><input value="Whirlfloc"></td><td><input value="1 tab"></td><td><input value="Fervura 10\'"></td><td><button class="fp-del-btn" onclick="fp_delRow(this)">✕</button></td></tr>'+
-            '</tbody>'+
+            '<tbody></tbody>'+
           '</table>'+
         '</div>'+
         '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-adj\',\'Item\',\'Qtd\',\'Uso\')">＋</button>'+
