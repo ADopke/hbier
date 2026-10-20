@@ -3366,7 +3366,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.23";
+var VERSAO = "3.7.24";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10374,6 +10374,19 @@ function fp_addBatelada(){
     '</div>';
 
   list.appendChild(card);
+
+  /* — herda Vol. final da batelada anterior como Vol. inicial desta — */
+  var anterior = card.previousElementSibling;
+  while(anterior && !anterior.classList.contains('fp-bat-card')){
+    anterior = anterior.previousElementSibling;
+  }
+  if(anterior){
+    var volFimAnterior = (anterior.querySelector('.fp-bat-vol-fim')||{}).value;
+    if(volFimAnterior){
+      var iniField = card.querySelector('.fp-bat-vol-ini');
+      if(iniField) iniField.value = volFimAnterior;
+    }
+  }
 
   /* — dispara resumo inicial (campos ainda vazios, mostra "—") — */
   fp_atualizarResumoEtapas(card);
