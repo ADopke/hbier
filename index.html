@@ -3368,7 +3368,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.36";
+var VERSAO = "3.7.37";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9798,6 +9798,18 @@ function fp_addMaturRow(){
   c.appendChild(row); fp_markDirty();
 }
 function fp_recCO2(inp){
+  /* Se chamado sem argumento, busca o último valor CO₂ preenchido no log */
+  if(!inp){
+    var rows = document.querySelectorAll('#fp-matur-log .fp-mlog-row.matur');
+    var lastInp = null;
+    rows.forEach(function(row){
+      /* Col 5 = Vol CO₂ (índice 4, 0-based: datetime,temp,kgf,pH,co2) */
+      var inputs = row.querySelectorAll('input');
+      if(inputs[4] && inputs[4].value !== '') lastInp = inputs[4];
+    });
+    if(!lastInp){ var box=document.getElementById('fp-co2-rec-box'); if(box) box.style.display='none'; return; }
+    inp = lastInp;
+  }
   var box = document.getElementById('fp-co2-rec-box');
   if(!box) return;
   var v = parseFloat(inp.value);
@@ -11644,7 +11656,7 @@ function fp_preencherFicha(ficha){
   if(ficha.dryhop)       preencherTabela('fp-tbl-dryhop',ficha.dryhop);
   if(ficha.trub)         preencherTabela('fp-tbl-trub',ficha.trub);
   if(ficha.fermLog && ficha.fermLog.length)   preencherLogDivs('fp-ferm-log', ficha.fermLog, fp_addFermRow);
-  if(ficha.maturLog && ficha.maturLog.length) preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow);
+  if(ficha.maturLog && ficha.maturLog.length){ preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow); setTimeout(fp_recCO2, 50); }
   // restaura adições ao tanque (clearmax + levedura)
   if(ficha.adicoesTanque){
     var at = ficha.adicoesTanque;
