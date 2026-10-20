@@ -3348,7 +3348,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.11";
+var VERSAO = "3.7.12";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9619,6 +9619,214 @@ function fp_addLavRow(btn){
   fp_markDirty();
 }
 
+/* ── Gráficos de fermentação e maturação ── */
+function fp_renderGraficos(){
+  // Coleta dados do log de fermentação
+  var fermPts = [];
+  var fermLog = document.getElementById('fp-ferm-log');
+  if(fermLog){
+    fermLog.querySelectorAll('.fp-mlog-row:not(.header)').forEach(function(row){
+      var inps = row.querySelectorAll('input');
+      var dt = inps[0] ? inps[0].value : '';
+      var sg = inps[1] ? parseFloat(inps[1].value) : NaN;
+      var temp = inps[2] ? parseFloat(inps[2].value) : NaN;
+      if(dt) fermPts.push({ dt: new Date(dt), sg: sg, temp: temp });
+    });
+  }
+  fermPts.sort(function(a,b){ return a.dt - b.dt; });
+
+  // Coleta dados do log de maturação
+  var maturPts = [];
+  var maturLog = document.getElementById('fp-matur-log');
+  if(maturLog){
+    maturLog.querySelectorAll('.fp-mlog-row:not(.header)').forEach(function(row){
+      var inps = row.querySelectorAll('input');
+      var dt = inps[0] ? inps[0].value : '';
+      var temp = inps[1] ? parseFloat(inps[1].value) : NaN;
+      var kgf  = inps[2] ? parseFloat(inps[2].value) : NaN;
+      if(dt) maturPts.push({ dt: new Date(dt), temp: temp, kgf: kgf });
+    });
+  }
+  maturPts.sort(function(a,b){ return a.dt - b.dt; });
+
+  var vazioEl = document.getElementById('fp-graficos-vazio');
+  var hasFerm = fermPts.length > 1;
+  var hasMatur = maturPts.length > 1;
+
+  if(!hasFerm && !hasMatur){
+    if(vazioEl) vazioEl.style.display = '';
+    return;
+  }
+  if(vazioEl) vazioEl.style.display = 'none';
+
+  // ── helpers de canvas ──
+  function fmtDt(d){
+    return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+'h';
+  }
+  function drawChart(canvasId, pts, series, title){
+    var canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    var dpr = window.devicePixelRatio || 1;
+    var W = canvas.parentElement.clientWidth || 600;
+    canvas.width  = W * dpr;
+    canvas.height = 220 * dpr;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = '220px';
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    var w = W, h = 220;
+
+    // tema
+    var isDark = document.documentElement.dataset.theme === 'dark' ||
+      (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme:dark)').matches);
+    var bgColor   = isDark ? '#1e2520' : '#f9f8f5';
+    var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)';
+    var textColor = isDark ? '#a8b09f' : '#6e7568';
+    var titleColor= isDark ? '#e0ddd5' : '#2a2e26';
+
+    // margens
+    var ml=52, mr=series.length>1?52:16, mt=28, mb=40;
+    var cw=w-ml-mr, ch=h-mt-mb;
+
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0,0,w,h);
+
+    if(pts.length < 2){ return; }
+
+    // eixo X: tempo
+    var t0 = pts[0].dt.getTime(), t1 = pts[pts.length-1].dt.getTime();
+    var tRange = t1 - t0 || 1;
+    function tx(d){ return ml + (d.getTime()-t0)/tRange * cw; }
+
+    // título
+    ctx.fillStyle = titleColor;
+    ctx.font = 'bold 12px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, w/2, 16);
+
+    // grade horizontal (5 linhas)
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 1;
+    for(var gi=0; gi<=4; gi++){
+      var gy = mt + ch * gi/4;
+      ctx.beginPath(); ctx.moveTo(ml, gy); ctx.lineTo(ml+cw, gy); ctx.stroke();
+    }
+
+    // labels eixo X (até 6 pontos)
+    var step = Math.max(1, Math.floor(pts.length/6));
+    ctx.fillStyle = textColor;
+    ctx.font = '10px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    for(var pi=0; pi<pts.length; pi+=step){
+      var px2 = tx(pts[pi]);
+      ctx.beginPath(); ctx.moveTo(px2, mt+ch); ctx.lineTo(px2, mt+ch+4);
+      ctx.strokeStyle = gridColor; ctx.lineWidth=1; ctx.stroke();
+      ctx.fillText(fmtDt(pts[pi]), px2, mt+ch+16);
+    }
+
+    // desenha cada série
+    series.forEach(function(s, si){
+      var vals = pts.map(function(p){ return p[s.key]; }).filter(function(v){ return !isNaN(v); });
+      if(!vals.length) return;
+      var mn = Math.min.apply(null,vals), mx = Math.max.apply(null,vals);
+      var padding = (mx-mn)*0.15 || 1;
+      mn -= padding; mx += padding;
+      var range = mx-mn || 1;
+      function vy(v){ return mt + ch - (v-mn)/range*ch; }
+
+      // eixo Y
+      var isRight = si === 1;
+      ctx.save();
+      ctx.fillStyle = s.color;
+      ctx.font = '10px system-ui,sans-serif';
+      ctx.textAlign = isRight ? 'left' : 'right';
+      for(var yi=0; yi<=4; yi++){
+        var yv = mn + range*yi/4;
+        var yy = mt + ch - ch*yi/4;
+        ctx.fillText(yv.toFixed(s.dec||0), isRight ? w-mr+4 : ml-4, yy+3);
+      }
+      ctx.fillStyle = s.color;
+      ctx.font = 'bold 10px system-ui,sans-serif';
+      ctx.textAlign = isRight ? 'left' : 'right';
+      ctx.fillText(s.label, isRight ? w-mr+4 : ml-4, mt-6);
+      ctx.restore();
+
+      // linha
+      ctx.save();
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      var first=true;
+      pts.forEach(function(p){
+        if(isNaN(p[s.key])) return;
+        var px3 = tx(p), py3 = vy(p[s.key]);
+        if(first){ ctx.moveTo(px3,py3); first=false; } else { ctx.lineTo(px3,py3); }
+      });
+      ctx.stroke();
+
+      // área sob a curva (semitransparente, só série 0)
+      if(si===0){
+        ctx.beginPath();
+        first=true;
+        pts.forEach(function(p){
+          if(isNaN(p[s.key])) return;
+          var px3=tx(p), py3=vy(p[s.key]);
+          if(first){ ctx.moveTo(px3,mt+ch); ctx.lineTo(px3,py3); first=false; }
+          else { ctx.lineTo(px3,py3); }
+        });
+        var lastPt = pts.filter(function(p){ return !isNaN(p[s.key]); }).slice(-1)[0];
+        if(lastPt) ctx.lineTo(tx(lastPt), mt+ch);
+        ctx.closePath();
+        ctx.fillStyle = s.color.replace(')',',0.10)').replace('rgb(','rgba(').replace('#','rgba(').replace('rgba(#','rgba(').replace(/rgba\(([0-9a-fA-F]{6}),/,function(_,hex){
+          var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);
+          return 'rgba('+r+','+g+','+b+',';
+        });
+        ctx.fill();
+      }
+
+      // pontos
+      ctx.fillStyle = s.color;
+      pts.forEach(function(p){
+        if(isNaN(p[s.key])) return;
+        ctx.beginPath();
+        ctx.arc(tx(p), vy(p[s.key]), 3, 0, 2*Math.PI);
+        ctx.fill();
+      });
+      ctx.restore();
+    });
+
+    // borda do gráfico
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(ml, mt, cw, ch);
+  }
+
+  // Gráfico Fermentação: SG (eixo esq) + Temp (eixo dir)
+  if(hasFerm){
+    document.querySelector('#fp-panel-graficos .fp-sec:first-child').style.display='';
+    drawChart('fp-chart-ferm', fermPts,
+      [
+        { key:'sg',   label:'SG',    color:'#E67E22', dec:3 },
+        { key:'temp', label:'°C',    color:'#2980B9', dec:1 }
+      ], 'Fermentação — SG e Temperatura');
+  } else {
+    document.querySelector('#fp-panel-graficos .fp-sec:first-child').style.display='none';
+  }
+
+  // Gráfico Maturação: Temp (eixo esq) + Pressão kgf (eixo dir)
+  if(hasMatur){
+    document.querySelectorAll('#fp-panel-graficos .fp-sec')[1].style.display='';
+    drawChart('fp-chart-matur', maturPts,
+      [
+        { key:'temp', label:'°C',        color:'#27AE60', dec:1 },
+        { key:'kgf',  label:'kgf/cm²',   color:'#8E44AD', dec:2 }
+      ], 'Maturação — Temperatura e Pressão');
+  } else {
+    document.querySelectorAll('#fp-panel-graficos .fp-sec')[1].style.display='none';
+  }
+}
+
 /* Calcula OG média das bateladas e ABV estimado pela última leitura de SG */
 function fp_calcFermStats(){
   // OG = média dos campos "OG real (no tanque)" de cada batelada (resumo)
@@ -9915,7 +10123,6 @@ function fp_addBatelada(){
       '<div class="fp-field"><label>Enxague da tina (L)</label><input type="number" placeholder="30"></div>'+
       '<div class="fp-field"><label>Água de lastro (L)</label><input type="number" placeholder="70"></div>'+
       '<div class="fp-field"><label>Início transf. mosto (hh:mm)</label><input type="time" data-resumo="mostura-fim lauter-ini"></div>'+
-      '<div class="fp-field"><label>Fim transf. mosto prim. (hh:mm)</label><input type="time"></div>'+
     '</div>'+
     '<div class="fp-vol-row">'+
       '<div class="fp-field"><label>Extrato mosto prim. (°B)</label><input type="number" step="0.1" placeholder="15"></div>'+
@@ -10486,6 +10693,7 @@ function abrirFichaLote(tq){
     '<button class="fp-tab active" data-fp-panel="receita">📋 Receita</button>'+
     '<button class="fp-tab" data-fp-panel="bateladas">⚗️ Bateladas</button>'+
     '<button class="fp-tab" data-fp-panel="fermentacao">🧫 Ferment. / Maturação</button>'+
+    '<button class="fp-tab" data-fp-panel="graficos">📊 Gráficos</button>'+
   '</div></div>'+
 
   '<div class="fp-content">'+
@@ -10887,6 +11095,32 @@ function abrirFichaLote(tq){
 
   '</div>'+/* /fp-panel-fermentacao */
 
+  /* ══════════ ABA GRÁFICOS ══════════ */
+  '<div class="fp-panel" id="fp-panel-graficos">'+
+    '<div class="fp-sec">'+
+      '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+        '<div class="fp-sec-head-left"><span class="fp-sec-icon">📈</span><span class="fp-sec-title verde">Evolução da Fermentação</span></div>'+
+        '<span class="fp-sec-toggle">▾</span></div>'+
+      '<div class="fp-sec-body">'+
+        '<div style="font-size:11px;color:var(--fp-fg3);margin-bottom:8px">SG e temperatura ao longo dos dias de fermentação</div>'+
+        '<div style="overflow-x:auto"><canvas id="fp-chart-ferm" height="220" style="max-width:100%;border-radius:6px"></canvas></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="fp-sec" style="margin-top:12px">'+
+      '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+        '<div class="fp-sec-head-left"><span class="fp-sec-icon">❄️</span><span class="fp-sec-title azul">Evolução da Maturação</span></div>'+
+        '<span class="fp-sec-toggle">▾</span></div>'+
+      '<div class="fp-sec-body">'+
+        '<div style="font-size:11px;color:var(--fp-fg3);margin-bottom:8px">Temperatura e pressão durante a maturação</div>'+
+        '<div style="overflow-x:auto"><canvas id="fp-chart-matur" height="220" style="max-width:100%;border-radius:6px"></canvas></div>'+
+      '</div>'+
+    '</div>'+
+    '<div id="fp-graficos-vazio" style="display:none;text-align:center;padding:40px 16px;color:var(--fp-fg3);font-size:.9rem">'+
+      '<div style="font-size:2rem;margin-bottom:8px">📊</div>'+
+      'Nenhuma leitura registrada ainda.<br>Preencha o log de fermentação ou maturação para ver os gráficos.'+
+    '</div>'+
+  '</div>'+/* /fp-panel-graficos */
+
   '</div>'+/* /fp-content */
 
   /* save bar */
@@ -10910,6 +11144,8 @@ function abrirFichaLote(tq){
     t.classList.add('active');
     var p = document.getElementById('fp-panel-'+t.dataset.fpPanel);
     if(p) p.classList.add('active');
+    // renderiza gráficos ao abrir a aba
+    if(t.dataset.fpPanel === 'graficos') fp_renderGraficos();
   });
 
   /* — escuta inputs da ficha para marcar dirty — */
@@ -10992,12 +11228,23 @@ function fp_preencherFicha(ficha){
           var vEls = card.querySelectorAll('.fp-vol-row input');
           var volVals = bat.volumes;
           var volKeys = bat.volKeys || null;
-          volVals.forEach(function(v, i){
-            if(vEls[i]){
-              vEls[i].value = v;
-              if(volKeys && volKeys[i]) vEls[i].dataset.auditKey = volKeys[i];
+          // Retrocompat: fichas salvas antes de v3.7.12 tinham "Fim transf. mosto prim."
+          // como input no Lauter. Esse campo foi removido em v3.7.12.
+          // Se o array salvo tem 1 input a mais que o card atual, descartamos
+          // o índice correspondente: 10 para batelada 1 (com caldeira), 9 para demais.
+          var skipIdx = -1;
+          if(volVals.length === vEls.length + 1){
+            skipIdx = (idx === 0) ? 10 : 9;
+          }
+          var eIdx = 0;
+          for(var vi=0; vi<volVals.length; vi++){
+            if(vi === skipIdx) continue;
+            if(vEls[eIdx]){
+              vEls[eIdx].value = volVals[vi];
+              if(volKeys && volKeys[vi]) vEls[eIdx].dataset.auditKey = volKeys[vi];
             }
-          });
+            eIdx++;
+          }
         }
         // atualiza resumo automático de etapas
         fp_atualizarResumoEtapas(card);
@@ -11735,6 +11982,7 @@ window.fp_addMaturRow      = fp_addMaturRow;
 window.fp_calcIodo         = fp_calcIodo;
 window.fp_addLavRow        = fp_addLavRow;
 window.fp_calcFermStats    = fp_calcFermStats;
+window.fp_renderGraficos   = fp_renderGraficos;
 window.fp_aprovarLote      = fp_aprovarLote;
 window.fp_addEnzRow        = fp_addEnzRow;
 window.fp_addBatelada      = fp_addBatelada;
