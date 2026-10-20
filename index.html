@@ -3366,7 +3366,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.20";
+var VERSAO = "3.7.21";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9533,6 +9533,19 @@ function fp_calcVolBatelada(input){
       res.value = (fim - ini).toFixed(0);
     } else {
       res.value = '';
+    }
+  }
+  // propaga Vol. final desta batelada → Vol. inicial da próxima
+  if(!isNaN(fim) && fim > 0){
+    var cards = Array.from(document.querySelectorAll('#fp-bat-list .fp-bat-card'));
+    var idx = cards.indexOf(card);
+    if(idx >= 0 && idx + 1 < cards.length){
+      var proxIni = cards[idx + 1].querySelector('.fp-bat-vol-ini');
+      if(proxIni && !proxIni.value){
+        proxIni.value = fim.toFixed(0);
+        fp_calcVolBatelada(proxIni);
+        return; // fp_atualizarVolTotalBateladas já será chamado recursivamente
+      }
     }
   }
   fp_atualizarVolTotalBateladas();
