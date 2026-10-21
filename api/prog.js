@@ -38,6 +38,16 @@ export default protegido(async function handler(req, res) {
           const estado  = (await ler(`state:${u.login}:${semana}`)) || {};
           for (const t of tarefas) {
             if (!t.progId) continue;
+            // tarefas de limpeza: progId = "limpeza-<setorId>"
+            if (t.progId.startsWith("limpeza-")) {
+              if (!tarefasVinculadas[t.progId]) tarefasVinculadas[t.progId] = [];
+              tarefasVinculadas[t.progId].push({
+                taskId: t.id, taskNome: t.nome, login: u.login,
+                data: t.data || "",
+                feita: !!((estado.p || {})[t.id]),
+              });
+              continue;
+            }
             for (const it of itens) {
               if (t.progId === it.id) {
                 if (!tarefasVinculadas[it.id]) tarefasVinculadas[it.id] = [];
