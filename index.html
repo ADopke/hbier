@@ -4117,8 +4117,33 @@ $("listaLimpezaTarefas").addEventListener("click", function(ev){
   }
 });
 
+// Handlers de limpeza na aba Hoje
+$("hojeLimpezaLista").addEventListener("change", function(ev){
+  var cb = ev.target.closest(".check-limpz");
+  if (!cb) return;
+  var tid = cb.dataset.limpz;
+  if (cb.checked){
+    estado.lz = estado.lz || {};
+    estado.lz[tid] = new Date().toISOString();
+    salvar();
+    var li = cb.closest("li");
+    if (li){ li.style.opacity="0"; li.style.transition=".3s"; }
+    setTimeout(function(){ renderHojeLimpeza(); }, 300);
+    toast("Limpeza concluída ✓", "ok");
+  }
+});
+$("hojeLimpezaLista").addEventListener("click", function(ev){
+  var btnDesm = ev.target.closest("[data-limpz-desmarcar]");
+  if (btnDesm){
+    var tid = btnDesm.dataset.limpzDesmarcar;
+    if (estado.lz) delete estado.lz[tid];
+    salvar(); renderHojeLimpeza();
+    toast("Tarefa desmarcada.");
+  }
+});
+
 // Handlers das tarefas de produção concluídas
-$("listaProducao").addEventListener("click", function(ev){
+if ($("listaProducao")) $("listaProducao").addEventListener("click", function(ev){
   // toggle recolher/expandir
   var btnToggle = ev.target.closest("[data-toggle-conc]");
   if (btnToggle){
@@ -4183,7 +4208,7 @@ $("listaProducao").addEventListener("click", function(ev){
 });
 
 // Handler dos checkboxes de produção (delegado ao checklist)
-$("listaProducao").addEventListener("change", function(ev){
+if ($("listaProducao")) $("listaProducao").addEventListener("change", function(ev){
   var cb = ev.target.closest(".check-prod");
   if (!cb) return;
   var tid = cb.dataset.prod;
