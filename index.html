@@ -3379,7 +3379,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.40";
+var VERSAO = "3.7.41";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8754,20 +8754,51 @@ async function carregarTanques(){
               var tl = tq.lote.trim().toUpperCase();
               return rl === tl || tl.startsWith(rl);
             });
-            // PETs: último litrosFim registrado (é o nível do tanque após esse envase)
+            // PETs: calcula nível a partir do registro mais recente (com ou sem litrosFim)
             var loteAtualV = (tq.lote||"").trim().toUpperCase();
-            var petsSemana = (tq.historico||[]).filter(function(m){
-              return m.tipo==="envase" && (m.lote||"").trim().toUpperCase()===loteAtualV && m.litrosFim;
+            // Todos os envases PET do lote, ordenados do mais recente ao mais antigo
+            var todosEnvasesPET = (tq.historico||[]).filter(function(m){
+              return m.tipo==="envase" && (m.lote||"").trim().toUpperCase()===loteAtualV && (m.litrosFim||m.litrosInicio||m.qtd);
             }).sort(function(a,b){ return (b.dataISO||"").localeCompare(a.dataISO||""); });
+            // PETs com litrosFim registrado (nível real confirmado)
+            var petsComFim = todosEnvasesPET.filter(function(m){ return m.litrosFim; });
             var litRestantes;
-            if (petsSemana.length) {
-              // Parte do litrosFim do PET mais recente e subtrai barris envasados DEPOIS dessa data
-              var dataRefPet = petsSemana[0].dataISO || "";
-              var barrilsAposPet = barrilsLote.filter(function(r){
-                return !dataRefPet || (r.dataISO || "") >= dataRefPet;
-              });
-              var saidoBarrilApos = barrilsAposPet.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
-              litRestantes = Math.max(0, parseFloat(petsSemana[0].litrosFim) - saidoBarrilApos);
+            if (todosEnvasesPET.length) {
+              var petMaisRecente = todosEnvasesPET[0];
+              var dataRefPet, baseNivel;
+              if (petMaisRecente.litrosFim) {
+                // Caso ideal: PET mais recente tem litrosFim — usa direto
+                baseNivel = parseFloat(petMaisRecente.litrosFim);
+                dataRefPet = petMaisRecente.dataISO || "";
+              } else if (petMaisRecente.litrosInicio) {
+                // PET mais recente tem litrosInicio mas sem litrosFim:
+                // estima o que saiu = qtd × litros/unidade do formato
+                var qtdEst = parseInt(petMaisRecente.qtd) || 0;
+                var mlEst  = (LITROS_FORMATO[petMaisRecente.formato] || 0);
+                var saidoPET = qtdEst * mlEst;
+                baseNivel = Math.max(0, parseFloat(petMaisRecente.litrosInicio) - saidoPET);
+                dataRefPet = petMaisRecente.dataISO || "";
+              } else if (petsComFim.length) {
+                // Fallback: usa o mais recente com litrosFim
+                baseNivel = parseFloat(petsComFim[0].litrosFim);
+                dataRefPet = petsComFim[0].dataISO || "";
+              } else {
+                baseNivel = null;
+                dataRefPet = "";
+              }
+              if (baseNivel !== null) {
+                // Subtrai barris envasados DEPOIS da data de referência do PET
+                // (barris da mesma data já estão refletidos no litrosInicio do PET)
+                var barrilsAposPet = barrilsLote.filter(function(r){
+                  return !dataRefPet || (r.dataISO || "") > dataRefPet;
+                });
+                var saidoBarrilApos = barrilsAposPet.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
+                litRestantes = Math.max(0, baseNivel - saidoBarrilApos);
+              } else {
+                // Sem base confiável: volume total menos todos os barris
+                var saidoBarrilTodos = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
+                litRestantes = Math.max(0, volTotal - saidoBarrilTodos);
+              }
             } else {
               // Sem registro PET: volume total menos todos os barris do lote
               var saidoBarril = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
