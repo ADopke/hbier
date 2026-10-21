@@ -605,6 +605,40 @@
     font-size:.88rem;text-transform:uppercase;letter-spacing:.05em;
     border-radius:10px 10px 0 0;
   }
+  .prog-item-limpeza{
+    border-left:5px solid #1B9A59 !important;
+    background:linear-gradient(to right,#E6F7EE 0%,#fff 60%);
+  }
+  .prog-item-limpeza .prog-tipo-header{
+    background:#1B9A59;color:#fff;
+    margin:-14px -14px 10px -14px;padding:7px 12px;
+    display:flex;align-items:center;gap:8px;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.88rem;text-transform:uppercase;letter-spacing:.05em;
+    border-radius:10px 10px 0 0;
+  }
+  .prog-limpeza-tarefas{ margin-bottom:8px; }
+  .limp-task-row{
+    display:flex;align-items:center;gap:6px;
+    padding:4px 0;border-bottom:1px solid #E0F0E8;font-size:.8rem;
+  }
+  .limp-task-row:last-child{border-bottom:none}
+  .limp-task-row.feita .limp-task-nome{ text-decoration:line-through;opacity:.5; }
+  .limp-task-setor{ font-size:.72rem;background:#D4EDDA;color:#1B5E35;
+    padding:1px 5px;border-radius:4px;white-space:nowrap;flex-shrink:0; }
+  .limp-task-nome{ flex:1;color:var(--fg); }
+  .limp-task-op{ font-size:.7rem;color:var(--muted);white-space:nowrap; }
+  .prog-limpeza-pendentes{ margin-top:6px; }
+  .limp-pend-row{
+    display:flex;align-items:center;gap:5px;
+    padding:3px 0;border-bottom:1px solid #E0F0E8;font-size:.78rem;
+  }
+  .limp-pend-row:last-child{border-bottom:none}
+  .limp-pend-nome{ flex:1;color:var(--fg); }
+  .limp-pend-dias{ font-size:.7rem;font-weight:700;white-space:nowrap; }
+  .limp-ok{ color:#1B9A59; }
+  .limp-aviso{ color:#D97706; }
+  .limp-critico{ color:#DC2626; }
   .prog-tipo-icone{ font-size:1.1rem; }
 
   .prog-item{
@@ -1401,10 +1435,10 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         <span class="prog-txt" id="progTxt">—</span>
       </div>
       <nav class="abas">
-        <button data-aba="hoje" class="ativa">Hoje</button>
-        <button data-aba="checklist">Semana</button>
-        <button data-aba="tarefas">Minhas tarefas</button>
-        <button data-aba="prog">Programação</button>
+        <button data-aba="hoje" hidden>Hoje</button>
+        <button data-aba="checklist" hidden>Semana</button>
+        <button data-aba="tarefas" hidden>Minhas tarefas</button>
+        <button data-aba="prog" class="ativa">Programação</button>
         <button data-aba="tanques">🍺 Tanques</button>
         <button data-aba="lotes" id="abaLotes" hidden>📋 Lotes</button>
         <button data-aba="receitas" id="abaReceitas" hidden>📖 Receitas</button>
@@ -3380,7 +3414,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.42";
+var VERSAO = "3.7.44";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -3608,6 +3642,12 @@ async function abrirApp(){
   relCarregado = false;
   acompCarregado = false;
   await carregarSemana();
+  // Abre na aba Programação por padrão
+  $("painelHoje").hidden      = true;
+  $("painelChecklist").hidden = true;
+  $("painelTarefas").hidden   = true;
+  $("painelProg").hidden      = false;
+  carregarProg();
   // carrega a base em segundo plano se qualquer tarefa depender dela:
   // vínculo com tabela, procedimento (POP) ou código de parâmetro
   if (!baseCarregada && tarefas.some(function(t){
@@ -5510,6 +5550,13 @@ async function carregarProg(){
       });
     });
 
+    // Carregar resumo de limpeza em paralelo (necessário para cards de limpeza por dia)
+    if (!Object.keys(_limpResumo).length){
+      try{
+        var rl = await api("/api/limpeza?resumo=1");
+        _limpResumo = rl.resumo || {};
+      }catch(e2){}
+    }
     renderProg(itens, seg, segProg, r.tarefasVinculadas||{}, r.barreis||{});
   }catch(e){ $("progLista").innerHTML="<div class='vazio'>"+esc(e.message)+"</div>"; }
 }
@@ -5919,8 +5966,127 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
     return da - db;
   });
 
+  // Calcular itens de limpeza pendentes esta semana (uma só vez, não por dia)
+  var _limpPendSemanais = [];
+  (function(){
+    LIMP_SETORES.forEach(function(st){
+      var resumoSetor = _limpResumo[st.id] || {};
+      var itensSetor  = LIMP_ITENS_POR_SETOR[st.id] || [];
+      itensSetor.forEach(function(it){
+        var reg  = resumoSetor[it.id];
+        var dias = reg ? limpDiasDesde(reg.em) : null;
+        var lim  = LIMP_LIMITE_DIAS[it.freq] || 7;
+        var norm = dias === null ? 999 : dias / lim;
+        if (norm > 0.7){
+          _limpPendSemanais.push({setor:st, item:it, dias:dias, norm:norm,
+            status: norm >= 1 ? "critico" : "aviso"});
+        }
+      });
+    });
+    _limpPendSemanais.sort(function(a,b){ return b.norm - a.norm; });
+    _limpPendSemanais = _limpPendSemanais.slice(0,8);
+  })();
+  var _limpPendMostrado = false; // flag: mostrar pendentes apenas uma vez (no 1° dia)
+
+  // ===== Helper: card de limpeza para um dia =====
+  function renderLimpCard(diaNome){
+    var podeEditar = ["admin","gestor"].includes(sessao.papel);
+    // Calcular data ISO deste dia
+    var diaNomeData = mapaDatas[diaNome]; // "dd/mm"
+    var diaISO = "";
+    if (diaNomeData && seg){
+      var offDia = ORDEM_DIAS_PROG[diaNome];
+      if (offDia !== undefined){
+        var dd = new Date(seg); dd.setDate(dd.getDate()+offDia);
+        diaISO = dd.getFullYear()+"-"+("0"+(dd.getMonth()+1)).slice(-2)+"-"+("0"+dd.getDate()).slice(-2);
+      }
+    }
+
+    // Tarefas de limpeza agendadas para este dia (por data ISO)
+    var tarefasDia = [];
+    LIMP_SETORES.forEach(function(st){
+      var lista = tarefasVinculadas["limpeza-"+st.id] || [];
+      lista.forEach(function(t){
+        if (!t.data || t.data === diaISO){
+          tarefasDia.push({setor:st, tarefa:t});
+        }
+      });
+    });
+
+    // Mostrar pendentes semanais apenas no primeiro dia com card
+    var itensPendentes = (!_limpPendMostrado && _limpPendSemanais.length) ? _limpPendSemanais : [];
+
+    if (!tarefasDia.length && !itensPendentes.length) return "";
+    _limpPendMostrado = true;
+
+    var html = "<div class='prog-item prog-item-limpeza'>"+
+      "<div class='prog-main'>"+
+        "<div class='prog-tipo-header'>"+
+          "<span class='prog-tipo-icone'>🧹</span>"+
+          "<span>Limpeza</span>"+
+          (podeEditar ?
+            "<button class='btn-mini' style='margin-left:auto;background:#1B9A59;border-color:#1B9A59;color:#fff;font-size:.72rem' "+
+            "id='btnAddLimpDia_"+esc(diaNome)+"' data-limp-dia='"+esc(diaNome)+"' data-limp-data='"+esc(diaISO)+"'>+ Atribuir</button>"
+          : "")+
+        "</div>";
+
+    // Tarefas atribuídas
+    if (tarefasDia.length){
+      html += "<div class='prog-limpeza-tarefas'>";
+      tarefasDia.forEach(function(entry){
+        var t = entry.tarefa; var st = entry.setor;
+        var mem = equipe.find(function(u){ return u.login===t.login; });
+        var nomeOp = mem ? (mem.nome||mem.login) : t.login;
+        var nomeTarefa = t.taskNome.replace(/^🧹 Limpeza · /,"");
+        html += "<div class='limp-task-row"+(t.feita?" feita":"")+"'>"+
+          "<span class='limp-task-setor'>"+st.icone+" "+esc(st.nome)+"</span>"+
+          "<span class='limp-task-nome'>"+esc(nomeTarefa)+"</span>"+
+          "<span class='limp-task-op'>@"+esc(nomeOp)+"</span>"+
+        "</div>";
+      });
+      html += "</div>";
+    }
+
+    // Itens pendentes / críticos
+    if (itensPendentes.length){
+      html += "<div class='prog-limpeza-pendentes'>";
+      html += "<div style='font-size:.7rem;font-weight:700;color:var(--muted);margin-bottom:4px'>🔔 Pendentes esta semana</div>";
+      itensPendentes.forEach(function(p){
+        html += "<div class='limp-pend-row'>"+
+          "<span class='prog-limp-chip "+p.status+"' style='font-size:.7rem;padding:1px 6px'>"+
+            p.setor.icone+" "+esc(p.setor.nome)+
+          "</span>"+
+          "<span class='limp-pend-nome'>"+esc(p.item.nome)+"</span>"+
+          "<span class='limp-pend-dias limp-"+p.status+"'>"+limpStatusLabel(p.dias)+"</span>"+
+          "<button class='btn-mini' style='font-size:.67rem;padding:1px 6px;background:#1B9A59;border-color:#1B9A59;color:#fff' "+
+          "data-limp-reg-setor='"+esc(p.setor.id)+"' data-limp-reg-item='"+esc(p.item.id)+"' "+
+          "data-limp-reg-freq='"+esc(p.item.freq)+"'>✓</button>"+
+        "</div>";
+      });
+      html += "</div>";
+    }
+
+    html += "</div></div>";
+    return html;
+  }
+
+  // Coletar dias que têm limpeza pendente mas não têm items de produção
+  var diasComProd = {};
+  tudo.forEach(function(it){ if(it.dia) diasComProd[it.dia]=true; });
+
   if(!tudo.length){
-    $("progLista").innerHTML="<div class='vazio'>Nenhuma atividade programada esta semana.</div>";
+    // Sem produção: mostrar dias da semana com limpeza
+    var htmlVazio = "";
+    DIAS_PROG.forEach(function(dia){
+      var lCard = renderLimpCard(dia);
+      if(lCard){
+        var dtSep = mapaDatas[dia] || "";
+        htmlVazio += "<div class='prog-dia-sep'>"+esc(dia)+(dtSep?" — "+dtSep:"")+"</div>";
+        htmlVazio += lCard;
+      }
+    });
+    if(!htmlVazio) htmlVazio = "<div class='vazio'>Nenhuma atividade programada esta semana.</div>";
+    $("progLista").innerHTML = htmlVazio;
     return;
   }
 
@@ -5932,6 +6098,7 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
     // ===== BARRIL: renderizar como card próprio =====
     if (it._tipo === "barril"){
       if (it.dia !== diaGrupo){
+        if (diaGrupo !== undefined){ htmlTotal += renderLimpCard(diaGrupo); }
         diaGrupo = it.dia;
         var dtSepB = mapaDatas[diaGrupo] || "";
         htmlTotal += diaGrupo
@@ -6001,8 +6168,11 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
       : "<button class='btn-mini secundario' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+
         esc(semItem)+"' data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"'>✏ Editar resultado</button>";
 
-    // separador de dia
+    // separador de dia — ao mudar de dia, fechar grupo anterior com card limpeza
     if (it.dia !== diaGrupo){
+      if (diaGrupo !== undefined){
+        htmlTotal += renderLimpCard(diaGrupo);
+      }
       diaGrupo = it.dia;
       var dtSep = mapaDatas[diaGrupo] || "";
       htmlTotal += diaGrupo
@@ -6046,6 +6216,23 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
       "</div>"+
     "</div>";
   });
+
+  // Fechar último grupo de dia com card de limpeza
+  if (diaGrupo !== undefined){
+    htmlTotal += renderLimpCard(diaGrupo);
+  }
+
+  // Dias sem produção mas com limpeza pendente/atribuída
+  DIAS_PROG.forEach(function(dia){
+    if (diasComProd[dia]) return; // já processado acima
+    var lCard = renderLimpCard(dia);
+    if (lCard){
+      var dtSep = mapaDatas[dia] || "";
+      htmlTotal += "<div class='prog-dia-sep'>"+esc(dia)+(dtSep?" — "+dtSep:"")+"</div>";
+      htmlTotal += lCard;
+    }
+  });
+
   $("progLista").innerHTML = htmlTotal;
 }
 
@@ -7023,6 +7210,38 @@ $("progLista").addEventListener("click", function(ev){
     if($("resObs")) $("resObs").value = res.obsReal||"";
   }).catch(function(){});
   $("modalRes").hidden = false;
+});
+
+// ===== Listeners de limpeza integrada na Programação =====
+$("progLista").addEventListener("click", function(ev){
+  // ✓ Registrar item de limpeza diretamente do card
+  var btnReg = ev.target.closest("[data-limp-reg-setor]");
+  if (btnReg){
+    var setorId = btnReg.dataset.limpRegSetor;
+    var itemId  = btnReg.dataset.limpRegItem;
+    var freq    = btnReg.dataset.limpRegFreq;
+    btnReg.disabled = true;
+    api("/api/limpeza",{method:"POST",body:{
+      acao:"registrar", setor:setorId, item:itemId,
+      periodicidade:freq, feitoPor:sessao.login, obs:""
+    }}).then(function(){
+      if (!_limpResumo[setorId]) _limpResumo[setorId] = {};
+      _limpResumo[setorId][itemId] = {em: new Date().toISOString()};
+      toast("Limpeza registrada ✓","ok");
+      atualizarLimpezaProg();
+      carregarProg();
+    }).catch(function(e){ btnReg.disabled=false; toast(e.message,"erro"); });
+    return;
+  }
+
+  // + Atribuir limpeza no dia — abre modal pré-configurado com a data
+  var btnAtrib = ev.target.closest("[data-limp-dia]");
+  if (btnAtrib){
+    var dataVal = btnAtrib.dataset.limpData;
+    abrirModalLimpezaProg();
+    if (dataVal && $("limpProgData")) $("limpProgData").value = dataVal;
+    return;
+  }
 });
 
 $("btnResSalvar").addEventListener("click", async function(){
@@ -8467,6 +8686,7 @@ async function atualizarLimpezaProg(){
   try{
     var r = await api("/api/limpeza?resumo=1");
     var resumo = r.resumo || {};
+    _limpResumo = resumo; // manter em sincronia com o cache global
     var chips = "";
     LIMP_SETORES.forEach(function(st){
       var resumoSetor = resumo[st.id]||{};
