@@ -3152,22 +3152,23 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
       </div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
         <div>
-          <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Produto *</label>
-          <input type="text" id="envProduto" placeholder="Ex.: Pilsen Garrafa 355ml"
-            style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem">
-        </div>
-        <div>
-          <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Lote</label>
-          <select id="envLote"
-            style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem;background:#fff">
-            <option value="">Selecione o tanque primeiro…</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Tanque de origem</label>
+          <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Tanque de origem *</label>
           <select id="envTanque"
             style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem;background:#fff">
             <option value="">Carregando tanques…</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Produto</label>
+          <input type="text" id="envProduto" placeholder="Preenchido ao selecionar o tanque" readonly
+            style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem;background:#f0f4ff;color:#555;cursor:default">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:#003E99;display:block;margin-bottom:4px">Lote</label>
+          <input type="text" id="envLoteDisplay" placeholder="Preenchido ao selecionar o tanque" readonly
+            style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem;background:#f0f4ff;color:#555;cursor:default">
+          <select id="envLote" style="display:none">
+            <option value="">Selecione o tanque primeiro…</option>
           </select>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -3379,7 +3380,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.41";
+var VERSAO = "3.7.42";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6664,6 +6665,7 @@ $("btnAddEnvase").addEventListener("click", async function(){
   $("envFormTitulo").textContent = "\uD83D\uDCE6 Novo Envase";
   $("envProduto").value = "";
   $("envLote").innerHTML = "<option value=''>Selecione o tanque primeiro…</option>";
+  $("envLoteDisplay").value = "";
   $("envFormato").value = "";
   $("envQtd").value = "";
   $("envObs").value = "";
@@ -6672,22 +6674,56 @@ $("btnAddEnvase").addEventListener("click", async function(){
   $("envEstiloWrap").hidden = true;
   $("envEstilo").value = "";
   await popularSelectTanques("envTanque", true, "");
+  // Se já houver um tanque pré-selecionado, preencher produto e lote
   var tqSel = $("envTanque").value;
-  if (tqSel) popularLotesPorTanque(tqSel, "envLote", "#B3C8F5");
+  if (tqSel) {
+    var tqNorm2 = tqSel.toUpperCase().replace(/[-\s]/g,"");
+    if (_dadosTanques) {
+      var tqObj2 = _dadosTanques.find(function(t){ return t.nome.toUpperCase() === tqNorm2; });
+      if (tqObj2 && tqObj2.estilo) $("envProduto").value = tqObj2.estilo;
+    }
+    popularLotesPorTanque(tqSel, "envLote", "#B3C8F5");
+    setTimeout(function(){
+      var ls = $("envLote");
+      for (var i = 0; i < ls.options.length; i++) {
+        if (ls.options[i].value) { ls.value = ls.options[i].value; $("envLoteDisplay").value = ls.options[i].value; break; }
+      }
+    }, 80);
+  }
   $("modalEnvase").hidden = false;
-  setTimeout(function(){ $("envProduto").focus(); }, 80);
+  setTimeout(function(){ $("envTanque").focus(); }, 80);
 });
-// Quando tanque de envase mudar, popular lotes disponíveis
+// Quando tanque de envase mudar, popular lotes e preencher produto/lote automaticamente
 $("envTanque").addEventListener("change", function(){
-  popularLotesPorTanque(this.value, "envLote", "#B3C8F5");
-  // preencher produto automaticamente se tiver estilo
-  var tqNorm = (this.value||"").toUpperCase().replace(/[-\s]/g,"");
-  if (tqNorm && _dadosTanques) {
-    var tq = _dadosTanques.find(function(t){ return t.nome.toUpperCase() === tqNorm; });
-    if (tq && tq.estilo && !$("envProduto").value) {
-      $("envProduto").value = tq.estilo;
+  var tqVal = this.value;
+  // Limpar campos dependentes
+  $("envProduto").value = "";
+  $("envLoteDisplay").value = "";
+  $("envLote").innerHTML = "<option value=''>Selecione o tanque primeiro…</option>";
+  if (!tqVal) return;
+  // Preencher produto a partir do estilo do tanque
+  var tqNorm = tqVal.toUpperCase().replace(/[-\s]/g,"");
+  if (_dadosTanques) {
+    var tqObj = _dadosTanques.find(function(t){ return t.nome.toUpperCase() === tqNorm; });
+    if (tqObj && tqObj.estilo) {
+      $("envProduto").value = tqObj.estilo;
     }
   }
+  // Popular lotes e ao terminar, mostrar o lote ativo no display
+  popularLotesPorTanque(tqVal, "envLote", "#B3C8F5");
+  // Pequeno delay para o select ser populado
+  setTimeout(function(){
+    var loteSelect = $("envLote");
+    // Selecionar primeiro lote válido (não vazio)
+    var primeiroLote = "";
+    for (var i = 0; i < loteSelect.options.length; i++) {
+      if (loteSelect.options[i].value) { primeiroLote = loteSelect.options[i].value; break; }
+    }
+    if (primeiroLote) {
+      loteSelect.value = primeiroLote;
+      $("envLoteDisplay").value = primeiroLote;
+    }
+  }, 80);
 });
 
 var ENV_ESTILOS = {
@@ -6715,9 +6751,9 @@ $("btnEnvSalvar").addEventListener("click", async function(){
   var envQt    = $("envQtd").value.trim();
   var envDv    = $("envDia").value;
   var envEstiloVal = (ENV_ESTILOS[envFmt]&&ENV_ESTILOS[envFmt].length) ? $("envEstilo").value : "";
-  if (!produto) { toast("Informe o produto.","erro"); $("envProduto").focus(); return; }
-  if (!envLt)   { toast("Informe o lote.","erro"); $("envLote").focus(); return; }
-  if (!envTq)   { toast("Informe o tanque.","erro"); $("envTanque").focus(); return; }
+  if (!envTq)   { toast("Selecione o tanque de origem.","erro"); $("envTanque").focus(); return; }
+  if (!produto) { toast("Produto não identificado. Verifique o tanque.","erro"); $("envTanque").focus(); return; }
+  if (!envLt)   { toast("Lote não identificado. Verifique o tanque.","erro"); $("envTanque").focus(); return; }
   if (!envFmt)  { toast("Selecione o formato.","erro"); $("envFormato").focus(); return; }
   if (ENV_ESTILOS[envFmt]&&!envEstiloVal){ toast("Selecione o estilo.","erro"); $("envEstilo").focus(); return; }
   if (!envQt)   { toast("Informe a qtd prevista.","erro"); $("envQtd").focus(); return; }
@@ -6799,6 +6835,8 @@ $("progLista").addEventListener("click", async function(ev){
         $("envLote").insertBefore(optExtraEnv, $("envLote").firstChild);
         $("envLote").value = loteSalvoEnv;
       }
+      // Atualizar campo display do lote (readonly)
+      $("envLoteDisplay").value = loteSalvoEnv;
       $("modalEnvase").hidden = false;
     } else {
       _brasseditando = {id: it.id, semana};
