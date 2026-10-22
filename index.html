@@ -902,6 +902,20 @@
     border-radius:12px;padding:13px 14px;border-left:4px solid transparent;
     border:1px solid var(--linha);
   }
+  .tq-split{
+    display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:10px;overflow:hidden;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+  }
+  @media(max-width:420px){
+    .tq-split{ grid-template-columns:1fr; }
+    .tq-split-agora{ border-right:none !important;border-bottom:2px solid var(--tq-borda); }
+  }
+  .tq-split-agora{ padding:10px 11px;min-height:80px; }
+  .tq-split-proximo{ padding:10px 11px;background:#EEF2FF;min-height:80px; }
+  .tq-split-label{
+    font-size:.6rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;
+    margin-bottom:5px;opacity:.85;
+  }
   .tq-topo{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;flex-wrap:wrap}
   .tq-cod{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.85rem;
     color:var(--verde)}
@@ -3418,7 +3432,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.45";
+var VERSAO = "3.7.46";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9345,22 +9359,18 @@ async function carregarTanques(){
           "<span style='font-size:.7rem;color:var(--muted)'>"+fmtNum(tq.capacidade)+" L</span>"+
         "</div>"+
 
-        // dois blocos lado a lado
-        "<div style='display:grid;grid-template-columns:1fr 1fr;gap:0;border:2px solid "+esc(corBorda)+";"+
-          "border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)'>"+
+        // dois blocos — lado a lado em desktop, empilhados em mobile
+        "<div class='tq-split' style='border:2px solid "+esc(corBorda)+";--tq-borda:"+esc(corBorda)+"'>"+
 
           // bloco AGORA — fundo sólido baseado no status
-          "<div style='padding:10px 11px;border-right:2px solid "+esc(corBorda)+";"+
-            "background:"+esc(tq.estagioCorBg)+";min-height:80px'>"+
-            "<div style='font-size:.6rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;"+
-              "color:"+esc(corBorda)+";margin-bottom:5px;opacity:.85'>▶ Agora</div>"+
+          "<div class='tq-split-agora' style='border-right:2px solid "+esc(corBorda)+";background:"+esc(tq.estagioCorBg)+"'>"+
+            "<div class='tq-split-label' style='color:"+esc(corBorda)+"'>▶ Agora</div>"+
             presenteConteudo+
           "</div>"+
 
           // bloco PRÓXIMO — fundo azul-ardósia suave
-          "<div style='padding:10px 11px;background:#EEF2FF;min-height:80px'>"+
-            "<div style='font-size:.6rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;"+
-              "color:#4338CA;margin-bottom:5px;opacity:.85'>⏭ Próximo</div>"+
+          "<div class='tq-split-proximo'>"+
+            "<div class='tq-split-label' style='color:#4338CA'>⏭ Próximo</div>"+
             proximoConteudo+
           "</div>"+
 
