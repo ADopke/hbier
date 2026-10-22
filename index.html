@@ -553,6 +553,10 @@
     font-size:.75rem;flex-shrink:0;
   }
   .check-lancamento.marcado .cl-icone{ background:var(--verde);color:#fff;border-color:var(--verde); }
+  .check-lancamento.processo{
+    background:#EEF2FF;border-color:#6366F1;color:#4338CA;
+  }
+  .check-lancamento.processo .cl-icone{ background:#6366F1;color:#fff;border-color:#6366F1; }
   .checks-lancamento{ display:flex;gap:8px;flex-wrap:wrap;margin-top:8px; }
 
   /* ---- resultado de produção ---- */
@@ -3414,7 +3418,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.44";
+var VERSAO = "3.7.45";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5868,7 +5872,22 @@ function renderChecksLancamento(it, semana){
       esc(rotulo)+(marcado?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+em+"</span>":"")+
       "</button>";
   }
+  function btnCheckProcesso(campo, rotulo){
+    var marcado = !!ch[campo];
+    var por = ch[campo+"_por"] ? " @"+ch[campo+"_por"] : "";
+    var em  = ch[campo+"_em"] ? " · "+fmtCheckEm(ch[campo+"_em"]) : "";
+    return "<button class='check-lancamento"+(marcado?" processo":"")+"'"+
+      " data-prog-check='"+esc(campo)+"'"+
+      " data-prog-check-id='"+esc(it.id)+"'"+
+      " data-prog-check-semana='"+esc(semana)+"'>"+
+      "<span class='cl-icone'>"+(marcado?"✓":"")+"</span>"+
+      esc(rotulo)+(marcado?"<span style='font-size:.7rem;opacity:.75'>"+esc(por)+em+"</span>":"")+
+      "</button>";
+  }
+
   var botoes = "";
+  if (!isEnvase) botoes += btnCheckProcesso("moagemMalte", "⚙ Moagem Malte");
+  if (!isEnvase) botoes += btnCheckProcesso("cipTanque",   "🧹 CIP Tanque");
   botoes += btnCheckProg("beerSalesProg",   "BeerSales Prog.");
   botoes += btnCheck("lancadoBeerSales",    "BeerSales Conc.");
   if (!isEnvase) botoes += btnCheck("lancadoBeerbo", "Beerbo");
@@ -6442,6 +6461,8 @@ async function carregarProgMensal(){
           }
           var isEnvIt=(it.tipo==="envase");
           var checksHtml="<div class='ddep-checks'>"+
+            (isEnvIt?"":chkBtn("moagemMalte","⚙ Moagem Malte","processo"))+
+            (isEnvIt?"":chkBtn("cipTanque","🧹 CIP Tanque","processo"))+
             chkBtn("beerSalesProg","BeerSales Prog.","programado")+
             chkBtn("lancadoBeerSales","BeerSales Conc.","marcado")+
             (isEnvIt?"":chkBtn("lancadoBeerbo","Beerbo","marcado"))+
