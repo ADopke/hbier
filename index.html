@@ -3434,7 +3434,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.52";
+var VERSAO = "3.7.53";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11604,16 +11604,15 @@ function abrirFichaLote(tq){
     '</div>'+
     '<div class="fp-sec">'+
       '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
-        '<div class="fp-sec-head-left"><span class="fp-sec-icon">🧂</span><span class="fp-sec-title">Adjuntos</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
+        '<div class="fp-sec-head-left"><span class="fp-sec-icon">🔬</span><span class="fp-sec-title dourado">Auxiliares de Brassagem (Enzimas)</span><span class="fp-role-badge g">🛡 Gestor</span><span class="fp-lock-icon">🔒</span></div>'+
         '<span class="fp-sec-toggle">▾</span></div>'+
       '<div class="fp-sec-body">'+
-        '<div class="fp-tbl-wrap">'+
-          '<table class="fp-data" id="fp-tbl-adj">'+
-            '<thead><tr><th>Item</th><th>Qtd/bat</th><th>Uso</th><th></th></tr></thead>'+
-            '<tbody></tbody>'+
-          '</table>'+
+        '<div style="overflow-x:auto">'+
+          '<div class="fp-enz-grid">'+
+            '<div class="fp-enz-row" style="display:contents"><div class="fp-enz-cell head">Produto</div><div class="fp-enz-cell head">Dose</div><div class="fp-enz-cell head">Qtd/bat (g)</div><div class="fp-enz-cell head">Momento</div></div>'+
+            '<div id="fp-tbl-adj-enz"></div>'+
+          '</div>'+
         '</div>'+
-        '<button class="fp-add-row-btn" onclick="fp_addRow(\'fp-tbl-adj\',\'Item\',\'Qtd\',\'Uso\')">＋</button>'+
       '</div>'+
     '</div>'+
   '</div>'+
@@ -12472,37 +12471,28 @@ function fp_aplicarReceita(rec){
   // --- Sais ---
   if(rec.sais && rec.sais.length){ preencherTblFicha('fp-tbl-sais', rec.sais); }
 
-  // --- Adjuntos ---
-  // rec-tbl-adj colunas: [ingrediente, tipo, adição, tempo/etapa, qtde/bat]
-  // fp-tbl-adj  colunas: [item, qtd/bat, uso]
-  if(rec.adjuntos && rec.adjuntos.length){
-    preencherTblFicha('fp-tbl-adj', rec.adjuntos.map(function(r){
-      return [r[0]||'', r[4]||'', r[2]||''];
-    }));
-  }
+  // Adjuntos removidos da ficha de lote — substituídos por Auxiliares de Brassagem
 
   // --- Perfis Fermentação e Maturação ---
   if(rec.pferm && rec.pferm.length){ preencherTblFicha('fp-tbl-pferm', rec.pferm); }
   if(rec.pmatur && rec.pmatur.length){ preencherTblFicha('fp-tbl-pmatur', rec.pmatur); }
 
-  // --- Enzimas (grid especial fp-enz-grid) ---
+  // --- Enzimas: popula fp-enz-extra (seção própria) E fp-tbl-adj-enz (ao lado da levedura) ---
   if(rec.enzimas && rec.enzimas.length){
-    var enzExtra = document.getElementById('fp-enz-extra');
-    if(enzExtra){
-      enzExtra.innerHTML='';
+    ['fp-enz-extra','fp-tbl-adj-enz'].forEach(function(containerId){
+      var el = document.getElementById(containerId);
+      if(!el) return;
+      el.innerHTML='';
       rec.enzimas.forEach(function(cols){
         var row=document.createElement('div'); row.className='fp-enz-row'; row.style.display='contents';
         row.innerHTML=
-          '<div class="fp-enz-cell" style="display:flex;align-items:center;gap:4px;">'+
-            '<input value="'+esc(cols[0]||'')+'" style="flex:1">'+
-            '<button onclick="this.closest(\'.fp-enz-row\').remove();fp_markDirty()" style="background:none;border:none;cursor:pointer;color:var(--fp-fg3);font-size:13px;padding:0 2px" title="Remover">✕</button>'+
-          '</div>'+
-          '<div class="fp-enz-cell"><input value="'+esc(cols[1]||'')+'"></div>'+
-          '<div class="fp-enz-cell"><input value="'+esc(cols[2]||'')+'"></div>'+
-          '<div class="fp-enz-cell"><input value="'+esc(cols[3]||'')+'"></div>';
-        enzExtra.appendChild(row);
+          '<div class="fp-enz-cell">'+esc(cols[0]||'')+'</div>'+
+          '<div class="fp-enz-cell">'+esc(cols[1]||'')+'</div>'+
+          '<div class="fp-enz-cell">'+esc(cols[2]||'')+'</div>'+
+          '<div class="fp-enz-cell">'+esc(cols[3]||'')+'</div>';
+        el.appendChild(row);
       });
-    }
+    });
   }
 
   // --- Levedura: campos por ID ---
