@@ -3448,7 +3448,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.60";
+var VERSAO = "3.7.61";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10164,22 +10164,39 @@ function fp_confirmarAplic(tipo){
 }
 
 function fp_desfazarAplic(tipo){
-  if(!confirm('Desfazer a confirmação de '+({clearmax:'Clearmax Pro',clearmaxL:'Clearmax L',lev:'Levedura'}[tipo]||tipo)+'?')) return;
-  var cfg = {
-    clearmax:  { blocoId:'fp-bloco-clearmax',   btnId:'fp-btn-clearmax-ferm',  statusId:'fp-clearmax-status',   btnTxt:'✅ Confirmar uso',          desfazId:'fp-desfazer-clearmax'  },
-    clearmaxL: { blocoId:'fp-bloco-clearmax-l', btnId:'fp-btn-clearmax-l-ferm',statusId:'fp-clearmax-l-status', btnTxt:'✅ Confirmar uso',          desfazId:'fp-desfazer-clearmaxL' },
-    lev:       { blocoId:'fp-bloco-lev',        btnId:'fp-btn-lev-ferm',       statusId:'fp-lev-status',        btnTxt:'✅ Confirmar inoculação',   desfazId:'fp-desfazer-lev'       },
-  }[tipo];
-  if(!cfg) return;
-  var bloco  = document.getElementById(cfg.blocoId);
-  var btn    = document.getElementById(cfg.btnId);
-  var status = document.getElementById(cfg.statusId);
-  var desfaz = document.getElementById(cfg.desfazId);
-  if(bloco){ delete bloco.dataset.confirmado; delete bloco.dataset.hora; delete bloco.dataset.data; delete bloco.dataset.quem; if(tipo==='clearmaxL') delete bloco.dataset.qtd; }
-  if(btn){ btn.disabled = false; btn.textContent = cfg.btnTxt; }
-  if(status){ status.classList.add('pendente'); status.querySelector('.fp-aplic-status-ico').textContent='⏳'; status.querySelector('.fp-aplic-status-txt').textContent='Aguardando confirmação'; status.querySelector('.fp-aplic-quem').textContent=''; }
-  if(desfaz) desfaz.hidden = true;
-  fp_markDirty();
+  var nomes = {clearmax:'Clearmax Pro', clearmaxL:'Clearmax L', lev:'Levedura'};
+  // diálogo inline (confirm() não funciona em webview/iframe)
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML='<div style="background:#fff;border-radius:12px;padding:22px 24px;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.25);text-align:center">'+
+    '<div style="font-size:1.5rem;margin-bottom:8px">↩</div>'+
+    '<div style="font-weight:700;font-size:.95rem;margin-bottom:6px">Desfazer confirmação</div>'+
+    '<div style="color:#6B7280;font-size:.83rem;margin-bottom:18px">Deseja desfazer a confirmação de <b>'+esc(nomes[tipo]||tipo)+'</b>?</div>'+
+    '<div style="display:flex;gap:8px;justify-content:center">'+
+      '<button id="fp-desfaz-nao" style="padding:8px 20px;border:1.5px solid #D1D5DB;border-radius:8px;background:#fff;font-weight:600;cursor:pointer;font-size:.88rem">Cancelar</button>'+
+      '<button id="fp-desfaz-sim" style="padding:8px 20px;border:none;border-radius:8px;background:#DC2626;color:#fff;font-weight:700;cursor:pointer;font-size:.88rem">Desfazer</button>'+
+    '</div>'+
+  '</div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#fp-desfaz-nao').onclick = function(){ document.body.removeChild(overlay); };
+  overlay.querySelector('#fp-desfaz-sim').onclick = function(){
+    document.body.removeChild(overlay);
+    var cfg = {
+      clearmax:  { blocoId:'fp-bloco-clearmax',   btnId:'fp-btn-clearmax-ferm',  statusId:'fp-clearmax-status',   btnTxt:'✅ Confirmar uso',        desfazId:'fp-desfazer-clearmax'  },
+      clearmaxL: { blocoId:'fp-bloco-clearmax-l', btnId:'fp-btn-clearmax-l-ferm',statusId:'fp-clearmax-l-status', btnTxt:'✅ Confirmar uso',        desfazId:'fp-desfazer-clearmaxL' },
+      lev:       { blocoId:'fp-bloco-lev',        btnId:'fp-btn-lev-ferm',       statusId:'fp-lev-status',        btnTxt:'✅ Confirmar inoculação', desfazId:'fp-desfazer-lev'       },
+    }[tipo];
+    if(!cfg) return;
+    var bloco  = document.getElementById(cfg.blocoId);
+    var btn    = document.getElementById(cfg.btnId);
+    var status = document.getElementById(cfg.statusId);
+    var desfaz = document.getElementById(cfg.desfazId);
+    if(bloco){ delete bloco.dataset.confirmado; delete bloco.dataset.hora; delete bloco.dataset.data; delete bloco.dataset.quem; if(tipo==='clearmaxL') delete bloco.dataset.qtd; }
+    if(btn){ btn.disabled = false; btn.textContent = cfg.btnTxt; }
+    if(status){ status.classList.add('pendente'); status.querySelector('.fp-aplic-status-ico').textContent='⏳'; status.querySelector('.fp-aplic-status-txt').textContent='Aguardando confirmação'; status.querySelector('.fp-aplic-quem').textContent=''; }
+    if(desfaz) desfaz.hidden = true;
+    fp_markDirty();
+  };
 }
 /* ── fim Adições ao Tanque ────────────────────────────────── */
 
@@ -10633,6 +10650,60 @@ function fp_calcFermStats(){
     abvEl.textContent = '—';
   }
 }
+/* OG real — validação e auto-lançamento na fermentação */
+function fp_ogRealInput(inp){
+  // Feedback visual: vermelho se fora do range SG
+  var v = parseFloat(inp.value);
+  if(inp.value !== '' && (isNaN(v) || v < 1.000 || v > 1.200)){
+    inp.style.borderColor = '#DC2626';
+    inp.title = 'Use formato SG (ex.: 1.048). Brix não é aceito aqui.';
+  } else {
+    inp.style.borderColor = '';
+    inp.title = '';
+  }
+}
+function fp_ogRealBlur(inp){
+  var v = parseFloat(inp.value);
+  if(isNaN(v) || v < 1.000 || v > 1.200){
+    inp.style.borderColor = v && inp.value !== '' ? '#DC2626' : '';
+    return;
+  }
+  inp.style.borderColor = '';
+  // Verifica se o card desta batelada já tem uma linha de fermentação com este exato SG
+  var card = inp.closest('.fp-bat-card');
+  if(!card) return;
+  var fermLog = card.querySelector('#fp-ferm-log');
+  if(!fermLog) return;
+  var sgStr = v.toFixed(3);
+  var existingRows = fermLog.querySelectorAll('.fp-mlog-row:not(.header)');
+  for(var i = 0; i < existingRows.length; i++){
+    var sgInp = existingRows[i].querySelectorAll('input')[1];
+    if(sgInp && parseFloat(sgInp.value).toFixed(3) === sgStr) return; // já existe, não duplicar
+  }
+  // Cria primeira linha de fermentação com a OG como SG inicial
+  var now = new Date(), local = now.toISOString().slice(0,16);
+  var row = document.createElement('div');
+  row.className = 'fp-mlog-row ferm';
+  row.innerHTML =
+    '<div class="fp-log-cell"><input type="datetime-local" value="'+local+'"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.001" placeholder="1.040" value="'+sgStr+'"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.01" placeholder="kgf/cm²"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="pH"></div>'+
+    '<div class="fp-log-cell"><input placeholder="OG inicial (auto)"></div>'+
+    '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
+  // Insere como primeira linha (antes de qualquer linha existente)
+  if(fermLog.firstChild){
+    fermLog.insertBefore(row, fermLog.firstChild);
+  } else {
+    fermLog.appendChild(row);
+  }
+  row.querySelectorAll('input').forEach(function(i2){
+    i2.addEventListener('input', fp_calcFermStats);
+  });
+  fp_markDirty();
+  fp_calcFermStats();
+}
 /* Registra aprovação final do lote */
 function fp_aprovarLote(){
   var now = new Date();
@@ -10948,7 +11019,7 @@ function fp_addBatelada(){
     '<div class="fp-divider"></div>'+
     '<div class="fp-small-label">📊 Resumo — Volumes e Densidades</div>'+
     '<div class="fp-vol-row">'+
-      '<div class="fp-field"><label>OG real (no tanque)</label><input class="fp-og-real" placeholder="—" data-resumo-efic="og"></div>'+
+      '<div class="fp-field"><label>OG real (no tanque)</label><input class="fp-og-real" placeholder="ex.: 1.050" data-resumo-efic="og" type="number" step="0.001" min="1.000" max="1.200" oninput="fp_ogRealInput(this)" onblur="fp_ogRealBlur(this)"></div>'+
       '<div class="fp-field"><label>pH mosto final</label><input placeholder="—"></div>'+
       '<div class="fp-field"><label>Eficiência real (%)</label><input class="fp-efic-real" placeholder="—" readonly style="background:var(--fp-bg3);cursor:default" title="Calculado automaticamente"></div>'+
     '</div>'+
@@ -13088,6 +13159,8 @@ window.fp_calcProgresso    = fp_calcProgresso;
 window.fp_calcIodo         = fp_calcIodo;
 window.fp_addLavRow        = fp_addLavRow;
 window.fp_calcFermStats    = fp_calcFermStats;
+window.fp_ogRealInput      = fp_ogRealInput;
+window.fp_ogRealBlur       = fp_ogRealBlur;
 window.fp_renderGraficos   = fp_renderGraficos;
 window.fp_aprovarLote      = fp_aprovarLote;
 window.fp_addEnzRow        = fp_addEnzRow;
