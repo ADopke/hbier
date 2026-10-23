@@ -3435,7 +3435,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.56";
+var VERSAO = "3.7.57";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5905,6 +5905,7 @@ function renderChecksLancamento(it, semana){
   var botoes = "";
   if (!isEnvase) botoes += btnCheckProcesso("moagemMalte", "⚙ Moagem Malte");
   if (!isEnvase) botoes += btnCheckProcesso("cipTanque",   "🧹 CIP Tanque");
+  if (!isEnvase) botoes += btnCheckProcesso("quebraBeerSales", "📋 Quebra Beer Sales");
   botoes += btnCheckProg("beerSalesProg",   "BeerSales Prog.");
   botoes += btnCheck("lancadoBeerSales",    "BeerSales Conc.");
   if (!isEnvase) botoes += btnCheck("lancadoBeerbo", "Beerbo");
@@ -6480,6 +6481,7 @@ async function carregarProgMensal(){
           var checksHtml="<div class='ddep-checks'>"+
             (isEnvIt?"":chkBtn("moagemMalte","⚙ Moagem Malte","processo"))+
             (isEnvIt?"":chkBtn("cipTanque","🧹 CIP Tanque","processo"))+
+            (isEnvIt?"":chkBtn("quebraBeerSales","📋 Quebra Beer Sales","processo"))+
             chkBtn("beerSalesProg","BeerSales Prog.","programado")+
             chkBtn("lancadoBeerSales","BeerSales Conc.","marcado")+
             (isEnvIt?"":chkBtn("lancadoBeerbo","Beerbo","marcado"))+
@@ -9490,6 +9492,21 @@ async function carregarTanques(){
 
     $("tanquesLista").querySelectorAll("[data-tq-zerado]").forEach(function(btn){
       btn.addEventListener("click", async function(){
+        var tqId = btn.dataset.tqZerado;
+        // --- Verificar trava: Quebra Beer Sales precisa estar marcado ---
+        var tqObj = _dadosTanques && _dadosTanques.find(function(t){ return t.id === tqId; });
+        if (tqObj && tqObj.brassadoId && tqObj.brassadoSem) {
+          var quebraMarcada = false;
+          try {
+            var rProg = await api("/api/prog?semana="+encodeURIComponent(tqObj.brassadoSem));
+            var itBrass = (rProg.itens||[]).find(function(x){ return x.id === tqObj.brassadoId; });
+            if (itBrass && itBrass.checks && itBrass.checks.quebraBeerSales) quebraMarcada = true;
+          } catch(e){ /* se falhar, permite prosseguir */ quebraMarcada = true; }
+          if (!quebraMarcada) {
+            toast("⚠️ Marque \"📋 Quebra Beer Sales\" na programação antes de zerar o tanque.", "erro");
+            return;
+          }
+        }
         if (!confirm("Confirmar que o "+btn.dataset.tqNome+" foi zerado (esvaziado)?")) return;
         try{
           // Montar snapshot completo do lote atual para o histórico
@@ -13937,7 +13954,7 @@ async function renderHojePrograma(){
   $("hojeProgResumo").textContent = itens.length+" item(s)";
   sec.hidden = false;
 
-  var FREQ_LABEL_CHECKS = {beerSalesProg:"BeerSales Prog.",lancadoBeerSales:"BeerSales Conc.",lancadoBeerbo:"Beerbo"};
+  var FREQ_LABEL_CHECKS = {beerSalesProg:"BeerSales Prog.",lancadoBeerSales:"BeerSales Conc.",lancadoBeerbo:"Beerbo",quebraBeerSales:"Quebra Beer Sales",moagemMalte:"Moagem Malte",cipTanque:"CIP Tanque"};
 
   $("hojeProgLista").innerHTML = itens.map(function(it){
     var pc = it.tipo==="brassagem"?"hpp-b":(it.tipo==="envase"?"hpp-e":"hpp-r");
