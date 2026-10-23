@@ -3434,7 +3434,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.48";
+var VERSAO = "3.7.49";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12539,6 +12539,11 @@ function fp_aplicarReceita(rec){
     if(rec.mosStrike && mosInputs[0]) mosInputs[0].value = rec.mosStrike;
     if(mosInputs[1]) mosInputs[1].value = rec.mosSparge1||(rec.mosSparge&&!rec.mosSparge1?rec.mosSparge:'')||'';
     if(mosInputs[2]) mosInputs[2].value = rec.mosSparge2||'';
+    if(mosInputs[3]){
+      var v1=parseFloat(mosInputs[1]&&mosInputs[1].value)||0;
+      var v2=parseFloat(mosInputs[2]&&mosInputs[2].value)||0;
+      mosInputs[3].value=(v1||v2)?String(v1+v2):'';
+    }
     if(rec.agua && rec.agua.ph && mosInputs[4]) mosInputs[4].value = rec.agua.ph;
   })();
 
