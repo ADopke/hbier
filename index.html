@@ -1246,10 +1246,10 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
 .fp-log-cell input:focus{outline:1px solid var(--fp-marrom);border-radius:3px;padding:1px 3px}
 /* base log row */
 .fp-mlog-row{display:grid;grid-template-columns:150px 70px 80px 80px 60px 1fr 28px;gap:0;border-bottom:1px solid var(--fp-border);align-items:center}
-/* fermentação log (7 cols: datetime, SG, temp_real, kgf, pH, obs, del) */
-.fp-mlog-row.ferm{grid-template-columns:150px 70px 80px 80px 60px 1fr 28px}
-/* maturação log (8 cols: datetime, temp, kgf, pH, co2, clareza, obs, del) */
-.fp-mlog-row.matur{grid-template-columns:150px 80px 80px 60px 80px 100px 1fr 28px}
+/* fermentação log (8 cols: datetime, SG, temp_real, kgf, pH, obs, responsável, del) */
+.fp-mlog-row.ferm{grid-template-columns:150px 70px 80px 80px 60px 1fr 90px 28px}
+/* maturação log (9 cols: datetime, temp, kgf, pH, co2, clareza, obs, responsável, del) */
+.fp-mlog-row.matur{grid-template-columns:150px 80px 80px 60px 80px 100px 1fr 90px 28px}
 /* lavagens log (4 cols: hora, vol, responsável, del) */
 .fp-mlog-row.lav{grid-template-columns:100px 80px 1fr 28px}
 /* stats banner acima dos logs */
@@ -3448,7 +3448,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.61";
+var VERSAO = "3.7.62";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10236,8 +10236,22 @@ function preencherLogDivs(containerId, rows, addFn){
     /* Migração: log de maturação com 9 cols (formato antigo com SG na col 1)
        → remove col 1 (SG) para encaixar nos 8 inputs atuais */
     var valsAdj = vals;
-    if(containerId==='fp-matur-log' && vals.length===9 && inputs.length===8){
+    /* Migração maturação: 9 cols antigo (com SG col 1) → 8 cols atual */
+    if(containerId==='fp-matur-log' && vals.length===9 && inputs.length===9){
+      // novo formato com responsável — ok, não mexe
+    } else if(containerId==='fp-matur-log' && vals.length===9 && inputs.length===9){
+      // mesmo tamanho, ok
+    } else if(containerId==='fp-matur-log' && vals.length===9 && inputs.length===8){
       valsAdj = [vals[0]].concat(vals.slice(2));
+    }
+    /* Migração fermentação: 7 cols antigo (sem responsável) → 8 cols novo */
+    if(containerId==='fp-ferm-log' && vals.length===7 && inputs.length===8){
+      // insere string vazia na posição 6 (responsável), antes do botão
+      valsAdj = vals.slice(0,6).concat(['', vals[6]||'']);
+    }
+    /* Migração maturação: 8 cols antigo (sem responsável) → 9 cols novo */
+    if(containerId==='fp-matur-log' && vals.length===8 && inputs.length===9){
+      valsAdj = vals.slice(0,7).concat(['', vals[7]||'']);
     }
     inputs.forEach(function(el,i){
       if(valsAdj[i]!==undefined) el.value=valsAdj[i];
@@ -10267,6 +10281,7 @@ function fp_addRow(tblId){
 }
 function fp_addFermRow(){
   var now=new Date(), local=now.toISOString().slice(0,16);
+  var usuario = (typeof sessao !== 'undefined' && sessao && sessao.nome) ? sessao.nome : '';
   var c=document.getElementById('fp-ferm-log');
   var row=document.createElement('div'); row.className='fp-mlog-row ferm';
   row.innerHTML='<div class="fp-log-cell"><input type="datetime-local" value="'+local+'"></div>'+
@@ -10275,6 +10290,7 @@ function fp_addFermRow(){
     '<div class="fp-log-cell"><input type="number" step="0.01" placeholder="kgf/cm²"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="pH"></div>'+
     '<div class="fp-log-cell"><input placeholder="obs…"></div>'+
+    '<div class="fp-log-cell"><input placeholder="nome" value="'+esc(usuario)+'"></div>'+
     '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
   c.appendChild(row);
   // atualiza stats ao adicionar linha
@@ -10285,6 +10301,7 @@ function fp_addFermRow(){
 }
 function fp_addMaturRow(){
   var now=new Date(), local=now.toISOString().slice(0,16);
+  var usuario = (typeof sessao !== 'undefined' && sessao && sessao.nome) ? sessao.nome : '';
   var c=document.getElementById('fp-matur-log');
   var row=document.createElement('div'); row.className='fp-mlog-row matur';
   row.innerHTML='<div class="fp-log-cell"><input type="datetime-local" value="'+local+'"></div>'+
@@ -10296,6 +10313,7 @@ function fp_addMaturRow(){
     '</div>'+
     '<div class="fp-log-cell"><select style="width:100%;background:var(--fp-bg);color:var(--fp-fg);border:none;font-size:11px;padding:2px"><option value="">—</option><option>Turva</option><option>Média</option><option>Clarificada</option></select></div>'+
     '<div class="fp-log-cell"><input placeholder="obs…"></div>'+
+    '<div class="fp-log-cell"><input placeholder="nome" value="'+esc(usuario)+'"></div>'+
     '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
   c.appendChild(row); fp_markDirty();
 }
@@ -10682,6 +10700,7 @@ function fp_ogRealBlur(inp){
   }
   // Cria primeira linha de fermentação com a OG como SG inicial
   var now = new Date(), local = now.toISOString().slice(0,16);
+  var usuario = (typeof sessao !== 'undefined' && sessao && sessao.nome) ? sessao.nome : '';
   var row = document.createElement('div');
   row.className = 'fp-mlog-row ferm';
   row.innerHTML =
@@ -10691,6 +10710,7 @@ function fp_ogRealBlur(inp){
     '<div class="fp-log-cell"><input type="number" step="0.01" placeholder="kgf/cm²"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="pH"></div>'+
     '<div class="fp-log-cell"><input placeholder="OG inicial (auto)"></div>'+
+    '<div class="fp-log-cell"><input placeholder="nome" value="'+esc(usuario)+'"></div>'+
     '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
   // Insere como primeira linha (antes de qualquer linha existente)
   if(fermLog.firstChild){
@@ -12067,6 +12087,7 @@ function abrirFichaLote(tq){
           '<div class="fp-log-cell">Kgf/cm²</div>'+
           '<div class="fp-log-cell">pH</div>'+
           '<div class="fp-log-cell">Observação</div>'+
+          '<div class="fp-log-cell">Responsável</div>'+
           '<div class="fp-log-cell"></div>'+
         '</div>'+
         '<div id="fp-ferm-log"></div>'+
@@ -12127,6 +12148,7 @@ function abrirFichaLote(tq){
           '<div class="fp-log-cell">Vol. CO₂</div>'+
           '<div class="fp-log-cell">Clareza</div>'+
           '<div class="fp-log-cell">Observação</div>'+
+          '<div class="fp-log-cell">Responsável</div>'+
           '<div class="fp-log-cell"></div>'+
         '</div>'+
         '<div id="fp-matur-log"></div>'+
