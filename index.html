@@ -1342,10 +1342,10 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
 .fp-gran-cell input{background:transparent;border:none;font-family:'Barlow',sans-serif;font-size:12px;color:var(--fp-fg);width:100%;font-variant-numeric:tabular-nums}
 .fp-gran-cell input:focus{outline:1px solid var(--fp-marrom);border-radius:3px}
 /* enzimas */
-.fp-enz-grid{display:grid;grid-template-columns:1fr 100px 100px 80px;gap:0;border:1px solid var(--fp-border);border-radius:7px;overflow:hidden}
-.fp-enz-cell{padding:5px 10px;border-bottom:1px solid var(--fp-border);border-right:1px solid var(--fp-border);font-size:12px;color:var(--fp-fg)}
-.fp-enz-cell:last-child{border-right:none}
-.fp-enz-row:last-child .fp-enz-cell{border-bottom:none}
+.fp-enz-grid{display:grid;grid-template-columns:1fr 90px 90px 80px;border:1px solid var(--fp-border);border-radius:7px;overflow:hidden}
+.fp-enz-cell{padding:5px 10px;border-bottom:1px solid var(--fp-border);font-size:12px;color:var(--fp-fg)}
+.fp-enz-cell:not(:nth-child(4n)){border-right:1px solid var(--fp-border)}
+.fp-enz-grid > .fp-enz-row:last-child > .fp-enz-cell,.fp-enz-grid > *:last-child > .fp-enz-cell,.fp-enz-grid > .fp-enz-cell:nth-last-child(-n+4){border-bottom:none}
 .fp-enz-cell.head{background:var(--fp-bg3);font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3)}
 .fp-enz-cell input{background:transparent;border:none;outline:none;font-family:'Barlow',sans-serif;font-size:12px;color:var(--fp-fg);width:100%;font-variant-numeric:tabular-nums}
 .fp-enz-cell input:focus{outline:1px solid var(--fp-marrom);border-radius:3px}
@@ -3434,7 +3434,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.53";
+var VERSAO = "3.7.54";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11608,9 +11608,8 @@ function abrirFichaLote(tq){
         '<span class="fp-sec-toggle">▾</span></div>'+
       '<div class="fp-sec-body">'+
         '<div style="overflow-x:auto">'+
-          '<div class="fp-enz-grid">'+
+          '<div class="fp-enz-grid" id="fp-tbl-adj-enz">'+
             '<div class="fp-enz-row" style="display:contents"><div class="fp-enz-cell head">Produto</div><div class="fp-enz-cell head">Dose</div><div class="fp-enz-cell head">Qtd/bat (g)</div><div class="fp-enz-cell head">Momento</div></div>'+
-            '<div id="fp-tbl-adj-enz"></div>'+
           '</div>'+
         '</div>'+
       '</div>'+
@@ -11624,9 +11623,8 @@ function abrirFichaLote(tq){
       '<span class="fp-sec-toggle">▾</span></div>'+
     '<div class="fp-sec-body">'+
       '<div style="overflow-x:auto">'+
-        '<div class="fp-enz-grid">'+
+        '<div class="fp-enz-grid" id="fp-enz-extra">'+
           '<div class="fp-enz-row" style="display:contents"><div class="fp-enz-cell head">Produto</div><div class="fp-enz-cell head">Dose</div><div class="fp-enz-cell head">Qtd/bat (g)</div><div class="fp-enz-cell head">Momento</div></div>'+
-          '<div id="fp-enz-extra" style="display:contents"></div>'+
         '</div>'+
       '</div>'+
       '<button class="fp-add-row-btn" onclick="fp_addEnzRow()" style="margin-top:8px">＋ Adicionar auxiliar</button>'+
@@ -12479,10 +12477,13 @@ function fp_aplicarReceita(rec){
 
   // --- Enzimas: popula fp-enz-extra (seção própria) E fp-tbl-adj-enz (ao lado da levedura) ---
   if(rec.enzimas && rec.enzimas.length){
-    ['fp-enz-extra','fp-tbl-adj-enz'].forEach(function(containerId){
-      var el = document.getElementById(containerId);
-      if(!el) return;
-      el.innerHTML='';
+    ['fp-enz-extra','fp-tbl-adj-enz'].forEach(function(gridId){
+      var grid = document.getElementById(gridId);
+      if(!grid) return;
+      // Remove linhas de dados anteriores (mantém apenas o header — primeiro filho)
+      var header = grid.firstElementChild;
+      grid.innerHTML='';
+      if(header) grid.appendChild(header);
       rec.enzimas.forEach(function(cols){
         var row=document.createElement('div'); row.className='fp-enz-row'; row.style.display='contents';
         row.innerHTML=
@@ -12490,7 +12491,7 @@ function fp_aplicarReceita(rec){
           '<div class="fp-enz-cell">'+esc(cols[1]||'')+'</div>'+
           '<div class="fp-enz-cell">'+esc(cols[2]||'')+'</div>'+
           '<div class="fp-enz-cell">'+esc(cols[3]||'')+'</div>';
-        el.appendChild(row);
+        grid.appendChild(row);
       });
     });
   }
