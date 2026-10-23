@@ -894,6 +894,16 @@
   }
   /* ---- status dos tanques ---- */
   .tq-leg{font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:3px}
+  .tq-filtro-btn{
+    font-size:.75rem;font-weight:600;padding:4px 11px;border-radius:20px;cursor:pointer;
+    border:1.5px solid var(--linha);background:var(--card);color:var(--ink);
+    transition:background .15s,color .15s,border-color .15s;white-space:nowrap;
+  }
+  .tq-filtro-btn:hover{ background:var(--linha); }
+  .tq-filtro-btn.ativo{
+    background:var(--verde);color:#fff;border-color:var(--verde);
+  }
+  .tanque-card.tq-oculto{ display:none; }
   .tanques-grid{
     display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
     gap:10px;padding:14px;
@@ -2329,12 +2339,15 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <span class="sec-title">🛢 Status dos Tanques</span>
           <span class="sec-sub" id="tanquesAtual" style="margin-left:0"></span>
         </div>
-        <!-- legenda de estágios -->
-        <div style="padding:6px 14px 8px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--linha)">
-          <span class="tq-leg"><span style="color:#22C55E">✅</span> Livre</span>
-          <span class="tq-leg"><span>🍺</span> Fermentando/Maturando</span>
-          <span class="tq-leg"><span>📦</span> Envasando</span>
-          <span class="tq-leg"><span>🚨</span> Atenção</span>
+        <!-- filtro de status dos tanques -->
+        <div id="tqFiltroBar" style="padding:8px 14px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--linha);align-items:center">
+          <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:2px">Filtrar:</span>
+          <button class="tq-filtro-btn ativo" data-filtro="">🗂 Todos</button>
+          <button class="tq-filtro-btn" data-filtro="livre">✅ Livres</button>
+          <button class="tq-filtro-btn" data-filtro="maturando">🍺 Fermentando</button>
+          <button class="tq-filtro-btn" data-filtro="pronto">🟢 Prontos</button>
+          <button class="tq-filtro-btn" data-filtro="brassagem">🔥 Brassagem</button>
+          <button class="tq-filtro-btn" data-filtro="critico">🚨 Atenção</button>
         </div>
         <div id="tanquesLista" style="padding:14px"><div class="vazio">Carregando…</div></div>
         <div style="padding:10px 14px;border-top:1px solid var(--linha);display:flex;gap:8px;flex-wrap:wrap">
@@ -3435,7 +3448,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.58";
+var VERSAO = "3.7.59";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9355,13 +9368,26 @@ async function carregarTanques(){
       }
 
       // ── Montagem do card com dois blocos ─────────────────────────
-      return "<div class='tanque-card' style='background:#fff;border-left-color:"+esc(corBorda)+"'>"+
+      return "<div class='tanque-card' data-estagio='"+esc(tq.estagio)+"' style='background:#fff;border-left-color:"+esc(corBorda)+"'>"+
 
-        // cabeçalho: nome + capacidade
-        "<div style='display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px'>"+
+        // cabeçalho: nome + badge de status + capacidade
+        "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:6px'>"+
           "<span style='font-family:\"Barlow Condensed\",sans-serif;font-weight:700;font-size:1rem;"+
             "color:var(--verde);letter-spacing:.05em'>"+esc(tq.nome)+"</span>"+
-          "<span style='font-size:.7rem;color:var(--muted)'>"+fmtNum(tq.capacidade)+" L</span>"+
+          (function(){
+            var badgeMap = {
+              livre:     {bg:"#16A34A",txt:"✅ Livre"},
+              pronto:    {bg:"#14532D",txt:"🟢 Pronto"},
+              maturando: {bg:"#D97706",txt:"🍺 Fermentando"},
+              brassagem: {bg:"#EA580C",txt:"🔥 Brassagem"},
+              critico:   {bg:"#DC2626",txt:"🚨 Atenção"},
+            };
+            var b = badgeMap[tq.estagio];
+            if (!b) return "";
+            return "<span style='background:"+b.bg+";color:#fff;border-radius:20px;padding:2px 9px;"+
+              "font-size:.65rem;font-weight:800;white-space:nowrap;letter-spacing:.02em'>"+b.txt+"</span>";
+          })()+
+          "<span style='font-size:.7rem;color:var(--muted);margin-left:auto;white-space:nowrap'>"+fmtNum(tq.capacidade)+" L</span>"+
         "</div>"+
 
         // dois blocos — lado a lado em desktop, empilhados em mobile
@@ -9454,18 +9480,36 @@ async function carregarTanques(){
       "</div>";
     }
 
-    var gruposHtml = grupos.map(function(g){
-      var tqs = _dadosTanques.filter(function(tq){ return g.estagios.includes(tq.estagio); });
-      if (!tqs.length) return "";
-      return "<div style='margin-bottom:14px'>"+
-        "<div style='font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;"+
-          "color:"+g.cor+";padding:6px 2px 4px;border-bottom:1.5px solid "+g.borda+";margin-bottom:8px'>"+
-          g.label+" <span style='font-weight:400;opacity:.7'>("+tqs.length+")</span></div>"+
-        "<div class='tanques-grid'>"+tqs.map(renderCard).join("")+"</div>"+
-      "</div>";
-    }).join("");
+    // ── Grid único em ordem fixa (por nome do tanque) ───────────────
+    var tqsOrdenados = _dadosTanques.slice().sort(function(a,b){
+      return (a.nome||"").localeCompare(b.nome||"", "pt-BR", {numeric:true});
+    });
+    var gridHtml = "<div class='tanques-grid' id='tqGrid'>"+tqsOrdenados.map(renderCard).join("")+"</div>";
 
-    $("tanquesLista").innerHTML = resumoHtml + "<div style='padding:14px'>" + gruposHtml + "</div>";
+    $("tanquesLista").innerHTML = resumoHtml + "<div style='padding:14px'>" + gridHtml + "</div>";
+
+    // ── Filtro de status ─────────────────────────────────────────────
+    var filtroAtivo = "";
+    function aplicarFiltroTanques(){
+      var cards = $("tqGrid").querySelectorAll(".tanque-card");
+      cards.forEach(function(card){
+        var est = card.dataset.estagio || "";
+        var mostrar = !filtroAtivo || est === filtroAtivo || (filtroAtivo === "maturando" && est === "maturando");
+        card.classList.toggle("tq-oculto", !mostrar);
+      });
+      // atualiza contador na barra de resumo
+      var visiveis = Array.from(cards).filter(function(c){ return !c.classList.contains("tq-oculto"); }).length;
+      var semFiltro = !filtroAtivo;
+      $("tqContadorFiltro") && ($("tqContadorFiltro").textContent = semFiltro ? "" : visiveis+" tanque"+(visiveis!==1?"s":""));
+    }
+    $("tqFiltroBar").querySelectorAll(".tq-filtro-btn").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        $("tqFiltroBar").querySelectorAll(".tq-filtro-btn").forEach(function(b){ b.classList.remove("ativo"); });
+        btn.classList.add("ativo");
+        filtroAtivo = btn.dataset.filtro || "";
+        aplicarFiltroTanques();
+      });
+    });
 
     // Eventos dos botões de ação
     $("tanquesLista").querySelectorAll("[data-tq-obs]").forEach(function(btn){
