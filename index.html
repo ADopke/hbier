@@ -1190,8 +1190,9 @@
 table.fp-data{width:100%;border-collapse:collapse;font-size:13px}
 table.fp-data th{background:var(--fp-bg3);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fp-fg3);padding:6px 8px;text-align:left;border-bottom:1px solid var(--fp-border);white-space:nowrap}
 table.fp-data td{padding:5px 8px;border-bottom:1px solid var(--fp-border);vertical-align:middle;min-width:0}
+table.fp-data td:first-child{min-width:130px}
 table.fp-data tr:last-child td{border-bottom:none}
-table.fp-data input{background:transparent;border:none;padding:2px 0;width:100%;min-width:50px;color:var(--fp-fg);font-family:'Barlow',sans-serif;font-size:13px;font-variant-numeric:tabular-nums}
+table.fp-data input{background:transparent;border:none;padding:2px 0;width:100%;min-width:0;color:var(--fp-fg);font-family:'Barlow',sans-serif;font-size:13px;font-variant-numeric:tabular-nums}
 table.fp-data input:focus{outline:1px solid var(--fp-marrom);border-radius:3px;padding:2px 4px}
 table.fp-data .fp-del-btn{background:none;border:none;cursor:pointer;color:var(--fp-fg3);font-size:14px;padding:2px 4px;border-radius:4px}
 table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,16,.1)}
@@ -3434,7 +3435,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.54";
+var VERSAO = "3.7.55";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
