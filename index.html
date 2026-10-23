@@ -3435,7 +3435,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.57";
+var VERSAO = "3.7.58";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9527,26 +9527,48 @@ async function carregarTanques(){
                 return m.tipo === "envase" &&
                   (m.lote||"").trim().toUpperCase() === loteUpZ;
               });
-              // Litros PET: usar o último litrosInicio - último litrosFim (total consumido do tanque)
-              // ou soma de (vol × qty) como fallback
-              var litPetConsumido = 0;
-              var petComFim = regsPetZ.filter(function(m){ return m.litrosInicio && m.litrosFim; });
-              if (petComFim.length) {
-                // Primeiro litrosInicio - último litrosFim = total consumido
-                var sortedPet = petComFim.slice().sort(function(a,b){ return (a.dataISO||"").localeCompare(b.dataISO||""); });
-                var primLitIni = parseFloat(sortedPet[0].litrosInicio) || 0;
-                var ultLitFim  = parseFloat(sortedPet[sortedPet.length-1].litrosFim) || 0;
-                litPetConsumido = primLitIni - ultLitFim;
-              } else {
-                // fallback: soma de unidades × volume formato
-                litPetConsumido = regsPetZ.reduce(function(s,m){
-                  var volFmt = LITROS_FORMATO[m.formato] || 0;
-                  return s + (parseFloat(m.qtd)||0) * volFmt;
-                }, 0);
-              }
+              // Calcula litros restantes com a mesma lógica do display (nível estimado)
               var volInicial = parseFloat(tqObj.volume) || 0;
-              var totalSaido = litBarris + litPetConsumido;
-              var quebraTanque = volInicial > 0 ? Math.max(0, volInicial - totalSaido) : null;
+              var quebraTanque = null;
+              (function(){
+                // Ordena PETs do mais recente para o mais antigo
+                var petsSorted = regsPetZ.slice().sort(function(a,b){
+                  return (b.dataISO||"").localeCompare(a.dataISO||"");
+                });
+                var litRestantes;
+                if (petsSorted.length) {
+                  var petRec = petsSorted[0];
+                  var baseNivel, dataRefPet;
+                  if (petRec.litrosFim) {
+                    baseNivel = parseFloat(petRec.litrosFim);
+                    dataRefPet = petRec.dataISO || "";
+                  } else if (petRec.litrosInicio) {
+                    var qtdEst = parseInt(petRec.qtd) || 0;
+                    var mlEst = LITROS_FORMATO[petRec.formato] || 0;
+                    baseNivel = Math.max(0, parseFloat(petRec.litrosInicio) - qtdEst * mlEst);
+                    dataRefPet = petRec.dataISO || "";
+                  } else {
+                    var petsComFim2 = petsSorted.filter(function(m){ return m.litrosFim; });
+                    baseNivel = petsComFim2.length ? parseFloat(petsComFim2[0].litrosFim) : null;
+                    dataRefPet = petsComFim2.length ? (petsComFim2[0].dataISO||"") : "";
+                  }
+                  if (baseNivel !== null) {
+                    // Subtrai apenas barris DEPOIS da data de referência do PET
+                    var barrilsApos = regsBarril.filter(function(r){
+                      return !dataRefPet || (r.dataISO||"") > dataRefPet;
+                    });
+                    var saidoApos = barrilsApos.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
+                    litRestantes = Math.max(0, baseNivel - saidoApos);
+                  } else {
+                    litRestantes = Math.max(0, volInicial - litBarris);
+                  }
+                } else {
+                  litRestantes = Math.max(0, volInicial - litBarris);
+                }
+                quebraTanque = volInicial > 0 ? litRestantes : null;
+              })();
+              // Para exibição no histórico: litPet estimado = volInicial - litBarris - quebra
+              var litPetConsumido = quebraTanque !== null ? Math.max(0, volInicial - litBarris - quebraTanque) : 0;
               snapshot = {
                 lote:           tqObj.lote,
                 estilo:         tqObj.estilo      || "",
