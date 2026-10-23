@@ -2533,7 +2533,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
             <div><label>Vol. strike/bat (L)</label><input type="number" id="recMosStrike" placeholder="ex: 1150"></div>
             <div><label>Vol. 1ª lavagem (L)</label><input type="number" id="recMosSparge1" placeholder="ex: 350" oninput="recCalcSparge()"></div>
             <div><label>Vol. 2ª lavagem (L)</label><input type="number" id="recMosSparge2" placeholder="ex: 200" oninput="recCalcSparge()"></div>
-            <div><label>Sparge total (L)</label><input type="number" id="recMosSpargeTotal" placeholder="—" readonly style="background:var(--bg2,#f4f4f0);color:var(--verde,#1B9A59);font-weight:700;cursor:default"></div>
+            <div><label>Sparge total (L)</label><input type="text" id="recMosSpargeTotal" placeholder="—" readonly style="background:var(--bg2,#f4f4f0);color:var(--verde,#1B9A59);font-weight:700;cursor:default"></div>
           </div>
           <div class="grade-wrap" style="margin-bottom:6px">
             <table class="fp-data" id="rec-tbl-mash" style="width:100%">
@@ -3434,7 +3434,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.47";
+var VERSAO = "3.7.48";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11644,7 +11644,7 @@ function abrirFichaLote(tq){
         '<div class="fp-field"><label>Vol. strike/bat (L)</label><input placeholder="—"></div>'+
         '<div class="fp-field"><label>Vol. 1ª lavagem (L)</label><input placeholder="—"></div>'+
         '<div class="fp-field"><label>Vol. 2ª lavagem (L)</label><input placeholder="—"></div>'+
-        '<div class="fp-field"><label>Sparge total (L)</label><input placeholder="—" readonly style="background:var(--fp-bg2,#f4f4f0);color:var(--fp-verde,#1B9A59);font-weight:700"></div>'+
+        '<div class="fp-field"><label>Sparge total (L)</label><input type="text" placeholder="—" readonly style="background:var(--fp-bg2,#f4f4f0);color:var(--fp-verde,#1B9A59);font-weight:700"></div>'+
         '<div class="fp-field"><label>pH mostura alvo</label><input placeholder="5,4 – 5,6"></div>'+
       '</div>'+
       '<div class="fp-tbl-wrap">'+
@@ -12303,7 +12303,7 @@ function recCalcSparge(){
   var v1 = parseFloat(document.getElementById('recMosSparge1').value) || 0;
   var v2 = parseFloat(document.getElementById('recMosSparge2').value) || 0;
   var tot = document.getElementById('recMosSpargeTotal');
-  if (tot) tot.value = (v1 || v2) ? (v1 + v2) : '';
+  if (tot) tot.value = (v1 || v2) ? String(v1 + v2) : '';
 }
 
 /* — helpers de tabela reutilizáveis para o formulário de receita — */
@@ -12537,7 +12537,7 @@ function fp_aplicarReceita(rec){
     });
     // mosInputs[0]=vol.strike, [1]=1ª lavagem, [2]=2ª lavagem, [3]=total(readonly), [4]=pH mostura
     if(rec.mosStrike && mosInputs[0]) mosInputs[0].value = rec.mosStrike;
-    if(mosInputs[1]) mosInputs[1].value = rec.mosSparge1||(rec.mosSparge&&!rec.mosSparge2?rec.mosSparge:'')||'';
+    if(mosInputs[1]) mosInputs[1].value = rec.mosSparge1||(rec.mosSparge&&!rec.mosSparge1?rec.mosSparge:'')||'';
     if(mosInputs[2]) mosInputs[2].value = rec.mosSparge2||'';
     if(rec.agua && rec.agua.ph && mosInputs[4]) mosInputs[4].value = rec.agua.ph;
   })();
@@ -12678,8 +12678,8 @@ async function rec_editarReceita(id){
     document.getElementById('recLevO2').value=lev.o2||'';
 
     document.getElementById('recMosStrike').value=rec.mosStrike||'';
-    // retrocompatibilidade: se só tem mosSparge antigo, coloca na 1ª lavagem
-    document.getElementById('recMosSparge1').value=rec.mosSparge1||(rec.mosSparge&&!rec.mosSparge2?rec.mosSparge:'')||'';
+    // retrocompatibilidade: usa mosSparge antigo SOMENTE se não há mosSparge1 salvo
+    document.getElementById('recMosSparge1').value=rec.mosSparge1||(rec.mosSparge&&!rec.mosSparge1?rec.mosSparge:'')||'';
     document.getElementById('recMosSparge2').value=rec.mosSparge2||'';
     recCalcSparge();
 
