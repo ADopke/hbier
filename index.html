@@ -2531,7 +2531,9 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <div class="sec-head" style="margin:16px 0 8px"><span class="sec-sub">🌡️ Perfil de mostura</span></div>
           <div class="form-grid" style="margin-bottom:8px">
             <div><label>Vol. strike/bat (L)</label><input type="number" id="recMosStrike" placeholder="ex: 1150"></div>
-            <div><label>Vol. sparge total (L)</label><input type="number" id="recMosSparge" placeholder="ex: 550"></div>
+            <div><label>Vol. 1ª lavagem (L)</label><input type="number" id="recMosSparge1" placeholder="ex: 350" oninput="recCalcSparge()"></div>
+            <div><label>Vol. 2ª lavagem (L)</label><input type="number" id="recMosSparge2" placeholder="ex: 200" oninput="recCalcSparge()"></div>
+            <div><label>Sparge total (L)</label><input type="number" id="recMosSpargeTotal" placeholder="—" readonly style="background:var(--bg2,#f4f4f0);color:var(--verde,#1B9A59);font-weight:700;cursor:default"></div>
           </div>
           <div class="grade-wrap" style="margin-bottom:6px">
             <table class="fp-data" id="rec-tbl-mash" style="width:100%">
@@ -3432,7 +3434,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.46";
+var VERSAO = "3.7.47";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11640,7 +11642,9 @@ function abrirFichaLote(tq){
     '<div class="fp-sec-body">'+
       '<div class="fp-fg-grid tight" style="margin-bottom:10px">'+
         '<div class="fp-field"><label>Vol. strike/bat (L)</label><input placeholder="—"></div>'+
-        '<div class="fp-field"><label>Vol. sparge total (L)</label><input placeholder="—"></div>'+
+        '<div class="fp-field"><label>Vol. 1ª lavagem (L)</label><input placeholder="—"></div>'+
+        '<div class="fp-field"><label>Vol. 2ª lavagem (L)</label><input placeholder="—"></div>'+
+        '<div class="fp-field"><label>Sparge total (L)</label><input placeholder="—" readonly style="background:var(--fp-bg2,#f4f4f0);color:var(--fp-verde,#1B9A59);font-weight:700"></div>'+
         '<div class="fp-field"><label>pH mostura alvo</label><input placeholder="5,4 – 5,6"></div>'+
       '</div>'+
       '<div class="fp-tbl-wrap">'+
@@ -12294,6 +12298,14 @@ function fp_religarAudit(){
    ================================================================== */
 var recListaCache = null; // cache em memória para popular o select na ficha
 
+/* — cálculo automático do sparge total — */
+function recCalcSparge(){
+  var v1 = parseFloat(document.getElementById('recMosSparge1').value) || 0;
+  var v2 = parseFloat(document.getElementById('recMosSparge2').value) || 0;
+  var tot = document.getElementById('recMosSpargeTotal');
+  if (tot) tot.value = (v1 || v2) ? (v1 + v2) : '';
+}
+
 /* — helpers de tabela reutilizáveis para o formulário de receita — */
 function rec_addRow(tblId){
   var args = Array.from(arguments).slice(1);
@@ -12523,10 +12535,11 @@ function fp_aplicarReceita(rec){
         mosInputs = Array.from(sec.querySelectorAll('.fp-fg-grid.tight input'));
       }
     });
-    // mosInputs[0]=vol.strike, [1]=vol.sparge, [2]=pH mostura
+    // mosInputs[0]=vol.strike, [1]=1ª lavagem, [2]=2ª lavagem, [3]=total(readonly), [4]=pH mostura
     if(rec.mosStrike && mosInputs[0]) mosInputs[0].value = rec.mosStrike;
-    if(rec.mosSparge && mosInputs[1]) mosInputs[1].value = rec.mosSparge;
-    if(rec.agua && rec.agua.ph && mosInputs[2]) mosInputs[2].value = rec.agua.ph;
+    if(mosInputs[1]) mosInputs[1].value = rec.mosSparge1||(rec.mosSparge&&!rec.mosSparge2?rec.mosSparge:'')||'';
+    if(mosInputs[2]) mosInputs[2].value = rec.mosSparge2||'';
+    if(rec.agua && rec.agua.ph && mosInputs[4]) mosInputs[4].value = rec.agua.ph;
   })();
 
   // --- Tratamento de Água: pH bruta, pH cervejeiro, Ác. Lático ---
@@ -12605,7 +12618,9 @@ function rec_novaReceita(){
   document.getElementById('recLevO2').value='';
   // mostura
   document.getElementById('recMosStrike').value='';
-  document.getElementById('recMosSparge').value='';
+  document.getElementById('recMosSparge1').value='';
+  document.getElementById('recMosSparge2').value='';
+  document.getElementById('recMosSpargeTotal').value='';
   // água
   document.getElementById('recAguaFonte').value='';
   document.getElementById('recAguaPh').value='';
@@ -12663,7 +12678,10 @@ async function rec_editarReceita(id){
     document.getElementById('recLevO2').value=lev.o2||'';
 
     document.getElementById('recMosStrike').value=rec.mosStrike||'';
-    document.getElementById('recMosSparge').value=rec.mosSparge||'';
+    // retrocompatibilidade: se só tem mosSparge antigo, coloca na 1ª lavagem
+    document.getElementById('recMosSparge1').value=rec.mosSparge1||(rec.mosSparge&&!rec.mosSparge2?rec.mosSparge:'')||'';
+    document.getElementById('recMosSparge2').value=rec.mosSparge2||'';
+    recCalcSparge();
 
     var agua=rec.agua||{};
     document.getElementById('recAguaFonte').value=agua.fonte||'';
@@ -12800,8 +12818,9 @@ async function rec_salvar(){
       temp:       g('recLevTemp'),
       o2:         g('recLevO2'),
     },
-    mosStrike:  g('recMosStrike'),
-    mosSparge:  g('recMosSparge'),
+    mosStrike:   g('recMosStrike'),
+    mosSparge1:  g('recMosSparge1'),
+    mosSparge2:  g('recMosSparge2'),
     agua: {
       fonte:    g('recAguaFonte'),
       ph:       g('recAguaPh'),
