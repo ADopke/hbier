@@ -3448,7 +3448,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.59";
+var VERSAO = "3.7.60";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10158,6 +10158,28 @@ function fp_confirmarAplic(tipo){
     if(horaEl && !horaEl.value) horaEl.value = hora;
   }
   fp_markDirty();
+  // mostra botão desfazer após confirmação
+  var desfazId = {clearmax:'fp-desfazer-clearmax', clearmaxL:'fp-desfazer-clearmaxL', lev:'fp-desfazer-lev'}[tipo];
+  if(desfazId){ var db=document.getElementById(desfazId); if(db) db.hidden=false; }
+}
+
+function fp_desfazarAplic(tipo){
+  if(!confirm('Desfazer a confirmação de '+({clearmax:'Clearmax Pro',clearmaxL:'Clearmax L',lev:'Levedura'}[tipo]||tipo)+'?')) return;
+  var cfg = {
+    clearmax:  { blocoId:'fp-bloco-clearmax',   btnId:'fp-btn-clearmax-ferm',  statusId:'fp-clearmax-status',   btnTxt:'✅ Confirmar uso',          desfazId:'fp-desfazer-clearmax'  },
+    clearmaxL: { blocoId:'fp-bloco-clearmax-l', btnId:'fp-btn-clearmax-l-ferm',statusId:'fp-clearmax-l-status', btnTxt:'✅ Confirmar uso',          desfazId:'fp-desfazer-clearmaxL' },
+    lev:       { blocoId:'fp-bloco-lev',        btnId:'fp-btn-lev-ferm',       statusId:'fp-lev-status',        btnTxt:'✅ Confirmar inoculação',   desfazId:'fp-desfazer-lev'       },
+  }[tipo];
+  if(!cfg) return;
+  var bloco  = document.getElementById(cfg.blocoId);
+  var btn    = document.getElementById(cfg.btnId);
+  var status = document.getElementById(cfg.statusId);
+  var desfaz = document.getElementById(cfg.desfazId);
+  if(bloco){ delete bloco.dataset.confirmado; delete bloco.dataset.hora; delete bloco.dataset.data; delete bloco.dataset.quem; if(tipo==='clearmaxL') delete bloco.dataset.qtd; }
+  if(btn){ btn.disabled = false; btn.textContent = cfg.btnTxt; }
+  if(status){ status.classList.add('pendente'); status.querySelector('.fp-aplic-status-ico').textContent='⏳'; status.querySelector('.fp-aplic-status-txt').textContent='Aguardando confirmação'; status.querySelector('.fp-aplic-quem').textContent=''; }
+  if(desfaz) desfaz.hidden = true;
+  fp_markDirty();
 }
 /* ── fim Adições ao Tanque ────────────────────────────────── */
 
@@ -11911,6 +11933,7 @@ function abrirFichaLote(tq){
         '<div class="fp-aplic-ok pendente" id="fp-clearmax-status">'+
           '<span class="fp-aplic-status-ico">⏳</span> <span class="fp-aplic-status-txt">Aguardando confirmação</span><span class="fp-aplic-quem"></span>'+
         '</div>'+
+        '<button type="button" id="fp-desfazer-clearmax" hidden onclick="fp_desfazarAplic(\'clearmax\')" style="margin-top:4px;font-size:.72rem;padding:3px 10px;border:1px solid #DC2626;border-radius:6px;background:#FEF2F2;color:#DC2626;cursor:pointer;font-weight:600">↩ Desfazer confirmação</button>'+
         '<div class="fp-aplic-extra" style="width:100%;margin-top:8px">'+
           '<div class="fp-field"><label>Data aplicação</label><input type="date" id="fp-clearmax-pro-data"></div>'+
           '<div class="fp-field"><label>Hora aplicação</label><input type="time" id="fp-clearmax-pro-hora"></div>'+
@@ -11926,6 +11949,7 @@ function abrirFichaLote(tq){
         '<div class="fp-aplic-ok pendente" id="fp-clearmax-l-status">'+
           '<span class="fp-aplic-status-ico">⏳</span> <span class="fp-aplic-status-txt">Aguardando confirmação</span><span class="fp-aplic-quem"></span>'+
         '</div>'+
+        '<button type="button" id="fp-desfazer-clearmaxL" hidden onclick="fp_desfazarAplic(\'clearmaxL\')" style="margin-top:4px;font-size:.72rem;padding:3px 10px;border:1px solid #DC2626;border-radius:6px;background:#FEF2F2;color:#DC2626;cursor:pointer;font-weight:600">↩ Desfazer confirmação</button>'+
         '<div class="fp-aplic-extra" style="width:100%;margin-top:8px">'+
           '<div class="fp-field"><label>Quantidade usada (g)</label><input type="number" step="0.1" id="fp-clearmax-l-qtd" placeholder="dose calculada"></div>'+
           '<div class="fp-field"><label>Data aplicação</label><input type="date" id="fp-clearmax-l-data"></div>'+
@@ -11942,6 +11966,7 @@ function abrirFichaLote(tq){
         '<div class="fp-aplic-ok pendente" id="fp-lev-status">'+
           '<span class="fp-aplic-status-ico">⏳</span> <span class="fp-aplic-status-txt">Aguardando confirmação</span><span class="fp-aplic-quem"></span>'+
         '</div>'+
+        '<button type="button" id="fp-desfazer-lev" hidden onclick="fp_desfazarAplic(\'lev\')" style="margin-top:4px;font-size:.72rem;padding:3px 10px;border:1px solid #DC2626;border-radius:6px;background:#FEF2F2;color:#DC2626;cursor:pointer;font-weight:600">↩ Desfazer confirmação</button>'+
         '<div class="fp-aplic-extra" style="width:100%;margin-top:8px">'+
           '<div class="fp-field"><label>Data inoculação</label><input type="date" id="fp-lev-data"></div>'+
           '<div class="fp-field"><label>Hora inoculação</label><input type="time" id="fp-lev-hora"></div>'+
@@ -12283,6 +12308,7 @@ function fp_preencherFicha(ficha){
       var cpHoraEl = document.getElementById('fp-clearmax-pro-hora');
       if(cpDataEl && (at.clearmax.dataInp||at.clearmax.data)) cpDataEl.value=at.clearmax.dataInp||at.clearmax.data||'';
       if(cpHoraEl && (at.clearmax.horaInp||at.clearmax.hora)) cpHoraEl.value=at.clearmax.horaInp||at.clearmax.hora||'';
+      var dfCP=document.getElementById('fp-desfazer-clearmax'); if(dfCP) dfCP.hidden=false;
     }
     if(at.clearmaxL && at.clearmaxL.confirmado){
       var clLB = document.getElementById('fp-bloco-clearmax-l');
@@ -12304,6 +12330,7 @@ function fp_preencherFicha(ficha){
       if(clLDataEl && (at.clearmaxL.dataInp||at.clearmaxL.data)) clLDataEl.value=at.clearmaxL.dataInp||at.clearmaxL.data||'';
       if(clLHoraEl && (at.clearmaxL.horaInp||at.clearmaxL.hora)) clLHoraEl.value=at.clearmaxL.horaInp||at.clearmaxL.hora||'';
       if(clLQtdEl  && (at.clearmaxL.qtdInp||at.clearmaxL.qtd))   clLQtdEl.value=at.clearmaxL.qtdInp||at.clearmaxL.qtd||'';
+      var dfCL=document.getElementById('fp-desfazer-clearmaxL'); if(dfCL) dfCL.hidden=false;
     }
     if(at.lev && at.lev.confirmado){
       var levB = document.getElementById('fp-bloco-lev');
@@ -12326,6 +12353,7 @@ function fp_preencherFicha(ficha){
       if(horaEl && at.lev.hora) horaEl.value = at.lev.hora;
       if(gerEl  && at.lev.geracao) gerEl.value = at.lev.geracao;
       if(tmpEl  && at.lev.temp)    tmpEl.value = at.lev.temp;
+      var dfLev=document.getElementById('fp-desfazer-lev'); if(dfLev) dfLev.hidden=false;
     }
   }
   // recalcula stats e volumes após restaurar
