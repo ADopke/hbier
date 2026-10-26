@@ -912,6 +912,10 @@
     border-radius:12px;padding:13px 14px;border-left:4px solid transparent;
     border:1px solid var(--linha);
   }
+  @keyframes tq-pulse-brass{
+    0%,100%{box-shadow:0 0 0 3px #FCD34D,0 2px 8px rgba(180,83,9,.4)}
+    50%{box-shadow:0 0 0 5px #FDE68A,0 4px 16px rgba(180,83,9,.6)}
+  }
   .tq-split{
     display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:10px;overflow:hidden;
     box-shadow:0 2px 8px rgba(0,0,0,.08);
@@ -3464,7 +3468,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.72";
+var VERSAO = "3.7.73";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9223,11 +9227,13 @@ async function carregarTanques(){
         } else if (tq.diasTanque !== null && tq.diasTanque !== undefined) {
           diasStr = tq.diasTanque+"d";
         }
+        var badgeStyle = eBrassagem
+          ? "background:#B45309;color:#fff;border-radius:5px;padding:3px 10px;font-size:.7rem;font-weight:900;white-space:nowrap;letter-spacing:.05em;box-shadow:0 0 0 3px #FCD34D,0 2px 8px rgba(180,83,9,.4);animation:tq-pulse-brass 1.4s ease-in-out infinite"
+          : "background:"+corBd+";color:#fff;border-radius:5px;padding:2px 8px;font-size:.67rem;font-weight:800;white-space:nowrap;letter-spacing:.03em";
         presenteConteudo =
           // status badge + dias
           "<div style='display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap'>"+
-            "<span style='background:"+corBd+";color:#fff;border-radius:5px;"+
-              "padding:2px 8px;font-size:.67rem;font-weight:800;white-space:nowrap;letter-spacing:.03em'>"+
+            "<span style='"+badgeStyle+"'>"+
               esc(tq.estagioIcone)+" "+esc(tq.estagioLabel)+
             "</span>"+
             (diasStr ? "<span style='font-family:\"Barlow Condensed\",sans-serif;font-weight:700;font-size:.85rem;color:"+corDias+"'>"+diasStr+"</span>" : "")+
@@ -9567,7 +9573,7 @@ async function carregarTanques(){
               pronto:      {bg:"#14532D",txt:"🟢 Pronto"},
               fermentando: {bg:"#D97706",txt:"🍺 Fermentando"},
               maturando:   {bg:"#2563EB",txt:"🧊 Maturando"},
-              brassagem:   {bg:"#EA580C",txt:"🔥 Brassagem"},
+              brassagem:   {bg:"#B45309",txt:"🔥 Brassagem hoje!"},
               critico:     {bg:"#DC2626",txt:"🚨 Atenção"},
             };
             var b = badgeMap[tq.estagio];

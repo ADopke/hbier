@@ -274,8 +274,8 @@ export default protegido(async function handler(req, res) {
         estagio       = "brassagem";
         estagioLabel  = "Brassagem prevista";
         estagioIcone  = "🔥";
-        estagioCorBg  = "#FFF7ED";
-        estagioCorBorda = "#F97316";
+        estagioCorBg  = "#FEF3C7";
+        estagioCorBorda = "#B45309";
       } else if (!brass) {
         estagio       = "livre";
         estagioLabel  = "Livre";
