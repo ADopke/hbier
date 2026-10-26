@@ -1,4 +1,4 @@
-import { ler, gravar, exigirLogin, corpo, erro, protegido } from "./_lib.js";
+import { ler, gravar, lerVarios, exigirLogin, corpo, erro, protegido } from "./_lib.js";
 
 /* ==================================================================
    /api/tanques
@@ -192,6 +192,22 @@ export default protegido(async function handler(req, res) {
       } catch (_) { /* semana sem dados */ }
     }));
 
+    // Ler fichas dos lotes ativos para determinar se há log de maturação
+    // (fonte de verdade: a presença de linhas em maturLog na ficha)
+    const lotesAtivos = [...new Set(
+      brassagens
+        .filter(b => !b.planejada && !b.previstahoje && b.lote)
+        .map(b => b.lote)
+    )];
+    const fichasAtivas = {};
+    if (lotesAtivos.length) {
+      const chavesFichas = lotesAtivos.map(l => `ficha:${l}`);
+      const valoresFichas = await lerVarios(chavesFichas);
+      lotesAtivos.forEach((lote, i) => {
+        fichasAtivas[lote] = valoresFichas[i] || null;
+      });
+    }
+
     // Para cada tanque, encontrar a brassagem mais recente não finalizada
     function diasDesde(isoStr) {
       if (!isoStr) return null;
@@ -268,11 +284,14 @@ export default protegido(async function handler(req, res) {
       } else {
         const dias = diasDesde(brass.em);
         const DIAS_CRITICO = 15;
-        // Verificar se há registro de início de maturação no override manual
-        const maturacaoInicio = manual[tq.id] && manual[tq.id].maturacaoInicioISO
-          ? manual[tq.id].maturacaoInicioISO
-          : null;
-        const temMaturacao = !!(maturacaoInicio);
+        // Fonte de verdade: ficha do lote atual tem linhas de maturação?
+        const fichaLote = brass.lote ? (fichasAtivas[brass.lote] || null) : null;
+        const maturLog  = fichaLote && Array.isArray(fichaLote.maturLog) ? fichaLote.maturLog : [];
+        const temMaturacao = maturLog.length > 0;
+        // Data de início de maturação = data/hora da 1ª linha do maturLog (col 0)
+        const maturacaoInicio = temMaturacao && maturLog[0] && maturLog[0][0]
+          ? maturLog[0][0]   // datetime-local da primeira linha: "YYYY-MM-DDTHH:mm"
+          : (manual[tq.id] && manual[tq.id].maturacaoInicioISO ? manual[tq.id].maturacaoInicioISO : null);
         if (dias !== null && dias >= DIAS_CRITICO && !temMaturacao) {
           estagio       = "critico";
           estagioLabel  = "Maturando — atenção";
@@ -309,14 +328,12 @@ export default protegido(async function handler(req, res) {
       const diasTanque = brass && !brassHoje && !overrideEhZerado ? diasDesde(brass.em) : null;
 
       // Cálculo de dias separados: fermentação vs maturação
-      const maturacaoInicioISO = manual[tq.id] && manual[tq.id].maturacaoInicioISO
-        ? manual[tq.id].maturacaoInicioISO
-        : null;
+      // maturacaoInicio já foi calculado acima a partir da ficha (1ª linha do maturLog)
       let diasFermentando = null, diasMaturando = null;
       if (brass && !brassHoje && !overrideEhZerado) {
-        if (maturacaoInicioISO) {
+        if (maturacaoInicio) {
           // Fermentação: do brassado ao início de maturação
-          const maturDate = new Date(maturacaoInicioISO);
+          const maturDate = new Date(maturacaoInicio);
           const brassDate = new Date(brass.em + "T00:00:00");
           diasFermentando = Math.max(0, Math.floor((maturDate - brassDate) / 86400000));
           // Maturação: do início de maturação até hoje
@@ -344,7 +361,7 @@ export default protegido(async function handler(req, res) {
         diasTanque,
         diasFermentando,
         diasMaturando,
-        maturacaoInicioISO,
+        maturacaoInicioISO: maturacaoInicio || null,
         brassadoEm:   ref ? ref.em     : "",
         brassadoSem:  ref ? ref.semana : "",
         brassadoId:   ref ? ref.id     : "",
