@@ -1468,6 +1468,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         <button data-aba="checklist" hidden>Semana</button>
         <button data-aba="tarefas" hidden>Minhas tarefas</button>
         <button data-aba="prog" class="ativa">Programação</button>
+        <button data-aba="leituras">📋 Leituras</button>
         <button data-aba="tanques">🍺 Tanques</button>
         <button data-aba="lotes" id="abaLotes" hidden>📋 Lotes</button>
         <button data-aba="receitas" id="abaReceitas" hidden>📖 Receitas</button>
@@ -1735,6 +1736,20 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
             <button class="btn mini" id="btnAddManut">+ Registrar</button>
           </div>
           <div id="manutLista"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ---------- LEITURAS DO DIA ---------- -->
+    <div id="painelLeituras" hidden>
+      <section>
+        <div class="sec-head">
+          <span class="sec-title">📋 Leituras do Dia</span>
+          <span id="leiturasDataLabel" style="font-size:.8rem;color:var(--muted);margin-left:8px"></span>
+          <button class="btn mini" id="btnLeiturasAtualizar" style="margin-left:auto" onclick="leiturasCarregar()">↺ Atualizar</button>
+        </div>
+        <div id="leiturasConteudo" style="padding:12px 14px">
+          <div style="color:var(--muted);font-size:.85rem">Carregando tanques ativos…</div>
         </div>
       </section>
     </div>
@@ -3449,7 +3464,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.66";
+var VERSAO = "3.7.72";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4539,6 +4554,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
     $("painelChecklist").hidden = b.dataset.aba !== "checklist";
     $("painelTarefas").hidden   = b.dataset.aba !== "tarefas";
     $("painelProg").hidden      = b.dataset.aba !== "prog";
+    $("painelLeituras").hidden  = b.dataset.aba !== "leituras";
     $("painelManut").hidden     = b.dataset.aba !== "manut";
     $("painelEquipe").hidden    = b.dataset.aba !== "equipe";
     $("painelBase").hidden      = b.dataset.aba !== "base";
@@ -4557,6 +4573,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
     if (b.dataset.aba === "limpeza") setTimeout(function(){ carregarLimpeza(); }, 0);
     if (b.dataset.aba === "lotes") carregarLotes();
     if (b.dataset.aba === "receitas") rec_carregarLista();
+    if (b.dataset.aba === "leituras") leiturasCarregar();
   });
 });
 
@@ -8948,6 +8965,162 @@ async function irParaBrassagem(semana, id){
   $("modalBrassagem").hidden = false;
 }
 
+/* ==================================================================
+   Aba "Leituras do Dia"
+   ================================================================== */
+async function leiturasCarregar(){
+  var el = $("leiturasConteudo");
+  var lbl = $("leiturasDataLabel");
+  var hoje = new Date();
+  lbl.textContent = hoje.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
+  el.innerHTML = "<div style='color:var(--muted);font-size:.85rem'>Carregando tanques ativos…</div>";
+  try {
+    var dados = await api("/api/tanques");
+    var tanques = (dados.tanques || []).filter(function(t){
+      return t.estagio === "fermentando" || t.estagio === "maturando" || t.estagio === "critico" || t.estagio === "pronto";
+    });
+    if (!tanques.length) {
+      el.innerHTML = "<div style='color:var(--muted);font-size:.9rem;padding:8px 0'>Nenhum tanque ativo em fermentação ou maturação.</div>";
+      return;
+    }
+    var html = "<div style='display:flex;flex-direction:column;gap:16px'>";
+    tanques.forEach(function(t){
+      var isMatur = t.estagio === "maturando" || t.estagio === "critico" || t.estagio === "pronto";
+      var isPronto = t.estagio === "pronto";
+      var icone   = isPronto ? "✅" : (isMatur ? "🧊" : "🍺");
+      var label   = isPronto ? "Pronto" : (isMatur ? "Maturação" : "Fermentação");
+      var cor     = isPronto ? "#22c55e" : (isMatur ? "#3b82f6" : "#10b981");
+      var loteStr = t.lote ? " · <span style='font-size:.8rem;color:var(--muted)'>Lote "+esc(t.lote)+"</span>" : "";
+      if (isMatur) {
+        html += "<div class='card' style='border-left:4px solid "+cor+";padding:12px 14px'>" +
+          "<div style='display:flex;align-items:center;gap:8px;margin-bottom:10px'>" +
+            "<span style='font-size:1.1rem;font-weight:600'>"+icone+" "+esc(t.id)+"</span>" +
+            loteStr +
+            "<span style='margin-left:auto;font-size:.78rem;background:"+cor+"22;color:"+cor+";padding:2px 8px;border-radius:9px'>"+label+"</span>" +
+          "</div>" +
+          "<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>Data/hora<br>" +
+              "<input type='datetime-local' id='leit_dt_"+esc(t.id)+"' value='"+leiturasDtNow()+"' style='width:100%;font-size:.85rem'></label>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>Temp. setada (°C)<br>" +
+              "<input type='number' step='0.1' id='leit_ts_"+esc(t.id)+"' placeholder='ex: 12.0' style='width:100%;font-size:.85rem'></label>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>Temp. real (°C)<br>" +
+              "<input type='number' step='0.1' id='leit_tr_"+esc(t.id)+"' placeholder='ex: 11.8' style='width:100%;font-size:.85rem'></label>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>Pressão (kgf/cm²)<br>" +
+              "<input type='number' step='0.01' id='leit_kgf_"+esc(t.id)+"' placeholder='ex: 0.80' style='width:100%;font-size:.85rem'></label>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>pH<br>" +
+              "<input type='number' step='0.01' id='leit_ph_"+esc(t.id)+"' placeholder='ex: 4.20' style='width:100%;font-size:.85rem'></label>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>CO₂ (volumes)<br>" +
+              "<input type='number' step='0.01' id='leit_co2_"+esc(t.id)+"' placeholder='ex: 2.50' style='width:100%;font-size:.85rem'></label>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>Clareza<br>" +
+              "<select id='leit_cl_"+esc(t.id)+"' style='width:100%;font-size:.85rem'><option value=''>—</option><option>Turvo</option><option>Levemente turvo</option><option>Límpido</option><option>Brilhante</option></select></label>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>Observações<br>" +
+              "<input type='text' id='leit_obs_"+esc(t.id)+"' placeholder='opcional' style='width:100%;font-size:.85rem'></label>" +
+          "</div>" +
+          "<button class='btn leit-salvar-btn' style='margin-top:10px;width:100%' data-leit-tq='"+esc(t.id)+"' data-leit-lote='"+esc(t.lote||"")+"' data-leit-tipo='matur'>💾 Salvar leitura de maturação</button>" +
+        "</div>";
+      } else {
+        html += "<div class='card' style='border-left:4px solid "+cor+";padding:12px 14px'>" +
+          "<div style='display:flex;align-items:center;gap:8px;margin-bottom:10px'>" +
+            "<span style='font-size:1.1rem;font-weight:600'>"+icone+" "+esc(t.id)+"</span>" +
+            loteStr +
+            "<span style='margin-left:auto;font-size:.78rem;background:"+cor+"22;color:"+cor+";padding:2px 8px;border-radius:9px'>"+label+"</span>" +
+          "</div>" +
+          "<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>Data/hora<br>" +
+              "<input type='datetime-local' id='leit_dt_"+esc(t.id)+"' value='"+leiturasDtNow()+"' style='width:100%;font-size:.85rem'></label>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>Densidade (SG)<br>" +
+              "<input type='number' step='0.001' id='leit_sg_"+esc(t.id)+"' placeholder='ex: 1.020' style='width:100%;font-size:.85rem'></label>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>Temp. setada (°C)<br>" +
+              "<input type='number' step='0.1' id='leit_ts_"+esc(t.id)+"' placeholder='ex: 20.0' style='width:100%;font-size:.85rem'></label>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>Temp. real (°C)<br>" +
+              "<input type='number' step='0.1' id='leit_tr_"+esc(t.id)+"' placeholder='ex: 19.8' style='width:100%;font-size:.85rem'></label>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>Pressão (kgf/cm²)<br>" +
+              "<input type='number' step='0.01' id='leit_kgf_"+esc(t.id)+"' placeholder='ex: 0.50' style='width:100%;font-size:.85rem'></label>" +
+            "<label style='font-size:.8rem;color:var(--muted)'>pH<br>" +
+              "<input type='number' step='0.01' id='leit_ph_"+esc(t.id)+"' placeholder='ex: 4.50' style='width:100%;font-size:.85rem'></label>" +
+            "<label style='font-size:.8rem;color:var(--muted);grid-column:1/-1'>Observações<br>" +
+              "<input type='text' id='leit_obs_"+esc(t.id)+"' placeholder='opcional' style='width:100%;font-size:.85rem'></label>" +
+          "</div>" +
+          "<button class='btn leit-salvar-btn' style='margin-top:10px;width:100%' data-leit-tq='"+esc(t.id)+"' data-leit-lote='"+esc(t.lote||"")+"' data-leit-tipo='ferm'>💾 Salvar leitura de fermentação</button>" +
+        "</div>";
+      }
+    });
+    html += "</div>";
+    el.innerHTML = html;
+    // Wiring dos botões via addEventListener (não onclick inline — código dentro do IIFE)
+    el.querySelectorAll(".leit-salvar-btn").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        leiturasSalvar(btn.dataset.leitTq, btn.dataset.leitLote, btn.dataset.leitTipo);
+      });
+    });
+  } catch(e){
+    el.innerHTML = "<div style='color:var(--danger)'>Erro ao carregar tanques: "+esc(String(e))+"</div>";
+  }
+}
+
+function leiturasDtNow(){
+  var d = new Date();
+  var pad = function(n){ return String(n).padStart(2,"0"); };
+  return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes());
+}
+
+async function leiturasSalvar(tqId, lote, tipo){
+  console.log("[leituras] salvar tqId="+tqId+" lote="+lote+" tipo="+tipo);
+  if (!lote) { toast("Este tanque não tem lote vinculado na brassagem.", "aviso"); return; }
+  var btn = document.querySelector("#leiturasConteudo button[data-leit-tq='"+tqId+"']");
+  var txtOrig = "";
+  if (btn){ txtOrig = btn.textContent; btn.disabled = true; btn.textContent = "Salvando…"; }
+  try {
+    // 1. buscar ficha atual
+    console.log("[leituras] buscando ficha lote="+lote);
+    var res = await api("/api/ficha?lote="+encodeURIComponent(lote));
+    console.log("[leituras] ficha recebida:", res);
+    var ficha = (res && res.ficha) ? res.ficha : {};
+    if (!Array.isArray(ficha.fermLog)) ficha.fermLog = [];
+    if (!Array.isArray(ficha.maturLog)) ficha.maturLog = [];
+
+    var dt  = (document.getElementById("leit_dt_"+tqId)  || {value:leiturasDtNow()}).value;
+    var ts  = (document.getElementById("leit_ts_"+tqId)  || {value:""}).value;
+    var tr  = (document.getElementById("leit_tr_"+tqId)  || {value:""}).value;
+    var kgf = (document.getElementById("leit_kgf_"+tqId) || {value:""}).value;
+    var ph  = (document.getElementById("leit_ph_"+tqId)  || {value:""}).value;
+    var obs = (document.getElementById("leit_obs_"+tqId) || {value:""}).value;
+
+    var row;
+    if (tipo === "ferm") {
+      var sg = (document.getElementById("leit_sg_"+tqId) || {value:""}).value;
+      // ferm log: [datetime, SG, temp_set, temp_real, kgf, pH, obs, resp, del_placeholder]
+      row = [dt, sg, ts, tr, kgf, ph, obs, sessao.login || "", ""];
+      console.log("[leituras] nova linha ferm:", row);
+      ficha.fermLog.push(row);
+    } else {
+      var co2 = (document.getElementById("leit_co2_"+tqId) || {value:""}).value;
+      var cl  = (document.getElementById("leit_cl_"+tqId)  || {value:""}).value;
+      // matur log: [datetime, temp_set, temp_real, kgf, pH, co2, clareza, obs, resp, del_placeholder]
+      row = [dt, ts, tr, kgf, ph, co2, cl, obs, sessao.login || "", ""];
+      console.log("[leituras] nova linha matur:", row);
+      ficha.maturLog.push(row);
+    }
+
+    // 2. salvar ficha de volta
+    console.log("[leituras] salvando ficha...");
+    var saveRes = await api("/api/ficha", {method:"POST", body:{lote:lote, dados:ficha}});
+    console.log("[leituras] salvo:", saveRes);
+    toast("✅ Leitura salva — lote "+lote, "ok");
+
+    // limpar campos numéricos (mantém data/hora)
+    ["leit_ts_","leit_tr_","leit_kgf_","leit_ph_","leit_obs_","leit_sg_","leit_co2_"].forEach(function(p){
+      var el = document.getElementById(p+tqId); if(el) el.value = "";
+    });
+    var elCl = document.getElementById("leit_cl_"+tqId); if(elCl) elCl.value = "";
+    var elDt = document.getElementById("leit_dt_"+tqId); if(elDt) elDt.value = leiturasDtNow();
+  } catch(e) {
+    console.error("[leituras] ERRO:", e);
+    toast("Erro ao salvar: "+String(e), "erro");
+  }
+  if (btn){ btn.disabled = false; btn.textContent = txtOrig; }
+}
+
 async function carregarTanques(){
   $("tanquesLista").innerHTML = "<div class='vazio'>Carregando…</div>";
   try{
@@ -10674,21 +10847,107 @@ function fp_renderGraficos(){
       '<span style="color:var(--fp-fg2)">'+label+'</span></span>';
   }
 
+  // Tabela de pontos para tooltip: [{cx,cy,label,value,color}]
+  var tooltipPts = [];
+  var _origDrawSeries = drawSeries;
+  drawSeries = function(pts, key, color, fill, axisRight, dec, label){
+    var result = _origDrawSeries(pts, key, color, fill, axisRight, dec, label);
+    // recolher coordenadas canvas de cada ponto válido
+    pts.forEach(function(p){
+      var v = p[key];
+      if(isNaN(v) || v===undefined || v==='') return;
+      // recalcular vy para este ponto
+      var vals = pts.map(function(q){ return q[key]; }).filter(function(x){ return !isNaN(x) && x!==undefined; });
+      var mn2 = Math.min.apply(null,vals), mx2 = Math.max.apply(null,vals);
+      var pad2 = (mx2-mn2)*0.2 || 1; mn2-=pad2; mx2+=pad2;
+      var range2 = mx2-mn2 || 1;
+      var cy2 = mt + ch - (v-mn2)/range2*ch;
+      var cx2 = tx(p);
+      var d = p.dt;
+      var dtStr = ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+
+                  ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+      tooltipPts.push({cx:cx2, cy:cy2, label:label||key, value:v.toFixed(dec||0), color:color, dt:dtStr});
+    });
+    return result;
+  };
+
   // Fermentação: SG (eixo esq), Temp real (eixo dir)
   if(hasFerm){
-    if(drawSeries(fermPts,'sg',  '#E67E22','rgba(230,126,34,0.10)', false, 3)) addLegend('#E67E22','SG');
-    if(drawSeries(fermPts,'temp','#2980B9', null,                   true,  1)) addLegend('#2980B9','°C (fermentação)');
+    if(drawSeries(fermPts,'sg',  '#E67E22','rgba(230,126,34,0.10)', false, 3, 'SG'))             addLegend('#E67E22','SG');
+    if(drawSeries(fermPts,'temp','#2980B9', null,                   true,  1, '°C (ferm.)'))     addLegend('#2980B9','°C (fermentação)');
   }
   // Maturação: Temp real (mesma escala dir), Kgf (eixo dir), CO₂ (eixo dir)
   if(hasMatur){
-    if(drawSeries(maturPts,'temp','#27AE60', null,                   true,  1)) addLegend('#27AE60','°C (maturação)');
-    if(drawSeries(maturPts,'kgf', '#8E44AD','rgba(142,68,173,0.08)', false, 2)) addLegend('#8E44AD','kgf/cm²');
-    if(drawSeries(maturPts,'co2', '#0891B2', null,                   true,  1)) addLegend('#0891B2','vol. CO₂');
+    if(drawSeries(maturPts,'temp','#27AE60', null,                   true,  1, '°C (matur.)'))   addLegend('#27AE60','°C (maturação)');
+    if(drawSeries(maturPts,'kgf', '#8E44AD','rgba(142,68,173,0.08)', false, 2, 'kgf/cm²'))      addLegend('#8E44AD','kgf/cm²');
+    if(drawSeries(maturPts,'co2', '#0891B2', null,                   true,  1, 'vol. CO₂'))     addLegend('#0891B2','vol. CO₂');
   }
 
   // borda
   ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
   ctx.strokeRect(ml, mt, cw, ch);
+
+  // ── Tooltip interativo ──
+  // Remove listener anterior se existir (re-render)
+  if(canvas._tooltipHandler) canvas.removeEventListener('mousemove', canvas._tooltipHandler);
+  if(canvas._tooltipLeave)   canvas.removeEventListener('mouseleave', canvas._tooltipLeave);
+
+  // Div de tooltip (reutilizável)
+  var tipEl = document.getElementById('fp-chart-tooltip');
+  if(!tipEl){
+    tipEl = document.createElement('div');
+    tipEl.id = 'fp-chart-tooltip';
+    tipEl.style.cssText = 'position:fixed;pointer-events:none;display:none;background:rgba(20,24,18,0.92);'+
+      'color:#f0ede6;font-size:11px;padding:6px 10px;border-radius:6px;z-index:9999;'+
+      'box-shadow:0 2px 8px rgba(0,0,0,.35);line-height:1.6;white-space:nowrap';
+    document.body.appendChild(tipEl);
+  }
+
+  canvas._tooltipHandler = function(e){
+    var rect = canvas.getBoundingClientRect();
+    var mx = e.clientX - rect.left;
+    var my = e.clientY - rect.top;
+    // achar ponto mais próximo (raio 20px)
+    var best = null, bestDist = 20;
+    tooltipPts.forEach(function(p){
+      var d2 = Math.sqrt((p.cx-mx)*(p.cx-mx)+(p.cy-my)*(p.cy-my));
+      if(d2 < bestDist){ bestDist=d2; best=p; }
+    });
+    if(!best){ tipEl.style.display='none'; return; }
+
+    // agrupar todos os pontos do mesmo datetime
+    var grupo = tooltipPts.filter(function(p){ return p.dt === best.dt; });
+    var html = '<div style="font-size:10px;color:#a8b09f;margin-bottom:3px">📅 '+best.dt+'</div>';
+    grupo.forEach(function(p){
+      html += '<div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;'+
+        'background:'+p.color+';margin-right:5px;vertical-align:middle"></span>'+
+        '<b>'+p.label+':</b> '+p.value+'</div>';
+    });
+    tipEl.innerHTML = html;
+    tipEl.style.display = 'block';
+    // posicionar perto do cursor sem sair da tela
+    var tx2 = e.clientX + 14, ty2 = e.clientY - 10;
+    if(tx2 + 180 > window.innerWidth)  tx2 = e.clientX - 180;
+    if(ty2 + 80  > window.innerHeight) ty2 = e.clientY - 80;
+    tipEl.style.left = tx2+'px';
+    tipEl.style.top  = ty2+'px';
+    // destacar o ponto mais próximo
+    ctx.save();
+    ctx.clearRect(best.cx-8, best.cy-8, 16, 16);
+    // re-draw pequena região não é prático — só circulo highlight em overlay
+    ctx.beginPath();
+    ctx.arc(best.cx, best.cy, 5, 0, 2*Math.PI);
+    ctx.fillStyle = best.color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  };
+  canvas._tooltipLeave = function(){ tipEl.style.display='none'; };
+  canvas.style.cursor = 'crosshair';
+  canvas.addEventListener('mousemove', canvas._tooltipHandler);
+  canvas.addEventListener('mouseleave', canvas._tooltipLeave);
 }
 
 /* Calcula OG média das bateladas e ABV estimado pela última leitura de SG */
