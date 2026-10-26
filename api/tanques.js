@@ -254,6 +254,7 @@ export default protegido(async function handler(req, res) {
       const usarOverride = overrideEhPronto || overrideEhZerado || (overrideEhLivre && !brass && !brassHoje);
 
       let estagio, estagioLabel, estagioIcone, estagioCorBg, estagioCorBorda;
+      let maturacaoInicio = null; // declarado aqui para ficar acessível fora do bloco else
       if (usarOverride) {
         estagio       = manual[tq.id].estagio;
         estagioLabel  = manual[tq.id].estagioLabel  || estagio;
@@ -289,7 +290,7 @@ export default protegido(async function handler(req, res) {
         const maturLog  = fichaLote && Array.isArray(fichaLote.maturLog) ? fichaLote.maturLog : [];
         const temMaturacao = maturLog.length > 0;
         // Data de início de maturação = data/hora da 1ª linha do maturLog (col 0)
-        const maturacaoInicio = temMaturacao && maturLog[0] && maturLog[0][0]
+        maturacaoInicio = temMaturacao && maturLog[0] && maturLog[0][0]
           ? maturLog[0][0]   // datetime-local da primeira linha: "YYYY-MM-DDTHH:mm"
           : (manual[tq.id] && manual[tq.id].maturacaoInicioISO ? manual[tq.id].maturacaoInicioISO : null);
         if (dias !== null && dias >= DIAS_CRITICO && !temMaturacao) {
