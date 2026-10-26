@@ -3449,7 +3449,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.63";
+var VERSAO = "3.7.64";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10241,11 +10241,11 @@ function coletarLogDivs(containerId){
   });
 }
 /* Restaura linhas de um log div usando a função addRow correspondente */
-function preencherLogDivs(containerId, rows, addFn){
+function preencherLogDivs(containerId, rows, addFn, silentMode){
   var c=document.getElementById(containerId); if(!c||!rows||!rows.length) return;
   c.innerHTML='';
   rows.forEach(function(vals){
-    addFn();
+    addFn(silentMode);
     var row=c.querySelector('.fp-mlog-row:last-child'); if(!row) return;
     var inputs=row.querySelectorAll('input,select,textarea');
     /* Migração multi-versão: adapta arrays salvos em versões antigas para o formato atual */
@@ -10325,11 +10325,12 @@ function fp_addFermRow(){
   });
   fp_markDirty(); fp_calcFermStats();
 }
-function fp_addMaturRow(){
+function fp_addMaturRow(silent){
   var now=new Date(), local=now.toISOString().slice(0,16);
   var usuario = (typeof sessao !== 'undefined' && sessao && sessao.nome) ? sessao.nome : '';
   var c=document.getElementById('fp-matur-log');
   // Se é a primeira linha de maturação, registra início de maturação no tanque
+  // silent=true quando chamado por preencherLogDivs (restore de dados salvos) — não dispara API
   var isFirstMaturRow = c && c.querySelectorAll('.fp-mlog-row:not(.header)').length === 0;
   var row=document.createElement('div'); row.className='fp-mlog-row matur';
   row.innerHTML='<div class="fp-log-cell"><input type="datetime-local" value="'+local+'"></div>'+
@@ -10345,8 +10346,8 @@ function fp_addMaturRow(){
     '<div class="fp-log-cell"><input placeholder="nome" value="'+esc(usuario)+'"></div>'+
     '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
   c.appendChild(row); fp_markDirty();
-  // Auto-registrar início de maturação na primeira linha adicionada
-  if (isFirstMaturRow) {
+  // Auto-registrar início de maturação na primeira linha adicionada pelo usuário (não durante restore)
+  if (isFirstMaturRow && !silent) {
     var fpApp = document.getElementById('fp-app');
     var tqId = fpApp ? fpApp.dataset.fpTq : '';
     if (tqId) {
@@ -10358,6 +10359,19 @@ function fp_addMaturRow(){
         .catch(function(){ /* silencioso — status será refletido na próxima atualização dos tanques */ });
     }
   }
+}
+function fp_desfazerMaturacao(){
+  /* Remove registro de início de maturação do tanque (status volta a Fermentando) — apenas gestores */
+  var fpApp = document.getElementById('fp-app');
+  var tqId = fpApp ? fpApp.dataset.fpTq : '';
+  if (!tqId) { toast('Tanque não identificado','erro'); return; }
+  if (!confirm('Desfazer o status de Maturação do tanque '+tqId+'?\nO tanque voltará a aparecer como Fermentando.')) return;
+  api('/api/tanques', {method:'POST', body:{acao:'limparMaturando', tanqueId:tqId}})
+    .then(function(r){
+      if(r && r.ok){ toast('🍺 Status restaurado: Fermentando','ok'); }
+      else { toast('Erro ao desfazer maturação','erro'); }
+    })
+    .catch(function(){ toast('Erro ao desfazer maturação','erro'); });
 }
 function fp_recCO2(inp){
   /* Se chamado sem argumento (ou com evento de restore), busca o último valor CO₂ preenchido */
@@ -12271,6 +12285,7 @@ function abrirFichaLote(tq){
         '<div id="fp-matur-log"></div>'+
       '</div></div>'+
       '<button class="fp-add-row-btn" onclick="fp_addMaturRow()" style="margin-top:8px">＋ Adicionar leitura</button>'+
+      '<button class="fp-gestor-sec" onclick="fp_desfazerMaturacao()" style="margin-top:6px;margin-left:8px;background:none;border:1px solid var(--fp-border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--fp-fg3);cursor:pointer" title="Remove o registro de início de maturação do tanque (status volta a Fermentando)">🔄 Desfazer maturação</button>'+
     '</div>'+
   '</div>'+
 
@@ -12489,7 +12504,7 @@ function fp_preencherFicha(ficha){
   if(ficha.dryhop)       preencherTabela('fp-tbl-dryhop',ficha.dryhop);
   if(ficha.trub)         preencherTabela('fp-tbl-trub',ficha.trub);
   if(ficha.fermLog && ficha.fermLog.length)   preencherLogDivs('fp-ferm-log', ficha.fermLog, fp_addFermRow);
-  if(ficha.maturLog && ficha.maturLog.length){ preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow); setTimeout(fp_recCO2, 500); }
+  if(ficha.maturLog && ficha.maturLog.length){ preencherLogDivs('fp-matur-log', ficha.maturLog, fp_addMaturRow, true); setTimeout(fp_recCO2, 500); }
   // restaura adições ao tanque (clearmax + levedura)
   if(ficha.adicoesTanque){
     var at = ficha.adicoesTanque;
@@ -13285,6 +13300,7 @@ window.fp_delLog           = fp_delLog;
 window.fp_addRow           = fp_addRow;
 window.fp_addFermRow       = fp_addFermRow;
 window.fp_addMaturRow      = fp_addMaturRow;
+window.fp_desfazerMaturacao = fp_desfazerMaturacao;
 window.fp_recCO2           = fp_recCO2;
 window.fp_calcProgresso    = fp_calcProgresso;
 window.fp_calcIodo         = fp_calcIodo;
