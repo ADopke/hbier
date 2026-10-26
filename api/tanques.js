@@ -249,9 +249,9 @@ export default protegido(async function handler(req, res) {
       const overrideEhLivre = overrideAtivo && (manual[tq.id].estagio === "livre");
       const overrideEhPronto = overrideAtivo && (manual[tq.id].estagio === "pronto");
       const overrideEhZerado = overrideEhLivre && !!(manual[tq.id].zerado);
-      // "pronto" sempre tem prioridade; "zerado" também (sobrepõe brassagens antigas);
+      // "pronto" sempre tem prioridade; "zerado" sobrepõe brassagens antigas mas cede para brassagem de hoje;
       // "livre manual" cede se há brassagem ativa
-      const usarOverride = overrideEhPronto || overrideEhZerado || (overrideEhLivre && !brass && !brassHoje);
+      const usarOverride = overrideEhPronto || (overrideEhZerado && !brassHoje) || (overrideEhLivre && !brass && !brassHoje);
 
       let estagio, estagioLabel, estagioIcone, estagioCorBg, estagioCorBorda;
       let maturacaoInicio = null; // declarado aqui para ficar acessível fora do bloco else
@@ -315,8 +315,8 @@ export default protegido(async function handler(req, res) {
       }
 
       // referência de conteúdo: brassagem de hoje tem prioridade sobre anterior em maturação
-      // quando o tanque foi zerado, ignorar brassagens antigas como referência
-      const refBrass = overrideEhZerado ? null : (brassHoje || brass || null);
+      // quando o tanque foi zerado, ignorar brassagens antigas — mas brassagem de hoje sempre aparece
+      const refBrass = overrideEhZerado ? (brassHoje || null) : (brassHoje || brass || null);
       const ref = refBrass;
 
       // envases vinculados ao lote da brassagem atual (para exibição)
