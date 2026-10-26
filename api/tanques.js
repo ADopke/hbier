@@ -568,8 +568,7 @@ export default protegido(async function handler(req, res) {
 
     /* -- limparMaturando (remover registro de início de maturação) -- */
     if (dados.acao === "limparMaturando") {
-      if (!["admin", "gestor"].includes(sessao.papel))
-        return erro(res, 403, "Apenas admin ou gestor.");
+      // Qualquer usuário logado pode desfazer maturação (corrige bug de status incorreto)
       const { tanqueId } = dados;
       if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
       const mapa = (await ler(CHAVE_MANUAL)) || {};

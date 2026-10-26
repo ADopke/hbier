@@ -3449,7 +3449,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.64";
+var VERSAO = "3.7.65";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12285,7 +12285,7 @@ function abrirFichaLote(tq){
         '<div id="fp-matur-log"></div>'+
       '</div></div>'+
       '<button class="fp-add-row-btn" onclick="fp_addMaturRow()" style="margin-top:8px">＋ Adicionar leitura</button>'+
-      '<button class="fp-gestor-sec" onclick="fp_desfazerMaturacao()" style="margin-top:6px;margin-left:8px;background:none;border:1px solid var(--fp-border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--fp-fg3);cursor:pointer" title="Remove o registro de início de maturação do tanque (status volta a Fermentando)">🔄 Desfazer maturação</button>'+
+      '<button onclick="fp_desfazerMaturacao()" style="margin-top:6px;margin-left:8px;background:none;border:1px solid var(--fp-border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--fp-fg3);cursor:pointer" title="Remove o registro de início de maturação do tanque (status volta a Fermentando)">🔄 Desfazer maturação</button>'+
     '</div>'+
   '</div>'+
 
