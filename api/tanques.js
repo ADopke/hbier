@@ -268,15 +268,26 @@ export default protegido(async function handler(req, res) {
       } else {
         const dias = diasDesde(brass.em);
         const DIAS_CRITICO = 15;
-        if (dias !== null && dias >= DIAS_CRITICO) {
+        // Verificar se há registro de início de maturação no override manual
+        const maturacaoInicio = manual[tq.id] && manual[tq.id].maturacaoInicioISO
+          ? manual[tq.id].maturacaoInicioISO
+          : null;
+        const temMaturacao = !!(maturacaoInicio);
+        if (dias !== null && dias >= DIAS_CRITICO && !temMaturacao) {
           estagio       = "critico";
           estagioLabel  = "Maturando — atenção";
           estagioIcone  = "🚨";
           estagioCorBg  = "#FEF2F2";
           estagioCorBorda = "#DC2626";
-        } else {
+        } else if (temMaturacao) {
           estagio       = "maturando";
-          estagioLabel  = "Fermentando / Maturando";
+          estagioLabel  = "Maturando";
+          estagioIcone  = "🧊";
+          estagioCorBg  = "#EFF6FF";
+          estagioCorBorda = "#3B82F6";
+        } else {
+          estagio       = "fermentando";
+          estagioLabel  = "Fermentando";
           estagioIcone  = "🍺";
           estagioCorBg  = "#FFFBEB";
           estagioCorBorda = "#F59E0B";
@@ -297,6 +308,26 @@ export default protegido(async function handler(req, res) {
 
       const diasTanque = brass && !brassHoje && !overrideEhZerado ? diasDesde(brass.em) : null;
 
+      // Cálculo de dias separados: fermentação vs maturação
+      const maturacaoInicioISO = manual[tq.id] && manual[tq.id].maturacaoInicioISO
+        ? manual[tq.id].maturacaoInicioISO
+        : null;
+      let diasFermentando = null, diasMaturando = null;
+      if (brass && !brassHoje && !overrideEhZerado) {
+        if (maturacaoInicioISO) {
+          // Fermentação: do brassado ao início de maturação
+          const maturDate = new Date(maturacaoInicioISO);
+          const brassDate = new Date(brass.em + "T00:00:00");
+          diasFermentando = Math.max(0, Math.floor((maturDate - brassDate) / 86400000));
+          // Maturação: do início de maturação até hoje
+          diasMaturando = diasDesde(maturDate.toISOString().slice(0, 10));
+        } else {
+          // Apenas fermentando — ainda não entrou em maturação
+          diasFermentando = diasTanque;
+          diasMaturando   = null;
+        }
+      }
+
       return {
         id:           tq.id,
         nome:         tq.nome,
@@ -311,6 +342,9 @@ export default protegido(async function handler(req, res) {
         volume:       ref ? ref.volume : "",
         og:           ref && !brassHoje ? (brass ? brass.og : "") : "",
         diasTanque,
+        diasFermentando,
+        diasMaturando,
+        maturacaoInicioISO,
         brassadoEm:   ref ? ref.em     : "",
         brassadoSem:  ref ? ref.semana : "",
         brassadoId:   ref ? ref.id     : "",
@@ -508,6 +542,44 @@ export default protegido(async function handler(req, res) {
       if (hist.length && hist[0].encerradoEm) {
         hist.shift();
         await gravar(CHAVE_HIST(tanqueId), hist);
+      }
+      return res.json({ ok: true });
+    }
+
+    /* -- marcarMaturando (registrar início de maturação — chamado automaticamente ao adicionar 1ª linha do log de maturação) -- */
+    if (dados.acao === "marcarMaturando") {
+      const { tanqueId, maturacaoInicioISO: mISOInput } = dados;
+      if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
+      const mapa = (await ler(CHAVE_MANUAL)) || {};
+      // Preservar override de estágio existente (pronto, livre etc) se houver, só adiciona maturacaoInicioISO
+      const existente = mapa[tanqueId] || {};
+      // Se já tem maturacaoInicioISO, não sobrescreve (preserva o registro original)
+      if (!existente.maturacaoInicioISO) {
+        mapa[tanqueId] = {
+          ...existente,
+          maturacaoInicioISO: mISOInput || new Date().toISOString(),
+          maturacaoRegistradoPor: sessao.usuario || sessao.login,
+          maturacaoRegistradoEm:  new Date().toISOString(),
+        };
+        await gravar(CHAVE_MANUAL, mapa);
+      }
+      return res.json({ ok: true, maturacaoInicioISO: (mapa[tanqueId] || {}).maturacaoInicioISO });
+    }
+
+    /* -- limparMaturando (remover registro de início de maturação) -- */
+    if (dados.acao === "limparMaturando") {
+      if (!["admin", "gestor"].includes(sessao.papel))
+        return erro(res, 403, "Apenas admin ou gestor.");
+      const { tanqueId } = dados;
+      if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
+      const mapa = (await ler(CHAVE_MANUAL)) || {};
+      if (mapa[tanqueId]) {
+        delete mapa[tanqueId].maturacaoInicioISO;
+        delete mapa[tanqueId].maturacaoRegistradoPor;
+        delete mapa[tanqueId].maturacaoRegistradoEm;
+        // Se não sobrou nada no override, remover completamente
+        if (!mapa[tanqueId].estagio) delete mapa[tanqueId];
+        await gravar(CHAVE_MANUAL, mapa);
       }
       return res.json({ ok: true });
     }

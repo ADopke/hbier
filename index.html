@@ -1246,10 +1246,10 @@ table.fp-data .fp-del-btn:hover{color:var(--fp-vermelho);background:rgba(200,32,
 .fp-log-cell input:focus{outline:1px solid var(--fp-marrom);border-radius:3px;padding:1px 3px}
 /* base log row */
 .fp-mlog-row{display:grid;grid-template-columns:150px 70px 80px 80px 60px 1fr 28px;gap:0;border-bottom:1px solid var(--fp-border);align-items:center}
-/* fermentação log (8 cols: datetime, SG, temp_real, kgf, pH, obs, responsável, del) */
-.fp-mlog-row.ferm{grid-template-columns:150px 70px 80px 80px 60px 1fr 90px 28px}
-/* maturação log (9 cols: datetime, temp, kgf, pH, co2, clareza, obs, responsável, del) */
-.fp-mlog-row.matur{grid-template-columns:150px 80px 80px 60px 80px 100px 1fr 90px 28px}
+/* fermentação log (9 cols: datetime, SG, temp_setada, temp_real, kgf, pH, obs, responsável, del) */
+.fp-mlog-row.ferm{grid-template-columns:150px 70px 80px 80px 80px 60px 1fr 90px 28px}
+/* maturação log (10 cols: datetime, temp_setada, temp_real, kgf, pH, co2, clareza, obs, responsável, del) */
+.fp-mlog-row.matur{grid-template-columns:150px 80px 80px 80px 60px 80px 100px 1fr 90px 28px}
 /* lavagens log (4 cols: hora, vol, responsável, del) */
 .fp-mlog-row.lav{grid-template-columns:100px 80px 1fr 28px}
 /* stats banner acima dos logs */
@@ -2344,7 +2344,8 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:2px">Filtrar:</span>
           <button class="tq-filtro-btn ativo" data-filtro="">🗂 Todos</button>
           <button class="tq-filtro-btn" data-filtro="livre">✅ Livres</button>
-          <button class="tq-filtro-btn" data-filtro="maturando">🍺 Fermentando</button>
+          <button class="tq-filtro-btn" data-filtro="fermentando">🍺 Fermentando</button>
+          <button class="tq-filtro-btn" data-filtro="maturando">🧊 Maturando</button>
           <button class="tq-filtro-btn" data-filtro="pronto">🟢 Prontos</button>
           <button class="tq-filtro-btn" data-filtro="brassagem">🔥 Brassagem</button>
           <button class="tq-filtro-btn" data-filtro="critico">🚨 Atenção</button>
@@ -3448,7 +3449,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.62";
+var VERSAO = "3.7.63";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6798,9 +6799,13 @@ async function popularSelectTanques(selectId, modoEnvase, valorAtual) {
         label = nome + " \u2014 \uD83D\uDCC5 Previsto: " + (tq.lote||"") + (tq.estilo?" ("+tq.estilo+")":"");
         if (!modoEnvase) disabled = true; // tanque j\u00E1 tem brassagem planejada
         if (modoEnvase) disabled = true;  // sem resultado ainda, n\u00E3o envasar
+      } else if (tq.estagio === "fermentando") {
+        var d = tq.diasTanque !== null && tq.diasTanque !== undefined ? " \u00B7 " + tq.diasTanque + "d" : "";
+        label = nome + " \u2014 \uD83C\uDF7A " + (tq.lote||"") + (tq.estilo?" ("+tq.estilo+")":"") + d;
+        disabled = true; // ocupado
       } else if (tq.estagio === "maturando") {
         var d = tq.diasTanque !== null && tq.diasTanque !== undefined ? " \u00B7 " + tq.diasTanque + "d" : "";
-        label = nome + " \u2014 " + tq.estagioIcone + " " + (tq.lote||"") + (tq.estilo?" ("+tq.estilo+")":"") + d;
+        label = nome + " \u2014 \uD83E\uDDCA " + (tq.lote||"") + (tq.estilo?" ("+tq.estilo+")":"") + d;
         disabled = true; // ocupado
       } else if (tq.estagio === "critico") {
         var d = tq.diasTanque !== null && tq.diasTanque !== undefined ? " \u00B7 " + tq.diasTanque + "d" : "";
@@ -8983,16 +8988,17 @@ async function carregarTanques(){
     }
 
     // ── Resumo no topo ──────────────────────────────────────────────
-    var contagem = {brassagem:0, pronto:0, livre:0, maturando:0, critico:0};
+    var contagem = {brassagem:0, pronto:0, livre:0, fermentando:0, maturando:0, critico:0};
     _dadosTanques.forEach(function(tq){ if (contagem[tq.estagio] !== undefined) contagem[tq.estagio]++; });
     var resumoHtml =
       "<div style='display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:#F0FDF4;"+
         "border-bottom:1px solid #A8D4B4'>"+
-        (contagem.brassagem? "<span style='background:#F97316;border:1px solid #F97316;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:700;color:#fff'>🔥 "+contagem.brassagem+" brassagem hoje</span>" : "")+
-        (contagem.pronto   ? "<span style='background:#14532D;border:1px solid #14532D;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:700;color:#fff'>🟢 "+contagem.pronto+" pronto"+(contagem.pronto>1?"s":"")+" p/ envase</span>" : "")+
-        (contagem.livre    ? "<span style='background:#fff;border:1px solid #22C55E;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#15803D'>✅ "+contagem.livre+" livre"+(contagem.livre>1?"s":"")+"</span>" : "")+
-        (contagem.maturando? "<span style='background:#FFFBEB;border:1px solid #F59E0B;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#92400E'>🍺 "+contagem.maturando+" maturando</span>" : "")+
-        (contagem.critico  ? "<span style='background:#fff;border:1px solid #DC2626;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#DC2626'>🚨 "+contagem.critico+" atenção</span>" : "")+
+        (contagem.brassagem  ? "<span style='background:#F97316;border:1px solid #F97316;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:700;color:#fff'>🔥 "+contagem.brassagem+" brassagem hoje</span>" : "")+
+        (contagem.pronto     ? "<span style='background:#14532D;border:1px solid #14532D;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:700;color:#fff'>🟢 "+contagem.pronto+" pronto"+(contagem.pronto>1?"s":"")+" p/ envase</span>" : "")+
+        (contagem.livre      ? "<span style='background:#fff;border:1px solid #22C55E;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#15803D'>✅ "+contagem.livre+" livre"+(contagem.livre>1?"s":"")+"</span>" : "")+
+        (contagem.fermentando? "<span style='background:#FFFBEB;border:1px solid #F59E0B;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#92400E'>🍺 "+contagem.fermentando+" fermentando</span>" : "")+
+        (contagem.maturando  ? "<span style='background:#EFF6FF;border:1px solid #3B82F6;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#1D4ED8'>🧊 "+contagem.maturando+" maturando</span>" : "")+
+        (contagem.critico    ? "<span style='background:#fff;border:1px solid #DC2626;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#DC2626'>🚨 "+contagem.critico+" atenção</span>" : "")+
       "</div>";
 
     // ── Agrupar por disponibilidade ──────────────────────────────────
@@ -9003,9 +9009,11 @@ async function carregarTanques(){
         estagios: ["pronto"] },
       { label: "✅ Livres (vazios)", cor: "#15803D", bg: "#F0FDF4", borda: "#A8D4B4",
         estagios: ["livre"] },
-      { label: "🍺 Fermentando / Maturando", cor: "#92400E", bg: "#FFFBEB", borda: "#FCD34D",
+      { label: "🍺 Fermentando", cor: "#92400E", bg: "#FFFBEB", borda: "#FCD34D",
+        estagios: ["fermentando"] },
+      { label: "🧊 Maturando", cor: "#1D4ED8", bg: "#EFF6FF", borda: "#BFDBFE",
         estagios: ["maturando"] },
-      { label: "🚨 Atenção — maturando há muito tempo", cor: "#DC2626", bg: "#FEF2F2", borda: "#FECACA",
+      { label: "🚨 Atenção — fermentando há muito tempo", cor: "#DC2626", bg: "#FEF2F2", borda: "#FECACA",
         estagios: ["critico"] },
     ];
 
@@ -9013,7 +9021,7 @@ async function carregarTanques(){
       var podeEditar = ["admin","gestor"].includes(sessao.papel);
 
       // ── Variáveis de estado ─────────────────────────────────────
-      var eMaturando  = ["maturando","critico"].includes(tq.estagio);
+      var eMaturando  = ["fermentando","maturando","critico"].includes(tq.estagio);
       var ePronto     = tq.estagio === "pronto";
       var eLivre      = tq.estagio === "livre";
       var eBrassagem  = tq.estagio === "brassagem";
@@ -9034,16 +9042,22 @@ async function carregarTanques(){
       } else {
         // badge de status
         var corBg = tq.estagioCorBg; var corBd = tq.estagioCorBorda;
-        var diasStr = (tq.diasTanque !== null && tq.diasTanque !== undefined) ? tq.diasTanque+"d" : "";
-        var corDias = tq.estagio === "critico" ? "#DC2626" : tq.estagio === "brassagem" ? "#C2410C" : "var(--verde)";
+        var corDias = tq.estagio === "critico" ? "#DC2626" : tq.estagio === "brassagem" ? "#C2410C" : tq.estagio === "maturando" ? "#1D4ED8" : "var(--verde)";
+        // Build dias string — split ferm + matur when available
+        var diasStr = "";
+        if (tq.diasMaturando !== null && tq.diasMaturando !== undefined && tq.diasFermentando !== null && tq.diasFermentando !== undefined) {
+          diasStr = tq.diasFermentando+"d🍺 + "+tq.diasMaturando+"d🧊 = "+(tq.diasTanque||0)+"d";
+        } else if (tq.diasTanque !== null && tq.diasTanque !== undefined) {
+          diasStr = tq.diasTanque+"d";
+        }
         presenteConteudo =
           // status badge + dias
-          "<div style='display:flex;align-items:center;gap:6px;margin-bottom:6px'>"+
+          "<div style='display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap'>"+
             "<span style='background:"+corBd+";color:#fff;border-radius:5px;"+
               "padding:2px 8px;font-size:.67rem;font-weight:800;white-space:nowrap;letter-spacing:.03em'>"+
               esc(tq.estagioIcone)+" "+esc(tq.estagioLabel)+
             "</span>"+
-            (diasStr ? "<span style='font-family:\"Barlow Condensed\",sans-serif;font-weight:900;font-size:1.1rem;color:"+corDias+"'>"+diasStr+"</span>" : "")+
+            (diasStr ? "<span style='font-family:\"Barlow Condensed\",sans-serif;font-weight:700;font-size:.85rem;color:"+corDias+"'>"+diasStr+"</span>" : "")+
           "</div>"+
           // estilo em destaque
           (tq.estilo ? "<div style='font-weight:700;font-size:.9rem;color:#111827;line-height:1.2;margin-bottom:3px'>"+esc(tq.estilo)+"</div>" : "")+
@@ -9376,11 +9390,12 @@ async function carregarTanques(){
             "color:var(--verde);letter-spacing:.05em'>"+esc(tq.nome)+"</span>"+
           (function(){
             var badgeMap = {
-              livre:     {bg:"#16A34A",txt:"✅ Livre"},
-              pronto:    {bg:"#14532D",txt:"🟢 Pronto"},
-              maturando: {bg:"#D97706",txt:"🍺 Fermentando"},
-              brassagem: {bg:"#EA580C",txt:"🔥 Brassagem"},
-              critico:   {bg:"#DC2626",txt:"🚨 Atenção"},
+              livre:       {bg:"#16A34A",txt:"✅ Livre"},
+              pronto:      {bg:"#14532D",txt:"🟢 Pronto"},
+              fermentando: {bg:"#D97706",txt:"🍺 Fermentando"},
+              maturando:   {bg:"#2563EB",txt:"🧊 Maturando"},
+              brassagem:   {bg:"#EA580C",txt:"🔥 Brassagem"},
+              critico:     {bg:"#DC2626",txt:"🚨 Atenção"},
             };
             var b = badgeMap[tq.estagio];
             if (!b) return "";
@@ -9494,7 +9509,7 @@ async function carregarTanques(){
       var cards = $("tqGrid").querySelectorAll(".tanque-card");
       cards.forEach(function(card){
         var est = card.dataset.estagio || "";
-        var mostrar = !filtroAtivo || est === filtroAtivo || (filtroAtivo === "maturando" && est === "maturando");
+        var mostrar = !filtroAtivo || est === filtroAtivo;
         card.classList.toggle("tq-oculto", !mostrar);
       });
       // atualiza contador na barra de resumo
@@ -10233,25 +10248,35 @@ function preencherLogDivs(containerId, rows, addFn){
     addFn();
     var row=c.querySelector('.fp-mlog-row:last-child'); if(!row) return;
     var inputs=row.querySelectorAll('input,select,textarea');
-    /* Migração: log de maturação com 9 cols (formato antigo com SG na col 1)
-       → remove col 1 (SG) para encaixar nos 8 inputs atuais */
+    /* Migração multi-versão: adapta arrays salvos em versões antigas para o formato atual */
     var valsAdj = vals;
-    /* Migração maturação: 9 cols antigo (com SG col 1) → 8 cols atual */
-    if(containerId==='fp-matur-log' && vals.length===9 && inputs.length===9){
-      // novo formato com responsável — ok, não mexe
-    } else if(containerId==='fp-matur-log' && vals.length===9 && inputs.length===9){
-      // mesmo tamanho, ok
-    } else if(containerId==='fp-matur-log' && vals.length===9 && inputs.length===8){
-      valsAdj = [vals[0]].concat(vals.slice(2));
+    if(containerId==='fp-ferm-log'){
+      /* Migração fermentação: 7 cols (v≤3.7.61, sem responsável) → 9 cols atual */
+      if(vals.length===7 && inputs.length===9){
+        // datetime, SG, [temp_set=''], temp_real←vals[2], kgf←vals[3], pH←vals[4], obs←vals[5], resp='', del←vals[6]
+        valsAdj = [vals[0], vals[1], '', vals[2], vals[3], vals[4], vals[5], '', vals[6]||''];
+      }
+      /* Migração fermentação: 8 cols (v3.7.62, com responsável, sem temp_set) → 9 cols atual */
+      else if(vals.length===8 && inputs.length===9){
+        // datetime, SG, [temp_set=''], temp_real←vals[2], kgf←vals[3], pH←vals[4], obs←vals[5], resp←vals[6], del←vals[7]
+        valsAdj = [vals[0], vals[1], '', vals[2], vals[3], vals[4], vals[5], vals[6], vals[7]||''];
+      }
     }
-    /* Migração fermentação: 7 cols antigo (sem responsável) → 8 cols novo */
-    if(containerId==='fp-ferm-log' && vals.length===7 && inputs.length===8){
-      // insere string vazia na posição 6 (responsável), antes do botão
-      valsAdj = vals.slice(0,6).concat(['', vals[6]||'']);
-    }
-    /* Migração maturação: 8 cols antigo (sem responsável) → 9 cols novo */
-    if(containerId==='fp-matur-log' && vals.length===8 && inputs.length===9){
-      valsAdj = vals.slice(0,7).concat(['', vals[7]||'']);
+    if(containerId==='fp-matur-log'){
+      /* Migração maturação: antigo com SG col 1 (9 cols) → 8 cols sem SG */
+      if(vals.length===9 && inputs.length===8){
+        valsAdj = [vals[0]].concat(vals.slice(2));
+      }
+      /* Migração maturação: 8 cols (v≤3.7.61, sem responsável, sem temp_set) → 10 cols atual */
+      else if(vals.length===8 && inputs.length===10){
+        // datetime, [temp_set=''], temp_real←vals[1], kgf←vals[2], pH←vals[3], co2←vals[4], clareza←vals[5], obs←vals[6], resp='', del←vals[7]
+        valsAdj = [vals[0], '', vals[1], vals[2], vals[3], vals[4], vals[5], vals[6], '', vals[7]||''];
+      }
+      /* Migração maturação: 9 cols (v3.7.62, com responsável, sem temp_set) → 10 cols atual */
+      else if(vals.length===9 && inputs.length===10){
+        // datetime, [temp_set=''], temp_real←vals[1], kgf←vals[2], pH←vals[3], co2←vals[4], clareza←vals[5], obs←vals[6], resp←vals[7], del←vals[8]
+        valsAdj = [vals[0], '', vals[1], vals[2], vals[3], vals[4], vals[5], vals[6], vals[7], vals[8]||''];
+      }
     }
     inputs.forEach(function(el,i){
       if(valsAdj[i]!==undefined) el.value=valsAdj[i];
@@ -10286,7 +10311,8 @@ function fp_addFermRow(){
   var row=document.createElement('div'); row.className='fp-mlog-row ferm';
   row.innerHTML='<div class="fp-log-cell"><input type="datetime-local" value="'+local+'"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.001" placeholder="1.040"></div>'+
-    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C set."></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C real"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.01" placeholder="kgf/cm²"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="pH"></div>'+
     '<div class="fp-log-cell"><input placeholder="obs…"></div>'+
@@ -10303,9 +10329,12 @@ function fp_addMaturRow(){
   var now=new Date(), local=now.toISOString().slice(0,16);
   var usuario = (typeof sessao !== 'undefined' && sessao && sessao.nome) ? sessao.nome : '';
   var c=document.getElementById('fp-matur-log');
+  // Se é a primeira linha de maturação, registra início de maturação no tanque
+  var isFirstMaturRow = c && c.querySelectorAll('.fp-mlog-row:not(.header)').length === 0;
   var row=document.createElement('div'); row.className='fp-mlog-row matur';
   row.innerHTML='<div class="fp-log-cell"><input type="datetime-local" value="'+local+'"></div>'+
-    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C set."></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C real"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.01" placeholder="kgf/cm²"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="pH"></div>'+
     '<div class="fp-log-cell">'+
@@ -10316,6 +10345,19 @@ function fp_addMaturRow(){
     '<div class="fp-log-cell"><input placeholder="nome" value="'+esc(usuario)+'"></div>'+
     '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
   c.appendChild(row); fp_markDirty();
+  // Auto-registrar início de maturação na primeira linha adicionada
+  if (isFirstMaturRow) {
+    var fpApp = document.getElementById('fp-app');
+    var tqId = fpApp ? fpApp.dataset.fpTq : '';
+    if (tqId) {
+      // Usa a data/hora da linha recém-adicionada como início de maturação
+      var dtInp = row.querySelector('input[type="datetime-local"]');
+      var maturISO = dtInp && dtInp.value ? new Date(dtInp.value).toISOString() : new Date().toISOString();
+      api('/api/tanques', {method:'POST', body:{acao:'marcarMaturando', tanqueId:tqId, maturacaoInicioISO:maturISO}})
+        .then(function(r){ if(r&&r.ok) { toast('🧊 Status atualizado: Maturando','ok'); } })
+        .catch(function(){ /* silencioso — status será refletido na próxima atualização dos tanques */ });
+    }
+  }
 }
 function fp_recCO2(inp){
   /* Se chamado sem argumento (ou com evento de restore), busca o último valor CO₂ preenchido */
@@ -10324,11 +10366,11 @@ function fp_recCO2(inp){
     var lastInp = null;
     allCO2.forEach(function(el){ if(el.value !== '' && el.value !== undefined) lastInp = el; });
     if(!lastInp){
-      /* Tenta buscar por índice de coluna (col 4 = CO₂, 0-based) como fallback */
+      /* Tenta buscar por índice de coluna (col 5 = CO₂, 0-based após temp_set em col 1) como fallback */
       var rows = document.querySelectorAll('#fp-matur-log .fp-mlog-row:not(.header)');
       rows.forEach(function(row){
         var inps = row.querySelectorAll('input');
-        if(inps[4] && inps[4].value !== '') lastInp = inps[4];
+        if(inps[5] && inps[5].value !== '') lastInp = inps[5];
       });
     }
     if(!lastInp){ var box=document.getElementById('fp-co2-rec-box'); if(box) box.style.display='none'; return; }
@@ -10397,218 +10439,242 @@ function fp_addLavRow(btn){
 /* ── Gráficos de fermentação e maturação ── */
 function fp_renderGraficos(){
   // Coleta dados do log de fermentação
+  // Colunas: 0=datetime, 1=SG, 2=temp_setada, 3=temp_real, 4=kgf, 5=pH, 6=obs, 7=resp
   var fermPts = [];
   var fermLog = document.getElementById('fp-ferm-log');
   if(fermLog){
     fermLog.querySelectorAll('.fp-mlog-row:not(.header)').forEach(function(row){
       var inps = row.querySelectorAll('input');
       var dt = inps[0] ? inps[0].value : '';
-      var sg = inps[1] ? parseFloat(inps[1].value) : NaN;
-      var temp = inps[2] ? parseFloat(inps[2].value) : NaN;
-      if(dt) fermPts.push({ dt: new Date(dt), sg: sg, temp: temp });
+      if(!dt) return;
+      var sg       = inps[1] ? parseFloat(inps[1].value) : NaN;
+      var tempReal = inps[3] ? parseFloat(inps[3].value) : NaN;
+      var pH       = inps[5] ? parseFloat(inps[5].value) : NaN;
+      fermPts.push({ dt: new Date(dt), sg: sg, temp: tempReal, pH: pH, fase: 'ferm' });
     });
   }
   fermPts.sort(function(a,b){ return a.dt - b.dt; });
 
   // Coleta dados do log de maturação
+  // Colunas: 0=datetime, 1=temp_setada, 2=temp_real, 3=kgf, 4=pH, 5=co2, 6=clareza(select), 7=obs, 8=resp
   var maturPts = [];
   var maturLog = document.getElementById('fp-matur-log');
   if(maturLog){
     maturLog.querySelectorAll('.fp-mlog-row:not(.header)').forEach(function(row){
       var inps = row.querySelectorAll('input');
       var dt = inps[0] ? inps[0].value : '';
-      var temp = inps[1] ? parseFloat(inps[1].value) : NaN;
-      var kgf  = inps[2] ? parseFloat(inps[2].value) : NaN;
-      if(dt) maturPts.push({ dt: new Date(dt), temp: temp, kgf: kgf });
+      if(!dt) return;
+      var tempReal = inps[2] ? parseFloat(inps[2].value) : NaN;
+      var kgf      = inps[3] ? parseFloat(inps[3].value) : NaN;
+      var co2      = inps[5] ? parseFloat(inps[5].value) : NaN;
+      maturPts.push({ dt: new Date(dt), temp: tempReal, kgf: kgf, co2: co2, fase: 'matur' });
     });
   }
   maturPts.sort(function(a,b){ return a.dt - b.dt; });
 
   var vazioEl = document.getElementById('fp-graficos-vazio');
-  var hasFerm = fermPts.length > 1;
-  var hasMatur = maturPts.length > 1;
+  var hasFerm = fermPts.length > 0;
+  var hasMatur = maturPts.length > 0;
+  var secChart = document.getElementById('fp-sec-chart-unified');
 
   if(!hasFerm && !hasMatur){
     if(vazioEl) vazioEl.style.display = '';
+    if(secChart) secChart.style.display = 'none';
     return;
   }
   if(vazioEl) vazioEl.style.display = 'none';
+  if(secChart) secChart.style.display = '';
 
-  // ── helpers de canvas ──
+  // Une todos os pontos numa timeline
+  var allPts = fermPts.concat(maturPts);
+  allPts.sort(function(a,b){ return a.dt - b.dt; });
+
+  // ── canvas helpers ──
   function fmtDt(pt){
     var d = pt.dt;
     return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+'h';
   }
-  function drawChart(canvasId, pts, series, title){
-    var canvas = document.getElementById(canvasId);
-    if(!canvas) return;
-    var dpr = window.devicePixelRatio || 1;
-    // Calcula largura disponível: sobe na árvore até achar algo com largura real
-    var W = 0;
-    var el = canvas.parentElement;
-    while(el && W < 10){ W = el.offsetWidth || el.clientWidth || 0; el = el.parentElement; }
-    if(W < 10) W = 600;
-    W = Math.min(W, 900); // máximo razoável
-    canvas.width  = W * dpr;
-    canvas.height = 220 * dpr;
-    canvas.style.width  = W + 'px';
-    canvas.style.height = '220px';
-    var ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-    var w = W, h = 220;
 
-    // tema
-    var isDark = document.documentElement.dataset.theme === 'dark' ||
-      (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme:dark)').matches);
-    var bgColor   = isDark ? '#1e2520' : '#f9f8f5';
-    var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)';
-    var textColor = isDark ? '#a8b09f' : '#6e7568';
-    var titleColor= isDark ? '#e0ddd5' : '#2a2e26';
+  var canvas = document.getElementById('fp-chart-unified');
+  if(!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  var W = 0;
+  var el = canvas.parentElement;
+  while(el && W < 10){ W = el.offsetWidth || el.clientWidth || 0; el = el.parentElement; }
+  if(W < 10) W = 600;
+  W = Math.min(W, 900);
+  var H = 260;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  var w = W, h = H;
 
-    // margens
-    var ml=52, mr=series.length>1?52:16, mt=28, mb=40;
-    var cw=w-ml-mr, ch=h-mt-mb;
+  // tema
+  var isDark = document.documentElement.dataset.theme === 'dark' ||
+    (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme:dark)').matches);
+  var bgColor   = isDark ? '#1e2520' : '#f9f8f5';
+  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)';
+  var textColor = isDark ? '#a8b09f' : '#6e7568';
+  var titleColor= isDark ? '#e0ddd5' : '#2a2e26';
 
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0,0,w,h);
+  // margens: eixo Y esq (SG/temp) + eixo Y dir (kgf/CO₂)
+  var ml=54, mr=54, mt=30, mb=44;
+  var cw=w-ml-mr, ch=h-mt-mb;
 
-    if(pts.length < 2){ return; }
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0,0,w,h);
 
-    // eixo X: tempo
-    var t0 = pts[0].dt.getTime(), t1 = pts[pts.length-1].dt.getTime();
-    var tRange = t1 - t0;
-    // Se todos os pontos têm o mesmo timestamp, distribui uniformemente pelo eixo
-    var useIndex = (tRange < 1000); // menos de 1 segundo de diferença
-    function tx(pt, idx){
-      if(useIndex) return ml + idx/(pts.length-1||1) * cw;
-      return ml + (pt.dt.getTime()-t0)/tRange * cw;
-    }
+  // título
+  ctx.fillStyle = titleColor;
+  ctx.font = 'bold 12px system-ui,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Evolução — Fermentação e Maturação', w/2, 18);
 
-    // título
-    ctx.fillStyle = titleColor;
-    ctx.font = 'bold 12px system-ui,sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(title, w/2, 16);
+  if(allPts.length < 1){ return; }
 
-    // grade horizontal (5 linhas)
-    ctx.strokeStyle = gridColor;
-    ctx.lineWidth = 1;
-    for(var gi=0; gi<=4; gi++){
-      var gy = mt + ch * gi/4;
-      ctx.beginPath(); ctx.moveTo(ml, gy); ctx.lineTo(ml+cw, gy); ctx.stroke();
-    }
+  // eixo X
+  var t0 = allPts[0].dt.getTime(), t1 = allPts[allPts.length-1].dt.getTime();
+  var tRange = t1 - t0 || 1;
+  function tx(pt){ return ml + (pt.dt.getTime()-t0)/tRange * cw; }
 
-    // labels eixo X (até 6 pontos)
-    var step = Math.max(1, Math.floor(pts.length/6));
-    ctx.fillStyle = textColor;
+  // linhas de grade
+  ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+  for(var gi=0; gi<=4; gi++){
+    var gy = mt + ch * gi/4;
+    ctx.beginPath(); ctx.moveTo(ml, gy); ctx.lineTo(ml+cw, gy); ctx.stroke();
+  }
+
+  // linha de divisão fermentação/maturação
+  if(hasFerm && hasMatur){
+    var divT = maturPts[0].dt.getTime();
+    var divX = ml + (divT - t0) / tRange * cw;
+    ctx.save();
+    ctx.strokeStyle = isDark ? 'rgba(99,179,237,0.4)' : 'rgba(59,130,246,0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(divX, mt); ctx.lineTo(divX, mt+ch); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = isDark ? '#63B3ED' : '#3B82F6';
     ctx.font = '10px system-ui,sans-serif';
     ctx.textAlign = 'center';
-    for(var pi=0; pi<pts.length; pi+=step){
-      var px2 = tx(pts[pi], pi);
-      ctx.beginPath(); ctx.moveTo(px2, mt+ch); ctx.lineTo(px2, mt+ch+4);
-      ctx.strokeStyle = gridColor; ctx.lineWidth=1; ctx.stroke();
-      ctx.fillText(fmtDt(pts[pi]), px2, mt+ch+16);
+    ctx.fillText('🧊 Maturação', divX, mt - 4);
+    ctx.restore();
+  }
+
+  // labels eixo X (até 7 pontos)
+  var step = Math.max(1, Math.floor(allPts.length/7));
+  ctx.fillStyle = textColor;
+  ctx.font = '10px system-ui,sans-serif';
+  ctx.textAlign = 'center';
+  for(var pi=0; pi<allPts.length; pi+=step){
+    var pxx = tx(allPts[pi]);
+    ctx.beginPath(); ctx.moveTo(pxx, mt+ch); ctx.lineTo(pxx, mt+ch+4);
+    ctx.strokeStyle = gridColor; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillText(fmtDt(allPts[pi]), pxx, mt+ch+16);
+  }
+  // sempre mostra o último
+  if(allPts.length > 1){
+    var lastPt = allPts[allPts.length-1];
+    ctx.fillText(fmtDt(lastPt), tx(lastPt), mt+ch+16);
+  }
+
+  // helper: desenha uma série
+  function drawSeries(pts, key, color, fill, axisRight, dec, label){
+    var vals = pts.map(function(p){ return p[key]; }).filter(function(v){ return !isNaN(v) && v!==undefined; });
+    if(!vals.length) return false;
+    var mn = Math.min.apply(null,vals), mx = Math.max.apply(null,vals);
+    var pad = (mx-mn)*0.2 || 1;
+    mn -= pad; mx += pad;
+    var range = mx - mn || 1;
+    function vy(v){ return mt + ch - (v-mn)/range*ch; }
+
+    // eixo Y
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.font = '9px system-ui,sans-serif';
+    ctx.textAlign = axisRight ? 'left' : 'right';
+    for(var yi=0; yi<=4; yi++){
+      var yv = mn + range*yi/4;
+      var yy = mt + ch - ch*yi/4;
+      ctx.fillText(yv.toFixed(dec||0), axisRight ? w-mr+4 : ml-4, yy+3);
+    }
+    ctx.restore();
+
+    // linha
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    var first = true;
+    pts.forEach(function(p){
+      var v = p[key];
+      if(isNaN(v) || v===undefined || v==='') return;
+      var px3 = tx(p), py3 = vy(v);
+      if(first){ ctx.moveTo(px3,py3); first=false; } else { ctx.lineTo(px3,py3); }
+    });
+    ctx.stroke();
+
+    // área (só se fill fornecido)
+    if(fill){
+      ctx.beginPath();
+      first = true;
+      var lastX = null, lastY = null;
+      pts.forEach(function(p){
+        var v = p[key];
+        if(isNaN(v) || v===undefined || v==='') return;
+        var px3=tx(p), py3=vy(v);
+        if(first){ ctx.moveTo(px3,mt+ch); ctx.lineTo(px3,py3); first=false; }
+        else { ctx.lineTo(px3,py3); }
+        lastX=px3; lastY=py3;
+      });
+      if(lastX!==null){ ctx.lineTo(lastX, mt+ch); }
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
     }
 
-    // desenha cada série
-    series.forEach(function(s, si){
-      var vals = pts.map(function(p){ return p[s.key]; }).filter(function(v){ return !isNaN(v); });
-      if(!vals.length) return;
-      var mn = Math.min.apply(null,vals), mx = Math.max.apply(null,vals);
-      var padding = (mx-mn)*0.15 || 1;
-      mn -= padding; mx += padding;
-      var range = mx-mn || 1;
-      function vy(v){ return mt + ch - (v-mn)/range*ch; }
-
-      // eixo Y
-      var isRight = si === 1;
-      ctx.save();
-      ctx.fillStyle = s.color;
-      ctx.font = '10px system-ui,sans-serif';
-      ctx.textAlign = isRight ? 'left' : 'right';
-      for(var yi=0; yi<=4; yi++){
-        var yv = mn + range*yi/4;
-        var yy = mt + ch - ch*yi/4;
-        ctx.fillText(yv.toFixed(s.dec||0), isRight ? w-mr+4 : ml-4, yy+3);
-      }
-      ctx.fillStyle = s.color;
-      ctx.font = 'bold 10px system-ui,sans-serif';
-      ctx.textAlign = isRight ? 'left' : 'right';
-      ctx.fillText(s.label, isRight ? w-mr+4 : ml-4, mt-6);
-      ctx.restore();
-
-      // linha
-      ctx.save();
-      ctx.strokeStyle = s.color;
-      ctx.lineWidth = 2;
-      ctx.lineJoin = 'round';
+    // pontos
+    ctx.fillStyle = color;
+    pts.forEach(function(p){
+      var v = p[key];
+      if(isNaN(v) || v===undefined || v==='') return;
       ctx.beginPath();
-      var first=true;
-      pts.forEach(function(p, pidx){
-        if(isNaN(p[s.key])) return;
-        var px3 = tx(p, pidx), py3 = vy(p[s.key]);
-        if(first){ ctx.moveTo(px3,py3); first=false; } else { ctx.lineTo(px3,py3); }
-      });
-      ctx.stroke();
-
-      // área sob a curva (semitransparente, só série 0)
-      if(si===0){
-        ctx.beginPath();
-        first=true;
-        var lastValidIdx = -1;
-        pts.forEach(function(p, pidx){ if(!isNaN(p[s.key])) lastValidIdx=pidx; });
-        pts.forEach(function(p, pidx){
-          if(isNaN(p[s.key])) return;
-          var px3=tx(p,pidx), py3=vy(p[s.key]);
-          if(first){ ctx.moveTo(px3,mt+ch); ctx.lineTo(px3,py3); first=false; }
-          else { ctx.lineTo(px3,py3); }
-        });
-        if(lastValidIdx>=0) ctx.lineTo(tx(pts[lastValidIdx],lastValidIdx), mt+ch);
-        ctx.closePath();
-        ctx.fillStyle = s.fill || 'rgba(200,200,200,0.10)';
-        ctx.fill();
-      }
-
-      // pontos
-      ctx.fillStyle = s.color;
-      pts.forEach(function(p, pidx){
-        if(isNaN(p[s.key])) return;
-        ctx.beginPath();
-        ctx.arc(tx(p, pidx), vy(p[s.key]), 3, 0, 2*Math.PI);
-        ctx.fill();
-      });
-      ctx.restore();
+      ctx.arc(tx(p), vy(v), 3, 0, 2*Math.PI);
+      ctx.fill();
     });
-
-    // borda do gráfico
-    ctx.strokeStyle = gridColor;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(ml, mt, cw, ch);
+    ctx.restore();
+    return true;
   }
 
-  // Gráfico Fermentação: SG (eixo esq) + Temp (eixo dir)
+  // séries desenhadas e legenda
+  var legendEl = document.getElementById('fp-chart-legend');
+  if(legendEl) legendEl.innerHTML = '';
+  function addLegend(color, label){
+    if(!legendEl) return;
+    legendEl.innerHTML += '<span style="display:inline-flex;align-items:center;gap:4px">'+
+      '<span style="width:20px;height:3px;background:'+color+';display:inline-block;border-radius:2px"></span>'+
+      '<span style="color:var(--fp-fg2)">'+label+'</span></span>';
+  }
+
+  // Fermentação: SG (eixo esq), Temp real (eixo dir)
   if(hasFerm){
-    document.querySelector('#fp-panel-graficos .fp-sec:first-child').style.display='';
-    drawChart('fp-chart-ferm', fermPts,
-      [
-        { key:'sg',   label:'SG',    color:'#E67E22', fill:'rgba(230,126,34,0.12)',  dec:3 },
-        { key:'temp', label:'°C',    color:'#2980B9', dec:1 }
-      ], 'Fermentação — SG e Temperatura');
-  } else {
-    document.querySelector('#fp-panel-graficos .fp-sec:first-child').style.display='none';
+    if(drawSeries(fermPts,'sg',  '#E67E22','rgba(230,126,34,0.10)', false, 3)) addLegend('#E67E22','SG');
+    if(drawSeries(fermPts,'temp','#2980B9', null,                   true,  1)) addLegend('#2980B9','°C (fermentação)');
+  }
+  // Maturação: Temp real (mesma escala dir), Kgf (eixo dir), CO₂ (eixo dir)
+  if(hasMatur){
+    if(drawSeries(maturPts,'temp','#27AE60', null,                   true,  1)) addLegend('#27AE60','°C (maturação)');
+    if(drawSeries(maturPts,'kgf', '#8E44AD','rgba(142,68,173,0.08)', false, 2)) addLegend('#8E44AD','kgf/cm²');
+    if(drawSeries(maturPts,'co2', '#0891B2', null,                   true,  1)) addLegend('#0891B2','vol. CO₂');
   }
 
-  // Gráfico Maturação: Temp (eixo esq) + Pressão kgf (eixo dir)
-  if(hasMatur){
-    document.querySelectorAll('#fp-panel-graficos .fp-sec')[1].style.display='';
-    drawChart('fp-chart-matur', maturPts,
-      [
-        { key:'temp', label:'°C',        color:'#27AE60', fill:'rgba(39,174,96,0.12)',  dec:1 },
-        { key:'kgf',  label:'kgf/cm²',   color:'#8E44AD', dec:2 }
-      ], 'Maturação — Temperatura e Pressão');
-  } else {
-    document.querySelectorAll('#fp-panel-graficos .fp-sec')[1].style.display='none';
-  }
+  // borda
+  ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+  ctx.strokeRect(ml, mt, cw, ch);
 }
 
 /* Calcula OG média das bateladas e ABV estimado pela última leitura de SG */
@@ -10667,6 +10733,53 @@ function fp_calcFermStats(){
     sgEl.textContent = '—';
     abvEl.textContent = '—';
   }
+
+  // Banner de duração da fermentação
+  var duracaoEl = document.getElementById('fp-ferm-duracao');
+  if(duracaoEl && fermLog){
+    var fermRows2 = fermLog.querySelectorAll('.fp-mlog-row:not(.header)');
+    var maturLog2 = document.getElementById('fp-matur-log');
+    var maturRows2 = maturLog2 ? maturLog2.querySelectorAll('.fp-mlog-row:not(.header)') : [];
+
+    // Primeira data do log de fermentação
+    var dtInicio = null;
+    for(var ri=0; ri<fermRows2.length; ri++){
+      var dtVal = fermRows2[ri].querySelectorAll('input')[0];
+      if(dtVal && dtVal.value){ try{ dtInicio = new Date(dtVal.value); break; }catch(e){} }
+    }
+
+    // Primeira data do log de maturação (marca fim da fermentação)
+    var dtFimFerm = null;
+    if(maturRows2.length > 0){
+      var dtMaturInp = maturRows2[0].querySelectorAll('input')[0];
+      if(dtMaturInp && dtMaturInp.value){ try{ dtFimFerm = new Date(dtMaturInp.value); }catch(e){} }
+    }
+
+    if(dtInicio && !isNaN(dtInicio.getTime())){
+      function fmtDtBr(d){ return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+      if(dtFimFerm && !isNaN(dtFimFerm.getTime())){
+        var diffMs = dtFimFerm - dtInicio;
+        var diffH = Math.floor(diffMs / 3600000);
+        var diffD = Math.floor(diffH / 24);
+        var diffHRem = diffH % 24;
+        var durStr = diffD > 0 ? diffD+'d '+diffHRem+'h' : diffHRem+'h';
+        duracaoEl.innerHTML = '⏱ <strong>Duração da fermentação:</strong> '+durStr+' &nbsp;('+fmtDtBr(dtInicio)+' → '+fmtDtBr(dtFimFerm)+')';
+        duracaoEl.style.display = '';
+      } else {
+        // fermentação em curso
+        var agora = new Date();
+        var diffMsCur = agora - dtInicio;
+        var diffHCur = Math.floor(diffMsCur / 3600000);
+        var diffDCur = Math.floor(diffHCur / 24);
+        var diffHRemCur = diffHCur % 24;
+        var durStrCur = diffDCur > 0 ? diffDCur+'d '+diffHRemCur+'h' : diffHRemCur+'h';
+        duracaoEl.innerHTML = '⏱ <strong>Fermentação em curso:</strong> '+durStrCur+' desde '+fmtDtBr(dtInicio);
+        duracaoEl.style.display = '';
+      }
+    } else {
+      duracaoEl.style.display = 'none';
+    }
+  }
 }
 /* OG real — validação e auto-lançamento na fermentação */
 function fp_ogRealInput(inp){
@@ -10706,7 +10819,8 @@ function fp_ogRealBlur(inp){
   row.innerHTML =
     '<div class="fp-log-cell"><input type="datetime-local" value="'+local+'"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.001" placeholder="1.040" value="'+sgStr+'"></div>'+
-    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C"></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C set."></div>'+
+    '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="°C real"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.01" placeholder="kgf/cm²"></div>'+
     '<div class="fp-log-cell"><input type="number" step="0.1" placeholder="pH"></div>'+
     '<div class="fp-log-cell"><input placeholder="OG inicial (auto)"></div>'+
@@ -11691,7 +11805,7 @@ function abrirFichaLote(tq){
   /* ================================================================
      HTML interativo da ficha
      ================================================================ */
-  var html = '<div class="fp-app '+modoClass+'" id="fp-app" data-fp-lote="'+esc(lote)+'">'+
+  var html = '<div class="fp-app '+modoClass+'" id="fp-app" data-fp-lote="'+esc(lote)+'" data-fp-tq="'+esc(tq.id||'')+'">'+
 
   /* — dica de papel — */
   '<div class="fp-role-dica" id="fp-role-dica">'+dicaTxt+'</div>'+
@@ -12083,7 +12197,8 @@ function abrirFichaLote(tq){
         '<div class="fp-mlog-row ferm header">'+
           '<div class="fp-log-cell">Data / Hora</div>'+
           '<div class="fp-log-cell">SG</div>'+
-          '<div class="fp-log-cell">Temp. real (°C)</div>'+
+          '<div class="fp-log-cell">T. setada (°C)</div>'+
+          '<div class="fp-log-cell">T. real (°C)</div>'+
           '<div class="fp-log-cell">Kgf/cm²</div>'+
           '<div class="fp-log-cell">pH</div>'+
           '<div class="fp-log-cell">Observação</div>'+
@@ -12091,6 +12206,7 @@ function abrirFichaLote(tq){
           '<div class="fp-log-cell"></div>'+
         '</div>'+
         '<div id="fp-ferm-log"></div>'+
+        '<div id="fp-ferm-duracao" style="display:none;margin-top:8px;padding:7px 12px;border-radius:8px;background:var(--fp-bg2);border:1.5px solid var(--fp-border);font-size:12px;color:var(--fp-fg2);font-weight:600"></div>'+
       '</div></div>'+
       '<button class="fp-add-row-btn" onclick="fp_addFermRow()" style="margin-top:8px">＋ Adicionar leitura</button>'+
     '</div>'+
@@ -12142,7 +12258,8 @@ function abrirFichaLote(tq){
       '<div class="fp-log-table"><div class="fp-log-scroll">'+
         '<div class="fp-mlog-row matur header">'+
           '<div class="fp-log-cell">Data / Hora</div>'+
-          '<div class="fp-log-cell">Temp. real (°C)</div>'+
+          '<div class="fp-log-cell">T. setada (°C)</div>'+
+          '<div class="fp-log-cell">T. real (°C)</div>'+
           '<div class="fp-log-cell">Kgf/cm²</div>'+
           '<div class="fp-log-cell">pH</div>'+
           '<div class="fp-log-cell">Vol. CO₂</div>'+
@@ -12184,22 +12301,14 @@ function abrirFichaLote(tq){
 
   /* ══════════ ABA GRÁFICOS ══════════ */
   '<div class="fp-panel" id="fp-panel-graficos">'+
-    '<div class="fp-sec">'+
+    '<div class="fp-sec" id="fp-sec-chart-unified">'+
       '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
-        '<div class="fp-sec-head-left"><span class="fp-sec-icon">📈</span><span class="fp-sec-title verde">Evolução da Fermentação</span></div>'+
+        '<div class="fp-sec-head-left"><span class="fp-sec-icon">📊</span><span class="fp-sec-title verde">Evolução — Fermentação + Maturação</span></div>'+
         '<span class="fp-sec-toggle">▾</span></div>'+
       '<div class="fp-sec-body">'+
-        '<div style="font-size:11px;color:var(--fp-fg3);margin-bottom:8px">SG e temperatura ao longo dos dias de fermentação</div>'+
-        '<div style="overflow-x:auto"><canvas id="fp-chart-ferm" height="220" style="max-width:100%;border-radius:6px"></canvas></div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="fp-sec" style="margin-top:12px">'+
-      '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
-        '<div class="fp-sec-head-left"><span class="fp-sec-icon">❄️</span><span class="fp-sec-title azul">Evolução da Maturação</span></div>'+
-        '<span class="fp-sec-toggle">▾</span></div>'+
-      '<div class="fp-sec-body">'+
-        '<div style="font-size:11px;color:var(--fp-fg3);margin-bottom:8px">Temperatura e pressão durante a maturação</div>'+
-        '<div style="overflow-x:auto"><canvas id="fp-chart-matur" height="220" style="max-width:100%;border-radius:6px"></canvas></div>'+
+        '<div style="font-size:11px;color:var(--fp-fg3);margin-bottom:8px">SG, temperatura, pressão e carbonatação ao longo de todo o processo</div>'+
+        '<div style="overflow-x:auto"><canvas id="fp-chart-unified" height="260" style="max-width:100%;border-radius:6px"></canvas></div>'+
+        '<div id="fp-chart-legend" style="display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:10px;font-size:11px;color:var(--fp-fg2)"></div>'+
       '</div>'+
     '</div>'+
     '<div id="fp-graficos-vazio" style="display:none;text-align:center;padding:40px 16px;color:var(--fp-fg3);font-size:.9rem">'+
@@ -12238,8 +12347,8 @@ function abrirFichaLote(tq){
   /* — escuta inputs da ficha para marcar dirty — */
   document.getElementById('fp-app').addEventListener('input', function(e){
     if(e.target.matches('input,textarea,select')) fp_markDirty();
-    // recalcula stats quando muda SG do log de ferm ou OG real das bateladas
-    if(e.target.closest('#fp-ferm-log') || e.target.closest('.fp-bat-card')) fp_calcFermStats();
+    // recalcula stats quando muda SG do log de ferm, data do log de matur ou OG real das bateladas
+    if(e.target.closest('#fp-ferm-log') || e.target.closest('#fp-matur-log') || e.target.closest('.fp-bat-card')) fp_calcFermStats();
   });
 
   /* — escuta CHANGE (confirmação de edição) para registrar lançamentos de auditoria — */
