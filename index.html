@@ -3468,7 +3468,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.73";
+var VERSAO = "3.7.74";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5137,7 +5137,18 @@ function renderBarrilLinhas(){
       "<span id='barrilSub"+i+"' style='font-size:.82rem;color:var(--muted);"+
         "text-align:right'>0 L</span>"+
     "</div>";
-  }).join("");
+  }).join("") +
+  // linha especial: A Granel
+  "<div style='display:grid;grid-template-columns:80px 1fr 80px 90px;gap:8px;align-items:center;"+
+    "margin-top:6px;padding-top:6px;border-top:1px dashed var(--linha)'>"+
+    "<span style='font-weight:700;font-size:.88rem;color:#7C3AED'>A Granel</span>"+
+    "<span style='font-size:.75rem;color:var(--muted)'>litros direto</span>"+
+    "<input type='number' id='barrilGranel' min='0' step='0.1' placeholder='0'"+
+      " style='width:100%;padding:8px;border:1.5px dashed #7C3AED;"+
+      "border-radius:7px;font-size:.9rem;text-align:center'"+
+      " oninput='calcBarril()'>"+
+    "<span id='barrilSubGranel' style='font-size:.82rem;color:#7C3AED;text-align:right'>—</span>"+
+  "</div>";
   calcBarril();
 }
 
@@ -5153,6 +5164,12 @@ function calcBarril(){
     if (subEl) subEl.textContent = qtd > 0 ? fmtNum(sub)+" L" : "—";
     if (qtd > 0) linhas.push({formato:f.label, litros:f.litros, qtd:qtd, subtotal:sub});
   });
+  // a granel
+  var granelEl = document.getElementById("barrilGranel");
+  var granelLt = granelEl ? (parseFloat(granelEl.value)||0) : 0;
+  var granelSub = document.getElementById("barrilSubGranel");
+  if (granelSub) granelSub.textContent = granelLt > 0 ? fmtNum(granelLt)+" L" : "—";
+  if (granelLt > 0){ total += granelLt; linhas.push({formato:"A Granel", litros:1, qtd:granelLt, subtotal:granelLt}); }
 
   // resumo
   var html = "";
@@ -9020,7 +9037,8 @@ async function leiturasCarregar(){
             "<label style='font-size:.8rem;color:var(--muted)'>Observações<br>" +
               "<input type='text' id='leit_obs_"+esc(t.id)+"' placeholder='opcional' style='width:100%;font-size:.85rem'></label>" +
           "</div>" +
-          "<button class='btn leit-salvar-btn' style='margin-top:10px;width:100%' data-leit-tq='"+esc(t.id)+"' data-leit-lote='"+esc(t.lote||"")+"' data-leit-tipo='matur'>💾 Salvar leitura de maturação</button>" +
+          "<button class='btn leit-salvar-btn' style='margin-top:10px;width:100%' data-leit-tq='"+esc(t.id)+"' data-leit-lote='"+esc(t.lote||"")+"' data-leit-tipo='matur'>💾 Salvar leitura</button>" +
+          "<button class='btn leit-purga-btn' style='margin-top:6px;width:100%;background:#6B7280;border-color:#6B7280' data-leit-tq='"+esc(t.id)+"' data-leit-lote='"+esc(t.lote||"")+"'>🔽 Registrar Purga</button>" +
         "</div>";
       } else {
         html += "<div class='card' style='border-left:4px solid "+cor+";padding:12px 14px'>" +
@@ -9045,7 +9063,8 @@ async function leiturasCarregar(){
             "<label style='font-size:.8rem;color:var(--muted);grid-column:1/-1'>Observações<br>" +
               "<input type='text' id='leit_obs_"+esc(t.id)+"' placeholder='opcional' style='width:100%;font-size:.85rem'></label>" +
           "</div>" +
-          "<button class='btn leit-salvar-btn' style='margin-top:10px;width:100%' data-leit-tq='"+esc(t.id)+"' data-leit-lote='"+esc(t.lote||"")+"' data-leit-tipo='ferm'>💾 Salvar leitura de fermentação</button>" +
+          "<button class='btn leit-salvar-btn' style='margin-top:10px;width:100%' data-leit-tq='"+esc(t.id)+"' data-leit-lote='"+esc(t.lote||"")+"' data-leit-tipo='ferm'>💾 Salvar leitura</button>" +
+          "<button class='btn leit-purga-btn' style='margin-top:6px;width:100%;background:#6B7280;border-color:#6B7280' data-leit-tq='"+esc(t.id)+"' data-leit-lote='"+esc(t.lote||"")+"'>🔽 Registrar Purga</button>" +
         "</div>";
       }
     });
@@ -9057,6 +9076,11 @@ async function leiturasCarregar(){
         leiturasSalvar(btn.dataset.leitTq, btn.dataset.leitLote, btn.dataset.leitTipo);
       });
     });
+    el.querySelectorAll(".leit-purga-btn").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        leiturasRegistrarPurga(btn.dataset.leitTq, btn.dataset.leitLote);
+      });
+    });
   } catch(e){
     el.innerHTML = "<div style='color:var(--danger)'>Erro ao carregar tanques: "+esc(String(e))+"</div>";
   }
@@ -9066,6 +9090,28 @@ function leiturasDtNow(){
   var d = new Date();
   var pad = function(n){ return String(n).padStart(2,"0"); };
   return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes());
+}
+
+/* Task #51 — Registrar Purga: adiciona linha especial no maturLog */
+async function leiturasRegistrarPurga(tqId, lote){
+  if (!lote) { toast("Tanque sem lote vinculado.", "aviso"); return; }
+  var btn = document.querySelector("#leiturasConteudo button.leit-purga-btn[data-leit-tq='"+tqId+"']");
+  if (btn){ btn.disabled = true; btn.textContent = "Registrando…"; }
+  try {
+    var res = await api("/api/ficha?lote="+encodeURIComponent(lote));
+    var ficha = (res && res.ficha) ? res.ficha : {};
+    if (!Array.isArray(ficha.maturLog)) ficha.maturLog = [];
+    var dt = leiturasDtNow();
+    // linha purga: mesma estrutura do maturLog mas com obs "PURGA"
+    // [datetime, temp_set, temp_real, kgf, pH, co2, clareza, obs, resp, del_placeholder]
+    var row = [dt, "", "", "", "", "", "", "🔽 PURGA", sessao.login || "", ""];
+    ficha.maturLog.push(row);
+    await api("/api/ficha", {method:"POST", body:{lote:lote, dados:ficha}});
+    toast("🔽 Purga registrada — lote "+lote, "ok");
+  } catch(e) {
+    toast("Erro ao registrar purga: "+String(e), "erro");
+  }
+  if (btn){ btn.disabled = false; btn.textContent = "🔽 Registrar Purga"; }
 }
 
 async function leiturasSalvar(tqId, lote, tipo){
@@ -9085,19 +9131,83 @@ async function leiturasSalvar(tqId, lote, tipo){
 
     var dt  = (document.getElementById("leit_dt_"+tqId)  || {value:leiturasDtNow()}).value;
     var ts  = (document.getElementById("leit_ts_"+tqId)  || {value:""}).value;
-    var tr  = (document.getElementById("leit_tr_"+tqId)  || {value:""}).value;
+    var trEl= document.getElementById("leit_tr_"+tqId);
+    var tr  = trEl ? trEl.value : "";
     var kgf = (document.getElementById("leit_kgf_"+tqId) || {value:""}).value;
     var ph  = (document.getElementById("leit_ph_"+tqId)  || {value:""}).value;
     var obs = (document.getElementById("leit_obs_"+tqId) || {value:""}).value;
 
+    // ── Task #48: temp < 12°C → forçar maturação ──────────────
+    var trNum = parseFloat(tr);
+    var autoMatur = !isNaN(trNum) && trNum < 12 && tipo === "ferm";
+    if (autoMatur) {
+      tipo = "matur";
+      // O status do tanque muda automaticamente na próxima consulta ao /api/tanques
+      // quando existir pelo menos 1 linha em maturLog (lógica no backend).
+      toast("🧊 Temp. < 12°C — lançado automaticamente como maturação!", "ok");
+    }
+
     var row;
     if (tipo === "ferm") {
       var sg = (document.getElementById("leit_sg_"+tqId) || {value:""}).value;
+
+      // ── Task #47: validação SG formato 1.XXX ──────────────────
+      if (sg) {
+        var sgNum = parseFloat(sg);
+        if (isNaN(sgNum) || sgNum < 0.990 || sgNum > 1.200) {
+          toast("⚠️ Densidade (SG) inválida. Use o formato 1.048 (com ponto, entre 0.990 e 1.200).", "aviso");
+          if (btn){ btn.disabled = false; btn.textContent = txtOrig; } return;
+        }
+      }
+
+      // ── Task #49: inoculação obrigatória para lançar fermentação ──
+      var levConfirmado = !!(ficha.aplicacoes && ficha.aplicacoes.lev && ficha.aplicacoes.lev.confirmado);
+      // também testa via campo lev no ficha.adicionado
+      if (!levConfirmado && ficha.bloco_lev_confirmado) levConfirmado = true;
+      if (!levConfirmado) {
+        // verificar no HTML da ficha se existe (fallback)
+        var blocoLev = document.getElementById("fp-bloco-lev");
+        levConfirmado = blocoLev ? blocoLev.dataset.confirmado === "1" : false;
+      }
+      if (!levConfirmado) {
+        // verificar na ficha serializada
+        levConfirmado = !!(ficha.aplicacoes && ficha.aplicacoes.lev);
+      }
+      if (!levConfirmado) {
+        toast("🚫 Para lançar fermentação, confirme primeiro a inoculação de levedura na Ficha de Produção.", "aviso");
+        if (btn){ btn.disabled = false; btn.textContent = txtOrig; } return;
+      }
+
+      // ── Task #52: Clearmax Pro obrigatório para logs de fermentação ──
+      var cxConfirmado = !!(ficha.aplicacoes && ficha.aplicacoes.clearmax && ficha.aplicacoes.clearmax.confirmado);
+      if (!cxConfirmado) {
+        var blocoCX = document.getElementById("fp-bloco-clearmax");
+        cxConfirmado = blocoCX ? blocoCX.dataset.confirmado === "1" : false;
+      }
+      if (!cxConfirmado) {
+        cxConfirmado = !!(ficha.aplicacoes && ficha.aplicacoes.clearmax);
+      }
+      if (!cxConfirmado) {
+        toast("🚫 Confirme o uso do Clearmax Pro na Ficha de Produção antes de lançar leitura de fermentação.", "aviso");
+        if (btn){ btn.disabled = false; btn.textContent = txtOrig; } return;
+      }
+
       // ferm log: [datetime, SG, temp_set, temp_real, kgf, pH, obs, resp, del_placeholder]
       row = [dt, sg, ts, tr, kgf, ph, obs, sessao.login || "", ""];
       console.log("[leituras] nova linha ferm:", row);
       ficha.fermLog.push(row);
     } else {
+      // matur / autoMatur
+      // ── Task #50: campos coleta de fermento obrigatórios para maturação ──
+      // (skipado no auto-matur para não bloquear a primeira leitura de temperatura baixa)
+      if (!autoMatur) {
+        var coletaOk = !!(ficha.coleta && ficha.coleta.dataPrevista && ficha.coleta.destino);
+        if (!coletaOk) {
+          toast("🚫 Preencha a data prevista de coleta do fermento e o destino na Ficha de Produção antes de lançar maturação.", "aviso");
+          if (btn){ btn.disabled = false; btn.textContent = txtOrig; } return;
+        }
+      }
+
       var co2 = (document.getElementById("leit_co2_"+tqId) || {value:""}).value;
       var cl  = (document.getElementById("leit_cl_"+tqId)  || {value:""}).value;
       // matur log: [datetime, temp_set, temp_real, kgf, pH, co2, clareza, obs, resp, del_placeholder]
@@ -9110,7 +9220,7 @@ async function leiturasSalvar(tqId, lote, tipo){
     console.log("[leituras] salvando ficha...");
     var saveRes = await api("/api/ficha", {method:"POST", body:{lote:lote, dados:ficha}});
     console.log("[leituras] salvo:", saveRes);
-    toast("✅ Leitura salva — lote "+lote, "ok");
+    if (!autoMatur) toast("✅ Leitura salva — lote "+lote, "ok");
 
     // limpar campos numéricos (mantém data/hora)
     ["leit_ts_","leit_tr_","leit_kgf_","leit_ph_","leit_obs_","leit_sg_","leit_co2_"].forEach(function(p){
@@ -10273,6 +10383,14 @@ function fp_confirmarAplic(tipo){
   var hora = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
   var quem = (sessao && sessao.nome) ? sessao.nome : 'Operador';
 
+  // ── Task #53: Volume obrigatório para confirmar aplicações ────
+  var volEl = document.getElementById('fp-ferm-vol-total');
+  var volOk = volEl && volEl.textContent && volEl.textContent.trim() !== '—' && volEl.textContent.trim() !== '';
+  if (!volOk) {
+    toast("🚫 Preencha o volume de brassagem nas Bateladas antes de confirmar aplicações.", "aviso");
+    return;
+  }
+
   if(tipo === 'clearmax'){
     var bloco  = document.getElementById('fp-bloco-clearmax');
     var btn    = document.getElementById('fp-btn-clearmax-ferm');
@@ -11119,6 +11237,26 @@ function fp_ogRealBlur(inp){
 }
 /* Registra aprovação final do lote */
 function fp_aprovarLote(){
+  // ── Task #46: BeerSales Concluído obrigatório ──────────────────
+  var bsEl = document.getElementById('fp-check-beersales');
+  var bsAviso = document.getElementById('fp-beersales-aviso');
+  if (bsEl && !bsEl.checked) {
+    if (bsAviso) bsAviso.hidden = false;
+    toast("🚫 Marque 'BeerSales Concluído' antes de aprovar o lote.", "aviso");
+    return;
+  }
+  if (bsAviso) bsAviso.hidden = true;
+
+  // ── Task #50: Coleta de fermento confirmada obrigatória ────────
+  var coletaEl = document.getElementById('fp-check-coleta');
+  var coletaAviso = document.getElementById('fp-coleta-aviso');
+  if (coletaEl && !coletaEl.checked) {
+    if (coletaAviso) coletaAviso.hidden = false;
+    toast("🚫 Confirme a coleta do fermento antes de aprovar o lote.", "aviso");
+    return;
+  }
+  if (coletaAviso) coletaAviso.hidden = true;
+
   var now = new Date();
   var local = now.toISOString().slice(0,16);
   var dtEl   = document.getElementById('fp-aprov-dt');
@@ -12020,7 +12158,14 @@ function fp_simSave(btn){
       var resp = (document.getElementById('fp-aprov-resp')||{}).value || '';
       var obs  = (document.getElementById('fp-aprov-obs')||{}).value  || '';
       var ok   = !!(document.getElementById('fp-aprovacao-status')||{}).classList && (document.getElementById('fp-aprovacao-status')||{}).classList.contains('ok');
-      return { dt: dt, resp: resp, obs: obs, aprovado: ok };
+      var bsOk = !!(document.getElementById('fp-check-beersales')||{}).checked;
+      return { dt: dt, resp: resp, obs: obs, aprovado: ok, beerSalesConcluido: bsOk };
+    })(),
+    coleta: (function(){
+      var data    = (document.getElementById('fp-coleta-data')||{}).value    || (document.getElementById('fp-coleta-data-matur')||{}).value    || '';
+      var destino = (document.getElementById('fp-coleta-destino')||{}).value || (document.getElementById('fp-coleta-destino-matur')||{}).value || '';
+      var feita   = !!(document.getElementById('fp-check-coleta')||{}).checked;
+      return { dataPrevista: data, destino: destino, realizada: feita };
     })(),
     meta: { status: "em andamento" },
     audit: fp_audit
@@ -12527,6 +12672,21 @@ function abrirFichaLote(tq){
     '</div>'+
   '</div>'+
 
+  /* Task #50 — Coleta de Fermento (obrigatório para maturação) */
+  '<div class="fp-sec collapsed" id="fp-sec-coleta-ferm">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">🧫</span><span class="fp-sec-title azul">Coleta de Fermento</span><span class="fp-role-badge e">👷 Executor</span></div>'+
+      '<span class="fp-sec-toggle">▾</span>'+
+    '</div>'+
+    '<div class="fp-sec-body">'+
+      '<div style="font-size:.82rem;color:var(--fp-fg3);margin-bottom:10px">Campos obrigatórios para lançar leituras de maturação.</div>'+
+      '<div class="fp-vol-row">'+
+        '<div class="fp-field"><label>Data prevista de coleta</label><input type="date" id="fp-coleta-data-matur" onchange="fp_markDirty();document.getElementById(\'fp-coleta-data\')&&(document.getElementById(\'fp-coleta-data\').value=this.value)"></div>'+
+        '<div class="fp-field"><label>Destino do fermento</label><input type="text" id="fp-coleta-destino-matur" placeholder="ex: Descarte, Repitch TQ02…" onchange="fp_markDirty();document.getElementById(\'fp-coleta-destino\')&&(document.getElementById(\'fp-coleta-destino\').value=this.value)"></div>'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
+
   /* Log de Maturação */
   '<div class="fp-sec">'+
     '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
@@ -12569,6 +12729,29 @@ function abrirFichaLote(tq){
           '<div class="fp-field"><label>Responsável</label><input id="fp-aprov-resp" placeholder="Login do responsável" onchange="fp_registrarLancamento(this)"></div>'+
         '</div>'+
         '<div class="fp-field full"><label>Observação</label><textarea id="fp-aprov-obs" onchange="fp_registrarLancamento(this)" style="width:100%;min-height:60px;resize:vertical;padding:8px;border:1.5px solid var(--fp-border);border-radius:8px;font-size:.9rem;background:var(--fp-bg);color:var(--fp-fg)" placeholder="Observações finais sobre o lote…"></textarea></div>'+
+        '<div style="background:var(--fp-bg2);border:1.5px solid var(--fp-border);border-radius:8px;padding:10px 14px;margin-bottom:12px">'+
+          '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.92rem;font-weight:600">'+
+            '<input type="checkbox" id="fp-check-beersales" style="width:18px;height:18px;cursor:pointer" onchange="fp_markDirty()">'+
+            '<span>✅ BeerSales Concluído — lote lançado no sistema</span>'+
+          '</label>'+
+          '<div id="fp-beersales-aviso" hidden style="margin-top:8px;padding:6px 10px;background:#FEF2F2;border:1px solid #DC2626;border-radius:6px;color:#DC2626;font-size:.82rem;font-weight:600">'+
+            '⚠️ Marque "BeerSales Concluído" antes de aprovar o lote.'+
+          '</div>'+
+        '</div>'+
+        '<div style="background:var(--fp-bg2);border:1.5px solid var(--fp-border);border-radius:8px;padding:10px 14px;margin-bottom:12px" id="fp-coleta-bloco">'+
+          '<div style="font-size:.88rem;font-weight:700;color:var(--fp-fg);margin-bottom:8px">🧫 Coleta de Fermento</div>'+
+          '<div class="fp-vol-row">'+
+            '<div class="fp-field"><label>Data prevista de coleta</label><input type="date" id="fp-coleta-data" onchange="fp_markDirty()"></div>'+
+            '<div class="fp-field"><label>Destino do fermento</label><input type="text" id="fp-coleta-destino" placeholder="ex: Descarte, Repitch TQ02…" onchange="fp_markDirty()"></div>'+
+          '</div>'+
+          '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.88rem;font-weight:600;margin-top:8px">'+
+            '<input type="checkbox" id="fp-check-coleta" style="width:16px;height:16px;cursor:pointer" onchange="fp_markDirty()">'+
+            '<span>✅ Coleta realizada — fermento coletado</span>'+
+          '</label>'+
+          '<div id="fp-coleta-aviso" hidden style="margin-top:8px;padding:6px 10px;background:#FEF2F2;border:1px solid #DC2626;border-radius:6px;color:#DC2626;font-size:.82rem;font-weight:600">'+
+            '⚠️ Confirme a coleta do fermento (check) antes de aprovar o lote.'+
+          '</div>'+
+        '</div>'+
         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
           '<button class="fp-btn-aprovar" onclick="fp_aprovarLote()">✅ Aprovar Lote</button>'+
           '<span style="font-size:11px;color:var(--fp-fg3)">Alterações são registradas automaticamente no histórico desta seção.</span>'+
@@ -12860,6 +13043,22 @@ function fp_preencherFicha(ficha){
         status.className = 'fp-aprovacao-status ok';
       }
     }
+    // restaura BeerSales Concluído
+    var bsEl = document.getElementById('fp-check-beersales');
+    if(bsEl && ap.beerSalesConcluido) bsEl.checked = true;
+  }
+  // restaura coleta de fermento (em ambas as seções)
+  if(ficha.coleta){
+    var coletaData  = document.getElementById('fp-coleta-data');
+    var coletaDest  = document.getElementById('fp-coleta-destino');
+    var coletaChk   = document.getElementById('fp-check-coleta');
+    var coletaMData = document.getElementById('fp-coleta-data-matur');
+    var coletaMDest = document.getElementById('fp-coleta-destino-matur');
+    if(coletaData  && ficha.coleta.dataPrevista) coletaData.value  = ficha.coleta.dataPrevista;
+    if(coletaDest  && ficha.coleta.destino)      coletaDest.value  = ficha.coleta.destino;
+    if(coletaMData && ficha.coleta.dataPrevista) coletaMData.value = ficha.coleta.dataPrevista;
+    if(coletaMDest && ficha.coleta.destino)      coletaMDest.value = ficha.coleta.destino;
+    if(coletaChk   && ficha.coleta.realizada)    coletaChk.checked = true;
   }
   // restaura FG e ABV do cabeçalho (se salvos) e recalcula
   if(ficha.cabecalho){
