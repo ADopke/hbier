@@ -3098,10 +3098,11 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
             </div>
             <div>
               <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
-                Litros fim</label>
-              <input type="number" id="resLitrosFim" placeholder="Ex.: 0"
+                Litros fim <span id="resLitrosFimHint" style="font-weight:400;color:var(--muted);font-size:.73rem"></span></label>
+              <input type="number" id="resLitrosFim" placeholder="Calculado automaticamente"
                 style="width:100%;padding:9px;border:1.5px solid var(--linha);
                 border-radius:8px;font-size:.9rem">
+              <div id="resLitrosFimInfo" style="font-size:.72rem;color:var(--muted);margin-top:3px;display:none"></div>
             </div>
           </div>
           <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;
@@ -3468,7 +3469,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.75";
+var VERSAO = "3.7.76";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6253,9 +6254,9 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
     var btnResultado = !it.resultado
       ? "<button class='btn-mini' style='background:var(--dourado);border-color:var(--dourado);"+
         "color:#3A2D00' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+esc(semItem)+"' "+
-        "data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"'>📋 Lançar resultado</button>"
+        "data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"' data-prog-formato='"+esc(it.formato||"")+"'>📋 Lançar resultado</button>"
       : "<button class='btn-mini secundario' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+
-        esc(semItem)+"' data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"'>✏ Editar resultado</button>";
+        esc(semItem)+"' data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"' data-prog-formato='"+esc(it.formato||"")+"'>✏ Editar resultado</button>";
 
     // separador de dia — ao mudar de dia, fechar grupo anterior com card limpeza
     if (it.dia !== diaGrupo){
@@ -7273,7 +7274,7 @@ var _resItem = null;
 $("progLista").addEventListener("click", function(ev){
   var b = ev.target.closest("button[data-prog-res]");
   if (!b) return;
-  _resItem = {id:b.dataset.progRes, semana:b.dataset.progSemana, tipo:b.dataset.progTipo};
+  _resItem = {id:b.dataset.progRes, semana:b.dataset.progSemana, tipo:b.dataset.progTipo, formato:b.dataset.progFormato||""};
   var isEnvase = _resItem.tipo === "envase";
   $("resTitulo").textContent = isEnvase ? "📦 Resultado do envase" : "🍺 Resultado da brassagem";
   $("campoResBrassagem").hidden = isEnvase;
@@ -7285,6 +7286,10 @@ $("progLista").addEventListener("click", function(ev){
     var el=$(id); if(el) el.value="";
   });
   $("resTanqFinalizado").checked = false;
+  // reset flag de edição manual e hint
+  if($("resLitrosFim")) $("resLitrosFim")._editadoManual = false;
+  if($("resLitrosFimHint")) $("resLitrosFimHint").textContent="";
+  if($("resLitrosFimInfo")) { $("resLitrosFimInfo").style.display="none"; $("resLitrosFimInfo").textContent=""; }
   // preencher se já tem resultado
   api("/api/prog?semana="+_resItem.semana).then(function(r){
     var it=(r.itens||[]).find(function(x){return x.id===_resItem.id;});
@@ -7296,12 +7301,18 @@ $("progLista").addEventListener("click", function(ev){
       if($("resVolume")) $("resVolume").value  = res.volume||"";
     } else {
       if($("resLitrosIni")) $("resLitrosIni").value = res.litrosInicio||"";
-      if($("resLitrosFim")) $("resLitrosFim").value = res.litrosFim||"";
+      if($("resLitrosFim")) {
+        $("resLitrosFim").value = res.litrosFim||"";
+        // se já tem litrosFim salvo, marca como manual (preserva o valor)
+        $("resLitrosFim")._editadoManual = !!(res.litrosFim);
+      }
       $("resTanqFinalizado").checked = !!res.tanqueFinalizado;
       if($("resQtdEnv"))  $("resQtdEnv").value  = res.qtdEnvasada||"";
       if($("resSleeve"))  $("resSleeve").value   = res.sleevePerd||"";
       if($("resPet"))     $("resPet").value      = res.petPerd||"";
       if($("resTampas"))  $("resTampas").value   = res.tampasPerd||"";
+      // mostra o info de cálculo comparativo
+      setTimeout(_recalcLitrosFim, 50);
     }
     if($("resObs")) $("resObs").value = res.obsReal||"";
   }).catch(function(){});
@@ -7388,6 +7399,57 @@ $("btnResRemover").addEventListener("click", async function(){
 
 $("btnResCancelar").addEventListener("click",function(){$("modalRes").hidden=true;});
 $("modalRes").addEventListener("click",function(ev){if(ev.target===this)$("modalRes").hidden=true;});
+
+// ── Cálculo automático de "litros fim" baseado no formato e qtd envasada ──
+function _litrosPorUnidade(formato){
+  var f = (formato||"").toUpperCase();
+  if (f.indexOf("2L") !== -1) return 2;
+  if (f.indexOf("1L") !== -1) return 1;
+  if (f.indexOf("500") !== -1) return 0.5;
+  return null; // formato desconhecido — não calcula
+}
+function _recalcLitrosFim(){
+  if (!_resItem || _resItem.tipo !== "envase") return;
+  var ini = parseFloat($("resLitrosIni").value);
+  var qtd = parseFloat($("resQtdEnv").value);
+  var lpu = _litrosPorUnidade(_resItem.formato);
+  var hint = $("resLitrosFimHint");
+  var info = $("resLitrosFimInfo");
+  if (!lpu) {
+    if (hint) hint.textContent = "";
+    if (info) { info.style.display="none"; info.textContent=""; }
+    return;
+  }
+  if (isNaN(ini) || isNaN(qtd) || qtd <= 0) {
+    if (hint) hint.textContent = "(calculado auto)";
+    if (info) { info.style.display="none"; }
+    return;
+  }
+  var litrosUsados = qtd * lpu;
+  var litrosFimCalc = ini - litrosUsados;
+  if (hint) hint.textContent = "(calculado auto)";
+  if (info) {
+    info.style.display = "block";
+    info.textContent = qtd.toLocaleString("pt-BR")+" un × "+lpu+" L = "+
+      litrosUsados.toLocaleString("pt-BR",{maximumFractionDigits:1})+" L usados → "+
+      (litrosFimCalc < 0 ? "⚠ negativo" : fmtNum(litrosFimCalc)+" L restantes no tanque");
+  }
+  // só preenche se o campo estiver vazio ou se o usuário não editou manualmente
+  if (!$("resLitrosFim")._editadoManual) {
+    $("resLitrosFim").value = litrosFimCalc < 0 ? 0 : litrosFimCalc;
+  }
+}
+// marcar edição manual para não sobrescrever
+$("resLitrosFim").addEventListener("input", function(){
+  this._editadoManual = true;
+});
+$("resLitrosIni").addEventListener("input", function(){
+  // se litrosFim foi calc auto, recalcular quando ini muda
+  if (!$("resLitrosFim")._editadoManual) _recalcLitrosFim();
+});
+$("resQtdEnv").addEventListener("input", function(){
+  _recalcLitrosFim();
+});
 
 /* ==================================================================
    ABA METAS
@@ -14756,9 +14818,9 @@ async function renderHojePrograma(){
     if(it.tipo!=="barril"){
       if(!temRes){
         var btnCls = it.tipo==="envase"?"hpb-lancr-env":"hpb-lancr";
-        acoes += "<button class='hoje-prog-btn "+btnCls+"' data-hprog-res='"+esc(it.id)+"' data-hprog-semana='"+esc(semIt)+"' data-hprog-tipo='"+esc(it.tipo)+"'>📋 Lançar resultado</button>";
+        acoes += "<button class='hoje-prog-btn "+btnCls+"' data-hprog-res='"+esc(it.id)+"' data-hprog-semana='"+esc(semIt)+"' data-hprog-tipo='"+esc(it.tipo)+"' data-hprog-formato='"+esc(it.formato||"")+"'>📋 Lançar resultado</button>";
       } else {
-        acoes += "<button class='hoje-prog-btn hpb-editar' data-hprog-res='"+esc(it.id)+"' data-hprog-semana='"+esc(semIt)+"' data-hprog-tipo='"+esc(it.tipo)+"'>✏ Editar resultado</button>";
+        acoes += "<button class='hoje-prog-btn hpb-editar' data-hprog-res='"+esc(it.id)+"' data-hprog-semana='"+esc(semIt)+"' data-hprog-tipo='"+esc(it.tipo)+"' data-hprog-formato='"+esc(it.formato||"")+"'>✏ Editar resultado</button>";
       }
     }
 
