@@ -3468,7 +3468,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.75";
+var VERSAO = "3.7.76";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10726,6 +10726,196 @@ function fp_calcIodo(inputArriada){
   if(iodoEl) iodoEl.value = hh+':'+mm;
   fp_markDirty();
 }
+/* ── Tratamento de água: sugestão de ácido lático ─────────────────────── */
+/* Cache do histórico carregado (evita fetch a cada keystroke) */
+var _aguaHistoricoCache = null;
+var _aguaHistoricoCacheTs = 0;
+var _aguaHistoricoLoading = false;
+
+async function fp_carregarAguaHistorico(){
+  var agora = Date.now();
+  if(_aguaHistoricoCache && (agora - _aguaHistoricoCacheTs) < 5*60*1000) return _aguaHistoricoCache;
+  if(_aguaHistoricoLoading) return _aguaHistoricoCache || [];
+  _aguaHistoricoLoading = true;
+  try {
+    var res = await api('/api/agua-historico');
+    _aguaHistoricoCache = (res && res.historico) ? res.historico : [];
+    _aguaHistoricoCacheTs = Date.now();
+  } catch(e) {
+    _aguaHistoricoCache = _aguaHistoricoCache || [];
+  }
+  _aguaHistoricoLoading = false;
+  return _aguaHistoricoCache;
+}
+
+/* Lê o grist atual da ficha (fp-tbl-ferm) */
+function fp_lerGristAtual(){
+  var tbody = document.querySelector('#fp-tbl-ferm tbody');
+  if(!tbody) return [];
+  var grist = [];
+  tbody.querySelectorAll('tr').forEach(function(tr){
+    var cells = tr.querySelectorAll('input');
+    if(!cells.length) return;
+    var malte = (cells[0]||{}).value||'';
+    var tipo  = (cells[1]||{}).value||'';
+    var kg    = parseFloat((cells[3]||{}).value)||0;
+    var pct   = (cells[4]||{}).value||'';
+    if(malte && kg > 0) grist.push({malte:malte, tipo:tipo, kg:kg, pct:pct});
+  });
+  return grist;
+}
+
+/* Similaridade de grist: compara listas de malte por nome (parcial) */
+function fp_similaridadeGrist(gristA, gristB){
+  if(!gristA.length || !gristB.length) return 0;
+  var matches = 0;
+  gristA.forEach(function(ma){
+    var nomeA = (ma.malte||'').toLowerCase();
+    gristB.forEach(function(mb){
+      var nomeB = (mb.malte||'').toLowerCase();
+      if(nomeA && nomeB && (nomeA.includes(nomeB.slice(0,5)) || nomeB.includes(nomeA.slice(0,5)))) matches++;
+    });
+  });
+  return matches / Math.max(gristA.length, gristB.length);
+}
+
+async function fp_calcLactico(card){
+  if(!card) return;
+  var volEl   = card.querySelector('.fp-agua-vol');
+  var sug     = card.querySelector('.fp-agua-sugestao');
+  if(!sug) return;
+
+  var vol = volEl ? parseFloat(volEl.value) : 0;
+  if(!vol || vol <= 0){
+    sug.innerHTML = '<span style="color:#94A3B8;font-style:italic">Preencha o volume para ver a sugestão</span>';
+    return;
+  }
+
+  sug.innerHTML = '<span style="color:#94A3B8">🔍 Buscando histórico…</span>';
+
+  var historico = await fp_carregarAguaHistorico();
+  var gristAtual = fp_lerGristAtual();
+  var receitaAtual = (document.getElementById('fp-estilo')||{}).value || '';
+
+  if(!historico.length){
+    sug.innerHTML = '<span style="color:#F59E0B;font-weight:600">📋 Sem histórico ainda.<br><span style="font-weight:400">Preencha e salve produções para gerar sugestões.</span></span>';
+    return;
+  }
+
+  /* Pontua cada registro por: (1) similaridade de grist, (2) proximidade de volume */
+  var candidatos = historico.map(function(r){
+    var simGrist = fp_similaridadeGrist(gristAtual, r.grist || []);
+    var diffVol  = Math.abs((r.volAgua||0) - vol);
+    var proxVol  = Math.max(0, 1 - diffVol/500); /* penalidade por 500L de diferença */
+    var score    = simGrist * 0.7 + proxVol * 0.3;
+    return { r:r, score:score, simGrist:simGrist, diffVol:diffVol };
+  }).filter(function(c){ return c.score > 0.1; })
+    .sort(function(a,b){ return b.score - a.score; });
+
+  if(!candidatos.length){
+    /* fallback: usa todos os registros com volume próximo */
+    candidatos = historico.map(function(r){
+      var diffVol = Math.abs((r.volAgua||0) - vol);
+      return { r:r, score: Math.max(0, 1 - diffVol/800), diffVol:diffVol };
+    }).filter(function(c){ return c.score > 0; })
+      .sort(function(a,b){ return b.score - a.score; });
+  }
+
+  if(!candidatos.length){
+    sug.innerHTML = '<span style="color:#F59E0B">Nenhuma produção similar encontrada no histórico.</span>';
+    return;
+  }
+
+  /* usa top-5 para média ponderada */
+  var top = candidatos.slice(0,5);
+  var somaPeso = 0, somaLact = 0, somaPh = 0, nPh = 0;
+  top.forEach(function(c){
+    var peso = c.score;
+    somaPeso  += peso;
+    somaLact  += (c.r.lacticoMl||0) * peso;
+    if(c.r.phFinal){ somaPh += c.r.phFinal * peso; nPh++; }
+  });
+  var mediaMl  = somaPeso > 0 ? somaLact / somaPeso : 0;
+  var mediaPh  = nPh > 0 ? somaPh / somaPeso : null;
+
+  /* ajuste proporcional de volume: se a melhor referência tem vol diferente, escala */
+  var refVol = top[0].r.volAgua || vol;
+  var mlAjustado = mediaMl * (vol / refVol);
+
+  var phTexto = mediaPh ? ' → pH final médio: <b>'+(mediaPh.toFixed(1))+'</b>' : '';
+  var nProd   = top.length;
+  var desc    = top[0].r.grist && top[0].r.grist.length
+    ? top[0].r.grist.map(function(g){ return g.kg+'kg '+g.malte; }).join(' + ')
+    : (top[0].r.receita || '—');
+
+  sug.innerHTML =
+    '<div>'+
+      '<div style="font-weight:700;font-size:.82rem;color:#1E40AF">📊 ~'+mlAjustado.toFixed(0)+' mL de lático</div>'+
+      '<div style="font-size:.72rem;color:#3B82F6;margin-top:2px">Baseado em '+nProd+' produção(ões) similar(es)'+phTexto+'</div>'+
+      '<div style="font-size:.68rem;color:#6B7280;margin-top:2px;line-height:1.3">Ref: '+esc(desc)+'</div>'+
+    '</div>';
+}
+
+/* Auto-grava registros de água no histórico ao salvar a ficha */
+function fp_gravarAguaHistorico(lote, dados){
+  if(!lote || !dados) return;
+  var grist = [];
+  if(dados.fermentaveis && dados.fermentaveis.length){
+    dados.fermentaveis.forEach(function(row){
+      // row = [ingrediente, tipo, lote/data, qtd(kg), %grist, EBC]
+      var malte = row[0]||'';
+      var tipo  = row[1]||'';
+      var kg    = parseFloat(row[3])||0;
+      var pct   = row[4]||'';
+      if(malte && kg > 0) grist.push({malte:malte, tipo:tipo, kg:kg, pct:pct});
+    });
+  }
+  var receita  = (dados.cabecalho && dados.cabecalho.estilo) || '';
+  var dataHoje = new Date().toISOString();
+
+  if(!dados.bateladas || !dados.bateladas.length) return;
+  dados.bateladas.forEach(function(bat, idx){
+    var agua = bat.agua || {};
+    var vol    = parseFloat(agua.vol)       || 0;
+    var lactic = parseFloat(agua.lacticoMl) || 0;
+    if(!vol || !lactic) return; // só grava se tiver vol + láctico preenchidos
+    var registro = {
+      lote:         lote,
+      numBatelada:  idx+1,
+      receita:      receita,
+      data:         dataHoje,
+      grist:        grist,
+      volAgua:      vol,
+      phBruto:      parseFloat(agua.phBruto)  || null,
+      phAlvo:       agua.phAlvo || '5.2–5.4',
+      lacticoMl:    lactic,
+      phFinal:      parseFloat(agua.phFinal)  || null,
+      obs:          '',
+    };
+    api('/api/agua-historico', {method:'POST', body:{registro:registro}})
+      .then(function(){ _aguaHistoricoCache = null; }) // invalida cache
+      .catch(function(){}); // silencioso — não bloqueia o save principal
+  });
+}
+
+/* Preenche referências da receita nos campos de água ao abrir ficha */
+function fp_preencherRefAgua(){
+  /* Vol. arriada da receita → recAguaVol */
+  var volRec = (document.getElementById('recAguaVol')||{}).value || (document.getElementById('recMosStrike')||{}).value || '';
+  var phAlvoRec = (document.getElementById('recAguaPh')||{}).value || '5.2–5.4';
+  document.querySelectorAll('.fp-bat-card').forEach(function(card){
+    var refVol = card.querySelector('.fp-agua-ref-vol');
+    if(refVol) refVol.textContent = volRec ? 'Receita: '+volRec+' L' : 'Receita: —';
+    var phAlvoEl = card.querySelector('.fp-agua-ph-alvo');
+    if(phAlvoEl && !phAlvoEl.value) phAlvoEl.value = phAlvoRec;
+    var phAlvoRef = phAlvoEl ? phAlvoEl.nextElementSibling : null;
+    if(phAlvoRef) phAlvoRef.textContent = 'Alvo receita: '+(phAlvoRec||'—');
+    // dispara sugestão se já tem volume
+    var volEl = card.querySelector('.fp-agua-vol');
+    if(volEl && volEl.value) fp_calcLactico(card);
+  });
+}
+
 /* Adiciona linha ao log de lavagens de uma batelada */
 function fp_addLavRow(btn){
   /* btn pode ser o botão clicado (onclick) ou o container .fp-lav-log (ao desserializar) */
@@ -11487,6 +11677,43 @@ function fp_addBatelada(){
       '<div class="fp-field"><label>Vel. agitador transf. (Hz)</label><input type="number" placeholder="15"></div>'+
     '</div>'+
 
+    /* ── TRATAMENTO DE ÁGUA (por batelada) ── */
+    '<div style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border:1.5px solid #93C5FD;border-radius:10px;padding:12px 14px;margin:10px 0 4px">'+
+      '<div style="font-size:.78rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#1D4ED8;margin-bottom:10px">💧 Tratamento de Água — Batelada '+numStr+'</div>'+
+      '<div class="fp-vol-row">'+
+        '<div class="fp-field">'+
+          '<label>Vol. água usado (L)</label>'+
+          '<input type="number" step="0.5" placeholder="ex: 1150" class="fp-agua-vol" data-agua="vol" oninput="fp_calcLactico(this.closest(\'.fp-bat-card\'))">'+
+          '<div class="fp-agua-ref-vol" style="font-size:.72rem;color:#6B7280;margin-top:3px">Receita: —</div>'+
+        '</div>'+
+        '<div class="fp-field">'+
+          '<label>pH água bruta</label>'+
+          '<input type="number" step="0.1" placeholder="ex: 7.2" class="fp-agua-ph-bruto" data-agua="phBruto" oninput="fp_calcLactico(this.closest(\'.fp-bat-card\'))">'+
+        '</div>'+
+        '<div class="fp-field">'+
+          '<label>pH alvo mosto</label>'+
+          '<input type="text" placeholder="5.2–5.4" class="fp-agua-ph-alvo" data-agua="phAlvo">'+
+          '<div style="font-size:.72rem;color:#6B7280;margin-top:3px">Alvo receita: —</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="fp-vol-row">'+
+        '<div class="fp-field">'+
+          '<label>Ác. Lático usado (mL)</label>'+
+          '<input type="number" step="0.5" placeholder="—" class="fp-agua-lactico" data-agua="lacticoMl">'+
+        '</div>'+
+        '<div class="fp-field">'+
+          '<label>pH final mosto (real)</label>'+
+          '<input type="number" step="0.1" placeholder="ex: 5.3" class="fp-agua-ph-final" data-agua="phFinal">'+
+        '</div>'+
+        '<div class="fp-field" style="align-self:flex-end">'+
+          '<label style="opacity:0">x</label>'+
+          '<div class="fp-agua-sugestao" style="background:#fff;border:1.5px solid #93C5FD;border-radius:7px;padding:8px 10px;font-size:.78rem;color:#1E40AF;min-height:38px;display:flex;align-items:center">'+
+            '<span style="color:#94A3B8;font-style:italic">Preencha o volume para ver a sugestão</span>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+
     /* ── LAUTER ── */
     '<div class="fp-divider"></div>'+
     '<div class="fp-small-label">🔽 Lauter</div>'+
@@ -12116,7 +12343,13 @@ function fp_simSave(btn){
           row.querySelectorAll('input').forEach(function(el){ vals.push(el.value); });
           lavLog.push(vals);
         });
-        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog };
+        // campos de água (tratamento por batelada)
+        var agua = {};
+        card.querySelectorAll('[data-agua]').forEach(function(el){
+          var k = el.dataset.agua;
+          agua[k] = el.value || '';
+        });
+        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog, agua: agua };
       });
     })(),
     sais:        coletarTabela('fp-tbl-sais'),
@@ -12180,6 +12413,8 @@ function fp_simSave(btn){
       if(s){s.textContent='✓ Salvo às '+hora+' (v'+r.versao+')';s.className='fp-unsaved';}
       btn.textContent='💾 Salvar Ficha'; btn.disabled=false;
       setTimeout(function(){if(!fp_dirty&&s) s.textContent='';},4000);
+      // auto-grava histórico de água para cada batelada que tenha vol + lático preenchidos
+      fp_gravarAguaHistorico(loteVal, dados);
     })
     .catch(function(e){
       toast('Erro ao salvar: '+e.message);
@@ -12934,12 +13169,21 @@ function fp_preencherFicha(ficha){
             });
           }
         }
+        // restaura campos de água
+        if(bat.agua){
+          card.querySelectorAll('[data-agua]').forEach(function(el){
+            var k = el.dataset.agua;
+            if(bat.agua[k] !== undefined && bat.agua[k] !== '') el.value = bat.agua[k];
+          });
+        }
         // recalcula volume da batelada
         var ini = card.querySelector('.fp-bat-vol-ini');
         var fim = card.querySelector('.fp-bat-vol-fim');
         if(ini || fim) fp_calcVolBatelada(ini || fim);
       });
       fp_atualizarNumBateladas();
+      // preenche referências da receita nos campos de água e dispara sugestões
+      setTimeout(fp_preencherRefAgua, 200);
     }
   }
   if(ficha.sais)         preencherTabela('fp-tbl-sais',ficha.sais);
@@ -13780,6 +14024,8 @@ window.fp_removerBatelada  = fp_removerBatelada;
 window.fp_markDirty        = fp_markDirty;
 window.fp_confirmarAplic  = fp_confirmarAplic;
 window.fp_desfazarAplic  = fp_desfazarAplic;
+window.fp_calcLactico    = fp_calcLactico;
+window.fp_preencherRefAgua = fp_preencherRefAgua;
 window.fp_calcVolBatelada = fp_calcVolBatelada;
 window.fp_atualizarVolTotalBateladas = fp_atualizarVolTotalBateladas;
 window.fp_simSave          = fp_simSave;
