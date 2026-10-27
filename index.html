@@ -3205,9 +3205,14 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
             <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Dia previsto</label>
-            <select id="brassDia" style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
-              <option value="">N&#xe3;o definido</option>
-            </select>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="date" id="brassDia"
+                style="flex:1;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+              <button type="button" onclick="$('brassDia').value=_isoHoje();$('brassDia').dispatchEvent(new Event('change'))"
+                style="padding:8px 10px;border:1.5px solid var(--linha);border-radius:8px;font-size:.78rem;
+                font-weight:700;cursor:pointer;background:#f4f4f4;white-space:nowrap;color:#444">
+                Hoje</button>
+            </div>
           </div>
           <div>
             <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Volume previsto (L)</label>
@@ -3285,9 +3290,14 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Dia previsto</label>
-          <select id="envDia" style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
-            <option value="">N&#xe3;o definido</option>
-          </select>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="date" id="envDia"
+              style="flex:1;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+            <button type="button" onclick="$('envDia').value=_isoHoje();$('envDia').dispatchEvent(new Event('change'))"
+              style="padding:8px 10px;border:1.5px solid var(--linha);border-radius:8px;font-size:.78rem;
+              font-weight:700;cursor:pointer;background:#f4f4f4;white-space:nowrap;color:#444">
+              Hoje</button>
+          </div>
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Observa&#xe7;&#xe3;o</label>
@@ -3469,7 +3479,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.76";
+var VERSAO = "3.7.77";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6774,42 +6784,43 @@ $("progVoltarHoje").addEventListener("click", function(){
 var _brasseditando = null;
 var _enveditando = null;
 
+// Retorna data de hoje em formato ISO YYYY-MM-DD
+function _isoHoje(){
+  var h = new Date();
+  return h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);
+}
+// Nome do dia da semana a partir de data ISO
+function _nomeDiaDaSemana(isoStr){
+  if (!isoStr) return "";
+  var NOMES = ["Dom","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+  var d = new Date(isoStr+"T00:00:00");
+  return NOMES[d.getDay()] || "";
+}
+// preencherDias virou no-op — campos agora são <input type="date">
+// mantida para compatibilidade com chamadas existentes
 function preencherDias(selectId, valorAtual){
-  var NOMES_DIA = ["Dom","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
-  var MESES_EXT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  var MESES_C   = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
-  var hoje = new Date(); hoje.setHours(0,0,0,0);
-  var ano  = hoje.getFullYear();
-  var segD = new Date(segProg); segD.setHours(0,0,0,0);
-  var fimD = new Date(segProg); fimD.setDate(fimD.getDate()+6); fimD.setHours(0,0,0,0);
-  var opcs = "<option value=''>Não definido</option>";
-  var mesCur = -1;
-  var d = new Date(ano, 0, 1);
-  while (d.getFullYear() === ano){
-    var dow = d.getDay();
-    if (dow >= 1 && dow <= 6){
-      if (d.getMonth() !== mesCur){
-        mesCur = d.getMonth();
-        opcs += "<option disabled style='font-weight:700;color:#025F1D'>── "+MESES_EXT[mesCur]+" "+ano+" ──</option>";
-      }
-      var isoD = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
-      var nome  = NOMES_DIA[dow];
-      var label = nome+" — "+d.getDate()+" "+MESES_C[d.getMonth()];
-      var dd = new Date(d); dd.setHours(0,0,0,0);
-      if (dd.getTime()===hoje.getTime()) label = "▶ "+label+" (hoje)";
-      else if (dd>=segD&&dd<=fimD) label += " ★";
-      opcs += "<option value='"+nome+"|"+isoD+"'>"+label+"</option>";
+  var el = $(selectId);
+  if (!el) return;
+  // Se for um input type=date, definir valor diretamente
+  if (el.type === "date"){
+    if (valorAtual){
+      // suporta formato legado "Nome|YYYY-MM-DD" e ISO puro
+      var iso = valorAtual.indexOf("|") !== -1 ? valorAtual.split("|")[1] : valorAtual;
+      el.value = iso || "";
     }
-    d.setDate(d.getDate()+1);
+    return;
   }
-  var sel = $(selectId);
-  sel.innerHTML = opcs;
-  if (valorAtual) sel.value = valorAtual;
+  // fallback: era um select antigo — não faz nada (não deveria existir mais)
 }
 function parseDiaSelect(val){
   if (!val) return {nome:"", dataISO:""};
-  var p = val.split("|");
-  return {nome: p[0]||"", dataISO: p[1]||""};
+  // suporta formato legado "Nome|YYYY-MM-DD" e também ISO puro "YYYY-MM-DD"
+  if (val.indexOf("|") !== -1){
+    var p = val.split("|");
+    return {nome: p[0]||"", dataISO: p[1]||""};
+  }
+  // input type=date retorna direto o ISO
+  return {nome: _nomeDiaDaSemana(val), dataISO: val};
 }
 
 
@@ -7106,7 +7117,7 @@ $("progLista").addEventListener("click", async function(ev){
       $("envQtd").value     = it.qtd||"";
       $("envObs").value     = it.obs||"";
       preencherDias("envDia");
-      if (it.dataISO) $("envDia").value=(it.dia||"")+"|"+it.dataISO; else $("envDia").value=it.dia||"";
+      $("envDia").value = it.dataISO || "";
       setTimeout(function(){ atualizarEnvEstilo(); if(it.estilo) $("envEstilo").value=it.estilo; },0);
       popularSelectTanques("envTanque", true, (it.tanqueOrigem||"").toUpperCase());
       // Popular select de lote para o tanque e pre-selecionar o lote salvo
@@ -7130,7 +7141,7 @@ $("progLista").addEventListener("click", async function(ev){
       $("brassVolPrev").value  = it.volPrev||"";
       $("brassObs").value      = it.obs||"";
       preencherDias("brassDia");
-      if (it.dataISO) $("brassDia").value=(it.dia||"")+"|"+it.dataISO; else $("brassDia").value=it.dia||"";
+      $("brassDia").value = it.dataISO || "";
       popularSelectTanques("brassTanque", false, (it.tanque||"").toUpperCase());
       $("modalBrassagem").hidden = false;
     }
@@ -9042,8 +9053,7 @@ async function irParaBrassagem(semana, id){
   $("brassVolPrev").value  = it.volPrev || "";
   $("brassObs").value      = it.obs     || "";
   preencherDias("brassDia");
-  if(it.dataISO) $("brassDia").value = (it.dia||"")+"|"+it.dataISO;
-  else           $("brassDia").value = it.dia || "";
+  $("brassDia").value = it.dataISO || "";
   popularSelectTanques("brassTanque", false, (it.tanque||"").toUpperCase());
   $("modalBrassagem").hidden = false;
 }
@@ -13842,6 +13852,7 @@ window.fp_removerBatelada  = fp_removerBatelada;
 window.fp_markDirty        = fp_markDirty;
 window.fp_confirmarAplic  = fp_confirmarAplic;
 window.fp_desfazarAplic  = fp_desfazarAplic;
+window._isoHoje           = _isoHoje;
 window.fp_calcVolBatelada = fp_calcVolBatelada;
 window.fp_atualizarVolTotalBateladas = fp_atualizarVolTotalBateladas;
 window.fp_simSave          = fp_simSave;
