@@ -3208,7 +3208,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
             <div style="display:flex;gap:6px;align-items:center">
               <input type="date" id="brassDia"
                 style="flex:1;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
-              <button type="button" onclick="$('brassDia').value=_isoHoje();$('brassDia').dispatchEvent(new Event('change'))"
+              <button type="button" onclick="document.getElementById('brassDia').value=window._isoHoje();document.getElementById('brassDia').dispatchEvent(new Event('change'))"
                 style="padding:8px 10px;border:1.5px solid var(--linha);border-radius:8px;font-size:.78rem;
                 font-weight:700;cursor:pointer;background:#f4f4f4;white-space:nowrap;color:#444">
                 Hoje</button>
@@ -3293,7 +3293,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <div style="display:flex;gap:6px;align-items:center">
             <input type="date" id="envDia"
               style="flex:1;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
-            <button type="button" onclick="$('envDia').value=_isoHoje();$('envDia').dispatchEvent(new Event('change'))"
+            <button type="button" onclick="document.getElementById('envDia').value=window._isoHoje();document.getElementById('envDia').dispatchEvent(new Event('change'))"
               style="padding:8px 10px;border:1.5px solid var(--linha);border-radius:8px;font-size:.78rem;
               font-weight:700;cursor:pointer;background:#f4f4f4;white-space:nowrap;color:#444">
               Hoje</button>
@@ -3479,7 +3479,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.77";
+var VERSAO = "3.7.78";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
