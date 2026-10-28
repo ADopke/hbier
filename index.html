@@ -3222,7 +3222,8 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Tanque destino</label>
           <select id="brassTanque"
-            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem;background:#fff">
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem;background:#fff"
+            onchange="(function(sel){var cap={'TQ01':8000,'TQ02':8000,'TQ03':8000,'TQ04':9000,'TQ05':14000,'TQ06':2000,'TQ07':3000,'TQ08':1000};var vol=cap[sel.value.trim().toUpperCase()];var el=document.getElementById('brassVolPrev');if(el&&vol&&!el._editadoManual){el.value=vol;}})(this)">
             <option value="">Carregando tanques…</option>
           </select>
         </div>
@@ -3246,7 +3247,8 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <div>
             <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Volume previsto (L)</label>
             <input type="number" id="brassVolPrev" placeholder="Ex.: 2000"
-              style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+              style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem"
+              oninput="this._editadoManual=true">
           </div>
         </div>
         <div>
@@ -6900,6 +6902,8 @@ async function popularSelectTanques(selectId, modoEnvase, valorAtual) {
     });
     sel.innerHTML = opts.join("");
     if (valorAtual) sel.value = valorAtual;
+    // auto-fill volume previsto ao popular select de brassagem com tanque pr\u00E9-selecionado
+    if (selectId === "brassTanque" && sel.value) sel.dispatchEvent(new Event("change"));
   } catch(e) {
     sel.innerHTML = "<option value=''>Erro ao carregar tanques</option>";
     // fallback: adicionar op\u00E7\u00F5es fixas
@@ -6908,6 +6912,7 @@ async function popularSelectTanques(selectId, modoEnvase, valorAtual) {
       sel.innerHTML += "<option value='" + n + "'>" + n + "</option>";
     });
     if (valorAtual) sel.value = valorAtual;
+    if (selectId === "brassTanque" && sel.value) sel.dispatchEvent(new Event("change"));
   } finally {
     sel.disabled = false;
   }
@@ -6920,6 +6925,7 @@ $("btnAddProg").addEventListener("click", function(){
   $("brassLote").value    = "";
   $("brassObs").value     = "";
   $("brassVolPrev").value = "";
+  if($("brassVolPrev")) $("brassVolPrev")._editadoManual = false;
   preencherDias("brassDia");
   $("brassDia").value = "";
   popularSelectTanques("brassTanque", false, "");
@@ -7168,6 +7174,7 @@ $("progLista").addEventListener("click", async function(ev){
       $("brassEstilo").value   = it.estilo||"";
       $("brassLote").value     = it.lote||"";
       $("brassVolPrev").value  = it.volPrev||"";
+      if($("brassVolPrev")) $("brassVolPrev")._editadoManual = !!(it.volPrev);
       $("brassObs").value      = it.obs||"";
       preencherDias("brassDia");
       $("brassDia").value = it.dataISO || "";
@@ -10181,6 +10188,7 @@ async function carregarTanques(){
           $("brassLote").value    = "";
           $("brassObs").value     = "";
           $("brassVolPrev").value = "";
+          if($("brassVolPrev")) $("brassVolPrev")._editadoManual = false;
           preencherDias("brassDia");
           $("brassDia").value = "";
           popularSelectTanques("brassTanque", false, tqNome.toUpperCase());
