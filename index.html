@@ -3496,7 +3496,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.88";
+var VERSAO = "3.7.89";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6403,7 +6403,7 @@ async function carregarProgMensal(){
       if(dm.getMonth()!==mes||dm.getFullYear()!==ano) return;
       if(!mapaDia[di]) mapaDia[di]=[];
       mapaDia[di].push(it);
-      if(it.tipo==="brassagem"){totBrass++;if(it.resultado&&it.resultado.volume)totVolReal+=parseFloat((it.resultado.volume+"").replace(",","."))||0;}
+      if(it.tipo==="brassagem"){totBrass++;if(it.resultado&&it.volPrev)totVolReal+=parseFloat((it.volPrev+"").replace(",","."))||0;}
       else if(it.tipo==="envase") totEnv++;
     });
     var chSem=seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
@@ -7641,9 +7641,10 @@ async function carregarMetas(){
           semVolPrev  += vp;
           if (vp) totalTemPrevisto = true;
         }
-        // Realizado: soma o volume do resultado se existir
-        if (it.resultado && it.resultado.volume){
-          var vr = parseFloat((it.resultado.volume+"").replace(",",".")) || 0;
+        // Realizado: brassagem com resultado lançado conta o volPrev (opção A — v3.7.89)
+        // O volume real das bateladas fica na ficha mas não distorce a meta
+        if (it.resultado && it.volPrev){
+          var vr = parseFloat((it.volPrev+"").replace(",",".")) || 0;
           volRealizado += vr;
           semVolReal   += vr;
         }
