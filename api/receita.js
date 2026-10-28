@@ -16,6 +16,27 @@ export default protegido(async function(req, res) {
   const usuario = await exigirLogin(req, res);
   if (!usuario) return;
 
+  /* ── GET importação Red Ale ── */
+  if (req.method === "GET" && req.query.importar === "redale2026") {
+    const M = [{nome:"Estágio 1 - Descanso Proteico",temperatura:55,tempo:1},{nome:"Estágio 2 - Sacarificação Beta",temperatura:62,tempo:30},{nome:"Estágio 3 - Sacarificação Alfa",temperatura:72,tempo:20},{nome:"Estágio 4 - Mash Out",temperatura:78,tempo:2}];
+    const RR=[
+      {nome:"HBier Irish Red Ale 1000L",estilo:"Irish-Style Red Ale",og:"1.061",fg:"1.017",abv:"5.8",volume:"1000",fermentaveis:[{nome:"Malte Weyermann® Carared®",tipo:"Grãos",fornecedor:"Weyermann",potencial:80.00,ebc:45.0,quantidade:25},{nome:"Malte Pale Ale",tipo:"Grãos",fornecedor:"Agrária",potencial:79.00,ebc:5.5,quantidade:200},{nome:"Malte Weyermann® Carafa® Tipo 3",tipo:"Grãos",fornecedor:"Weyermann",potencial:65.00,ebc:999.0,quantidade:4}],lupulos:[{nome:"Hallertau Magnum",momento:"Fervura",forma:"Pellet",tipo:"Amargor",origem:"ALEMANHA",aa:11.80,quantidade:0.830,tempo:60}],leveduras:[{nome:"London ESB",forma:"Líquido",tipo:"Ale",fornecedor:"Bio4",atenuacao:71,quantidade:"5 L"}],diversos:[{nome:"StarMax Beer Super",tipo:"Aditivo na água",momento:"Mostura",quantidade:"0.050 kg"},{nome:"Cloreto de Cálcio Fervura",tipo:"Aditivo na água",momento:"Fervura",quantidade:"0.150 kg"},{nome:"Ácido Láctico Mostura",tipo:"Aditivo na água",momento:"Mostura",quantidade:"0.250 kg"}],mostura:M},
+      {nome:"HBier Irish Red Ale 1500L",estilo:"Irish-Style Red Ale",og:"1.062",fg:"1.017",abv:"6.0",volume:"1500",fermentaveis:[{nome:"Malte Pale Ale",tipo:"Grãos",fornecedor:"Agraria",potencial:80.50,ebc:6.0,quantidade:325},{nome:"Malte Weyermann® Carared®",tipo:"Grãos",fornecedor:"Weyermann",potencial:80.00,ebc:45.0,quantidade:37.5},{nome:"Malte Weyermann® Carafa® Especial Tipo 2",tipo:"Grãos",fornecedor:"Weyermann",potencial:65.00,ebc:999.0,quantidade:6}],lupulos:[{nome:"Hallertau Hallertauer Magnum",momento:"Fervura",forma:"Pellet",tipo:"Amargor",origem:"ALEMANHA",aa:13.20,quantidade:0.900,tempo:30}],leveduras:[{nome:"London ESB",forma:"Líquido",tipo:"Ale",fornecedor:"Bio4",atenuacao:71,quantidade:"20 L"}],diversos:[{nome:"LowFoam - Antiespumante",tipo:"Outros",momento:"Fervura",quantidade:"0.020 kg"},{nome:"Cloreto de Cálcio Mostura",tipo:"Aditivo na água",momento:"Mostura",quantidade:"0.150 kg"},{nome:"Ácido Láctico",tipo:"Aditivo na água",momento:"Fervura",quantidade:"0.200 kg"}],mostura:M},
+    ];
+    const resultados=[]; let okC=0,errC=0;
+    for(const dados of RR){
+      try{
+        const id=novoId();
+        dados.meta={atualizadoEm:new Date().toISOString(),atualizadoPor:"import-redAle"};
+        await gravar(`receita:${id}`,dados);
+        const idx2=(await ler("receitas:index"))||[];
+        if(!idx2.includes(id)){idx2.push(id);await gravar("receitas:index",idx2);}
+        resultados.push({nome:dados.nome,id,status:"ok"});okC++;
+      }catch(e){resultados.push({nome:dados.nome,erro:e.message,status:"erro"});errC++;}
+    }
+    return res.json({ok:okC,erros:errC,total:RR.length,resultados});
+  }
+
   /* ── GET importação temporária Brewfather ── */
   if (req.method === "GET" && req.query.importar === "hbier2026v2") {
     const M = [{nome:"Estágio 1 - Descanso Proteico",temperatura:55,tempo:1},{nome:"Estágio 2 - Sacarificação Beta",temperatura:62,tempo:30},{nome:"Estágio 3 - Sacarificação Alfa",temperatura:72,tempo:20},{nome:"Estágio 4 - Mash Out",temperatura:78,tempo:2}];
