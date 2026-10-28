@@ -223,11 +223,25 @@ export default protegido(async function handler(req, res) {
       const sleevePerd   = parseFloat((dados.sleevePerd   || "0").replace(",",".")) || 0;
       const petPerd      = parseFloat((dados.petPerd      || "0").replace(",",".")) || 0;
       const tampasPerd   = parseFloat((dados.tampasPerd   || "0").replace(",",".")) || 0;
+      // excedente por frasco em ml (quanto a mais do que a capacidade nominal cada frasco usa)
+      const excessoMl    = parseFloat((dados.excessoMl    || "0").replace(",",".")) || 0;
+
+      // litrosUsados pela régua (para estimativa de quebra)
+      const litrosUsadosRegua = Math.round((litrosInicio - litrosFim) * 10) / 10;
+      // litros reais consumidos do tanque: qtd × (capacidade_nominal + excesso)
+      // capacidade nominal derivada do formato do item
+      const fmtUp = (it.formato||"").toUpperCase();
+      const capNominal = fmtUp.indexOf("2L")!==-1 ? 2 : fmtUp.indexOf("1L")!==-1 ? 1 : fmtUp.indexOf("500")!==-1 ? 0.5 : 0;
+      const litrosUsadosPET = capNominal > 0
+        ? Math.round(qtdEnvasada * (capNominal + excessoMl / 1000) * 10) / 10
+        : litrosUsadosRegua; // fallback para formatos desconhecidos
 
       it.resultado = {
         litrosInicio,
         litrosFim,
-        litrosUsados:    Math.round((litrosInicio - litrosFim) * 10) / 10,
+        litrosUsados:    litrosUsadosRegua,   // régua — só para info de quebra
+        litrosUsadosPET,                       // consumo real calculado por unidade
+        excessoMl,
         tanqueFinalizado: dados.tanqueFinalizado === "sim",
         qtdEnvasada,
         sleevePerd,  sleeveTotal:  qtdEnvasada + sleevePerd,

@@ -130,15 +130,17 @@ export default protegido(async function handler(req, res) {
             const temResultado = !!(it.resultado && (it.resultado.qtdEnvasada || it.resultado.litrosFim));
             if (temResultado) {
               envases.push({
-                tanqueOrigem: tanqueNorm,
-                lote:         it.lote          || "",
-                estilo:       it.estilo        || "",
-                formato:      it.formato       || "",
-                qtd:          it.resultado.qtdEnvasada || it.qtd || "",
-                litrosInicio: it.resultado.litrosInicio || "",
-                litrosFim:    it.resultado.litrosFim    || "",
-                em:           it.resultado.em  || it.resultado.emReal || "",
-                semana:       sem,
+                tanqueOrigem:  tanqueNorm,
+                lote:          it.lote          || "",
+                estilo:        it.estilo        || "",
+                formato:       it.formato       || "",
+                qtd:           it.resultado.qtdEnvasada || it.qtd || "",
+                litrosInicio:  it.resultado.litrosInicio  || "",
+                litrosFim:     it.resultado.litrosFim     || "",
+                litrosUsadosPET: it.resultado.litrosUsadosPET ?? "",
+                excessoMl:     it.resultado.excessoMl     ?? "",
+                em:            it.resultado.em  || it.resultado.emReal || "",
+                semana:        sem,
               });
             }
             movimentos.push({
@@ -152,6 +154,8 @@ export default protegido(async function handler(req, res) {
               qtd:         it.resultado ? (it.resultado.qtdEnvasada || it.qtd || "") : "",
               litrosInicio:it.resultado ? (it.resultado.litrosInicio || "") : "",
               litrosFim:   it.resultado ? (it.resultado.litrosFim    || "") : "",
+              litrosUsadosPET: it.resultado ? (it.resultado.litrosUsadosPET ?? "") : "",
+              excessoMl:   it.resultado ? (it.resultado.excessoMl    ?? "") : "",
               temResultado,
               semana:      sem,
             });

@@ -3104,23 +3104,33 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         <div id="campoResEnvase" hidden>
           <div style="font-size:.78rem;font-weight:700;color:#003E99;
             text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
-            📦 Volume do tanque</div>
+            📦 Régua do tanque <span style="font-weight:400;font-size:.7rem;text-transform:none;color:var(--muted)">(só para estimativa de quebra)</span></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <div>
               <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
-                Litros início</label>
+                Nível início (régua)</label>
               <input type="number" id="resLitrosIni" placeholder="Ex.: 3150"
                 style="width:100%;padding:9px;border:1.5px solid var(--linha);
                 border-radius:8px;font-size:.9rem">
             </div>
             <div>
               <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
-                Litros fim <span id="resLitrosFimHint" style="font-weight:400;color:var(--muted);font-size:.73rem"></span></label>
+                Nível fim (régua) <span id="resLitrosFimHint" style="font-weight:400;color:var(--muted);font-size:.73rem"></span></label>
               <input type="number" id="resLitrosFim" placeholder="Calculado automaticamente"
                 style="width:100%;padding:9px;border:1.5px solid var(--linha);
                 border-radius:8px;font-size:.9rem">
               <div id="resLitrosFimInfo" style="font-size:.72rem;color:var(--muted);margin-top:3px;display:none"></div>
             </div>
+          </div>
+          <!-- Excedente por frasco — usado para calcular o consumo real do tanque -->
+          <div id="campoExcedente" style="margin-bottom:10px">
+            <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
+              Excedente por frasco (ml)
+              <span style="font-weight:400;color:var(--muted);font-size:.72rem"> — volume extra que cada frasco consome do tanque</span>
+            </label>
+            <input type="number" id="resExcedenteMl" placeholder="Ex.: 20" min="0" step="1"
+              style="width:120px;padding:9px;border:1.5px solid var(--linha);
+              border-radius:8px;font-size:.9rem">
           </div>
           <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;
             cursor:pointer;margin-bottom:14px">
@@ -7344,6 +7354,13 @@ $("progLista").addEventListener("click", function(ev){
   if($("resLitrosFim")) $("resLitrosFim")._editadoManual = false;
   if($("resLitrosFimHint")) $("resLitrosFimHint").textContent="";
   if($("resLitrosFimInfo")) { $("resLitrosFimInfo").style.display="none"; $("resLitrosFimInfo").textContent=""; }
+  // preencher excedente padrão por formato
+  if($("resExcedenteMl") && isEnvase) {
+    var fmt = (_resItem.formato||"").toUpperCase();
+    var excPad = fmt.indexOf("2L")!==-1 ? 20 : fmt.indexOf("1L")!==-1 ? 10 : fmt.indexOf("500")!==-1 ? 5 : 0;
+    $("resExcedenteMl").value = excPad || "";
+  }
+  if($("campoExcedente")) $("campoExcedente").hidden = !isEnvase || !_litrosPorUnidade(_resItem.formato||"");
   // preencher se já tem resultado
   api("/api/prog?semana="+_resItem.semana).then(function(r){
     var it=(r.itens||[]).find(function(x){return x.id===_resItem.id;});
@@ -7365,6 +7382,9 @@ $("progLista").addEventListener("click", function(ev){
       if($("resSleeve"))  $("resSleeve").value   = res.sleevePerd||"";
       if($("resPet"))     $("resPet").value      = res.petPerd||"";
       if($("resTampas"))  $("resTampas").value   = res.tampasPerd||"";
+      // excedente salvo — ou mantém o padrão que já foi preenchido acima
+      if($("resExcedenteMl") && (res.excessoMl !== undefined && res.excessoMl !== null))
+        $("resExcedenteMl").value = res.excessoMl;
       // mostra o info de cálculo comparativo
       setTimeout(_recalcLitrosFim, 50);
     }
@@ -7423,6 +7443,7 @@ $("btnResSalvar").addEventListener("click", async function(){
     payload.litrosFim       = $("resLitrosFim").value;
     payload.tanqueFinalizado= $("resTanqFinalizado").checked?"sim":"nao";
     payload.qtdEnvasada     = $("resQtdEnv").value;
+    payload.excessoMl       = $("resExcedenteMl") ? $("resExcedenteMl").value : "";
     payload.sleevePerd      = $("resSleeve").value;
     payload.petPerd         = $("resPet").value;
     payload.tampasPerd      = $("resTampas").value;
@@ -7462,11 +7483,19 @@ function _litrosPorUnidade(formato){
   if (f.indexOf("500") !== -1) return 0.5;
   return null; // formato desconhecido — não calcula
 }
+function _excessoPadraoMl(formato){
+  var f = (formato||"").toUpperCase();
+  if (f.indexOf("2L") !== -1) return 20;
+  if (f.indexOf("1L") !== -1) return 10;
+  if (f.indexOf("500") !== -1) return 5;
+  return 0;
+}
 function _recalcLitrosFim(){
   if (!_resItem || _resItem.tipo !== "envase") return;
   var ini = parseFloat($("resLitrosIni").value);
   var qtd = parseFloat($("resQtdEnv").value);
   var lpu = _litrosPorUnidade(_resItem.formato);
+  var excMl = parseFloat(($("resExcedenteMl")||{}).value) || 0;
   var hint = $("resLitrosFimHint");
   var info = $("resLitrosFimInfo");
   if (!lpu) {
@@ -7479,14 +7508,15 @@ function _recalcLitrosFim(){
     if (info) { info.style.display="none"; }
     return;
   }
-  var litrosUsados = qtd * lpu;
+  var litrosPorFrasco = lpu + excMl / 1000;
+  var litrosUsados = qtd * litrosPorFrasco;
   var litrosFimCalc = ini - litrosUsados;
   if (hint) hint.textContent = "(calculado auto)";
   if (info) {
     info.style.display = "block";
-    info.textContent = qtd.toLocaleString("pt-BR")+" un × "+lpu+" L = "+
+    info.textContent = qtd.toLocaleString("pt-BR")+" un × "+(litrosPorFrasco).toFixed(3)+" L = "+
       litrosUsados.toLocaleString("pt-BR",{maximumFractionDigits:1})+" L usados → "+
-      (litrosFimCalc < 0 ? "⚠ negativo" : fmtNum(litrosFimCalc)+" L restantes no tanque");
+      (litrosFimCalc < 0 ? "⚠ negativo" : fmtNum(litrosFimCalc)+" L restantes na régua");
   }
   // só preenche se o campo estiver vazio ou se o usuário não editou manualmente
   if (!$("resLitrosFim")._editadoManual) {
@@ -7502,6 +7532,9 @@ $("resLitrosIni").addEventListener("input", function(){
   if (!$("resLitrosFim")._editadoManual) _recalcLitrosFim();
 });
 $("resQtdEnv").addEventListener("input", function(){
+  _recalcLitrosFim();
+});
+if($("resExcedenteMl")) $("resExcedenteMl").addEventListener("input", function(){
   _recalcLitrosFim();
 });
 
@@ -9511,51 +9544,26 @@ async function carregarTanques(){
               var tl = tq.lote.trim().toUpperCase();
               return rl === tl || tl.startsWith(rl);
             });
-            // PETs: calcula nível a partir do registro mais recente (com ou sem litrosFim)
+            // PETs: calcula consumo acumulado por unidades × (capacidade + excesso)
+            // A régua (litrosFim) NÃO é usada para nível — só para estimativa de quebra
             var loteAtualV = (tq.lote||"").trim().toUpperCase();
-            // Todos os envases PET do lote, ordenados do mais recente ao mais antigo
             var todosEnvasesPET = (tq.historico||[]).filter(function(m){
-              return m.tipo==="envase" && (m.lote||"").trim().toUpperCase()===loteAtualV && (m.litrosFim||m.litrosInicio||m.qtd);
-            }).sort(function(a,b){ return (b.dataISO||"").localeCompare(a.dataISO||""); });
-            // PETs com litrosFim registrado (nível real confirmado)
-            var petsComFim = todosEnvasesPET.filter(function(m){ return m.litrosFim; });
+              return m.tipo==="envase" && (m.lote||"").trim().toUpperCase()===loteAtualV && m.qtd;
+            });
             var litRestantes;
             if (todosEnvasesPET.length) {
-              var petMaisRecente = todosEnvasesPET[0];
-              var dataRefPet, baseNivel;
-              if (petMaisRecente.litrosFim) {
-                // Caso ideal: PET mais recente tem litrosFim — usa direto
-                baseNivel = parseFloat(petMaisRecente.litrosFim);
-                dataRefPet = petMaisRecente.dataISO || "";
-              } else if (petMaisRecente.litrosInicio) {
-                // PET mais recente tem litrosInicio mas sem litrosFim:
-                // estima o que saiu = qtd × litros/unidade do formato
-                var qtdEst = parseInt(petMaisRecente.qtd) || 0;
-                var mlEst  = (LITROS_FORMATO[petMaisRecente.formato] || 0);
-                var saidoPET = qtdEst * mlEst;
-                baseNivel = Math.max(0, parseFloat(petMaisRecente.litrosInicio) - saidoPET);
-                dataRefPet = petMaisRecente.dataISO || "";
-              } else if (petsComFim.length) {
-                // Fallback: usa o mais recente com litrosFim
-                baseNivel = parseFloat(petsComFim[0].litrosFim);
-                dataRefPet = petsComFim[0].dataISO || "";
-              } else {
-                baseNivel = null;
-                dataRefPet = "";
-              }
-              if (baseNivel !== null) {
-                // Subtrai barris envasados DEPOIS da data de referência do PET
-                // (barris da mesma data já estão refletidos no litrosInicio do PET)
-                var barrilsAposPet = barrilsLote.filter(function(r){
-                  return !dataRefPet || (r.dataISO || "") > dataRefPet;
-                });
-                var saidoBarrilApos = barrilsAposPet.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
-                litRestantes = Math.max(0, baseNivel - saidoBarrilApos);
-              } else {
-                // Sem base confiável: volume total menos todos os barris
-                var saidoBarrilTodos = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
-                litRestantes = Math.max(0, volTotal - saidoBarrilTodos);
-              }
+              // Soma litros consumidos de todos os envases PET do lote
+              var saidoPETTotal = todosEnvasesPET.reduce(function(s, m){
+                // Preferência: litrosUsadosPET salvo (calculado no backend com excedente)
+                if (m.litrosUsadosPET) return s + parseFloat(m.litrosUsadosPET);
+                // Fallback: qtd × capacidade nominal do formato (sem excedente — dados antigos)
+                var qtdN = parseInt(m.qtd) || 0;
+                var capN = LITROS_FORMATO[m.formato] || 0;
+                return s + qtdN * capN;
+              }, 0);
+              // Soma barris do lote
+              var saidoBarrilTotal = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
+              litRestantes = Math.max(0, volTotal - saidoPETTotal - saidoBarrilTotal);
             } else {
               // Sem registro PET: volume total menos todos os barris do lote
               var saidoBarril = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
@@ -10039,40 +10047,19 @@ async function carregarTanques(){
                   (m.lote||"").trim().toUpperCase() === loteUpZ;
               });
               // Calcula litros restantes com a mesma lógica do display (nível estimado)
+              // A régua NÃO é usada — consumo PET = qtd × (capacidade + excesso)
               var volInicial = parseFloat(tqObj.volume) || 0;
               var quebraTanque = null;
               (function(){
-                // Ordena PETs do mais recente para o mais antigo
-                var petsSorted = regsPetZ.slice().sort(function(a,b){
-                  return (b.dataISO||"").localeCompare(a.dataISO||"");
-                });
                 var litRestantes;
-                if (petsSorted.length) {
-                  var petRec = petsSorted[0];
-                  var baseNivel, dataRefPet;
-                  if (petRec.litrosFim) {
-                    baseNivel = parseFloat(petRec.litrosFim);
-                    dataRefPet = petRec.dataISO || "";
-                  } else if (petRec.litrosInicio) {
-                    var qtdEst = parseInt(petRec.qtd) || 0;
-                    var mlEst = LITROS_FORMATO[petRec.formato] || 0;
-                    baseNivel = Math.max(0, parseFloat(petRec.litrosInicio) - qtdEst * mlEst);
-                    dataRefPet = petRec.dataISO || "";
-                  } else {
-                    var petsComFim2 = petsSorted.filter(function(m){ return m.litrosFim; });
-                    baseNivel = petsComFim2.length ? parseFloat(petsComFim2[0].litrosFim) : null;
-                    dataRefPet = petsComFim2.length ? (petsComFim2[0].dataISO||"") : "";
-                  }
-                  if (baseNivel !== null) {
-                    // Subtrai apenas barris DEPOIS da data de referência do PET
-                    var barrilsApos = regsBarril.filter(function(r){
-                      return !dataRefPet || (r.dataISO||"") > dataRefPet;
-                    });
-                    var saidoApos = barrilsApos.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
-                    litRestantes = Math.max(0, baseNivel - saidoApos);
-                  } else {
-                    litRestantes = Math.max(0, volInicial - litBarris);
-                  }
+                if (regsPetZ.length) {
+                  var saidoPETZ = regsPetZ.reduce(function(s, m){
+                    if (m.litrosUsadosPET) return s + parseFloat(m.litrosUsadosPET);
+                    var qtdN = parseInt(m.qtd) || 0;
+                    var capN = LITROS_FORMATO[m.formato] || 0;
+                    return s + qtdN * capN;
+                  }, 0);
+                  litRestantes = Math.max(0, volInicial - saidoPETZ - litBarris);
                 } else {
                   litRestantes = Math.max(0, volInicial - litBarris);
                 }
