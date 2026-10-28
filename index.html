@@ -2367,7 +2367,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <button class="tq-filtro-btn" data-filtro="maturando">🧊 Maturando</button>
           <button class="tq-filtro-btn" data-filtro="pronto">🟢 Prontos</button>
           <button class="tq-filtro-btn" data-filtro="brassagem">🔥 Brassagem</button>
-          <button class="tq-filtro-btn" data-filtro="critico">🚨 Atenção</button>
+          <button class="tq-filtro-btn" data-filtro="critico">⏳ Atenção</button>
         </div>
         <div id="tanquesLista" style="padding:14px"><div class="vazio">Carregando…</div></div>
         <div style="padding:10px 14px;border-top:1px solid var(--linha);display:flex;gap:8px;flex-wrap:wrap">
@@ -3496,7 +3496,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.84";
+var VERSAO = "3.7.85";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9366,7 +9366,13 @@ async function carregarTanques(){
 
     // ── Resumo no topo ──────────────────────────────────────────────
     var contagem = {brassagem:0, pronto:0, livre:0, fermentando:0, maturando:0, critico:0};
-    _dadosTanques.forEach(function(tq){ if (contagem[tq.estagio] !== undefined) contagem[tq.estagio]++; });
+    _dadosTanques.forEach(function(tq){
+      if (contagem[tq.estagio] !== undefined) contagem[tq.estagio]++;
+      // "critico" no resumo = qualquer tanque com dias >= DIAS_AVISO
+      if (tq.diasTanque !== null && tq.diasTanque !== undefined && tq.diasTanque >= DIAS_AVISO && tq.estagio !== "critico") {
+        contagem.critico++;
+      }
+    });
     var resumoHtml =
       "<div style='display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:#F0FDF4;"+
         "border-bottom:1px solid #A8D4B4'>"+
@@ -9390,7 +9396,7 @@ async function carregarTanques(){
         estagios: ["fermentando"] },
       { label: "🧊 Maturando", cor: "#1D4ED8", bg: "#EFF6FF", borda: "#BFDBFE",
         estagios: ["maturando"] },
-      { label: "🚨 Atenção — fermentando há muito tempo", cor: "#DC2626", bg: "#FEF2F2", borda: "#FECACA",
+      { label: "🚨 Atenção — próximos do limite de dias", cor: "#DC2626", bg: "#FEF2F2", borda: "#FECACA",
         estagios: ["critico"] },
     ];
 
@@ -9793,7 +9799,8 @@ async function carregarTanques(){
       }
 
       // ── Montagem do card com dois blocos ─────────────────────────
-      return "<div class='tanque-card' data-estagio='"+esc(tq.estagio)+"' style='background:#fff;border-left-color:"+esc(corBorda)+"'>"+
+      var alertaDias = (tq.diasTanque !== null && tq.diasTanque !== undefined && tq.diasTanque >= DIAS_AVISO) ? "1" : "";
+      return "<div class='tanque-card' data-estagio='"+esc(tq.estagio)+"' data-alerta-dias='"+alertaDias+"' style='background:#fff;border-left-color:"+esc(corBorda)+"'>"+
 
         // cabeçalho: nome + badge de status + capacidade
         "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:6px'>"+
@@ -9920,7 +9927,15 @@ async function carregarTanques(){
       var cards = $("tqGrid").querySelectorAll(".tanque-card");
       cards.forEach(function(card){
         var est = card.dataset.estagio || "";
-        var mostrar = !filtroAtivo || est === filtroAtivo;
+        var mostrar;
+        if (!filtroAtivo) {
+          mostrar = true;
+        } else if (filtroAtivo === "critico") {
+          // "Atenção" = qualquer tanque chegando no limite (≥ DIAS_AVISO dias)
+          mostrar = card.dataset.alertaDias === "1";
+        } else {
+          mostrar = est === filtroAtivo;
+        }
         card.classList.toggle("tq-oculto", !mostrar);
       });
       // atualiza contador na barra de resumo
