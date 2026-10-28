@@ -6937,44 +6937,46 @@ function _sugerirLote(){
     var estiloEl = $("brassEstilo");
     var tanqueEl = $("brassTanque");
     var loteEl   = $("brassLote");
-    if(!estiloEl || !tanqueEl || !loteEl) return;
-    if(loteEl._editadoManual) return;
+    if(!estiloEl || !tanqueEl || !loteEl){ console.log("[lote] elementos não encontrados"); return; }
+    if(loteEl._editadoManual){ console.log("[lote] editadoManual=true, saindo"); return; }
     var estilo = estiloEl.value.trim().toUpperCase();
-    var tanque = tanqueEl.value.trim().toUpperCase(); // ex: "TQ05"
-    if(!estilo || !tanque) return;
-    // transforma TQ05 → T05
+    var tanque = tanqueEl.value.trim().toUpperCase();
+    console.log("[lote] estilo="+estilo+" tanque="+tanque);
+    if(!estilo || !tanque){ console.log("[lote] estilo ou tanque vazio, saindo"); return; }
     var tSufixo = tanque.replace(/^TQ?0*(\d+)$/, function(_,n){ return "T"+("0"+n).slice(-2); });
-    var anoAtual = new Date().getFullYear() % 100; // ex: 26
+    var anoAtual = new Date().getFullYear() % 100;
     var anoStr   = ("0"+anoAtual).slice(-2);
-    // padrão: ESTILO NN/AATXX — aceita com ou sem espaço entre estilo e número
     var re = new RegExp("^(.+?)\\s*(\\d+)\\/" + anoStr + "T\\d+$", "i");
+    console.log("[lote] regex="+re+" anoStr="+anoStr+" tSufixo="+tSufixo);
     var maxSeq = 0;
     try {
       var r = await api("/api/ficha?lista=1");
       var lotes = (r && r.lotes) || [];
+      console.log("[lote] fichas encontradas:", lotes.length, lotes.map(function(l){return l.lote;}).join(", "));
       lotes.forEach(function(l){
         var m = (l.lote||"").trim().match(re);
         if(m && m[1].trim().toUpperCase() === estilo){
           var n = parseInt(m[2],10);
+          console.log("[lote] match ficha:", l.lote, "→ seq", n);
           if(n > maxSeq) maxSeq = n;
         }
       });
-    } catch(e){ /* fallback: continua com maxSeq 0 */ }
-    // também varrer todos os itens de prog que podem estar em outras semanas
-    // varrendo _progItensCache (semana atual) e também as fichas já listadas acima
+    } catch(e){ console.log("[lote] erro na API:", e); }
     if(window._progItensCache){
       window._progItensCache.forEach(function(it){
         if(it.tipo !== "brassagem") return;
         var m = (it.lote||"").trim().match(re);
         if(m && m[1].trim().toUpperCase() === estilo){
           var n = parseInt(m[2],10);
+          console.log("[lote] match prog:", it.lote, "→ seq", n);
           if(n > maxSeq) maxSeq = n;
         }
       });
     }
-    if(loteEl._editadoManual) return; // checagem final — usuário pode ter digitado durante a espera
+    if(loteEl._editadoManual){ console.log("[lote] editadoManual setado durante await, saindo"); return; }
     var proximo = ("0"+(maxSeq+1)).slice(-2);
     var sugestao = estilo + " " + proximo + "/" + anoStr + tSufixo;
+    console.log("[lote] maxSeq="+maxSeq+" → sugestao="+sugestao);
     loteEl.value = sugestao;
   }, 400);
 }
