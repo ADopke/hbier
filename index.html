@@ -3218,13 +3218,13 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Estilo *</label>
           <input type="text" id="brassEstilo" placeholder="Ex.: Pilsen, IPA, Weizen&hellip;"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem"
-            oninput="if(!document.getElementById('brassLote')._editadoManual) _sugerirLote()">
+            oninput="if(!document.getElementById('brassLote')._editadoManual && typeof _sugerirLote==='function') _sugerirLote()">
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Tanque destino</label>
           <select id="brassTanque"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem;background:#fff"
-            onchange="(function(sel){var cap={'TQ01':8000,'TQ02':8000,'TQ03':8000,'TQ04':9000,'TQ05':14000,'TQ06':2000,'TQ07':3000,'TQ08':1000};var vol=cap[sel.value.trim().toUpperCase()];var el=document.getElementById('brassVolPrev');if(el&&vol&&!el._editadoManual){el.value=vol;}if(!document.getElementById('brassLote')._editadoManual) _sugerirLote();})(this)">
+            onchange="(function(sel){var cap={'TQ01':8000,'TQ02':8000,'TQ03':8000,'TQ04':9000,'TQ05':14000,'TQ06':2000,'TQ07':3000,'TQ08':1000};var vol=cap[sel.value.trim().toUpperCase()];var el=document.getElementById('brassVolPrev');if(el&&vol&&!el._editadoManual){el.value=vol;}if(!document.getElementById('brassLote')._editadoManual && typeof _sugerirLote==='function') _sugerirLote();})(this)">
             <option value="">Carregando tanques…</option>
           </select>
         </div>
