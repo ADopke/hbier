@@ -3218,13 +3218,13 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Estilo *</label>
           <input type="text" id="brassEstilo" placeholder="Ex.: Pilsen, IPA, Weizen&hellip;"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem"
-            oninput="if(!document.getElementById('brassLote')._editadoManual && typeof _sugerirLote==='function') _sugerirLote()">
+            oninput="if(!document.getElementById('brassLote')._editadoManual && window._sugerirLote) window._sugerirLote()">
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Tanque destino</label>
           <select id="brassTanque"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem;background:#fff"
-            onchange="(function(sel){var cap={'TQ01':8000,'TQ02':8000,'TQ03':8000,'TQ04':9000,'TQ05':14000,'TQ06':2000,'TQ07':3000,'TQ08':1000};var vol=cap[sel.value.trim().toUpperCase()];var el=document.getElementById('brassVolPrev');if(el&&vol&&!el._editadoManual){el.value=vol;}if(!document.getElementById('brassLote')._editadoManual && typeof _sugerirLote==='function') _sugerirLote();})(this)">
+            onchange="(function(sel){var cap={'TQ01':8000,'TQ02':8000,'TQ03':8000,'TQ04':9000,'TQ05':14000,'TQ06':2000,'TQ07':3000,'TQ08':1000};var vol=cap[sel.value.trim().toUpperCase()];var el=document.getElementById('brassVolPrev');if(el&&vol&&!el._editadoManual){el.value=vol;}if(!document.getElementById('brassLote')._editadoManual && window._sugerirLote) window._sugerirLote();})(this)">
             <option value="">Carregando tanques…</option>
           </select>
         </div>
@@ -3507,6 +3507,60 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
 <script>
 (function(){
 "use strict";
+
+/* ── Sugestão automática de lote na brassagem ─────────────────────────────
+   Definida aqui no topo pois é chamada por handlers inline do HTML
+   que podem disparar antes do restante do script ser executado.      */
+window._sugerirLoteTimer = null;
+window._sugerirLote = function _sugerirLote(){
+  clearTimeout(window._sugerirLoteTimer);
+  window._sugerirLoteTimer = setTimeout(async function(){
+    var estiloEl = document.getElementById("brassEstilo");
+    var tanqueEl = document.getElementById("brassTanque");
+    var loteEl   = document.getElementById("brassLote");
+    if(!estiloEl || !tanqueEl || !loteEl){ console.log("[lote] elementos não encontrados"); return; }
+    if(loteEl._editadoManual){ console.log("[lote] editadoManual=true, saindo"); return; }
+    var estilo = estiloEl.value.trim().toUpperCase();
+    var tanque = tanqueEl.value.trim().toUpperCase();
+    console.log("[lote] estilo="+estilo+" tanque="+tanque);
+    if(!estilo || !tanque){ console.log("[lote] estilo ou tanque vazio, saindo"); return; }
+    var tSufixo = tanque.replace(/^TQ?0*(\d+)$/, function(_,n){ return "T"+("0"+n).slice(-2); });
+    var anoAtual = new Date().getFullYear() % 100;
+    var anoStr   = ("0"+anoAtual).slice(-2);
+    var re = new RegExp("^(.+?)\\s*(\\d+)\\/" + anoStr + "T\\d+$", "i");
+    console.log("[lote] regex="+re+" anoStr="+anoStr+" tSufixo="+tSufixo);
+    var maxSeq = 0;
+    try {
+      var r = await fetch("/api/ficha?lista=1", {credentials:"include"}).then(function(x){return x.json();});
+      var lotes = (r && r.lotes) || [];
+      console.log("[lote] fichas encontradas:", lotes.length, lotes.map(function(l){return l.lote;}).join(", "));
+      lotes.forEach(function(l){
+        var m = (l.lote||"").trim().match(re);
+        if(m && m[1].trim().toUpperCase() === estilo){
+          var n = parseInt(m[2],10);
+          console.log("[lote] match ficha:", l.lote, "→ seq", n);
+          if(n > maxSeq) maxSeq = n;
+        }
+      });
+    } catch(e){ console.log("[lote] erro na API:", e); }
+    if(window._progItensCache){
+      window._progItensCache.forEach(function(it){
+        if(it.tipo !== "brassagem") return;
+        var m = (it.lote||"").trim().match(re);
+        if(m && m[1].trim().toUpperCase() === estilo){
+          var n = parseInt(m[2],10);
+          console.log("[lote] match prog:", it.lote, "→ seq", n);
+          if(n > maxSeq) maxSeq = n;
+        }
+      });
+    }
+    if(loteEl._editadoManual){ console.log("[lote] editadoManual setado durante await, saindo"); return; }
+    var proximo = ("0"+(maxSeq+1)).slice(-2);
+    var sugestao = estilo + " " + proximo + "/" + anoStr + tSufixo;
+    console.log("[lote] maxSeq="+maxSeq+" → sugestao="+sugestao);
+    loteEl.value = sugestao;
+  }, 400);
+}
 
 /* ==================================================================
    VERSÃO DO APP
@@ -6922,64 +6976,6 @@ async function popularSelectTanques(selectId, modoEnvase, valorAtual) {
   }
 }
 
-/* ── Sugestão automática de lote na brassagem ─────────────────────────────
-   Formato: ESTILO NN/AATXX
-   NN  = próximo número sequencial do estilo no ano atual (começa em 01)
-   AA  = dois últimos dígitos do ano corrente
-   TXX = número do tanque (TQ05 → T05)
-   Reinicia a contagem em 01 quando vira o ano.
-   Fonte: /api/ficha?lista=1 (todos os lotes com ficha) +
-          itens da semana atual em memória (_progItens)          */
-var _sugerirLoteTimer = null;
-function _sugerirLote(){
-  clearTimeout(_sugerirLoteTimer);
-  _sugerirLoteTimer = setTimeout(async function(){
-    var estiloEl = $("brassEstilo");
-    var tanqueEl = $("brassTanque");
-    var loteEl   = $("brassLote");
-    if(!estiloEl || !tanqueEl || !loteEl){ console.log("[lote] elementos não encontrados"); return; }
-    if(loteEl._editadoManual){ console.log("[lote] editadoManual=true, saindo"); return; }
-    var estilo = estiloEl.value.trim().toUpperCase();
-    var tanque = tanqueEl.value.trim().toUpperCase();
-    console.log("[lote] estilo="+estilo+" tanque="+tanque);
-    if(!estilo || !tanque){ console.log("[lote] estilo ou tanque vazio, saindo"); return; }
-    var tSufixo = tanque.replace(/^TQ?0*(\d+)$/, function(_,n){ return "T"+("0"+n).slice(-2); });
-    var anoAtual = new Date().getFullYear() % 100;
-    var anoStr   = ("0"+anoAtual).slice(-2);
-    var re = new RegExp("^(.+?)\\s*(\\d+)\\/" + anoStr + "T\\d+$", "i");
-    console.log("[lote] regex="+re+" anoStr="+anoStr+" tSufixo="+tSufixo);
-    var maxSeq = 0;
-    try {
-      var r = await api("/api/ficha?lista=1");
-      var lotes = (r && r.lotes) || [];
-      console.log("[lote] fichas encontradas:", lotes.length, lotes.map(function(l){return l.lote;}).join(", "));
-      lotes.forEach(function(l){
-        var m = (l.lote||"").trim().match(re);
-        if(m && m[1].trim().toUpperCase() === estilo){
-          var n = parseInt(m[2],10);
-          console.log("[lote] match ficha:", l.lote, "→ seq", n);
-          if(n > maxSeq) maxSeq = n;
-        }
-      });
-    } catch(e){ console.log("[lote] erro na API:", e); }
-    if(window._progItensCache){
-      window._progItensCache.forEach(function(it){
-        if(it.tipo !== "brassagem") return;
-        var m = (it.lote||"").trim().match(re);
-        if(m && m[1].trim().toUpperCase() === estilo){
-          var n = parseInt(m[2],10);
-          console.log("[lote] match prog:", it.lote, "→ seq", n);
-          if(n > maxSeq) maxSeq = n;
-        }
-      });
-    }
-    if(loteEl._editadoManual){ console.log("[lote] editadoManual setado durante await, saindo"); return; }
-    var proximo = ("0"+(maxSeq+1)).slice(-2);
-    var sugestao = estilo + " " + proximo + "/" + anoStr + tSufixo;
-    console.log("[lote] maxSeq="+maxSeq+" → sugestao="+sugestao);
-    loteEl.value = sugestao;
-  }, 400);
-}
 
 $("btnAddProg").addEventListener("click", function(){
   _brasseditando = null;
