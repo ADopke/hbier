@@ -3217,20 +3217,22 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Estilo *</label>
           <input type="text" id="brassEstilo" placeholder="Ex.: Pilsen, IPA, Weizen&hellip;"
-            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem"
+            oninput="if(!document.getElementById('brassLote')._editadoManual) _sugerirLote()">
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Tanque destino</label>
           <select id="brassTanque"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem;background:#fff"
-            onchange="(function(sel){var cap={'TQ01':8000,'TQ02':8000,'TQ03':8000,'TQ04':9000,'TQ05':14000,'TQ06':2000,'TQ07':3000,'TQ08':1000};var vol=cap[sel.value.trim().toUpperCase()];var el=document.getElementById('brassVolPrev');if(el&&vol&&!el._editadoManual){el.value=vol;}})(this)">
+            onchange="(function(sel){var cap={'TQ01':8000,'TQ02':8000,'TQ03':8000,'TQ04':9000,'TQ05':14000,'TQ06':2000,'TQ07':3000,'TQ08':1000};var vol=cap[sel.value.trim().toUpperCase()];var el=document.getElementById('brassVolPrev');if(el&&vol&&!el._editadoManual){el.value=vol;}if(!document.getElementById('brassLote')._editadoManual) _sugerirLote();})(this)">
             <option value="">Carregando tanques…</option>
           </select>
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Lote</label>
-          <input type="text" id="brassLote" placeholder="Ex.: LOT38/26TQ03"
-            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+          <input type="text" id="brassLote" placeholder="Calculando…"
+            style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem"
+            oninput="this._editadoManual=true">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
@@ -5664,6 +5666,7 @@ async function carregarProg(){
         _limpResumo = rl.resumo || {};
       }catch(e2){}
     }
+    window._progItensCache = itens; // cache para sugestão de lote
     renderProg(itens, seg, segProg, r.tarefasVinculadas||{}, r.barreis||{});
   }catch(e){ $("progLista").innerHTML="<div class='vazio'>"+esc(e.message)+"</div>"; }
 }
@@ -6918,11 +6921,66 @@ async function popularSelectTanques(selectId, modoEnvase, valorAtual) {
   }
 }
 
+/* ── Sugestão automática de lote na brassagem ─────────────────────────────
+   Formato: ESTILO NN/AATXX
+   NN  = próximo número sequencial do estilo no ano atual (começa em 01)
+   AA  = dois últimos dígitos do ano corrente
+   TXX = número do tanque (TQ05 → T05)
+   Reinicia a contagem em 01 quando vira o ano.
+   Fonte: /api/ficha?lista=1 (todos os lotes com ficha) +
+          itens da semana atual em memória (_progItens)          */
+var _sugerirLoteTimer = null;
+function _sugerirLote(){
+  clearTimeout(_sugerirLoteTimer);
+  _sugerirLoteTimer = setTimeout(async function(){
+    var estiloEl = $("brassEstilo");
+    var tanqueEl = $("brassTanque");
+    var loteEl   = $("brassLote");
+    if(!estiloEl || !tanqueEl || !loteEl) return;
+    var estilo = estiloEl.value.trim().toUpperCase();
+    var tanque = tanqueEl.value.trim().toUpperCase(); // ex: "TQ05"
+    if(!estilo || !tanque) return;
+    // transforma TQ05 → T05
+    var tSufixo = tanque.replace(/^TQ?0*(\d+)$/, function(_,n){ return "T"+("0"+n).slice(-2); });
+    var anoAtual = new Date().getFullYear() % 100; // ex: 26
+    var anoStr   = ("0"+anoAtual).slice(-2);
+    // padrão: ESTILO NN/AATXX  — captura qualquer variante com separador / e T
+    var re = new RegExp("^(.+?)\\s+(\\d+)\\/" + anoStr + "T\\d+$", "i");
+    var maxSeq = 0;
+    try {
+      var r = await api("/api/ficha?lista=1");
+      var lotes = (r && r.lotes) || [];
+      lotes.forEach(function(l){
+        var m = (l.lote||"").trim().match(re);
+        if(m && m[1].toUpperCase() === estilo){
+          var n = parseInt(m[2],10);
+          if(n > maxSeq) maxSeq = n;
+        }
+      });
+    } catch(e){ /* fallback: continua com maxSeq 0 */ }
+    // também varrer itens de prog já carregados na semana visível
+    if(window._progItensCache){
+      window._progItensCache.forEach(function(it){
+        if(it.tipo !== "brassagem") return;
+        var m = (it.lote||"").trim().match(re);
+        if(m && m[1].toUpperCase() === estilo){
+          var n = parseInt(m[2],10);
+          if(n > maxSeq) maxSeq = n;
+        }
+      });
+    }
+    var proximo = ("0"+(maxSeq+1)).slice(-2);
+    var sugestao = estilo + " " + proximo + "/" + anoStr + tSufixo;
+    if(!loteEl._editadoManual) loteEl.value = sugestao;
+  }, 300);
+}
+
 $("btnAddProg").addEventListener("click", function(){
   _brasseditando = null;
   $("brassFormTitulo").textContent = "\uD83C\uDF7A Nova Brassagem";
   $("brassEstilo").value  = "";
   $("brassLote").value    = "";
+  if($("brassLote")) $("brassLote")._editadoManual = false;
   $("brassObs").value     = "";
   $("brassVolPrev").value = "";
   if($("brassVolPrev")) $("brassVolPrev")._editadoManual = false;
@@ -7173,6 +7231,7 @@ $("progLista").addEventListener("click", async function(ev){
       $("brassFormTitulo").textContent = "\uD83C\uDF7A Editar Brassagem";
       $("brassEstilo").value   = it.estilo||"";
       $("brassLote").value     = it.lote||"";
+      if($("brassLote")) $("brassLote")._editadoManual = !!(it.lote);
       $("brassVolPrev").value  = it.volPrev||"";
       if($("brassVolPrev")) $("brassVolPrev")._editadoManual = !!(it.volPrev);
       $("brassObs").value      = it.obs||"";
@@ -9172,6 +9231,7 @@ async function irParaBrassagem(semana, id){
   $("brassFormTitulo").textContent = "🍺 Editar Brassagem";
   $("brassEstilo").value   = it.estilo  || "";
   $("brassLote").value     = it.lote    || "";
+  if($("brassLote")) $("brassLote")._editadoManual = !!(it.lote);
   $("brassVolPrev").value  = it.volPrev || "";
   $("brassObs").value      = it.obs     || "";
   preencherDias("brassDia");
@@ -10186,6 +10246,7 @@ async function carregarTanques(){
           $("brassFormTitulo").textContent = "🍺 Nova Brassagem";
           $("brassEstilo").value  = "";
           $("brassLote").value    = "";
+          if($("brassLote")) $("brassLote")._editadoManual = false;
           $("brassObs").value     = "";
           $("brassVolPrev").value = "";
           if($("brassVolPrev")) $("brassVolPrev")._editadoManual = false;
