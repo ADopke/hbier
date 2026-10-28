@@ -3479,7 +3479,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.79";
+var VERSAO = "3.7.80";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10368,6 +10368,41 @@ async function abrirFichaPorLote(lote){
 }
 
 function fp_toggleSec(head){ head.closest('.fp-sec').classList.toggle('collapsed'); }
+
+function fp_atualizaRegistroColeta(isoEm, por){
+  var div = document.getElementById('fp-coleta-registro');
+  var txt = document.getElementById('fp-coleta-registro-txt');
+  if(!div || !txt) return;
+  if(isoEm && por){
+    var d = new Date(isoEm);
+    var pad = function(n){ return ('0'+n).slice(-2); };
+    var fmt = pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+
+              ' '+pad(d.getHours())+':'+pad(d.getMinutes());
+    txt.textContent = 'Registrado em '+fmt+' por @'+por;
+    div.hidden = false;
+  } else {
+    div.hidden = true;
+    txt.textContent = '';
+  }
+}
+
+function fp_onColetaCheck(el){
+  var emEl  = document.getElementById('fp-coleta-realizada-em');
+  var porEl = document.getElementById('fp-coleta-realizada-por');
+  if(el.checked){
+    var agora = new Date().toISOString();
+    var quem  = (typeof sessao !== 'undefined' && sessao.login) ? sessao.login : '—';
+    if(emEl)  emEl.value  = agora;
+    if(porEl) porEl.value = quem;
+    fp_atualizaRegistroColeta(agora, quem);
+  } else {
+    if(emEl)  emEl.value  = '';
+    if(porEl) porEl.value = '';
+    fp_atualizaRegistroColeta('','');
+  }
+  fp_markDirty();
+}
+window.fp_onColetaCheck = fp_onColetaCheck;
 function fp_recalcEficTodas(){
   document.querySelectorAll('#fp-bat-list .fp-bat-card').forEach(function(card){
     fp_calcEficienciaReal(card);
@@ -12237,7 +12272,9 @@ function fp_simSave(btn){
       var data    = (document.getElementById('fp-coleta-data')||{}).value    || (document.getElementById('fp-coleta-data-matur')||{}).value    || '';
       var destino = (document.getElementById('fp-coleta-destino')||{}).value || (document.getElementById('fp-coleta-destino-matur')||{}).value || '';
       var feita   = !!(document.getElementById('fp-check-coleta')||{}).checked;
-      return { dataPrevista: data, destino: destino, realizada: feita };
+      var realEm  = (document.getElementById('fp-coleta-realizada-em')||{}).value  || '';
+      var realPor = (document.getElementById('fp-coleta-realizada-por')||{}).value || '';
+      return { dataPrevista: data, destino: destino, realizada: feita, realizadaEm: realEm, realizadaPor: realPor };
     })(),
     meta: { status: "em andamento" },
     audit: fp_audit
@@ -12696,9 +12733,14 @@ function abrirFichaLote(tq){
         '</div>'+
       '</div>'+
       '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.88rem;font-weight:600;margin-top:8px">'+
-        '<input type="checkbox" id="fp-check-coleta" style="width:16px;height:16px;cursor:pointer" onchange="fp_markDirty()">'+
+        '<input type="checkbox" id="fp-check-coleta" style="width:16px;height:16px;cursor:pointer" onchange="window.fp_onColetaCheck(this)">'+
         '<span>✅ Coleta realizada — fermento coletado</span>'+
       '</label>'+
+      '<div id="fp-coleta-registro" hidden style="margin-top:6px;padding:5px 10px;background:var(--fp-bg-alt,#f0fdf4);border:1px solid #16a34a;border-radius:6px;font-size:.78rem;color:#15803d;font-weight:500">'+
+        '📋 <span id="fp-coleta-registro-txt"></span>'+
+      '</div>'+
+      '<input type="hidden" id="fp-coleta-realizada-em">'+
+      '<input type="hidden" id="fp-coleta-realizada-por">'+
       '<div id="fp-coleta-aviso" hidden style="margin-top:8px;padding:6px 10px;background:#FEF2F2;border:1px solid #DC2626;border-radius:6px;color:#DC2626;font-size:.82rem;font-weight:600">'+
         '⚠️ Confirme a coleta do fermento (check) antes de aprovar o lote.'+
       '</div>'+
@@ -13149,7 +13191,14 @@ function fp_preencherFicha(ficha){
     if(coletaDest  && ficha.coleta.destino)      coletaDest.value  = ficha.coleta.destino;
     if(coletaMData && ficha.coleta.dataPrevista) coletaMData.value = ficha.coleta.dataPrevista;
     if(coletaMDest && ficha.coleta.destino)      coletaMDest.value = ficha.coleta.destino;
-    if(coletaChk   && ficha.coleta.realizada)    coletaChk.checked = true;
+    if(coletaChk   && ficha.coleta.realizada){
+      coletaChk.checked = true;
+      var realEmEl  = document.getElementById('fp-coleta-realizada-em');
+      var realPorEl = document.getElementById('fp-coleta-realizada-por');
+      if(realEmEl  && ficha.coleta.realizadaEm)  realEmEl.value  = ficha.coleta.realizadaEm;
+      if(realPorEl && ficha.coleta.realizadaPor)  realPorEl.value = ficha.coleta.realizadaPor;
+      fp_atualizaRegistroColeta(ficha.coleta.realizadaEm, ficha.coleta.realizadaPor);
+    }
   }
   // restaura FG e ABV do cabeçalho (se salvos) e recalcula
   if(ficha.cabecalho){
