@@ -3496,7 +3496,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.85";
+var VERSAO = "3.7.86";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5229,6 +5229,9 @@ $("btnBarrilSalvar").addEventListener("click", async function(){
   var lote   = $("barrilLote").value.trim();
   // barrilDia agora é <input type="date"> — valor já é ISO direto
   var dataISO = $("barrilDia").value || "";
+  if (!tanque)  { toast("Selecione o tanque de origem.","erro"); $("barrilTanque").focus(); return; }
+  if (!lote)    { toast("Lote não identificado. Verifique o tanque.","erro"); $("barrilTanque").focus(); return; }
+  if (!dataISO) { toast("Selecione a data prevista do envase.","erro"); $("barrilDia").focus(); return; }
   // dia da semana derivado de dataISO (mantido para compatibilidade com registros antigos)
   var dia = "";
   if (dataISO){
