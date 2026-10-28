@@ -3496,7 +3496,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.86";
+var VERSAO = "3.7.87";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -15922,6 +15922,42 @@ if ("serviceWorker" in navigator){
     });
   });
 }
+
+// ── Verificação periódica de versão (para abas que ficam abertas por horas) ──
+// Busca o index.html a cada 5 minutos e compara a versão. Se mudou, recarrega.
+(function(){
+  var INTERVALO_MS = 5 * 60 * 1000; // 5 minutos
+  var _jaRecarregando = false;
+
+  function checarVersao(){
+    if (_jaRecarregando) return;
+    fetch("/index.html?_v="+Date.now(), {cache:"no-store"})
+      .then(function(r){ return r.text(); })
+      .then(function(html){
+        var m = html.match(/var VERSAO\s*=\s*"([^"]+)"/);
+        if (!m) return;
+        var versaoServidor = m[1];
+        if (versaoServidor !== VERSAO){
+          _jaRecarregando = true;
+          // Mostra aviso antes de recarregar
+          toast("🔄 Nova versão disponível ("+versaoServidor+") — atualizando…", "ok");
+          setTimeout(function(){ window.location.reload(); }, 2500);
+        }
+      })
+      .catch(function(){}); // falha silenciosa (offline)
+  }
+
+  // Começa a checar após 2 minutos (dá tempo da sessão inicializar)
+  setTimeout(function(){
+    checarVersao();
+    setInterval(checarVersao, INTERVALO_MS);
+  }, 2 * 60 * 1000);
+
+  // Também checa quando a aba volta ao foco (operador abre o celular de novo)
+  document.addEventListener("visibilitychange", function(){
+    if (document.visibilityState === "visible") checarVersao();
+  });
+})();
 
 ["versaoRodape","versaoLogin"].forEach(function(id){
   var el = $(id);
