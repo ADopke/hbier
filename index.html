@@ -13487,6 +13487,7 @@ async function rec_carregarLista(){
         '<div style="display:flex;gap:6px">'+
           '<button class="btn mini" onclick="rec_editarReceita(\''+esc(rec.id)+'\')">✏️ Editar</button>'+
           '<button class="btn mini secundario" onclick="rec_copiarReceita(\''+esc(rec.id)+'\')" title="Duplicar esta receita">📋 Copiar</button>'+
+          '<button class="btn mini perigo" onclick="rec_deletarDireto(\''+esc(rec.id)+'\',\''+esc(rec.nome)+'\')" title="Excluir receita">🗑</button>'+
         '</div>'+
       '</div>';
     }).join('');
@@ -14020,6 +14021,23 @@ async function rec_deletar(){
   }
 }
 
+async function rec_deletarDireto(id, nome){
+  if(!confirm('Excluir "'+nome+'" permanentemente?')) return;
+  try{
+    var r = await fetch('/api/receita',{
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id:id, deletar:true})
+    });
+    var json = await r.json();
+    if(!r.ok) throw new Error(json.erro||'Erro');
+    recListaCache=null;
+    rec_carregarLista();
+  }catch(e){
+    alert('Erro ao excluir: '+e.message);
+  }
+}
+
 /* ao abrir a ficha, popula o select de receitas */
 var _recFichaInited = false;
 function rec_initFichaSelect(){
@@ -14042,6 +14060,7 @@ window.rec_copiarReceita        = rec_copiarReceita;
 window.rec_cancelar             = rec_cancelar;
 window.rec_salvar               = rec_salvar;
 window.rec_deletar              = rec_deletar;
+window.rec_deletarDireto        = rec_deletarDireto;
 window.rec_addRow               = rec_addRow;
 window.fp_onSelecionarReceita   = fp_onSelecionarReceita;
 window.fp_carregarReceitaSelecionada = fp_carregarReceitaSelecionada;
