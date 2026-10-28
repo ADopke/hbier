@@ -3483,7 +3483,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.82";
+var VERSAO = "3.7.83";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9417,13 +9417,34 @@ async function carregarTanques(){
         var badgeStyle = eBrassagem
           ? "background:#B45309;color:#fff;border-radius:5px;padding:3px 10px;font-size:.7rem;font-weight:900;white-space:nowrap;letter-spacing:.05em;box-shadow:0 0 0 3px #FCD34D,0 2px 8px rgba(180,83,9,.4);animation:tq-pulse-brass 1.4s ease-in-out infinite"
           : "background:"+corBd+";color:#fff;border-radius:5px;padding:2px 8px;font-size:.67rem;font-weight:800;white-space:nowrap;letter-spacing:.03em";
+        // chip de contagem regressiva para o limite de 15 dias
+        var chipLimite = (function(){
+          var total = tq.diasTanque;
+          if (total === null || total === undefined) return "";
+          var restam = DIAS_CRITICO - total;
+          if (restam > 3) return ""; // só mostra quando faltam 3 dias ou menos (ou ultrapassou)
+          if (restam <= 0){
+            return "<span style='background:#DC2626;color:#fff;border-radius:5px;padding:2px 8px;"+
+              "font-size:.69rem;font-weight:800;white-space:nowrap;animation:tq-pulse-brass 1.4s ease-in-out infinite'>"+
+              "🚨 Limite ultrapassado (+"+(Math.abs(restam))+"d)</span>";
+          }
+          var cor = restam <= 1 ? "#DC2626" : "#D97706";
+          var bgCor = restam <= 1 ? "#FEE2E2" : "#FEF3C7";
+          var bdCor = restam <= 1 ? "#FCA5A5" : "#FCD34D";
+          var sufixo = restam === 1 ? "dia" : "dias";
+          return "<span style='background:"+bgCor+";border:1px solid "+bdCor+";color:"+cor+";border-radius:5px;"+
+            "padding:2px 8px;font-size:.69rem;font-weight:800;white-space:nowrap'>"+
+            "⏳ "+restam+" "+sufixo+" p/ limite</span>";
+        })();
+
         presenteConteudo =
-          // status badge + dias
+          // status badge + dias + chip limite
           "<div style='display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap'>"+
             "<span style='"+badgeStyle+"'>"+
               esc(tq.estagioIcone)+" "+esc(tq.estagioLabel)+
             "</span>"+
             (diasStr ? "<span style='font-family:\"Barlow Condensed\",sans-serif;font-weight:700;font-size:.85rem;color:"+corDias+"'>"+diasStr+"</span>" : "")+
+            chipLimite+
           "</div>"+
           // estilo em destaque
           (tq.estilo ? "<div style='font-weight:700;font-size:.9rem;color:#111827;line-height:1.2;margin-bottom:3px'>"+esc(tq.estilo)+"</div>" : "")+
