@@ -3231,6 +3231,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Lote</label>
           <input type="text" id="brassLote" placeholder="Calculando…"
+            autocomplete="off"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem"
             oninput="this._editadoManual=true">
         </div>
@@ -6937,6 +6938,7 @@ function _sugerirLote(){
     var tanqueEl = $("brassTanque");
     var loteEl   = $("brassLote");
     if(!estiloEl || !tanqueEl || !loteEl) return;
+    if(loteEl._editadoManual) return;
     var estilo = estiloEl.value.trim().toUpperCase();
     var tanque = tanqueEl.value.trim().toUpperCase(); // ex: "TQ05"
     if(!estilo || !tanque) return;
@@ -6944,35 +6946,37 @@ function _sugerirLote(){
     var tSufixo = tanque.replace(/^TQ?0*(\d+)$/, function(_,n){ return "T"+("0"+n).slice(-2); });
     var anoAtual = new Date().getFullYear() % 100; // ex: 26
     var anoStr   = ("0"+anoAtual).slice(-2);
-    // padrão: ESTILO NN/AATXX  — captura qualquer variante com separador / e T
-    var re = new RegExp("^(.+?)\\s+(\\d+)\\/" + anoStr + "T\\d+$", "i");
+    // padrão: ESTILO NN/AATXX — aceita com ou sem espaço entre estilo e número
+    var re = new RegExp("^(.+?)\\s*(\\d+)\\/" + anoStr + "T\\d+$", "i");
     var maxSeq = 0;
     try {
       var r = await api("/api/ficha?lista=1");
       var lotes = (r && r.lotes) || [];
       lotes.forEach(function(l){
         var m = (l.lote||"").trim().match(re);
-        if(m && m[1].toUpperCase() === estilo){
+        if(m && m[1].trim().toUpperCase() === estilo){
           var n = parseInt(m[2],10);
           if(n > maxSeq) maxSeq = n;
         }
       });
     } catch(e){ /* fallback: continua com maxSeq 0 */ }
-    // também varrer itens de prog já carregados na semana visível
+    // também varrer todos os itens de prog que podem estar em outras semanas
+    // varrendo _progItensCache (semana atual) e também as fichas já listadas acima
     if(window._progItensCache){
       window._progItensCache.forEach(function(it){
         if(it.tipo !== "brassagem") return;
         var m = (it.lote||"").trim().match(re);
-        if(m && m[1].toUpperCase() === estilo){
+        if(m && m[1].trim().toUpperCase() === estilo){
           var n = parseInt(m[2],10);
           if(n > maxSeq) maxSeq = n;
         }
       });
     }
+    if(loteEl._editadoManual) return; // checagem final — usuário pode ter digitado durante a espera
     var proximo = ("0"+(maxSeq+1)).slice(-2);
     var sugestao = estilo + " " + proximo + "/" + anoStr + tSufixo;
-    if(!loteEl._editadoManual) loteEl.value = sugestao;
-  }, 300);
+    loteEl.value = sugestao;
+  }, 400);
 }
 
 $("btnAddProg").addEventListener("click", function(){
