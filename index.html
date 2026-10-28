@@ -3496,7 +3496,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.87";
+var VERSAO = "3.7.88";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6270,12 +6270,20 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
       : renderResultadoBrassagem(it.resultado);
 
     var semItem = it._semanaReal || semana; // semana real onde o item está salvo
+    var ch88 = it.checks || {};
+    var checksOk = isEnvase || (!!(ch88.moagemMalte) && !!(ch88.cipTanque));
+    var dataChecks = " data-checks-moagem='"+(ch88.moagemMalte?"1":"0")+"' data-checks-cip='"+(ch88.cipTanque?"1":"0")+"'";
     var btnResultado = !it.resultado
-      ? "<button class='btn-mini' style='background:var(--dourado);border-color:var(--dourado);"+
-        "color:#3A2D00' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+esc(semItem)+"' "+
-        "data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"' data-prog-formato='"+esc(it.formato||"")+"'>📋 Lançar resultado</button>"
+      ? (checksOk
+          ? "<button class='btn-mini' style='background:var(--dourado);border-color:var(--dourado);"+
+            "color:#3A2D00' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+esc(semItem)+"' "+
+            "data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"' data-prog-formato='"+esc(it.formato||"")+"'"+dataChecks+">📋 Lançar resultado</button>"
+          : "<button class='btn-mini' style='background:#9CA3AF;border-color:#9CA3AF;color:#fff;cursor:not-allowed;opacity:.75' "+
+            "title='Marque ⚙ Moagem Malte e 🧹 CIP Tanque antes de lançar' "+
+            "data-prog-res='"+esc(it.id)+"' data-prog-semana='"+esc(semItem)+"' "+
+            "data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"' data-prog-formato='"+esc(it.formato||"")+"'"+dataChecks+">🔒 Lançar resultado</button>")
       : "<button class='btn-mini secundario' data-prog-res='"+esc(it.id)+"' data-prog-semana='"+
-        esc(semItem)+"' data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"' data-prog-formato='"+esc(it.formato||"")+"'>✏ Editar resultado</button>";
+        esc(semItem)+"' data-prog-tipo='"+(isEnvase?"envase":"brassagem")+"' data-prog-formato='"+esc(it.formato||"")+"'"+dataChecks+">✏ Editar resultado</button>";
 
     // separador de dia — ao mudar de dia, fechar grupo anterior com card limpeza
     if (it.dia !== diaGrupo){
@@ -7306,6 +7314,20 @@ var _resItem = null;
 $("progLista").addEventListener("click", function(ev){
   var b = ev.target.closest("button[data-prog-res]");
   if (!b) return;
+  // v3.7.88 — bloquear lançamento de brassagem sem CIP e Moagem marcados
+  var isBrassagem88 = b.dataset.progTipo === "brassagem";
+  var jaTemResultado88 = b.textContent.indexOf("Editar") !== -1;
+  if (isBrassagem88 && !jaTemResultado88) {
+    var moagem88 = b.dataset.checksMoagem === "1";
+    var cip88    = b.dataset.checksCip    === "1";
+    if (!moagem88 || !cip88) {
+      var faltando88 = [];
+      if (!moagem88) faltando88.push("⚙ Moagem Malte");
+      if (!cip88)    faltando88.push("🧹 CIP Tanque");
+      toast("Marque "+faltando88.join(" e ")+" antes de lançar o resultado.", "erro");
+      return;
+    }
+  }
   _resItem = {id:b.dataset.progRes, semana:b.dataset.progSemana, tipo:b.dataset.progTipo, formato:b.dataset.progFormato||""};
   var isEnvase = _resItem.tipo === "envase";
   $("resTitulo").textContent = isEnvase ? "📦 Resultado do envase" : "🍺 Resultado da brassagem";
