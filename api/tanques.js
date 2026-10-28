@@ -10,6 +10,7 @@ import { ler, gravar, lerVarios, exigirLogin, corpo, erro, protegido } from "./_
 const CHAVE_OBS    = "tanques:obs";      // { tq01: { obs, atualizadoPor, em }, ... }
 const CHAVE_MANUAL = "tanques:manual";   // sobrescritas manuais de situação (raro)
 const CHAVE_HIST   = (id) => `tanques:historico:${id}`;  // array de lotes encerrados por tanque
+const CHAVE_AUDIT  = "tanques:auditoria"; // log de ações críticas (zerado, desfazerZerado, marcarLivre)
 
 // Cadastro fixo dos tanques
 export const TANQUES = [
@@ -438,6 +439,14 @@ export default protegido(async function handler(req, res) {
       return res.json({ ok: true, historico: hist });
     }
 
+    // Rota especial: ?acao=auditoria  (admin/gestor)
+    if (url.searchParams.get("acao") === "auditoria") {
+      if (!["admin", "gestor"].includes(sessao.papel))
+        return erro(res, 403, "Apenas admin ou gestor.");
+      const audit = (await ler(CHAVE_AUDIT)) || [];
+      return res.json({ ok: true, auditoria: audit });
+    }
+
     return res.json({
       ok: true,
       tanques: tanquesEstado,
@@ -498,14 +507,20 @@ export default protegido(async function handler(req, res) {
       const { tanqueId } = dados;
       if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
       const mapa = (await ler(CHAVE_MANUAL)) || {};
+      const agora = new Date().toISOString();
       mapa[tanqueId] = {
         estagio:      "livre",
         estagioLabel: "Livre (manual)",
         estagioIcone: "✅",
         por:          sessao.usuario || sessao.login,
-        em:           new Date().toISOString(),
+        em:           agora,
       };
       await gravar(CHAVE_MANUAL, mapa);
+      // Auditoria
+      const audit = (await ler(CHAVE_AUDIT)) || [];
+      audit.unshift({ acao: "marcarLivre", tanqueId, por: sessao.usuario || sessao.login, em: agora });
+      if (audit.length > 500) audit.splice(500);
+      await gravar(CHAVE_AUDIT, audit);
       return res.json({ ok: true });
     }
 
@@ -515,6 +530,7 @@ export default protegido(async function handler(req, res) {
         return erro(res, 403, "Apenas admin ou gestor.");
       const { tanqueId, snapshot } = dados;
       if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
+      const agora = new Date().toISOString();
 
       // Salvar snapshot do lote encerrado no histórico do tanque
       if (snapshot && snapshot.lote) {
@@ -522,7 +538,7 @@ export default protegido(async function handler(req, res) {
         hist.unshift({
           ...snapshot,
           encerradoPor: sessao.usuario || sessao.login,
-          encerradoEm:  new Date().toISOString(),
+          encerradoEm:  agora,
         });
         await gravar(CHAVE_HIST(tanqueId), hist);
       }
@@ -534,9 +550,20 @@ export default protegido(async function handler(req, res) {
         estagioIcone: "✅",
         zerado:       true,   // flag: sobrepõe brassagens antigas
         por:          sessao.usuario || sessao.login,
-        em:           new Date().toISOString(),
+        em:           agora,
       };
       await gravar(CHAVE_MANUAL, mapa);
+      // Auditoria
+      const audit = (await ler(CHAVE_AUDIT)) || [];
+      audit.unshift({
+        acao:  "marcarZerado",
+        tanqueId,
+        lote:  snapshot?.lote || null,
+        por:   sessao.usuario || sessao.login,
+        em:    agora,
+      });
+      if (audit.length > 500) audit.splice(500);
+      await gravar(CHAVE_AUDIT, audit);
       return res.json({ ok: true });
     }
 
@@ -552,15 +579,38 @@ export default protegido(async function handler(req, res) {
       const override = mapa[tanqueId];
       if (!override || !override.zerado)
         return erro(res, 400, "Tanque não está zerado — nada a desfazer.");
+
+      // Capturar info do zerado original antes de remover (para log)
+      const zeradoPor = override.por || null;
+      const zeradoEm  = override.em  || null;
+
       delete mapa[tanqueId];
       await gravar(CHAVE_MANUAL, mapa);
 
       // Remover o snapshot mais recente do histórico (o que foi gravado ao zerar)
       const hist = (await ler(CHAVE_HIST(tanqueId))) || [];
+      let loteDesfeito = null;
       if (hist.length && hist[0].encerradoEm) {
+        loteDesfeito = hist[0].lote || null;
         hist.shift();
         await gravar(CHAVE_HIST(tanqueId), hist);
       }
+
+      // Auditoria — registra o desfazer com referência ao zerado original
+      const agora = new Date().toISOString();
+      const audit = (await ler(CHAVE_AUDIT)) || [];
+      audit.unshift({
+        acao:        "desfazerZerado",
+        tanqueId,
+        lote:        loteDesfeito,
+        por:         sessao.usuario || sessao.login,
+        em:          agora,
+        zeradoPor,
+        zeradoEm,
+      });
+      if (audit.length > 500) audit.splice(500);
+      await gravar(CHAVE_AUDIT, audit);
+
       return res.json({ ok: true });
     }
 

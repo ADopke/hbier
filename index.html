@@ -2374,6 +2374,19 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <button class="btn mini secundario" id="btnAtualizarTanques">↺ Atualizar</button>
           <button class="btn mini secundario" id="btnExportarTanquesPDF">📄 PDF</button>
           <button class="btn mini secundario" id="btnExportarTanquesExcel">📊 Excel</button>
+          <button class="btn mini secundario" id="btnAuditoriaTanques" style="margin-left:auto">🔍 Auditoria</button>
+        </div>
+        <!-- Modal de auditoria -->
+        <div id="modalAuditoriaTanques" hidden style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px">
+          <div style="background:var(--card);border-radius:12px;width:100%;max-width:640px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--linha);display:flex;align-items:center;justify-content:space-between">
+              <span style="font-weight:700;font-size:1rem">🔍 Auditoria — Ações críticas nos tanques</span>
+              <button onclick="document.getElementById('modalAuditoriaTanques').hidden=true" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);line-height:1">×</button>
+            </div>
+            <div id="modalAuditoriaConteudo" style="overflow-y:auto;padding:16px;font-size:.82rem">
+              <div class="vazio">Carregando…</div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -3483,7 +3496,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.83";
+var VERSAO = "3.7.84";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10179,6 +10192,66 @@ $("btnLimparObsTanque").addEventListener("click", async function(){
 $("btnAtualizarTanques").addEventListener("click", function(){
   carregarTanques();
 });
+
+// Auditoria de tanques
+$("btnAuditoriaTanques").addEventListener("click", async function(){
+  var modal = $("modalAuditoriaTanques");
+  var conteudo = $("modalAuditoriaConteudo");
+  modal.hidden = false;
+  conteudo.innerHTML = "<div class='vazio'>Carregando…</div>";
+  try {
+    var r = await api("/api/tanques?acao=auditoria");
+    var lista = r.auditoria || [];
+    if (!lista.length) {
+      conteudo.innerHTML = "<div class='vazio'>Nenhum registro de auditoria ainda.</div>";
+      return;
+    }
+    var NOMES_ACAO = {
+      marcarZerado:    { label: "Zerado",         cor: "#DC2626", bg: "#FEF2F2", icone: "🗑" },
+      desfazerZerado:  { label: "Desfazer zerado", cor: "#D97706", bg: "#FFFBEB", icone: "↩" },
+      marcarLivre:     { label: "Livre (manual)",  cor: "#2563EB", bg: "#EFF6FF", icone: "✅" },
+    };
+    var pad = function(n){ return ("0"+n).slice(-2); };
+    var fmtISO = function(iso){
+      if (!iso) return "—";
+      var d = new Date(iso);
+      return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+d.getFullYear()+" "+pad(d.getHours())+":"+pad(d.getMinutes());
+    };
+    var tqNome = function(id){
+      var t = (_dadosTanques||[]).find(function(x){ return x.id===id; });
+      return t ? t.nome : id.toUpperCase();
+    };
+    var html = "<table style='width:100%;border-collapse:collapse;font-size:.8rem'>";
+    html += "<thead><tr style='background:var(--linha-bg,#f3f4f6);text-align:left'>";
+    html += "<th style='padding:6px 8px'>Data/hora</th>";
+    html += "<th style='padding:6px 8px'>Ação</th>";
+    html += "<th style='padding:6px 8px'>Tanque</th>";
+    html += "<th style='padding:6px 8px'>Lote</th>";
+    html += "<th style='padding:6px 8px'>Usuário</th>";
+    html += "<th style='padding:6px 8px'>Detalhes</th>";
+    html += "</tr></thead><tbody>";
+    lista.forEach(function(a, i){
+      var info = NOMES_ACAO[a.acao] || { label: a.acao, cor: "#374151", bg: "#F9FAFB", icone: "?" };
+      var det = "";
+      if (a.acao === "desfazerZerado" && a.zeradoEm) {
+        det = "Zerado original: "+fmtISO(a.zeradoEm)+(a.zeradoPor ? " por @"+esc(a.zeradoPor) : "");
+      }
+      html += "<tr style='border-top:1px solid var(--linha);background:"+(i%2===0?"transparent":"var(--linha-bg,#f9fafb)")+"'>";
+      html += "<td style='padding:6px 8px;white-space:nowrap;color:var(--muted)'>"+fmtISO(a.em)+"</td>";
+      html += "<td style='padding:6px 8px'><span style='background:"+info.bg+";color:"+info.cor+";border-radius:4px;padding:2px 7px;font-weight:700;font-size:.75rem'>"+info.icone+" "+info.label+"</span></td>";
+      html += "<td style='padding:6px 8px;font-weight:700'>"+esc(tqNome(a.tanqueId))+"</td>";
+      html += "<td style='padding:6px 8px'>"+esc(a.lote||"—")+"</td>";
+      html += "<td style='padding:6px 8px'>@"+esc(a.por||"?")+"</td>";
+      html += "<td style='padding:6px 8px;color:var(--muted)'>"+esc(det)+"</td>";
+      html += "</tr>";
+    });
+    html += "</tbody></table>";
+    conteudo.innerHTML = html;
+  } catch(e) {
+    conteudo.innerHTML = "<div class='vazio'>Erro ao carregar: "+esc(e.message)+"</div>";
+  }
+});
+$("modalAuditoriaTanques").addEventListener("click", function(e){ if(e.target === this) this.hidden = true; });
 
 // Exportar PDF da aba tanques
 $("btnExportarTanquesPDF").addEventListener("click", function(){
