@@ -3479,7 +3479,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.78";
+var VERSAO = "3.7.79";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12678,6 +12678,33 @@ function abrirFichaLote(tq){
     '</div>'+
   '</div>'+
 
+  /* Coleta de Fermento — logo após inoculação de levedura */
+  '<div class="fp-sec" id="fp-coleta-bloco" style="margin-top:0">'+
+    '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
+      '<div class="fp-sec-head-left"><span class="fp-sec-icon">🧫</span><span class="fp-sec-title">Coleta de Fermento</span><span class="fp-role-badge e">👷 Executor</span></div>'+
+      '<span class="fp-sec-toggle">▾</span>'+
+    '</div>'+
+    '<div class="fp-sec-body">'+
+      '<div class="fp-vol-row">'+
+        '<div class="fp-field"><label>Data prevista de coleta</label><input type="date" id="fp-coleta-data" onchange="fp_markDirty()"></div>'+
+        '<div class="fp-field"><label>Destino do fermento</label>'+
+          '<select id="fp-coleta-destino" onchange="fp_markDirty()" style="width:100%;padding:6px 8px;border:1px solid var(--fp-border);border-radius:6px;background:var(--fp-bg);color:var(--fp-fg);font-size:.9rem">'+
+            '<option value="">— Selecione —</option>'+
+            '<option value="Coletar fermento">🧪 Coletar fermento</option>'+
+            '<option value="Purgar fermento">🗑 Purgar fermento</option>'+
+          '</select>'+
+        '</div>'+
+      '</div>'+
+      '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.88rem;font-weight:600;margin-top:8px">'+
+        '<input type="checkbox" id="fp-check-coleta" style="width:16px;height:16px;cursor:pointer" onchange="fp_markDirty()">'+
+        '<span>✅ Coleta realizada — fermento coletado</span>'+
+      '</label>'+
+      '<div id="fp-coleta-aviso" hidden style="margin-top:8px;padding:6px 10px;background:#FEF2F2;border:1px solid #DC2626;border-radius:6px;color:#DC2626;font-size:.82rem;font-weight:600">'+
+        '⚠️ Confirme a coleta do fermento (check) antes de aprovar o lote.'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
+
   /* Log dia a dia */
   '<div class="fp-sec">'+
     '<div class="fp-sec-head" onclick="fp_toggleSec(this)">'+
@@ -12754,7 +12781,13 @@ function abrirFichaLote(tq){
       '<div style="font-size:.82rem;color:var(--fp-fg3);margin-bottom:10px">Campos obrigatórios para lançar leituras de maturação.</div>'+
       '<div class="fp-vol-row">'+
         '<div class="fp-field"><label>Data prevista de coleta</label><input type="date" id="fp-coleta-data-matur" onchange="fp_markDirty();document.getElementById(\'fp-coleta-data\')&&(document.getElementById(\'fp-coleta-data\').value=this.value)"></div>'+
-        '<div class="fp-field"><label>Destino do fermento</label><input type="text" id="fp-coleta-destino-matur" placeholder="ex: Descarte, Repitch TQ02…" onchange="fp_markDirty();document.getElementById(\'fp-coleta-destino\')&&(document.getElementById(\'fp-coleta-destino\').value=this.value)"></div>'+
+        '<div class="fp-field"><label>Destino do fermento</label>'+
+          '<select id="fp-coleta-destino-matur" onchange="fp_markDirty();document.getElementById(\'fp-coleta-destino\')&&(document.getElementById(\'fp-coleta-destino\').value=this.value)" style="width:100%;padding:6px 8px;border:1px solid var(--fp-border);border-radius:6px;background:var(--fp-bg);color:var(--fp-fg);font-size:.9rem">'+
+            '<option value="">— Selecione —</option>'+
+            '<option value="Coletar fermento">🧪 Coletar fermento</option>'+
+            '<option value="Purgar fermento">🗑 Purgar fermento</option>'+
+          '</select>'+
+        '</div>'+
       '</div>'+
     '</div>'+
   '</div>'+
@@ -12808,20 +12841,6 @@ function abrirFichaLote(tq){
           '</label>'+
           '<div id="fp-beersales-aviso" hidden style="margin-top:8px;padding:6px 10px;background:#FEF2F2;border:1px solid #DC2626;border-radius:6px;color:#DC2626;font-size:.82rem;font-weight:600">'+
             '⚠️ Marque "BeerSales Concluído" antes de aprovar o lote.'+
-          '</div>'+
-        '</div>'+
-        '<div style="background:var(--fp-bg2);border:1.5px solid var(--fp-border);border-radius:8px;padding:10px 14px;margin-bottom:12px" id="fp-coleta-bloco">'+
-          '<div style="font-size:.88rem;font-weight:700;color:var(--fp-fg);margin-bottom:8px">🧫 Coleta de Fermento</div>'+
-          '<div class="fp-vol-row">'+
-            '<div class="fp-field"><label>Data prevista de coleta</label><input type="date" id="fp-coleta-data" onchange="fp_markDirty()"></div>'+
-            '<div class="fp-field"><label>Destino do fermento</label><input type="text" id="fp-coleta-destino" placeholder="ex: Descarte, Repitch TQ02…" onchange="fp_markDirty()"></div>'+
-          '</div>'+
-          '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.88rem;font-weight:600;margin-top:8px">'+
-            '<input type="checkbox" id="fp-check-coleta" style="width:16px;height:16px;cursor:pointer" onchange="fp_markDirty()">'+
-            '<span>✅ Coleta realizada — fermento coletado</span>'+
-          '</label>'+
-          '<div id="fp-coleta-aviso" hidden style="margin-top:8px;padding:6px 10px;background:#FEF2F2;border:1px solid #DC2626;border-radius:6px;color:#DC2626;font-size:.82rem;font-weight:600">'+
-            '⚠️ Confirme a coleta do fermento (check) antes de aprovar o lote.'+
           '</div>'+
         '</div>'+
         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
