@@ -2808,10 +2808,14 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <div>
             <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">
               Dia previsto</label>
-            <select id="barrilDia" style="width:100%;padding:9px;
-              border:1.5px solid var(--linha);border-radius:8px;font-size:.88rem">
-              <option value="">Não definido</option>
-            </select>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="date" id="barrilDia"
+                style="flex:1;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem">
+              <button type="button" onclick="document.getElementById('barrilDia').value=window._isoHoje();document.getElementById('barrilDia').dispatchEvent(new Event('change'))"
+                style="padding:8px 10px;border:1.5px solid var(--linha);border-radius:8px;font-size:.78rem;
+                font-weight:700;cursor:pointer;background:#f4f4f4;white-space:nowrap;color:#444">
+                Hoje</button>
+            </div>
           </div>
           <div>
             <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">
@@ -3479,7 +3483,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.81";
+var VERSAO = "3.7.82";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5037,17 +5041,7 @@ function fmtSemanaBarril(seg){
 function atualizarBarrilSemana(){
   $("barrilSemanaTexto").textContent = fmtSemanaBarril(_barrilSegProg);
   $("barrilSemLabel").textContent    = fmtSemanaBarril(_barrilSegProg);
-  // atualizar o select de dias com as datas da semana escolhida
-  var nomes = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
-  var valorAtual = $("barrilDia").value;
-  var opcs = "<option value=''>Não definido</option>";
-  nomes.forEach(function(nome, i){
-    var d = new Date(_barrilSegProg); d.setDate(d.getDate()+i);
-    var dt = ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2);
-    opcs += "<option value='"+nome+"'>"+nome+" — "+dt+"</option>";
-  });
-  $("barrilDia").innerHTML = opcs;
-  $("barrilDia").value = valorAtual;
+  // barrilDia agora é <input type="date"> — nada a popular
 }
 
 function abrirModalBarril(){
@@ -5220,17 +5214,16 @@ $("btnBarrilSalvar").addEventListener("click", async function(){
   var produto = $("barrilProduto").value.trim();
   var tanque = $("barrilTanque").value.trim();
   var lote   = $("barrilLote").value.trim();
-  var dia    = $("barrilDia").value;
-  // usar a semana selecionada no modal (não a semana que o usuário está navegando)
-  var seg    = chaveSemana(_barrilSegProg || segProg);
-
-  // calcular dataISO a partir do dia
-  var dataISO = "";
-  if (dia){
-    var DIAS_B = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
-    var dB = new Date(_barrilSegProg || segProg); dB.setDate(dB.getDate()+(DIAS_B[dia]||0));
-    dataISO = dB.getFullYear()+"-"+("0"+(dB.getMonth()+1)).slice(-2)+"-"+("0"+dB.getDate()).slice(-2);
+  // barrilDia agora é <input type="date"> — valor já é ISO direto
+  var dataISO = $("barrilDia").value || "";
+  // dia da semana derivado de dataISO (mantido para compatibilidade com registros antigos)
+  var dia = "";
+  if (dataISO){
+    var NOMES_DIA = ["Dom","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+    dia = NOMES_DIA[new Date(dataISO+"T00:00:00").getDay()] || "";
   }
+  // usar a semana do dia escolhido (ou a semana selecionada no modal como fallback)
+  var seg = dataISO ? chaveSemana(segundaDe(new Date(dataISO+"T00:00:00"))) : chaveSemana(_barrilSegProg || segProg);
 
   try{
     // Se estiver editando: deletar o registro antigo primeiro (evita duplicação)
@@ -7206,7 +7199,19 @@ $("progLista").addEventListener("click", async function(ev){
         $("barrilLote").insertBefore(optExtra, $("barrilLote").firstChild);
         $("barrilLote").value = loteSalvo;
       }
-      $("barrilDia").value = reg.dia||"";
+      // barrilDia é <input type="date"> — restaurar dataISO; fallback: reconstruir de dia+semana
+      (function(){
+        var iso = reg.dataISO || "";
+        if (!iso && reg.dia && reg.semana){
+          var DIAS_OFF2 = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
+          var off2 = DIAS_OFF2[reg.dia];
+          if (off2 !== undefined){
+            var dR = new Date(reg.semana+"T00:00:00"); dR.setDate(dR.getDate()+off2);
+            iso = dR.getFullYear()+"-"+("0"+(dR.getMonth()+1)).slice(-2)+"-"+("0"+dR.getDate()).slice(-2);
+          }
+        }
+        $("barrilDia").value = iso;
+      })();
       // preencher quantidades
       renderBarrilLinhas();
       var FORMATOS_MAP = {"15 L":0,"20 L":1,"30 L":2,"50 L":3};
