@@ -13831,13 +13831,39 @@ async function rec_editarReceita(id){
 
     document.getElementById('recObs').value=rec.obs||'';
 
+    // Converte objeto de ingrediente (vindo do Brewfather) para array de strings
+    // conforme a ordem das colunas de cada tabela
+    function normalizarLinhas(tblId, linhas){
+      if(!linhas||!linhas.length) return [];
+      // Se já for array de arrays, retorna como está
+      if(Array.isArray(linhas[0])) return linhas;
+      // Converte objeto → array segundo as colunas de cada tabela
+      return linhas.map(function(obj){
+        if(tblId==='rec-tbl-ferm')
+          // Fermentável | Tipo | EBC | % | Extrato(%) | kg/batelada
+          return [obj.nome||'',obj.tipo||'',String(obj.ebc||''),String(obj.porcentagem||''),String(obj.potencial||''),String(obj.quantidade||'')];
+        if(tblId==='rec-tbl-lup')
+          // Variedade | AA% | Adição | Tempo(min) | g/batelada
+          return [obj.nome||'',String(obj.aa||''),obj.momento||obj.forma||'',String(obj.tempo||''),String(obj.quantidade||'')];
+        if(tblId==='rec-tbl-mash')
+          // Etapa | Temp alvo | Rampa alvo | Tempo alvo | Descrição
+          return [obj.nome||'',String(obj.temperatura||''),'',String(obj.tempo||''),obj.descricao||''];
+        if(tblId==='rec-tbl-adj')
+          // Ingrediente | Tipo | Adição | Tempo/Etapa | Qtde/bat
+          return [obj.nome||'',obj.tipo||'',obj.momento||'',String(obj.tempo||''),String(obj.quantidade||'')];
+        // genérico: pega todos os valores do objeto
+        return Object.values(obj).map(function(v){ return v===null||v===undefined?'':String(v); });
+      });
+    }
+
     // tabelas
     function carregarTabRec(tblId, linhas){
       var t=document.getElementById(tblId); if(!t) return;
       t.querySelector('tbody').innerHTML='';
-      if(!linhas||!linhas.length) return;
+      var linhasNorm = normalizarLinhas(tblId, linhas);
+      if(!linhasNorm||!linhasNorm.length) return;
       var nCols = t.querySelectorAll('thead th').length-1;
-      linhas.forEach(function(row){
+      linhasNorm.forEach(function(row){
         var args=[tblId]; for(var i=0;i<nCols;i++) args.push(row[i]||'');
         fp_addRow.apply(null,args);
         var tr=t.querySelector('tbody tr:last-child'); if(!tr) return;
@@ -13847,9 +13873,9 @@ async function rec_editarReceita(id){
     }
     carregarTabRec('rec-tbl-ferm',rec.fermentaveis);
     carregarTabRec('rec-tbl-lup',rec.lupulos);
-    carregarTabRec('rec-tbl-mash',rec.mash);
+    carregarTabRec('rec-tbl-mash',rec.mash||rec.mostura);
     carregarTabRec('rec-tbl-sais',rec.sais);
-    carregarTabRec('rec-tbl-adj',rec.adjuntos);
+    carregarTabRec('rec-tbl-adj',rec.adjuntos||rec.diversos);
     carregarTabRec('rec-tbl-pferm',rec.pferm);
     carregarTabRec('rec-tbl-pmatur',rec.pmatur);
     carregarTabRec('rec-tbl-enz',rec.enzimas);
