@@ -3095,7 +3095,9 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
                 Volume brassado (L)</label>
               <input type="text" id="resVolume" placeholder="Ex.: 1200"
                 style="width:100%;padding:9px;border:1.5px solid var(--linha);
-                border-radius:8px;font-size:.9rem">
+                border-radius:8px;font-size:.9rem"
+                oninput="this._editadoManual=true;this.readOnly=false;this.style.background='';this.style.cursor='';this.title='';var h=document.getElementById('resVolumeHint');if(h)h.textContent=''">
+              <div id="resVolumeHint" style="font-size:.71rem;color:var(--muted);margin-top:3px"></div>
             </div>
           </div>
         </div>
@@ -7354,6 +7356,9 @@ $("progLista").addEventListener("click", function(ev){
   if($("resLitrosFim")) $("resLitrosFim")._editadoManual = false;
   if($("resLitrosFimHint")) $("resLitrosFimHint").textContent="";
   if($("resLitrosFimInfo")) { $("resLitrosFimInfo").style.display="none"; $("resLitrosFimInfo").textContent=""; }
+  // reset volume brassado: volta a ser editável ao abrir o modal
+  if($("resVolume")){ $("resVolume").readOnly=false; $("resVolume").style.background=""; $("resVolume").style.cursor=""; $("resVolume").title=""; $("resVolume")._editadoManual=false; }
+  if($("resVolumeHint")) $("resVolumeHint").textContent="";
   // preencher excedente padrão por formato
   if($("resExcedenteMl") && isEnvase) {
     var fmt = (_resItem.formato||"").toUpperCase();
@@ -7361,15 +7366,48 @@ $("progLista").addEventListener("click", function(ev){
     $("resExcedenteMl").value = excPad || "";
   }
   if($("campoExcedente")) $("campoExcedente").hidden = !isEnvase || !_litrosPorUnidade(_resItem.formato||"");
-  // preencher se já tem resultado
+  // preencher se já tem resultado + (brassagem) auto-calcular volume das bateladas
   api("/api/prog?semana="+_resItem.semana).then(function(r){
     var it=(r.itens||[]).find(function(x){return x.id===_resItem.id;});
+    // brassagem: busca ficha do lote para calcular volume total das bateladas
+    if(!isEnvase && it && it.lote){
+      var loteEnc = encodeURIComponent(it.lote);
+      api("/api/ficha?lote="+loteEnc).then(function(fr){
+        var ficha = fr && fr.ficha;
+        if(!ficha || !Array.isArray(ficha.bateladas) || !ficha.bateladas.length) return;
+        var total = 0; var partes = [];
+        ficha.bateladas.forEach(function(bat, i){
+          var v = (bat.volResult !== null && bat.volResult !== undefined) ? bat.volResult : null;
+          // fallback: calcular fim - ini a partir do array volumes (posição dos últimos 3 fp-vol-row inputs)
+          if(v === null && Array.isArray(bat.volumes) && bat.volumes.length >= 2){
+            // vol_ini e vol_fim ficam na penúltima e última posição antes do resultado
+            // mais seguro: contar por blocos — não disponível aqui, usar volResult apenas
+          }
+          if(v !== null && v > 0){ total += v; partes.push('Bat.'+(i+1)+': '+v+' L'); }
+        });
+        if(total > 0 && $("resVolume")){
+          // não sobrescreve se o operador já salvou um resultado e editou manualmente
+          if(!$("resVolume")._editadoManual){
+            $("resVolume").value = total.toFixed(0);
+            $("resVolume").readOnly = true;
+            $("resVolume").style.background = "var(--fp-bg3, #f5f5f5)";
+            $("resVolume").style.cursor = "default";
+            $("resVolume").title = "Calculado automaticamente das bateladas da ficha ("+partes.join(" + ")+")";
+            var hint = document.getElementById("resVolumeHint");
+            if(hint) hint.textContent = partes.join(" + ")+" = "+total.toFixed(0)+" L";
+          }
+        }
+      }).catch(function(){});
+    }
     if(!it||!it.resultado) return;
     var res=it.resultado;
     $("btnResRemover").hidden = false;  // tem resultado — pode remover
     if(!isEnvase){
       if($("resOg"))     $("resOg").value     = res.og||"";
-      if($("resVolume")) $("resVolume").value  = res.volume||"";
+      if($("resVolume")){
+        $("resVolume").value  = res.volume||"";
+        $("resVolume")._editadoManual = !!(res.volume);
+      }
     } else {
       if($("resLitrosIni")) $("resLitrosIni").value = res.litrosInicio||"";
       if($("resLitrosFim")) {
@@ -12361,7 +12399,9 @@ function fp_simSave(btn){
           row.querySelectorAll('input').forEach(function(el){ vals.push(el.value); });
           lavLog.push(vals);
         });
-        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog };
+        var volResultEl = card.querySelector('.fp-bat-vol-result');
+        var volResult = volResultEl && volResultEl.value ? parseFloat(volResultEl.value) : null;
+        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog, volResult: volResult };
       });
     })(),
     sais:        coletarTabela('fp-tbl-sais'),
