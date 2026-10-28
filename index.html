@@ -3479,7 +3479,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.80";
+var VERSAO = "3.7.81";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9531,9 +9531,20 @@ async function carregarTanques(){
             return Math.max(0,Math.floor((b-a)/86400000));
           }
           var linhasBarril = regsOrdenados.map(function(r){
-            var dataR = r.dataISO || r.semana || "";
+            // dataISO: preferência ao campo salvo; fallback: reconstruir de dia+semana
+            var dataR = r.dataISO || "";
+            if (!dataR && r.dia && r.semana){
+              var DIAS_OFF = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
+              var off = DIAS_OFF[r.dia];
+              if (off !== undefined){
+                var dRecalc = new Date(r.semana+"T00:00:00");
+                dRecalc.setDate(dRecalc.getDate()+off);
+                dataR = dRecalc.getFullYear()+"-"+("0"+(dRecalc.getMonth()+1)).slice(-2)+"-"+("0"+dRecalc.getDate()).slice(-2);
+              }
+            }
+            if (!dataR) dataR = r.semana || "";
             var dataFmt = "";
-            if (dataR){ var p=dataR.split("-"); dataFmt=p[2]+"/"+p[1]; }
+            if (dataR && dataR.indexOf("-") !== -1){ var p=dataR.split("-"); dataFmt=p[2]+"/"+p[1]; }
             var dias = tq.brassadoEm ? diasEntreBarril(tq.brassadoEm, dataR) : null;
             var descLinhas = (r.linhas||[]).map(function(l){
               return "<span style='background:rgba(212,144,90,.18);border-radius:3px;padding:1px 5px;white-space:nowrap'>"+
