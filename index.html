@@ -9417,32 +9417,31 @@ async function leiturasSalvar(tqId, lote, tipo){
       }
 
       // ── Task #49: inoculação obrigatória para lançar fermentação ──
-      var levConfirmado = !!(ficha.aplicacoes && ficha.aplicacoes.lev && ficha.aplicacoes.lev.confirmado);
-      // também testa via campo lev no ficha.adicionado
+      // ficha salva em adicoesTanque (não aplicacoes — campo legado)
+      var levConfirmado = !!(ficha.adicoesTanque && ficha.adicoesTanque.lev && ficha.adicoesTanque.lev.confirmado);
+      if (!levConfirmado) levConfirmado = !!(ficha.aplicacoes && ficha.aplicacoes.lev && ficha.aplicacoes.lev.confirmado);
       if (!levConfirmado && ficha.bloco_lev_confirmado) levConfirmado = true;
       if (!levConfirmado) {
-        // verificar no HTML da ficha se existe (fallback)
+        // verificar no HTML da ficha se está aberta
         var blocoLev = document.getElementById("fp-bloco-lev");
         levConfirmado = blocoLev ? blocoLev.dataset.confirmado === "1" : false;
       }
-      if (!levConfirmado) {
-        // verificar na ficha serializada
-        levConfirmado = !!(ficha.aplicacoes && ficha.aplicacoes.lev);
-      }
+      if (!levConfirmado) levConfirmado = !!(ficha.adicoesTanque && ficha.adicoesTanque.lev);
+      if (!levConfirmado) levConfirmado = !!(ficha.aplicacoes && ficha.aplicacoes.lev);
       if (!levConfirmado) {
         toast("🚫 Para lançar fermentação, confirme primeiro a inoculação de levedura na Ficha de Produção.", "aviso");
         if (btn){ btn.disabled = false; btn.textContent = txtOrig; } return;
       }
 
       // ── Task #52: Clearmax Pro obrigatório para logs de fermentação ──
-      var cxConfirmado = !!(ficha.aplicacoes && ficha.aplicacoes.clearmax && ficha.aplicacoes.clearmax.confirmado);
+      var cxConfirmado = !!(ficha.adicoesTanque && ficha.adicoesTanque.clearmax && ficha.adicoesTanque.clearmax.confirmado);
+      if (!cxConfirmado) cxConfirmado = !!(ficha.aplicacoes && ficha.aplicacoes.clearmax && ficha.aplicacoes.clearmax.confirmado);
       if (!cxConfirmado) {
         var blocoCX = document.getElementById("fp-bloco-clearmax");
         cxConfirmado = blocoCX ? blocoCX.dataset.confirmado === "1" : false;
       }
-      if (!cxConfirmado) {
-        cxConfirmado = !!(ficha.aplicacoes && ficha.aplicacoes.clearmax);
-      }
+      if (!cxConfirmado) cxConfirmado = !!(ficha.adicoesTanque && ficha.adicoesTanque.clearmax);
+      if (!cxConfirmado) cxConfirmado = !!(ficha.aplicacoes && ficha.aplicacoes.clearmax);
       if (!cxConfirmado) {
         toast("🚫 Confirme o uso do Clearmax Pro na Ficha de Produção antes de lançar leitura de fermentação.", "aviso");
         if (btn){ btn.disabled = false; btn.textContent = txtOrig; } return;
