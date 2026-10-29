@@ -6560,6 +6560,8 @@ function progSetVisao(v){
 async function carregarPainelProducoes(){
   var loadEl=$("pp-loading");
   if(loadEl) loadEl.hidden=false;
+  var ganttArea=$("pp-gantt-area"), tabelaArea=$("pp-tabela-area"), resumoEl=$("pp-resumo");
+  if(ganttArea) ganttArea.innerHTML="<div style='padding:20px;text-align:center;color:var(--muted)'>Carregando…</div>";
 
   // ── lê filtros ──
   var periodo="3m", tipoEnv="todos", statusFilt="todos", estiloFilt="";
@@ -6575,43 +6577,73 @@ async function carregarPainelProducoes(){
   // ── janela de tempo ──
   var hoje=new Date();
   var meses=periodo==="12m"?12:periodo==="6m"?6:3;
-  var dataInicio=new Date(hoje); dataInicio.setMonth(dataInicio.getMonth()-meses);
-  var dataFim=new Date(hoje);    dataFim.setMonth(dataFim.getMonth()+2); // 2 meses à frente
+  var limiteInicio=new Date(hoje); limiteInicio.setMonth(limiteInicio.getMonth()-meses);
   function toISO(d){ return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
 
-  // ── busca dados ──
-  var fichas=[], tanques=[];
+  // ── busca lotes — API retorna { lotes: [{lote, estilo, dataInicio, status, salvoEm, salvoPor}] } ──
+  var lotes=[];
   try{
-    var rFichas=await api("/api/ficha?lista=1").catch(function(){return{fichas:[]};});
-    fichas=(rFichas.fichas||[]);
-  }catch(e){ fichas=[]; }
+    var rF=await fetch("/api/ficha?lista=1",{credentials:"include"}).then(function(r){return r.json();}).catch(function(){ return {lotes:[]}; });
+    lotes=(rF.lotes||[]);
+  }catch(e){ lotes=[]; }
+
+  // ── cross-reference envases de /api/prog (varre semanas na janela) ──
+  var mapaEnvPET={}, mapaEnvBarril={};
   try{
-    var rTanques=await api("/api/tanques").catch(function(){return{tanques:[]};});
-    tanques=(rTanques.tanques||[]);
-  }catch(e){ tanques=[]; }
-
-  // ── mapeia tanques por nome ──
-  var mapaTanque={};
-  tanques.forEach(function(t){ mapaTanque[t.nome||t.id]= t; });
-
-  // ── determinar status de cada ficha ──
-  function getStatus(f){
-    if(f.status) return f.status.toLowerCase();
-    // heurística
-    if(f.encerrado||f.dataEnvase) return "encerrado";
-    if(f.dataInoculacao){
-      var di=new Date(f.dataInoculacao+"T00:00:00");
-      var dias=(hoje-di)/(1000*60*60*24);
-      if(dias<7) return "fermentando";
-      if(dias<21) return "maturando";
-      return "pronto";
+    var semAtual=new Date(hoje);
+    semAtual.setDate(semAtual.getDate()-((semAtual.getDay()+6)%7));
+    var semanas_pp=[];
+    for(var wi=0;wi<meses*5;wi++){
+      var s2=new Date(semAtual); s2.setDate(s2.getDate()-wi*7);
+      if(s2<limiteInicio) break;
+      semanas_pp.push(toISO(s2));
     }
-    return "planejado";
-  }
+    if(semanas_pp.length>24) semanas_pp=semanas_pp.slice(0,24);
+    var resProgs=await Promise.all(semanas_pp.map(function(ch){
+      return api("/api/prog?semana="+ch).then(function(r){return r;}).catch(function(){return{itens:[],barreis:{}};});
+    }));
+    resProgs.forEach(function(r){
+      (r.itens||[]).forEach(function(it){
+        if(it.tipo==="envase"&&it.lote&&it.dataISO){
+          if(!mapaEnvPET[it.lote]) mapaEnvPET[it.lote]=[];
+          mapaEnvPET[it.lote].push({data:it.dataISO,qtd:it.qtd||null});
+        }
+      });
+      Object.values(r.barreis||{}).forEach(function(arr){
+        (arr||[]).forEach(function(b){
+          if(!b.lote||!b.dataISO) return;
+          if(!mapaEnvBarril[b.lote]) mapaEnvBarril[b.lote]=[];
+          mapaEnvBarril[b.lote].push({data:b.dataISO,total:b.total||null});
+        });
+      });
+    });
+  }catch(e){}
 
-  // ── coletar estilos únicos para o select ──
+  // ── normalização de status ──
+  var STATUS_MAP={"em andamento":"fermentando","ativo":"fermentando","fermentando":"fermentando",
+    "maturando":"maturando","pronto":"pronto","encerrado":"encerrado","concluido":"encerrado"};
+  function normStatus(s){
+    if(!s) return "fermentando";
+    var sl=s.toLowerCase().replace(/[áà]/g,"a").replace(/ê/g,"e").replace(/ç/g,"c").replace(/[ã]/g,"a");
+    return STATUS_MAP[sl]||sl;
+  }
+  var STATUS_ATIVO={"em andamento":1,"fermentando":1,"maturando":1,"pronto":1,"ativo":1};
+
+  // ── filtro de período — lotes ativos NUNCA são descartados por data ──
+  var lotesFilt=lotes.filter(function(f){
+    var stNorm=normStatus(f.status);
+    if(STATUS_ATIVO[stNorm]||STATUS_ATIVO[f.status]) return true;
+    var dtI=f.dataInicio;
+    if(dtI){ var d=new Date(dtI+"T00:00:00"); if(d>=limiteInicio) return true; }
+    var dtS=f.salvoEm;
+    if(dtS){ var d2=new Date(dtS); if(d2>=limiteInicio) return true; }
+    if(!dtI&&!dtS) return true;
+    return false;
+  });
+
+  // ── popular select de estilos ──
   var estilosSeen={};
-  fichas.forEach(function(f){ var e=f.estilo||f.produto||""; if(e) estilosSeen[e]=true; });
+  lotesFilt.forEach(function(f){ var e=f.estilo||""; if(e&&e!=="—") estilosSeen[e]=true; });
   var estilosSorted=Object.keys(estilosSeen).sort();
   var selEstEl=$("pp-estilo");
   if(selEstEl){
@@ -6625,110 +6657,72 @@ async function carregarPainelProducoes(){
     estiloFilt=selEstEl.value;
   }
 
-  // ── filtrar fichas ──
-  var fichasFilt=fichas.filter(function(f){
-    // período: ficha deve ter alguma atividade na janela
-    var dtRef=f.dataBrassagem||f.dataInoculacao||f.dataEnvase||f.dataCriacao||"";
-    if(dtRef){ var d=new Date(dtRef+"T00:00:00"); if(d<dataInicio&&d>dataFim) return false; }
-    // estilo
-    if(estiloFilt&&(f.estilo||f.produto||"")!==estiloFilt) return false;
-    // status
-    var st=getStatus(f);
-    if(statusFilt!=="todos"&&st!==statusFilt) return false;
-    return true;
-  });
+  // ── aplicar filtros de estilo, status e tipo de envase ──
+  if(estiloFilt) lotesFilt=lotesFilt.filter(function(f){ return (f.estilo||"")===estiloFilt; });
+  if(statusFilt!=="todos") lotesFilt=lotesFilt.filter(function(f){ return normStatus(f.status)===statusFilt; });
+  if(tipoEnv==="pet")    lotesFilt=lotesFilt.filter(function(f){ return !!(mapaEnvPET[f.lote]&&mapaEnvPET[f.lote].length); });
+  if(tipoEnv==="barril") lotesFilt=lotesFilt.filter(function(f){ return !!(mapaEnvBarril[f.lote]&&mapaEnvBarril[f.lote].length); });
 
-  // ── separar envases por tipo ──
-  // Cada ficha pode ter envases PET (/api/prog envases) e envases barril
-  // mas neste contexto usamos o que já está na ficha
-  function getEnvasesPET(f){
-    var env=[]; if(!f.envases) return env;
-    if(Array.isArray(f.envases)) return f.envases.filter(function(e){ return e.tipo!=="barril"; });
-    return env;
-  }
-  function getEnvasesBarril(f){
-    var env=[]; if(!f.envasesBarril) return env;
-    if(Array.isArray(f.envasesBarril)) return f.envasesBarril;
-    return env;
-  }
-
-  // ── filtrar por tipo de envase ──
-  if(tipoEnv!=="todos"){
-    fichasFilt=fichasFilt.filter(function(f){
-      if(tipoEnv==="pet"){
-        return getEnvasesPET(f).length>0||(f.envases&&f.envases.length>0)||f.dataEnvase;
-      }
-      if(tipoEnv==="barril"){
-        return getEnvasesBarril(f).length>0||f.dataEnvaseBarril;
-      }
-      return true;
-    });
-  }
-
-  // ── ordenar por data de brassagem decrescente ──
-  fichasFilt.sort(function(a,b){
-    var da=a.dataBrassagem||a.dataInoculacao||"9999"; var db=b.dataBrassagem||b.dataInoculacao||"9999";
+  // ── ordenar por data de início decrescente ──
+  lotesFilt.sort(function(a,b){
+    var da=a.dataInicio||a.salvoEm||""; var db=b.dataInicio||b.salvoEm||"";
     return db<da?-1:db>da?1:0;
   });
 
   // ── chips de resumo ──
-  var nBrass=fichasFilt.length;
-  var nEnvPET=fichasFilt.reduce(function(s,f){ return s+getEnvasesPET(f).length+(f.dataEnvase?1:0); },0);
-  var nEnvBar=fichasFilt.reduce(function(s,f){ return s+getEnvasesBarril(f).length+(f.dataEnvaseBarril?1:0); },0);
-  var nAtivos=fichasFilt.filter(function(f){ var st=getStatus(f); return st==="fermentando"||st==="maturando"||st==="pronto"; }).length;
-  var resumoEl=$("pp-resumo");
+  var nBrass=lotesFilt.length;
+  var nEnvPET=lotesFilt.reduce(function(s,f){ return s+(mapaEnvPET[f.lote]||[]).length; },0);
+  var nEnvBar=lotesFilt.reduce(function(s,f){ return s+(mapaEnvBarril[f.lote]||[]).length; },0);
+  var nAtivos=lotesFilt.filter(function(f){ var st=normStatus(f.status); return st==="fermentando"||st==="maturando"||st==="pronto"; }).length;
   if(resumoEl) resumoEl.innerHTML=
     "<span class='pp-resumo-chip'>🍺 <strong>"+nBrass+"</strong> brassagens</span>"+
     "<span class='pp-resumo-chip'>📦 PET <strong>"+nEnvPET+"</strong></span>"+
     "<span class='pp-resumo-chip'>🛢 Barril <strong>"+nEnvBar+"</strong></span>"+
     "<span class='pp-resumo-chip'>⚡ <strong>"+nAtivos+"</strong> ativos</span>";
 
-  // ── calcular janela de tempo p/ Gantt ──
-  // encontrar min e max das datas
-  var minDate=new Date(hoje); minDate.setMonth(minDate.getMonth()-meses);
+  // ── janela de tempo para Gantt ──
+  var minDate=new Date(limiteInicio);
   var maxDate=new Date(hoje); maxDate.setMonth(maxDate.getMonth()+2);
-  fichasFilt.forEach(function(f){
-    var d1=f.dataBrassagem||f.dataInoculacao; var d2=f.dataEnvase||f.dataEncerramento;
-    if(d1){ var dd=new Date(d1+"T00:00:00"); if(dd<minDate) minDate=dd; }
-    if(d2){ var dd=new Date(d2+"T00:00:00"); if(dd>maxDate) maxDate=new Date(dd.getTime()+7*86400000); }
+  lotesFilt.forEach(function(f){
+    var d1=f.dataInicio; if(d1){ var dd=new Date(d1+"T00:00:00"); if(dd<minDate) minDate=dd; }
   });
-  var totalDias=Math.max(1,Math.ceil((maxDate-minDate)/(1000*60*60*24)));
 
-  function pct(d){ return Math.max(0,Math.min(100,(new Date(d+"T00:00:00")-minDate)/(maxDate-minDate)*100)); }
+  function pct(d){ var ds=d.length>10?d:d+"T00:00:00"; return Math.max(0,Math.min(100,(new Date(ds)-minDate)/(maxDate-minDate)*100)); }
   function largPct(d1,d2){
-    var a=new Date(d1+"T00:00:00"), b=d2?new Date(d2+"T00:00:00"):new Date(hoje);
+    var a=new Date(d1.length>10?d1:d1+"T00:00:00"), b=d2?new Date(d2.length>10?d2:d2+"T00:00:00"):new Date(hoje);
     return Math.max(.5,(b-a)/(maxDate-minDate)*100);
   }
 
-  // ── cor por status ──
+  // ── helpers de visual ──
   function corStatus(st){
     if(st==="fermentando") return "#F59E0B";
     if(st==="maturando")   return "#3B82F6";
     if(st==="pronto")      return "#10B981";
-    if(st==="encerrado")   return "#9CA3AF";
-    return "#6B7280";
+    return "#9CA3AF";
   }
   function badgeStatus(st){
     if(st==="fermentando") return "<span class='pp-status-badge pp-badge-ferm'>Fermentando</span>";
     if(st==="maturando")   return "<span class='pp-status-badge pp-badge-matur'>Maturando</span>";
     if(st==="pronto")      return "<span class='pp-status-badge pp-badge-pronto'>Pronto</span>";
-    if(st==="encerrado")   return "<span class='pp-status-badge pp-badge-enc'>Encerrado</span>";
-    return "<span class='pp-status-badge pp-badge-enc'>"+esc(st)+"</span>";
+    return "<span class='pp-status-badge pp-badge-enc'>Encerrado</span>";
+  }
+  function fmtData(iso){
+    if(!iso) return "—";
+    var p=iso.slice(0,10).split("-"); if(p.length<3) return iso;
+    return p[2]+"/"+p[1]+"/"+p[0];
   }
 
   // ── construir Gantt ──
-  // cabeçalho com marcadores de meses
+  var MESES_PT=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
   var mesesMarcadores="";
   var dm=new Date(minDate.getFullYear(),minDate.getMonth(),1);
-  var MESES_PT=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
   while(dm<=maxDate){
-    var p=pct(dm.getFullYear()+"-"+("0"+(dm.getMonth()+1)).slice(-2)+"-"+("0"+dm.getDate()).slice(-2));
-    mesesMarcadores+="<div style='position:absolute;left:"+p.toFixed(1)+"%;"
+    var pm=pct(dm.getFullYear()+"-"+("0"+(dm.getMonth()+1)).slice(-2)+"-"+("0"+dm.getDate()).slice(-2));
+    mesesMarcadores+="<div style='position:absolute;left:"+pm.toFixed(1)+"%;"
       +"font-size:.62rem;color:var(--muted);white-space:nowrap;transform:translateX(-50%);top:0'>"
       +MESES_PT[dm.getMonth()]+" "+dm.getFullYear().toString().slice(2)+"</div>";
     dm.setMonth(dm.getMonth()+1);
   }
-  // linha "hoje"
   var hPct=pct(toISO(hoje));
   var hojeLinhaGantt="<div style='position:absolute;left:"+hPct.toFixed(1)+"%;"
     +"top:0;bottom:0;width:2px;background:rgba(255,80,80,.5);z-index:3;pointer-events:none'></div>"
@@ -6736,35 +6730,30 @@ async function carregarPainelProducoes(){
     +"top:-18px;font-size:.6rem;color:#EF4444;transform:translateX(-50%);white-space:nowrap'>Hoje</div>";
 
   var ganttRows="";
-  fichasFilt.forEach(function(f){
-    var lote=f.lote||f.id||"?";
-    var estilo=f.estilo||f.produto||"";
-    var st=getStatus(f);
+  lotesFilt.forEach(function(f){
+    var lote=f.lote||"?";
+    var estilo=f.estilo||"";
+    var st=normStatus(f.status);
     var cor=corStatus(st);
-    var d1=f.dataBrassagem||f.dataInoculacao||toISO(hoje);
-    var d2=f.dataEnvase||f.dataEncerramento||toISO(new Date(new Date(d1+"T00:00:00").getTime()+28*86400000));
+    var d1=f.dataInicio||toISO(hoje);
+    var d2=toISO(new Date(new Date(d1+"T00:00:00").getTime()+28*86400000));
+    // última data de envase como fim da barra
+    var envsP=mapaEnvPET[lote]||[]; var envsB=mapaEnvBarril[lote]||[];
+    var todasDatas=envsP.map(function(e){return e.data;}).concat(envsB.map(function(e){return e.data;})).filter(Boolean).sort();
+    if(todasDatas.length) d2=todasDatas[todasDatas.length-1];
     var startPct=pct(d1), widthPct=largPct(d1,d2);
-    // dots de envase PET
-    var dotsPET=""; (getEnvasesPET(f)||[]).forEach(function(e){
+
+    var dotsPET="";
+    envsP.forEach(function(e){
       if(!e.data) return; var ep=pct(e.data);
-      dotsPET+="<div class='pp-dot' style='left:"+ep.toFixed(1)+"%;"
-        +"background:#3B82F6;border-color:#fff' title='PET: "+esc(e.data)+"'></div>";
+      dotsPET+="<div class='pp-dot' style='left:"+ep.toFixed(1)+"%;background:#3B82F6;border-color:#fff' title='PET "+fmtData(e.data)+"'></div>";
     });
-    if(f.dataEnvase){ var ep=pct(f.dataEnvase);
-      dotsPET+="<div class='pp-dot' style='left:"+ep.toFixed(1)+"%;"
-        +"background:#10B981;border-color:#fff' title='PET: "+esc(f.dataEnvase)+"'></div>";
-    }
-    // dots de envase barril
-    var dotsBarril=""; (getEnvasesBarril(f)||[]).forEach(function(e){
+    var dotsBarril="";
+    envsB.forEach(function(e){
       if(!e.data) return; var ep=pct(e.data);
-      dotsBarril+="<div class='pp-dot' style='left:"+ep.toFixed(1)+"%;"
-        +"background:#92400E;border-color:#fff' title='Barril: "+esc(e.data)+"'></div>";
+      dotsBarril+="<div class='pp-dot' style='left:"+ep.toFixed(1)+"%;background:#92400E;border-color:#fff' title='Barril "+fmtData(e.data)+"'></div>";
     });
-    if(f.dataEnvaseBarril){ var ep=pct(f.dataEnvaseBarril);
-      dotsBarril+="<div class='pp-dot' style='left:"+ep.toFixed(1)+"%;"
-        +"background:#92400E;border-color:#fff' title='Barril: "+esc(f.dataEnvaseBarril)+"'></div>";
-    }
-    var volStr=f.volumeReal?f.volumeReal+"L":(f.volPrev?f.volPrev+"L":"—");
+
     ganttRows+=
       "<tr>"+
         "<td style='min-width:140px;max-width:200px'>"+
@@ -6779,17 +6768,17 @@ async function carregarPainelProducoes(){
             dotsPET+dotsBarril+
           "</div>"+
         "</td>"+
-        "<td style='white-space:nowrap;font-size:.75rem;color:var(--muted)'>"+esc(d1||"")+"</td>"+
-        "<td style='white-space:nowrap;font-size:.75rem;color:var(--muted)'>"+esc(volStr)+"</td>"+
+        "<td style='white-space:nowrap;font-size:.75rem;color:var(--muted)'>"+fmtData(d1)+"</td>"+
+        "<td style='white-space:nowrap;font-size:.75rem;color:var(--muted)'>"+esc(f.salvoPor||"")+"</td>"+
       "</tr>";
   });
 
-  var ganttHtml=fichasFilt.length===0
+  var ganttHtml=lotesFilt.length===0
     ? "<div style='padding:24px;text-align:center;color:var(--muted)'>Nenhuma produção encontrada para os filtros selecionados.</div>"
     : "<div style='position:relative;height:28px;margin:0 6px 4px;"
         +"border-bottom:1px dashed var(--linha)'>"+mesesMarcadores+hojeLinhaGantt+"</div>"
       +"<table class='pp-gantt' style='position:relative'>"
-        +"<thead><tr><th>Lote</th><th>Status</th><th>Linha do tempo</th><th>Início</th><th>Volume</th></tr></thead>"
+        +"<thead><tr><th>Lote</th><th>Status</th><th>Linha do tempo</th><th>Início</th><th>Responsável</th></tr></thead>"
         +"<tbody>"+ganttRows+"</tbody>"
       +"</table>"
       +"<div style='display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;padding:4px 6px;font-size:.72rem;color:var(--muted)'>"
@@ -6801,42 +6790,39 @@ async function carregarPainelProducoes(){
         +"<span style='display:flex;align-items:center;gap:4px'><span class='pp-dot' style='position:static;transform:none;background:#92400E;display:inline-block'></span>Envase Barril</span>"
       +"</div>";
 
-  var ganttArea=$("pp-gantt-area");
   if(ganttArea) ganttArea.innerHTML=ganttHtml;
 
   // ── construir Tabela ──
   var tabelaRows="";
-  fichasFilt.forEach(function(f){
-    var lote=f.lote||f.id||"?";
-    var estilo=f.estilo||f.produto||"";
-    var st=getStatus(f);
-    var envPET=getEnvasesPET(f); var envBar=getEnvasesBarril(f);
-    var envPETStr=envPET.length>0?envPET.map(function(e){return esc(e.data||""+(e.volume?e.volume+"L":""));}).join(", ")
-      :(f.dataEnvase?esc(f.dataEnvase):"—");
-    var envBarStr=envBar.length>0?envBar.map(function(e){return esc(e.data||""+(e.total?e.total+" unid":""));}).join(", ")
-      :(f.dataEnvaseBarril?esc(f.dataEnvaseBarril):"—");
-    var volStr=f.volumeReal?f.volumeReal+"L":(f.volPrev?f.volPrev+"L":"—");
-    var tanqueStr=f.tanque||f.fermentador||"—";
+  lotesFilt.forEach(function(f){
+    var lote=f.lote||"?";
+    var estilo=f.estilo||"";
+    var st=normStatus(f.status);
+    var envsP=mapaEnvPET[lote]||[]; var envsB=mapaEnvBarril[lote]||[];
+    var envPETStr=envsP.length
+      ? envsP.map(function(e){ return fmtData(e.data)+(e.qtd?" ("+esc(e.qtd)+")":""); }).join(", ")
+      : "—";
+    var envBarStr=envsB.length
+      ? envsB.map(function(e){ return fmtData(e.data)+(e.total?" ("+esc(e.total+" un")+")" : ""); }).join(", ")
+      : "—";
     tabelaRows+=
       "<tr>"+
         "<td><strong>"+esc(lote)+"</strong></td>"+
         "<td>"+esc(estilo)+"</td>"+
         "<td>"+badgeStatus(st)+"</td>"+
-        "<td>"+esc(f.dataBrassagem||f.dataInoculacao||"—")+"</td>"+
-        "<td>"+esc(volStr)+"</td>"+
-        "<td>"+esc(tanqueStr)+"</td>"+
+        "<td>"+fmtData(f.dataInicio)+"</td>"+
+        "<td>"+esc(f.salvoPor||"—")+"</td>"+
         "<td>"+envPETStr+"</td>"+
         "<td>"+envBarStr+"</td>"+
       "</tr>";
   });
 
-  var tabelaHtml=fichasFilt.length===0
+  var tabelaHtml=lotesFilt.length===0
     ? "<div style='padding:24px;text-align:center;color:var(--muted)'>Nenhuma produção encontrada.</div>"
     : "<table class='pp-tabela'>"
-        +"<thead><tr><th>Lote</th><th>Estilo</th><th>Status</th><th>Início</th><th>Volume</th><th>Tanque</th><th>Envase PET</th><th>Envase Barril</th></tr></thead>"
+        +"<thead><tr><th>Lote</th><th>Estilo</th><th>Status</th><th>Início</th><th>Responsável</th><th>Envase PET</th><th>Envase Barril</th></tr></thead>"
         +"<tbody>"+tabelaRows+"</tbody></table>";
 
-  var tabelaArea=$("pp-tabela-area");
   if(tabelaArea) tabelaArea.innerHTML=tabelaHtml;
 
   if(loadEl) loadEl.hidden=true;
