@@ -10737,12 +10737,14 @@ function fp_confirmarAplic(tipo){
   var hora = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
   var quem = (sessao && sessao.nome) ? sessao.nome : 'Operador';
 
-  // ── Task #53: Volume obrigatório para confirmar aplicações ────
-  var volEl = document.getElementById('fp-ferm-vol-total');
-  var volOk = volEl && volEl.textContent && volEl.textContent.trim() !== '—' && volEl.textContent.trim() !== '';
-  if (!volOk) {
-    toast("🚫 Preencha o volume de brassagem nas Bateladas antes de confirmar aplicações.", "aviso");
-    return;
+  // ── Task #53: Volume obrigatório para Clearmax (não para inoculação) ────
+  if (tipo !== 'lev') {
+    var volEl = document.getElementById('fp-ferm-vol-total');
+    var volOk = volEl && volEl.textContent && volEl.textContent.trim() !== '—' && volEl.textContent.trim() !== '';
+    if (!volOk) {
+      toast("🚫 Preencha o volume de brassagem nas Bateladas antes de confirmar aplicações.", "aviso");
+      return;
+    }
   }
 
   if(tipo === 'clearmax'){
