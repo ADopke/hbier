@@ -3697,7 +3697,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.92";
+var VERSAO = "3.7.93";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10539,17 +10539,14 @@ async function carregarTanques(){
     });
 
     // ── Botão "Tanque zerado" → abre modal de confirmação ────────────
-    var _zeradoTqId = null;
     $("tanquesLista").querySelectorAll("[data-tq-zerado]").forEach(function(btn){
       btn.addEventListener("click", async function(){
         var tqId = btn.dataset.tqZerado;
         var tqObj = _dadosTanques && _dadosTanques.find(function(t){ return t.id === tqId; });
-        // Trava: Quebra Beer Sales precisa estar marcado (a não ser que venha pela opção "soma")
-        // A verificação real fica no confirm — aqui só checamos para mostrar aviso antecipado
         _zeradoTqId = tqId;
-        // Preencher resumo no modal
+        // Calcular volumes para o resumo
         var volCad = parseFloat(tqObj && tqObj.volume) || 0;
-        var totalEnv = (tqObj && tqObj._totalEnvasado) || 0;
+        var totalEnv = _calcTotalEnvasado(tqObj);
         var saldo = totalEnv - volCad;
         var resumoHtml =
           "<div style='display:flex;justify-content:space-between;margin-bottom:3px'><span style='color:#6B7280'>Volume cadastrado</span><b>"+fmtNum(volCad)+" L</b></div>"+
@@ -10571,85 +10568,6 @@ async function carregarTanques(){
         $("modalZeradoConfirm").hidden = false;
       });
     });
-    $("btnCancelarZerado").addEventListener("click", function(){ $("modalZeradoConfirm").hidden = true; });
-    $("btnConfirmarZerado").addEventListener("click", async function(){
-      var tipo = document.querySelector("input[name='zeradoTipo']:checked");
-      if (!tipo) { toast("Selecione como o tanque fechou.","aviso"); return; }
-      var tipoVal = tipo.value; // "quebra" ou "soma"
-      var tqObj = _dadosTanques && _dadosTanques.find(function(t){ return t.id === _zeradoTqId; });
-      // Verificar trava "Quebra Beer Sales" apenas para a opção "quebra"
-      if (tipoVal === "quebra" && tqObj && tqObj.brassadoId && tqObj.brassadoSem) {
-        var quebraMarcada = false;
-        try {
-          var rProg = await api("/api/prog?semana="+encodeURIComponent(tqObj.brassadoSem));
-          var itBrass = (rProg.itens||[]).find(function(x){ return x.id === tqObj.brassadoId; });
-          if (itBrass && itBrass.checks && itBrass.checks.quebraBeerSales) quebraMarcada = true;
-        } catch(e){ quebraMarcada = true; }
-        if (!quebraMarcada) {
-          toast("⚠️ Marque \"📋 Quebra Beer Sales\" na programação antes de zerar.","erro");
-          $("modalZeradoConfirm").hidden = true;
-          return;
-        }
-      }
-      try {
-        // Montar snapshot
-        var snapshot = null;
-        if (tqObj && tqObj.lote) {
-          var nomeUp = tqObj.nome.toUpperCase().replace(/[-\s]/g,"");
-          var todosBarril = barrisPorTanque[nomeUp] || [];
-          var regsBarril = todosBarril.filter(function(r){ return r.lote && r.lote === tqObj.lote; });
-          var litBarris = regsBarril.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
-          var loteUpZ = (tqObj.lote||"").trim().toUpperCase();
-          var regsPetZ = (tqObj.historico||[]).filter(function(m){
-            return m.tipo === "envase" && (m.lote||"").trim().toUpperCase() === loteUpZ;
-          });
-          var volInicial = parseFloat(tqObj.volume) || 0;
-          var saidoPETZ = regsPetZ.reduce(function(s, m){
-            if (m.litrosUsadosPET) return s + parseFloat(m.litrosUsadosPET);
-            return s + (parseInt(m.qtd)||0) * (LITROS_FORMATO[m.formato]||0);
-          }, 0);
-          var totalEnvasadoZ = litBarris + saidoPETZ;
-          var quebraTanque, somaLitragemBeerSales;
-          if (tipoVal === "soma") {
-            // Maior rendimento: não há quebra, registra volume real envasado
-            quebraTanque = 0;
-            somaLitragemBeerSales = true;
-          } else {
-            // Quebra normal
-            quebraTanque = Math.max(0, volInicial - totalEnvasadoZ);
-            somaLitragemBeerSales = false;
-          }
-          var litPetConsumido = Math.max(0, saidoPETZ);
-          snapshot = {
-            lote:                    tqObj.lote,
-            estilo:                  tqObj.estilo      || "",
-            volume:                  tqObj.volume      || "",
-            og:                      tqObj.og          || "",
-            brassadoEm:              tqObj.brassadoEm  || "",
-            brassadoSem:             tqObj.brassadoSem || "",
-            barris:                  regsBarril,
-            litBarris:               litBarris   || 0,
-            litPet:                  litPetConsumido || 0,
-            quebraTanque:            quebraTanque,
-            somaLitragemBeerSales:   somaLitragemBeerSales,
-            totalEnvasado:           totalEnvasadoZ,
-            encasePet:               regsPetZ,
-          };
-        }
-        await api("/api/tanques",{method:"POST",body:{acao:"marcarZerado",tanqueId:_zeradoTqId,snapshot:snapshot,tipoFechamento:tipoVal}});
-        $("modalZeradoConfirm").hidden = true;
-        var msgZerado = (tqObj ? tqObj.nome : _zeradoTqId)+" zerado ✅";
-        if (tipoVal === "soma" && snapshot) {
-          msgZerado += " | Soma Litragem: "+fmtNum(Math.round(snapshot.totalEnvasado))+" L envasados";
-        } else if (snapshot && snapshot.quebraTanque !== null && snapshot.quebraTanque > 0) {
-          msgZerado += " | Quebra: "+fmtNum(snapshot.quebraTanque)+" L";
-        }
-        toast(msgZerado,"ok");
-        if (window._invalidarCacheLotes) _invalidarCacheLotes();
-        carregarTanques();
-      } catch(e){ toast(e.message,"erro"); }
-    });
-
     $("tanquesLista").querySelectorAll("[data-tq-desfazer]").forEach(function(btn){
       btn.addEventListener("click", async function(){
         if (!confirm("Desfazer o zerado do "+btn.dataset.tqNome+"?\nO tanque voltará ao estado anterior e o registro será removido do histórico.")) return;
@@ -10747,6 +10665,105 @@ async function carregarTanques(){
     $("tanquesLista").innerHTML = "<div class='vazio'>"+esc(e.message)+"</div>";
   }
 }
+
+// ── Modal "Tanque zerado" — listeners estáticos (fora de carregarTanques) ──────
+var _zeradoTqId = null;
+function _calcTotalEnvasado(tqObj) {
+  if (!tqObj) return 0;
+  var nomeUpV = tqObj.nome.toUpperCase().replace(/[-\s]/g,"");
+  var barrilsLote = (barrisPorTanque[nomeUpV]||[]).filter(function(r){
+    if (!r.lote || !tqObj.lote) return false;
+    var rl = r.lote.trim().toUpperCase();
+    var tl = tqObj.lote.trim().toUpperCase();
+    return rl === tl || tl.startsWith(rl);
+  });
+  var loteUp = (tqObj.lote||"").trim().toUpperCase();
+  var envasesPET = (tqObj.historico||[]).filter(function(m){
+    return m.tipo==="envase" && (m.lote||"").trim().toUpperCase()===loteUp && m.qtd;
+  });
+  var saidoPET = envasesPET.reduce(function(s, m){
+    if (m.litrosUsadosPET) return s + parseFloat(m.litrosUsadosPET);
+    return s + (parseInt(m.qtd)||0) * (LITROS_FORMATO[m.formato]||0);
+  }, 0);
+  var saidoBarril = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
+  return saidoPET + saidoBarril;
+}
+$("btnCancelarZerado").addEventListener("click", function(){ $("modalZeradoConfirm").hidden = true; });
+$("btnConfirmarZerado").addEventListener("click", async function(){
+  var tipo = document.querySelector("input[name='zeradoTipo']:checked");
+  if (!tipo) { toast("Selecione como o tanque fechou.","aviso"); return; }
+  var tipoVal = tipo.value; // "quebra" ou "soma"
+  var tqObj = _dadosTanques && _dadosTanques.find(function(t){ return t.id === _zeradoTqId; });
+  // Verificar trava "Quebra Beer Sales" apenas para a opção "quebra"
+  if (tipoVal === "quebra" && tqObj && tqObj.brassadoId && tqObj.brassadoSem) {
+    var quebraMarcada = false;
+    try {
+      var rProg = await api("/api/prog?semana="+encodeURIComponent(tqObj.brassadoSem));
+      var itBrass = (rProg.itens||[]).find(function(x){ return x.id === tqObj.brassadoId; });
+      if (itBrass && itBrass.checks && itBrass.checks.quebraBeerSales) quebraMarcada = true;
+    } catch(e){ quebraMarcada = true; }
+    if (!quebraMarcada) {
+      toast("⚠️ Marque \"📋 Quebra Beer Sales\" na programação antes de zerar.","erro");
+      $("modalZeradoConfirm").hidden = true;
+      return;
+    }
+  }
+  try {
+    // Montar snapshot
+    var snapshot = null;
+    if (tqObj && tqObj.lote) {
+      var nomeUp = tqObj.nome.toUpperCase().replace(/[-\s]/g,"");
+      var todosBarril = barrisPorTanque[nomeUp] || [];
+      var regsBarril = todosBarril.filter(function(r){ return r.lote && r.lote === tqObj.lote; });
+      var litBarris = regsBarril.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
+      var loteUpZ = (tqObj.lote||"").trim().toUpperCase();
+      var regsPetZ = (tqObj.historico||[]).filter(function(m){
+        return m.tipo === "envase" && (m.lote||"").trim().toUpperCase() === loteUpZ;
+      });
+      var volInicial = parseFloat(tqObj.volume) || 0;
+      var saidoPETZ = regsPetZ.reduce(function(s, m){
+        if (m.litrosUsadosPET) return s + parseFloat(m.litrosUsadosPET);
+        return s + (parseInt(m.qtd)||0) * (LITROS_FORMATO[m.formato]||0);
+      }, 0);
+      var totalEnvasadoZ = litBarris + saidoPETZ;
+      var quebraTanque, somaLitragemBeerSales;
+      if (tipoVal === "soma") {
+        quebraTanque = 0;
+        somaLitragemBeerSales = true;
+      } else {
+        quebraTanque = Math.max(0, volInicial - totalEnvasadoZ);
+        somaLitragemBeerSales = false;
+      }
+      var litPetConsumido = Math.max(0, saidoPETZ);
+      snapshot = {
+        lote:                    tqObj.lote,
+        estilo:                  tqObj.estilo      || "",
+        volume:                  tqObj.volume      || "",
+        og:                      tqObj.og          || "",
+        brassadoEm:              tqObj.brassadoEm  || "",
+        brassadoSem:             tqObj.brassadoSem || "",
+        barris:                  regsBarril,
+        litBarris:               litBarris   || 0,
+        litPet:                  litPetConsumido || 0,
+        quebraTanque:            quebraTanque,
+        somaLitragemBeerSales:   somaLitragemBeerSales,
+        totalEnvasado:           totalEnvasadoZ,
+        encasePet:               regsPetZ,
+      };
+    }
+    await api("/api/tanques",{method:"POST",body:{acao:"marcarZerado",tanqueId:_zeradoTqId,snapshot:snapshot,tipoFechamento:tipoVal}});
+    $("modalZeradoConfirm").hidden = true;
+    var msgZerado = (tqObj ? tqObj.nome : _zeradoTqId)+" zerado ✅";
+    if (tipoVal === "soma" && snapshot) {
+      msgZerado += " | Soma Litragem: "+fmtNum(Math.round(snapshot.totalEnvasado))+" L envasados";
+    } else if (snapshot && snapshot.quebraTanque !== null && snapshot.quebraTanque > 0) {
+      msgZerado += " | Quebra: "+fmtNum(snapshot.quebraTanque)+" L";
+    }
+    toast(msgZerado,"ok");
+    if (window._invalidarCacheLotes) _invalidarCacheLotes();
+    carregarTanques();
+  } catch(e){ toast(e.message,"erro"); }
+});
 
 // Modal de observação
 $("btnSalvarObsTanque").addEventListener("click", async function(){
