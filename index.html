@@ -2487,32 +2487,35 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         </div>
       </section>
 
-      <!-- modal de volume extra de tanque -->
-      <div class="modal-overlay" id="modalVolExTanque" hidden>
-        <div class="modal-box" style="max-width:380px">
-          <div class="modal-titulo">➕ Adicionar volume extra — <span id="modalVolExNome"></span></div>
-          <div style="font-size:.82rem;color:var(--muted);margin-bottom:12px">
-            Use quando a produção rendeu mais do que o volume registrado e o tanque comportou esse excedente.
-            <span id="modalVolExAtual" style="display:block;margin-top:6px;font-weight:700;color:var(--ink)"></span>
+      <!-- modal de confirmação de zerado (Quebra vs Soma Litragem) -->
+      <div class="modal-overlay" id="modalZeradoConfirm" hidden>
+        <div class="modal-box" style="max-width:400px">
+          <div class="modal-titulo">🫙 Zerar tanque — <span id="modalZeradoNome"></span></div>
+          <div style="font-size:.83rem;color:var(--muted);margin-bottom:14px">
+            Como o volume do tanque fechou em relação ao cadastrado?
           </div>
-          <div style="margin-bottom:14px">
-            <label style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Volume a adicionar (L)</label>
-            <input type="number" id="modalVolExQtd" min="1" step="1" placeholder="ex: 300"
-              style="width:100%;padding:9px 12px;border:1.5px solid var(--linha);border-radius:8px;font-size:1rem;box-sizing:border-box;color:var(--ink);background:var(--card)">
-          </div>
-          <div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px 12px;margin-bottom:14px">
-            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
-              <input type="checkbox" id="modalVolExBeersales" style="margin-top:2px;width:16px;height:16px;flex-shrink:0">
-              <span style="font-size:.85rem;font-weight:600;color:#92400E;line-height:1.4">
-                ✅ Confirmei que o volume extra já foi adicionado no BeerSales
-                <span style="display:block;font-weight:400;font-size:.78rem;margin-top:2px;color:#B45309">Obrigatório para prosseguir</span>
+          <!-- resumo volumes -->
+          <div id="modalZeradoResumo" style="background:var(--linha-bg,#f3f4f6);border-radius:8px;padding:10px 13px;margin-bottom:16px;font-size:.82rem;line-height:1.7"></div>
+          <!-- opções -->
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
+            <label id="labelQuebraBS" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:9px;padding:11px 13px">
+              <input type="radio" name="zeradoTipo" value="quebra" id="radioQuebraBS" style="margin-top:2px;width:16px;height:16px;flex-shrink:0;accent-color:#DC2626">
+              <span>
+                <span style="font-weight:700;font-size:.88rem;color:#DC2626;display:block">📋 Quebra BeerSales</span>
+                <span style="font-size:.78rem;color:#991B1B;line-height:1.4;display:block;margin-top:2px">Saiu <b>menos</b> do que o esperado — há quebra de produção. O volume cadastrado é o referencial.</span>
+              </span>
+            </label>
+            <label id="labelSomaBS" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:9px;padding:11px 13px">
+              <input type="radio" name="zeradoTipo" value="soma" id="radioSomaBS" style="margin-top:2px;width:16px;height:16px;flex-shrink:0;accent-color:#16A34A">
+              <span>
+                <span style="font-weight:700;font-size:.88rem;color:#16A34A;display:block">➕ Soma Litragem BeerSales</span>
+                <span style="font-size:.78rem;color:#15803D;line-height:1.4;display:block;margin-top:2px">Saiu <b>mais</b> do que o cadastrado — maior rendimento. O volume real envasado será registrado.</span>
               </span>
             </label>
           </div>
-          <div id="modalVolExLog" style="display:none;margin-bottom:12px;font-size:.75rem;color:var(--muted)"></div>
           <div class="btn-linha">
-            <button class="btn mini" id="btnSalvarVolEx">Salvar</button>
-            <button class="btn mini secundario" id="btnCancelarVolEx">Cancelar</button>
+            <button class="btn mini" id="btnConfirmarZerado">Confirmar zerado</button>
+            <button class="btn mini secundario" id="btnCancelarZerado">Cancelar</button>
           </div>
         </div>
       </div>
@@ -3694,7 +3697,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.91";
+var VERSAO = "3.7.92";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10048,12 +10051,11 @@ async function carregarTanques(){
           "<div style='font-size:.73rem;display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px'>"+
             (tq.lote   ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>"+esc(tq.lote)+"</span>" : "")+
             (tq.volume ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>"+esc(tq.volume)+" L</span>" : "")+
-            (tq.volExtra ? "<span style='background:#DBEAFE;border:1px solid #BFDBFE;border-radius:4px;padding:1px 6px;color:#1D4ED8;font-weight:600;font-size:.72rem' title='Volume extra adicionado'>+"+fmtNum(tq.volExtra)+" L extra</span>" : "")+
             (tq.og     ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>OG "+esc(tq.og)+"</span>" : "")+
           "</div>"+
           // ── Visor de nível do tanque ──────────────────────────────
           (function(){
-            var volTotal = (parseFloat(tq.volume) || parseFloat(tq.capacidade) || 0) + (parseFloat(tq.volExtra) || 0);
+            var volTotal = parseFloat(tq.volume) || parseFloat(tq.capacidade) || 0;
             if (!volTotal) return "";
             // litros saídos = soma dos barrils + soma dos PETs do lote atual
             var nomeUpV = tq.nome.toUpperCase().replace(/[-\s]/g,"");
@@ -10069,27 +10071,33 @@ async function carregarTanques(){
             var todosEnvasesPET = (tq.historico||[]).filter(function(m){
               return m.tipo==="envase" && (m.lote||"").trim().toUpperCase()===loteAtualV && m.qtd;
             });
-            var litRestantes;
+            var saidoPET = 0, saidoBarril = 0;
             if (todosEnvasesPET.length) {
-              // Soma litros consumidos de todos os envases PET do lote
-              var saidoPETTotal = todosEnvasesPET.reduce(function(s, m){
-                // Preferência: litrosUsadosPET salvo (calculado no backend com excedente)
+              saidoPET = todosEnvasesPET.reduce(function(s, m){
                 if (m.litrosUsadosPET) return s + parseFloat(m.litrosUsadosPET);
-                // Fallback: qtd × capacidade nominal do formato (sem excedente — dados antigos)
                 var qtdN = parseInt(m.qtd) || 0;
                 var capN = LITROS_FORMATO[m.formato] || 0;
                 return s + qtdN * capN;
               }, 0);
-              // Soma barris do lote
-              var saidoBarrilTotal = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
-              litRestantes = Math.max(0, volTotal - saidoPETTotal - saidoBarrilTotal);
+              saidoBarril = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
             } else {
-              // Sem registro PET: volume total menos todos os barris do lote
-              var saidoBarril = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
-              litRestantes = Math.max(0, volTotal - saidoBarril);
+              saidoBarril = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
             }
+            var totalEnvasado = saidoPET + saidoBarril;
+            // guarda no objeto para o modal de zerado usar
+            tq._totalEnvasado = totalEnvasado;
+            tq._saldoEnvasado = totalEnvasado - volTotal; // positivo = acima do cadastro
+
+            var litRestantes = Math.max(0, volTotal - totalEnvasado);
             var pct = Math.min(100, Math.max(0, Math.round(litRestantes / volTotal * 100)));
             var corNivel = pct > 50 ? "#22C55E" : pct > 25 ? "#F59E0B" : "#EF4444";
+            // Badge de saldo acima do cadastro
+            var badgeSaldo = (tq._saldoEnvasado > 0.5)
+              ? "<div style='margin-top:4px;display:flex;align-items:center;gap:6px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;color:#92400E'>"+
+                  "⚠️ +"+fmtNum(Math.round(tq._saldoEnvasado))+" L acima do cadastrado"+
+                  "<span style='font-weight:400;color:#B45309;font-size:.7rem'>(total envasado: "+fmtNum(Math.round(totalEnvasado))+" L)</span>"+
+                "</div>"
+              : "";
             return "<div style='margin-bottom:6px'>"+
               "<div style='display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px'>"+
                 "<span style='font-size:.65rem;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.04em'>Nível estimado</span>"+
@@ -10098,6 +10106,7 @@ async function carregarTanques(){
               "<div style='height:7px;background:rgba(0,0,0,.08);border-radius:99px;overflow:hidden'>"+
                 "<div style='height:100%;width:"+pct+"%;background:"+corNivel+";border-radius:99px;transition:width .5s'></div>"+
               "</div>"+
+              badgeSaldo+
             "</div>";
           })()+
           (tq.brassadoId && tq.brassadoSem ? "<button data-brass-nav-sem='"+esc(tq.brassadoSem)+"' data-brass-nav-id='"+esc(tq.brassadoId)+"' "+
@@ -10340,11 +10349,6 @@ async function carregarTanques(){
             ? "<button class='tq-btn' style='background:#7C3AED;color:#fff;border-color:#7C3AED' "+
                 "data-tq-zerado='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>🫙 Tanque zerado</button>"
             : "")+
-          (!eLivre && !eBrassagem
-            ? "<button class='tq-btn' style='background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE' "+
-                "data-tq-volex='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"' "+
-                "data-tq-volex-atual='"+(tq.volExtra||0)+"'>➕ Vol. extra</button>"
-            : "")+
           (temOverride
             ? "<button class='tq-btn' data-tq-auto='"+esc(tq.id)+"'>⟲ Automático</button>"
             : "")+
@@ -10522,61 +10526,6 @@ async function carregarTanques(){
       });
     });
 
-    // ── Botão volume extra ─────────────────────────────────────────
-    var _volExTqId = null;
-    $("tanquesLista").querySelectorAll("[data-tq-volex]").forEach(function(btn){
-      btn.addEventListener("click", function(){
-        _volExTqId = btn.dataset.tqVolex;
-        $("modalVolExNome").textContent = btn.dataset.tqNome;
-        var atual = parseFloat(btn.dataset.tqVolexAtual) || 0;
-        $("modalVolExAtual").textContent = atual > 0 ? "Volume extra já registrado: "+fmtNum(atual)+" L" : "";
-        $("modalVolExQtd").value = "";
-        $("modalVolExBeersales").checked = false;
-        // log de adições anteriores
-        var tqObj = _dadosTanques && _dadosTanques.find(function(t){ return t.id === _volExTqId; });
-        var logEl = $("modalVolExLog");
-        if (tqObj && tqObj.volExtraLog && tqObj.volExtraLog.length) {
-          var linhas = tqObj.volExtraLog.map(function(e, i){
-            var dt = e.em ? new Date(e.em) : null;
-            var dtStr = dt ? (("0"+dt.getDate()).slice(-2)+"/"+("0"+(dt.getMonth()+1)).slice(-2)+" "+("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2)) : "—";
-            var btnDesfazer = "<button onclick=\"_desfazerVolEx("+i+")\" style=\"margin-left:6px;font-size:.7rem;padding:1px 7px;border:1px solid #FCA5A5;border-radius:5px;background:#FEF2F2;color:#DC2626;cursor:pointer;vertical-align:middle;font-weight:600\">↩ Desfazer</button>";
-            return "<div style='display:flex;align-items:center;gap:4px;margin-bottom:3px'>• +"+fmtNum(e.vol)+" L em "+dtStr+" por "+e.por+(e.beersales?" ✅":"")+" "+btnDesfazer+"</div>";
-          }).join("");
-          logEl.innerHTML = "<b style='display:block;margin-bottom:5px'>Adições anteriores:</b>"+linhas;
-          logEl.style.display = "block";
-        } else {
-          logEl.style.display = "none";
-        }
-        $("modalVolExTanque").hidden = false;
-        setTimeout(function(){ $("modalVolExQtd").focus(); }, 50);
-      });
-    });
-    $("btnCancelarVolEx").addEventListener("click", function(){ $("modalVolExTanque").hidden = true; });
-    $("btnSalvarVolEx").addEventListener("click", async function(){
-      var vol = parseFloat($("modalVolExQtd").value);
-      if (!vol || vol <= 0) { toast("Informe o volume a adicionar.","aviso"); return; }
-      if (!$("modalVolExBeersales").checked) { toast("Confirme que o volume foi adicionado no BeerSales antes de prosseguir.","aviso"); return; }
-      try{
-        await api("/api/tanques",{method:"POST",body:{acao:"adicionarVolume",tanqueId:_volExTqId,volExtra:vol,beersalesConfirmado:true}});
-        $("modalVolExTanque").hidden = true;
-        toast("Volume extra de "+fmtNum(vol)+" L adicionado com sucesso! ➕","ok");
-        carregarTanques();
-      }catch(e){ toast(e.message,"erro"); }
-    });
-    window._desfazerVolEx = async function(indice) {
-      var tqObj = _dadosTanques && _dadosTanques.find(function(t){ return t.id === _volExTqId; });
-      var entrada = tqObj && tqObj.volExtraLog && tqObj.volExtraLog[indice];
-      if (!entrada) return;
-      var dt = entrada.em ? new Date(entrada.em) : null;
-      var dtStr = dt ? (("0"+dt.getDate()).slice(-2)+"/"+("0"+(dt.getMonth()+1)).slice(-2)+" "+("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2)) : "";
-      if (!confirm("Desfazer adição de "+fmtNum(entrada.vol)+" L"+(dtStr?" ("+dtStr+")":" ")+" por "+entrada.por+"?\n\nLembre-se de ajustar também no BeerSales.")) return;
-      try{
-        await api("/api/tanques",{method:"POST",body:{acao:"desfazerVolume",tanqueId:_volExTqId,indice:indice}});
-        toast("Adição de "+fmtNum(entrada.vol)+" L desfeita. Ajuste também no BeerSales! ↩","ok");
-        $("modalVolExTanque").hidden = true;
-        carregarTanques();
-      }catch(e){ toast(e.message,"erro"); }
-    };
 
     $("tanquesLista").querySelectorAll("[data-tq-pronto]").forEach(function(btn){
       btn.addEventListener("click", async function(){
@@ -10589,89 +10538,116 @@ async function carregarTanques(){
       });
     });
 
+    // ── Botão "Tanque zerado" → abre modal de confirmação ────────────
+    var _zeradoTqId = null;
     $("tanquesLista").querySelectorAll("[data-tq-zerado]").forEach(function(btn){
       btn.addEventListener("click", async function(){
         var tqId = btn.dataset.tqZerado;
-        // --- Verificar trava: Quebra Beer Sales precisa estar marcado ---
         var tqObj = _dadosTanques && _dadosTanques.find(function(t){ return t.id === tqId; });
-        if (tqObj && tqObj.brassadoId && tqObj.brassadoSem) {
-          var quebraMarcada = false;
-          try {
-            var rProg = await api("/api/prog?semana="+encodeURIComponent(tqObj.brassadoSem));
-            var itBrass = (rProg.itens||[]).find(function(x){ return x.id === tqObj.brassadoId; });
-            if (itBrass && itBrass.checks && itBrass.checks.quebraBeerSales) quebraMarcada = true;
-          } catch(e){ /* se falhar, permite prosseguir */ quebraMarcada = true; }
-          if (!quebraMarcada) {
-            toast("⚠️ Marque \"📋 Quebra Beer Sales\" na programação antes de zerar o tanque.", "erro");
-            return;
-          }
+        // Trava: Quebra Beer Sales precisa estar marcado (a não ser que venha pela opção "soma")
+        // A verificação real fica no confirm — aqui só checamos para mostrar aviso antecipado
+        _zeradoTqId = tqId;
+        // Preencher resumo no modal
+        var volCad = parseFloat(tqObj && tqObj.volume) || 0;
+        var totalEnv = (tqObj && tqObj._totalEnvasado) || 0;
+        var saldo = totalEnv - volCad;
+        var resumoHtml =
+          "<div style='display:flex;justify-content:space-between;margin-bottom:3px'><span style='color:#6B7280'>Volume cadastrado</span><b>"+fmtNum(volCad)+" L</b></div>"+
+          "<div style='display:flex;justify-content:space-between;margin-bottom:3px'><span style='color:#6B7280'>Total envasado</span><b>"+fmtNum(Math.round(totalEnv))+" L</b></div>"+
+          "<div style='display:flex;justify-content:space-between;padding-top:5px;border-top:1px solid rgba(0,0,0,.1);margin-top:3px'>"+
+            "<span style='color:#6B7280'>Saldo</span>"+
+            "<b style='color:"+(saldo > 0.5 ? "#16A34A" : saldo < -0.5 ? "#DC2626" : "#374151")+"'>"+
+              (saldo > 0.5 ? "+" : "")+fmtNum(Math.round(saldo))+" L"+
+            "</b>"+
+          "</div>";
+        $("modalZeradoResumo").innerHTML = resumoHtml;
+        $("modalZeradoNome").textContent = btn.dataset.tqNome;
+        // pré-selecionar a opção mais provável
+        if (saldo > 0.5) {
+          $("radioSomaBS").checked = true;
+        } else {
+          $("radioQuebraBS").checked = true;
         }
-        if (!confirm("Confirmar que o "+btn.dataset.tqNome+" foi zerado (esvaziado)?")) return;
-        try{
-          // Montar snapshot completo do lote atual para o histórico
-          var snapshot = null;
-          var tqId = btn.dataset.tqZerado;
-          if (_dadosTanques) {
-            var tqObj = _dadosTanques.find(function(t){ return t.id === tqId; });
-            if (tqObj && tqObj.lote) {
-              // Coletar barris do lote atual
-              var nomeUp = tqObj.nome.toUpperCase().replace(/[-\s]/g,"");
-              var todosBarril = barrisPorTanque[nomeUp] || [];
-              var regsBarril = todosBarril.filter(function(r){ return r.lote && r.lote === tqObj.lote; });
-              // Calcular litros saídos em barris
-              var litBarris = regsBarril.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
-              // PETs do lote atual
-              var loteUpZ = (tqObj.lote||"").trim().toUpperCase();
-              var regsPetZ = (tqObj.historico||[]).filter(function(m){
-                return m.tipo === "envase" &&
-                  (m.lote||"").trim().toUpperCase() === loteUpZ;
-              });
-              // Calcula litros restantes com a mesma lógica do display (nível estimado)
-              // A régua NÃO é usada — consumo PET = qtd × (capacidade + excesso)
-              var volInicial = parseFloat(tqObj.volume) || 0;
-              var quebraTanque = null;
-              (function(){
-                var litRestantes;
-                if (regsPetZ.length) {
-                  var saidoPETZ = regsPetZ.reduce(function(s, m){
-                    if (m.litrosUsadosPET) return s + parseFloat(m.litrosUsadosPET);
-                    var qtdN = parseInt(m.qtd) || 0;
-                    var capN = LITROS_FORMATO[m.formato] || 0;
-                    return s + qtdN * capN;
-                  }, 0);
-                  litRestantes = Math.max(0, volInicial - saidoPETZ - litBarris);
-                } else {
-                  litRestantes = Math.max(0, volInicial - litBarris);
-                }
-                quebraTanque = volInicial > 0 ? litRestantes : null;
-              })();
-              // Para exibição no histórico: litPet estimado = volInicial - litBarris - quebra
-              var litPetConsumido = quebraTanque !== null ? Math.max(0, volInicial - litBarris - quebraTanque) : 0;
-              snapshot = {
-                lote:           tqObj.lote,
-                estilo:         tqObj.estilo      || "",
-                volume:         tqObj.volume      || "",
-                og:             tqObj.og          || "",
-                brassadoEm:     tqObj.brassadoEm  || "",
-                brassadoSem:    tqObj.brassadoSem || "",
-                barris:         regsBarril,
-                litBarris:      litBarris   || 0,
-                litPet:         litPetConsumido || 0,
-                quebraTanque:   quebraTanque,
-                encasePet:      regsPetZ,
-              };
-            }
-          }
-          await api("/api/tanques",{method:"POST",body:{acao:"marcarZerado",tanqueId:tqId,snapshot:snapshot}});
-          var msgZerado = btn.dataset.tqNome+" zerado — disponível para nova brassagem! ✅";
-          if (snapshot && snapshot.quebraTanque !== null && snapshot.quebraTanque !== undefined) {
-            msgZerado += " | Quebra: "+fmtNum(snapshot.quebraTanque)+" L";
-          }
-          toast(msgZerado,"ok");
-          if (window._invalidarCacheLotes) _invalidarCacheLotes();
-          carregarTanques();
-        }catch(e){ toast(e.message,"erro"); }
+        $("modalZeradoConfirm").hidden = false;
       });
+    });
+    $("btnCancelarZerado").addEventListener("click", function(){ $("modalZeradoConfirm").hidden = true; });
+    $("btnConfirmarZerado").addEventListener("click", async function(){
+      var tipo = document.querySelector("input[name='zeradoTipo']:checked");
+      if (!tipo) { toast("Selecione como o tanque fechou.","aviso"); return; }
+      var tipoVal = tipo.value; // "quebra" ou "soma"
+      var tqObj = _dadosTanques && _dadosTanques.find(function(t){ return t.id === _zeradoTqId; });
+      // Verificar trava "Quebra Beer Sales" apenas para a opção "quebra"
+      if (tipoVal === "quebra" && tqObj && tqObj.brassadoId && tqObj.brassadoSem) {
+        var quebraMarcada = false;
+        try {
+          var rProg = await api("/api/prog?semana="+encodeURIComponent(tqObj.brassadoSem));
+          var itBrass = (rProg.itens||[]).find(function(x){ return x.id === tqObj.brassadoId; });
+          if (itBrass && itBrass.checks && itBrass.checks.quebraBeerSales) quebraMarcada = true;
+        } catch(e){ quebraMarcada = true; }
+        if (!quebraMarcada) {
+          toast("⚠️ Marque \"📋 Quebra Beer Sales\" na programação antes de zerar.","erro");
+          $("modalZeradoConfirm").hidden = true;
+          return;
+        }
+      }
+      try {
+        // Montar snapshot
+        var snapshot = null;
+        if (tqObj && tqObj.lote) {
+          var nomeUp = tqObj.nome.toUpperCase().replace(/[-\s]/g,"");
+          var todosBarril = barrisPorTanque[nomeUp] || [];
+          var regsBarril = todosBarril.filter(function(r){ return r.lote && r.lote === tqObj.lote; });
+          var litBarris = regsBarril.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
+          var loteUpZ = (tqObj.lote||"").trim().toUpperCase();
+          var regsPetZ = (tqObj.historico||[]).filter(function(m){
+            return m.tipo === "envase" && (m.lote||"").trim().toUpperCase() === loteUpZ;
+          });
+          var volInicial = parseFloat(tqObj.volume) || 0;
+          var saidoPETZ = regsPetZ.reduce(function(s, m){
+            if (m.litrosUsadosPET) return s + parseFloat(m.litrosUsadosPET);
+            return s + (parseInt(m.qtd)||0) * (LITROS_FORMATO[m.formato]||0);
+          }, 0);
+          var totalEnvasadoZ = litBarris + saidoPETZ;
+          var quebraTanque, somaLitragemBeerSales;
+          if (tipoVal === "soma") {
+            // Maior rendimento: não há quebra, registra volume real envasado
+            quebraTanque = 0;
+            somaLitragemBeerSales = true;
+          } else {
+            // Quebra normal
+            quebraTanque = Math.max(0, volInicial - totalEnvasadoZ);
+            somaLitragemBeerSales = false;
+          }
+          var litPetConsumido = Math.max(0, saidoPETZ);
+          snapshot = {
+            lote:                    tqObj.lote,
+            estilo:                  tqObj.estilo      || "",
+            volume:                  tqObj.volume      || "",
+            og:                      tqObj.og          || "",
+            brassadoEm:              tqObj.brassadoEm  || "",
+            brassadoSem:             tqObj.brassadoSem || "",
+            barris:                  regsBarril,
+            litBarris:               litBarris   || 0,
+            litPet:                  litPetConsumido || 0,
+            quebraTanque:            quebraTanque,
+            somaLitragemBeerSales:   somaLitragemBeerSales,
+            totalEnvasado:           totalEnvasadoZ,
+            encasePet:               regsPetZ,
+          };
+        }
+        await api("/api/tanques",{method:"POST",body:{acao:"marcarZerado",tanqueId:_zeradoTqId,snapshot:snapshot,tipoFechamento:tipoVal}});
+        $("modalZeradoConfirm").hidden = true;
+        var msgZerado = (tqObj ? tqObj.nome : _zeradoTqId)+" zerado ✅";
+        if (tipoVal === "soma" && snapshot) {
+          msgZerado += " | Soma Litragem: "+fmtNum(Math.round(snapshot.totalEnvasado))+" L envasados";
+        } else if (snapshot && snapshot.quebraTanque !== null && snapshot.quebraTanque > 0) {
+          msgZerado += " | Quebra: "+fmtNum(snapshot.quebraTanque)+" L";
+        }
+        toast(msgZerado,"ok");
+        if (window._invalidarCacheLotes) _invalidarCacheLotes();
+        carregarTanques();
+      } catch(e){ toast(e.message,"erro"); }
     });
 
     $("tanquesLista").querySelectorAll("[data-tq-desfazer]").forEach(function(btn){
@@ -10820,8 +10796,7 @@ $("btnAuditoriaTanques").addEventListener("click", async function(){
       marcarZerado:    { label: "Zerado",              cor: "#DC2626", bg: "#FEF2F2", icone: "🗑" },
       desfazerZerado:  { label: "Desfazer zerado",     cor: "#D97706", bg: "#FFFBEB", icone: "↩" },
       marcarLivre:     { label: "Livre (manual)",       cor: "#2563EB", bg: "#EFF6FF", icone: "✅" },
-      adicionarVolume: { label: "Vol. extra adicionado",cor: "#1D4ED8", bg: "#EFF6FF", icone: "➕" },
-      desfazerVolume:  { label: "Vol. extra desfeito",  cor: "#DC2626", bg: "#FEF2F2", icone: "↩" },
+      somaLitragem:    { label: "Soma Litragem BeerSales", cor: "#16A34A", bg: "#F0FDF4", icone: "➕" },
     };
     var pad = function(n){ return ("0"+n).slice(-2); };
     var fmtISO = function(iso){
@@ -10848,11 +10823,10 @@ $("btnAuditoriaTanques").addEventListener("click", async function(){
       if (a.acao === "desfazerZerado" && a.zeradoEm) {
         det = "Zerado original: "+fmtISO(a.zeradoEm)+(a.zeradoPor ? " por @"+esc(a.zeradoPor) : "");
       }
-      if (a.acao === "adicionarVolume" && a.vol) {
-        det = "+"+fmtNum(a.vol)+" L";
-      }
-      if (a.acao === "desfazerVolume" && a.vol) {
-        det = "Removeu +"+fmtNum(a.vol)+" L"+(a.volOriginalPor ? " (adição de @"+esc(a.volOriginalPor)+(a.volOriginalEm?" em "+fmtISO(a.volOriginalEm):"")+")":"");
+      if (a.acao === "marcarZerado" && a.tipoFechamento === "soma") {
+        det = "Soma Litragem — "+fmtNum(Math.round(a.totalEnvasado||0))+" L envasados";
+      } else if (a.acao === "marcarZerado" && a.quebraTanque !== undefined && a.quebraTanque !== null) {
+        det = "Quebra: "+fmtNum(a.quebraTanque)+" L";
       }
       html += "<tr style='border-top:1px solid var(--linha);background:"+(i%2===0?"transparent":"var(--linha-bg,#f9fafb)")+"'>";
       html += "<td style='padding:6px 8px;white-space:nowrap;color:var(--muted)'>"+fmtISO(a.em)+"</td>";
