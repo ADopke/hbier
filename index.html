@@ -3694,7 +3694,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.90";
+var VERSAO = "3.7.91";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10536,12 +10536,13 @@ async function carregarTanques(){
         var tqObj = _dadosTanques && _dadosTanques.find(function(t){ return t.id === _volExTqId; });
         var logEl = $("modalVolExLog");
         if (tqObj && tqObj.volExtraLog && tqObj.volExtraLog.length) {
-          var linhas = tqObj.volExtraLog.map(function(e){
+          var linhas = tqObj.volExtraLog.map(function(e, i){
             var dt = e.em ? new Date(e.em) : null;
             var dtStr = dt ? (("0"+dt.getDate()).slice(-2)+"/"+("0"+(dt.getMonth()+1)).slice(-2)+" "+("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2)) : "—";
-            return "• +"+fmtNum(e.vol)+" L em "+dtStr+" por "+e.por+(e.beersales?" ✅ BeerSales":"");
-          }).join("<br>");
-          logEl.innerHTML = "<b>Adições anteriores:</b><br>"+linhas;
+            var btnDesfazer = "<button onclick=\"_desfazerVolEx("+i+")\" style=\"margin-left:6px;font-size:.7rem;padding:1px 7px;border:1px solid #FCA5A5;border-radius:5px;background:#FEF2F2;color:#DC2626;cursor:pointer;vertical-align:middle;font-weight:600\">↩ Desfazer</button>";
+            return "<div style='display:flex;align-items:center;gap:4px;margin-bottom:3px'>• +"+fmtNum(e.vol)+" L em "+dtStr+" por "+e.por+(e.beersales?" ✅":"")+" "+btnDesfazer+"</div>";
+          }).join("");
+          logEl.innerHTML = "<b style='display:block;margin-bottom:5px'>Adições anteriores:</b>"+linhas;
           logEl.style.display = "block";
         } else {
           logEl.style.display = "none";
@@ -10562,6 +10563,20 @@ async function carregarTanques(){
         carregarTanques();
       }catch(e){ toast(e.message,"erro"); }
     });
+    window._desfazerVolEx = async function(indice) {
+      var tqObj = _dadosTanques && _dadosTanques.find(function(t){ return t.id === _volExTqId; });
+      var entrada = tqObj && tqObj.volExtraLog && tqObj.volExtraLog[indice];
+      if (!entrada) return;
+      var dt = entrada.em ? new Date(entrada.em) : null;
+      var dtStr = dt ? (("0"+dt.getDate()).slice(-2)+"/"+("0"+(dt.getMonth()+1)).slice(-2)+" "+("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2)) : "";
+      if (!confirm("Desfazer adição de "+fmtNum(entrada.vol)+" L"+(dtStr?" ("+dtStr+")":" ")+" por "+entrada.por+"?\n\nLembre-se de ajustar também no BeerSales.")) return;
+      try{
+        await api("/api/tanques",{method:"POST",body:{acao:"desfazerVolume",tanqueId:_volExTqId,indice:indice}});
+        toast("Adição de "+fmtNum(entrada.vol)+" L desfeita. Ajuste também no BeerSales! ↩","ok");
+        $("modalVolExTanque").hidden = true;
+        carregarTanques();
+      }catch(e){ toast(e.message,"erro"); }
+    };
 
     $("tanquesLista").querySelectorAll("[data-tq-pronto]").forEach(function(btn){
       btn.addEventListener("click", async function(){
@@ -10802,9 +10817,11 @@ $("btnAuditoriaTanques").addEventListener("click", async function(){
       return;
     }
     var NOMES_ACAO = {
-      marcarZerado:    { label: "Zerado",         cor: "#DC2626", bg: "#FEF2F2", icone: "🗑" },
-      desfazerZerado:  { label: "Desfazer zerado", cor: "#D97706", bg: "#FFFBEB", icone: "↩" },
-      marcarLivre:     { label: "Livre (manual)",  cor: "#2563EB", bg: "#EFF6FF", icone: "✅" },
+      marcarZerado:    { label: "Zerado",              cor: "#DC2626", bg: "#FEF2F2", icone: "🗑" },
+      desfazerZerado:  { label: "Desfazer zerado",     cor: "#D97706", bg: "#FFFBEB", icone: "↩" },
+      marcarLivre:     { label: "Livre (manual)",       cor: "#2563EB", bg: "#EFF6FF", icone: "✅" },
+      adicionarVolume: { label: "Vol. extra adicionado",cor: "#1D4ED8", bg: "#EFF6FF", icone: "➕" },
+      desfazerVolume:  { label: "Vol. extra desfeito",  cor: "#DC2626", bg: "#FEF2F2", icone: "↩" },
     };
     var pad = function(n){ return ("0"+n).slice(-2); };
     var fmtISO = function(iso){
@@ -10830,6 +10847,12 @@ $("btnAuditoriaTanques").addEventListener("click", async function(){
       var det = "";
       if (a.acao === "desfazerZerado" && a.zeradoEm) {
         det = "Zerado original: "+fmtISO(a.zeradoEm)+(a.zeradoPor ? " por @"+esc(a.zeradoPor) : "");
+      }
+      if (a.acao === "adicionarVolume" && a.vol) {
+        det = "+"+fmtNum(a.vol)+" L";
+      }
+      if (a.acao === "desfazerVolume" && a.vol) {
+        det = "Removeu +"+fmtNum(a.vol)+" L"+(a.volOriginalPor ? " (adição de @"+esc(a.volOriginalPor)+(a.volOriginalEm?" em "+fmtISO(a.volOriginalEm):"")+")":"");
       }
       html += "<tr style='border-top:1px solid var(--linha);background:"+(i%2===0?"transparent":"var(--linha-bg,#f9fafb)")+"'>";
       html += "<td style='padding:6px 8px;white-space:nowrap;color:var(--muted)'>"+fmtISO(a.em)+"</td>";
