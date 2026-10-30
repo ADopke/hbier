@@ -363,6 +363,8 @@ export default protegido(async function handler(req, res) {
         lote:         ref ? ref.lote   : "",
         estilo:       ref ? ref.estilo : "",
         volume:       ref ? ref.volume : "",
+        volExtra:     mapa[tq.id] ? (parseFloat(mapa[tq.id].volExtra) || 0) : 0,
+        volExtraLog:  mapa[tq.id] ? (mapa[tq.id].volExtraLog || []) : [],
         og:           ref && !brassHoje ? (brass ? brass.og : "") : "",
         diasTanque,
         diasFermentando,
@@ -664,6 +666,34 @@ export default protegido(async function handler(req, res) {
       delete mapa[tanqueId];
       await gravar(CHAVE_MANUAL, mapa);
       return res.json({ ok: true });
+    }
+
+    /* -- adicionarVolume (volume extra por maior rendimento) -- */
+    if (dados.acao === "adicionarVolume") {
+      if (!["admin", "gestor"].includes(sessao.papel))
+        return erro(res, 403, "Apenas admin ou gestor.");
+      const { tanqueId, volExtra, beersalesConfirmado } = dados;
+      if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
+      if (!volExtra || isNaN(parseFloat(volExtra)) || parseFloat(volExtra) <= 0)
+        return erro(res, 400, "Volume inválido.");
+      if (!beersalesConfirmado)
+        return erro(res, 400, "Confirme que o volume foi adicionado no BeerSales.");
+      const agora = new Date().toISOString();
+      const por = sessao.usuario || sessao.login;
+      const mapa = (await ler(CHAVE_MANUAL)) || {};
+      if (!mapa[tanqueId]) mapa[tanqueId] = {};
+      // acumula (pode haver mais de uma adição)
+      const anterior = parseFloat(mapa[tanqueId].volExtra) || 0;
+      mapa[tanqueId].volExtra = anterior + parseFloat(volExtra);
+      mapa[tanqueId].volExtraLog = mapa[tanqueId].volExtraLog || [];
+      mapa[tanqueId].volExtraLog.unshift({ vol: parseFloat(volExtra), por, em: agora, beersales: true });
+      await gravar(CHAVE_MANUAL, mapa);
+      // auditoria
+      const audit = (await ler(CHAVE_AUDIT)) || [];
+      audit.unshift({ acao: "adicionarVolume", tanqueId, vol: parseFloat(volExtra), por, em: agora });
+      if (audit.length > 500) audit.splice(500);
+      await gravar(CHAVE_AUDIT, audit);
+      return res.json({ ok: true, volExtra: mapa[tanqueId].volExtra });
     }
 
     return erro(res, 400, "Ação desconhecida.");
