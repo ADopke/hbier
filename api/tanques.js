@@ -534,17 +534,19 @@ export default protegido(async function handler(req, res) {
     if (dados.acao === "marcarZerado") {
       if (!["admin", "gestor"].includes(sessao.papel))
         return erro(res, 403, "Apenas admin ou gestor.");
-      const { tanqueId, snapshot } = dados;
+      const { tanqueId, snapshot, tipoFechamento } = dados;
       if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
       const agora = new Date().toISOString();
+      const por = sessao.usuario || sessao.login;
 
       // Salvar snapshot do lote encerrado no histórico do tanque
       if (snapshot && snapshot.lote) {
         const hist = (await ler(CHAVE_HIST(tanqueId))) || [];
         hist.unshift({
           ...snapshot,
-          encerradoPor: sessao.usuario || sessao.login,
-          encerradoEm:  agora,
+          tipoFechamento: tipoFechamento || "quebra",
+          encerradoPor:   por,
+          encerradoEm:    agora,
         });
         await gravar(CHAVE_HIST(tanqueId), hist);
       }
@@ -555,18 +557,21 @@ export default protegido(async function handler(req, res) {
         estagioLabel: "Livre (zerado)",
         estagioIcone: "✅",
         zerado:       true,   // flag: sobrepõe brassagens antigas
-        por:          sessao.usuario || sessao.login,
+        por,
         em:           agora,
       };
       await gravar(CHAVE_MANUAL, mapa);
       // Auditoria
       const audit = (await ler(CHAVE_AUDIT)) || [];
       audit.unshift({
-        acao:  "marcarZerado",
+        acao:           "marcarZerado",
         tanqueId,
-        lote:  snapshot?.lote || null,
-        por:   sessao.usuario || sessao.login,
-        em:    agora,
+        lote:           snapshot?.lote || null,
+        tipoFechamento: tipoFechamento || "quebra",
+        totalEnvasado:  snapshot?.totalEnvasado || null,
+        quebraTanque:   snapshot?.quebraTanque ?? null,
+        por,
+        em:             agora,
       });
       if (audit.length > 500) audit.splice(500);
       await gravar(CHAVE_AUDIT, audit);
