@@ -11107,6 +11107,9 @@ function fp_atualizarVolTotalBateladas(){
   var doseL = total > 0 ? Math.round(total * 5 / 100 * 10) / 10 : null;
   var doseLEl = document.getElementById('fp-clearmax-l-dose-ferm');
   if(doseLEl) doseLEl.textContent = doseL !== null ? doseL+' g' : '—';
+  // aviso quando volume não está preenchido
+  var avisoL = document.getElementById('fp-clearmax-l-aviso-vol');
+  if(avisoL) avisoL.hidden = doseL !== null;
   // preenche placeholder do campo qtd Clearmax L
   var qtdLEl = document.getElementById('fp-clearmax-l-qtd');
   if(qtdLEl) qtdLEl.placeholder = doseL !== null ? doseL+' g (dose calculada)' : 'dose calculada';
@@ -11118,12 +11121,12 @@ function fp_confirmarAplic(tipo){
   var hora = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
   var quem = (sessao && sessao.nome) ? sessao.nome : 'Operador';
 
-  // ── Task #53: Volume obrigatório para Clearmax (não para inoculação) ────
-  if (tipo !== 'lev') {
+  // Volume obrigatório apenas para Clearmax Pro (dose depende do volume)
+  if (tipo === 'clearmax') {
     var volEl = document.getElementById('fp-ferm-vol-total');
     var volOk = volEl && volEl.textContent && volEl.textContent.trim() !== '—' && volEl.textContent.trim() !== '';
     if (!volOk) {
-      toast("🚫 Preencha o volume de brassagem nas Bateladas antes de confirmar aplicações.", "aviso");
+      toast("🚫 Preencha o volume de brassagem nas Bateladas antes de confirmar o Clearmax Pro.", "aviso");
       return;
     }
   }
@@ -13314,6 +13317,7 @@ function abrirFichaLote(tq){
         '<div>'+
           '<div class="fp-aplic-info">🧊 Clearmax L — Dose calculada: <span id="fp-clearmax-l-dose-ferm" style="color:var(--fp-marrom);font-size:15px">—</span></div>'+
           '<div style="font-size:11px;color:var(--fp-fg3);margin-top:2px">5 g por hL · clarificante líquido · adicionar na maturação</div>'+
+          '<div id="fp-clearmax-l-aviso-vol" hidden style="margin-top:5px;font-size:11px;color:#B45309;background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;padding:4px 8px">⚠️ Volume das bateladas não preenchido — preencha o volume nas Bateladas para calcular a dose. Você ainda pode confirmar o uso informando a quantidade manualmente.</div>'+
         '</div>'+
         '<button type="button" class="fp-btn-aplic" id="fp-btn-clearmax-l-ferm" onclick="fp_confirmarAplic(\'clearmaxL\')">✅ Confirmar uso</button>'+
         '<div class="fp-aplic-ok pendente" id="fp-clearmax-l-status">'+
