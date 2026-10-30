@@ -3697,7 +3697,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.93";
+var VERSAO = "3.7.94";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9625,6 +9625,7 @@ function badgeTempoTanque(resultado){
    ================================================================== */
 
 var _dadosTanques = null; // cache para exportação
+var barrisPorTanque = {};  // escopo global — populado em carregarTanques(), lido por _calcTotalEnvasado
 
 // Navega para a aba Programação e abre o modal de edição da brassagem
 async function irParaBrassagem(semana, id){
@@ -9921,8 +9922,8 @@ async function carregarTanques(){
     ]);
     _dadosTanques = r.tanques || [];
 
-    // montar mapa: tanqueNorm → lista de registros de barril
-    var barrisPorTanque = {};
+    // montar mapa: tanqueNorm → lista de registros de barril (popula a global)
+    barrisPorTanque = {};
     barrilResps.forEach(function(resp, i){
       var barreis = resp.barreis || {};
       Object.values(barreis).forEach(function(lista){
