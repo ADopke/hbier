@@ -3697,7 +3697,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.94";
+var VERSAO = "3.7.95";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6179,7 +6179,8 @@ function renderChecksLancamento(it, semana){
   var botoes = "";
   if (!isEnvase) botoes += btnCheckProcesso("moagemMalte", "⚙ Moagem Malte");
   if (!isEnvase) botoes += btnCheckProcesso("cipTanque",   "🧹 CIP Tanque");
-  if (!isEnvase) botoes += btnCheckProcesso("quebraBeerSales", "📋 Quebra Beer Sales");
+  if (!isEnvase) botoes += btnCheckProcesso("quebraBeerSales",       "📋 Quebra BeerSales");
+  if (!isEnvase) botoes += btnCheckProcesso("somaLitragemBeerSales", "➕ Soma BeerSales");
   botoes += btnCheckProg("beerSalesProg",   "BeerSales Prog.");
   botoes += btnCheck("lancadoBeerSales",    "BeerSales Conc.");
   if (!isEnvase) botoes += btnCheck("lancadoBeerbo", "Beerbo");
@@ -7048,7 +7049,8 @@ async function carregarProgMensal(){
           var checksHtml="<div class='ddep-checks'>"+
             (isEnvIt?"":chkBtn("moagemMalte","⚙ Moagem Malte","processo"))+
             (isEnvIt?"":chkBtn("cipTanque","🧹 CIP Tanque","processo"))+
-            (isEnvIt?"":chkBtn("quebraBeerSales","📋 Quebra Beer Sales","processo"))+
+            (isEnvIt?"":chkBtn("quebraBeerSales","📋 Quebra BeerSales","processo"))+
+            (isEnvIt?"":chkBtn("somaLitragemBeerSales","➕ Soma BeerSales","processo"))+
             chkBtn("beerSalesProg","BeerSales Prog.","programado")+
             chkBtn("lancadoBeerSales","BeerSales Conc.","marcado")+
             (isEnvIt?"":chkBtn("lancadoBeerbo","Beerbo","marcado"))+
@@ -10754,9 +10756,16 @@ $("btnConfirmarZerado").addEventListener("click", async function(){
     }
     await api("/api/tanques",{method:"POST",body:{acao:"marcarZerado",tanqueId:_zeradoTqId,snapshot:snapshot,tipoFechamento:tipoVal}});
     $("modalZeradoConfirm").hidden = true;
+    // Marcar check automaticamente na programação
+    if (tqObj && tqObj.brassadoId && tqObj.brassadoSem) {
+      var campoCheck = tipoVal === "soma" ? "somaLitragemBeerSales" : "quebraBeerSales";
+      try {
+        await api("/api/prog",{method:"POST",body:{acao:"check",id:tqObj.brassadoId,semana:tqObj.brassadoSem,campo:campoCheck}});
+      } catch(e){ /* silencioso — não bloqueia o zerado */ }
+    }
     var msgZerado = (tqObj ? tqObj.nome : _zeradoTqId)+" zerado ✅";
     if (tipoVal === "soma" && snapshot) {
-      msgZerado += " | Soma Litragem: "+fmtNum(Math.round(snapshot.totalEnvasado))+" L envasados";
+      msgZerado += " | Soma: "+fmtNum(Math.round(snapshot.totalEnvasado))+" L envasados";
     } else if (snapshot && snapshot.quebraTanque !== null && snapshot.quebraTanque > 0) {
       msgZerado += " | Quebra: "+fmtNum(snapshot.quebraTanque)+" L";
     }
@@ -15647,7 +15656,7 @@ async function renderHojePrograma(){
   $("hojeProgResumo").textContent = itens.length+" item(s)";
   sec.hidden = false;
 
-  var FREQ_LABEL_CHECKS = {beerSalesProg:"BeerSales Prog.",lancadoBeerSales:"BeerSales Conc.",lancadoBeerbo:"Beerbo",quebraBeerSales:"Quebra Beer Sales",moagemMalte:"Moagem Malte",cipTanque:"CIP Tanque"};
+  var FREQ_LABEL_CHECKS = {beerSalesProg:"BeerSales Prog.",lancadoBeerSales:"BeerSales Conc.",lancadoBeerbo:"Beerbo",quebraBeerSales:"Quebra BeerSales",somaLitragemBeerSales:"Soma BeerSales",moagemMalte:"Moagem Malte",cipTanque:"CIP Tanque"};
 
   $("hojeProgLista").innerHTML = itens.map(function(it){
     var pc = it.tipo==="brassagem"?"hpp-b":(it.tipo==="envase"?"hpp-e":"hpp-r");
@@ -16159,8 +16168,10 @@ async function abrirModalHistTanque(tanqueId, tanqueNome){
           (brassadoFmt?"<span style='background:#F3F4F6;border-radius:4px;padding:2px 7px;font-size:.72rem;color:#374151'>🗓 brassado "+brassadoFmt+"</span>":"")+
           (encerradoFmt?"<span style='background:#F3F4F6;border-radius:4px;padding:2px 7px;font-size:.72rem;color:#374151'>🫙 zerado "+encerradoFmt+"</span>":"")+
           (lote.encerradoPor?"<span style='background:#F3F4F6;border-radius:4px;padding:2px 7px;font-size:.72rem;color:#374151'>👤 "+esc(lote.encerradoPor)+"</span>":"")+
-          ((lote.quebraTanque!=null&&lote.quebraTanque!==undefined)
-            ?"<span style='background:#FEF2F2;border:1px solid #FECACA;border-radius:4px;padding:2px 7px;font-size:.72rem;color:#991B1B;font-weight:700'>⬇️ quebra "+fmtNum(lote.quebraTanque)+" L</span>":"")+
+          (lote.tipoFechamento==="soma"
+            ?"<span style='background:#F0FDF4;border:1px solid #86EFAC;border-radius:4px;padding:2px 7px;font-size:.72rem;color:#15803D;font-weight:700'>➕ soma "+fmtNum(Math.round((lote.totalEnvasado||0)-(lote.volume||0)))+" L</span>"
+            :(lote.quebraTanque!=null&&lote.quebraTanque!==undefined)
+              ?"<span style='background:#FEF2F2;border:1px solid #FECACA;border-radius:4px;padding:2px 7px;font-size:.72rem;color:#991B1B;font-weight:700'>⬇️ quebra "+fmtNum(lote.quebraTanque)+" L</span>":"")+
         "</div>"+
         // Resumo de volumes se disponível
         ((lote.litBarris||lote.litPet)
@@ -16361,8 +16372,10 @@ async function abrirModalHistTanque(tanqueId, tanqueNome){
             (brassadoFmt?"<span style='background:#F3F4F6;border-radius:4px;padding:2px 6px;font-size:.71rem;color:#374151'>🗓 "+brassadoFmt+"</span>":"")+
             (encerradoFmt?"<span style='background:#F3F4F6;border-radius:4px;padding:2px 6px;font-size:.71rem;color:#374151'>🫙 "+encerradoFmt+"</span>":"")+
             (lote.encerradoPor?"<span style='background:#F3F4F6;border-radius:4px;padding:2px 6px;font-size:.71rem;color:#374151'>👤 "+esc(lote.encerradoPor)+"</span>":"")+
-            ((lote.quebraTanque!=null&&lote.quebraTanque!==undefined)
-              ?"<span style='background:#FEF2F2;border:1px solid #FECACA;border-radius:4px;padding:2px 6px;font-size:.71rem;color:#991B1B;font-weight:700'>⬇️ quebra "+fmtNum(lote.quebraTanque)+" L</span>":"")+
+            (lote.tipoFechamento==="soma"
+              ?"<span style='background:#F0FDF4;border:1px solid #86EFAC;border-radius:4px;padding:2px 6px;font-size:.71rem;color:#15803D;font-weight:700'>➕ soma "+fmtNum(Math.round((lote.totalEnvasado||0)-(lote.volume||0)))+" L</span>"
+              :(lote.quebraTanque!=null&&lote.quebraTanque!==undefined)
+                ?"<span style='background:#FEF2F2;border:1px solid #FECACA;border-radius:4px;padding:2px 6px;font-size:.71rem;color:#991B1B;font-weight:700'>⬇️ quebra "+fmtNum(lote.quebraTanque)+" L</span>":"")+
           "</div>"+
           ((lote.litBarris||lote.litPet)
             ?"<div style='font-size:.68rem;color:#6B7280;margin-bottom:4px;display:flex;gap:8px;flex-wrap:wrap'>"+
