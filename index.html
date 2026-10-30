@@ -2487,6 +2487,36 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         </div>
       </section>
 
+      <!-- modal de volume extra de tanque -->
+      <div class="modal-overlay" id="modalVolExTanque" hidden>
+        <div class="modal-box" style="max-width:380px">
+          <div class="modal-titulo">➕ Adicionar volume extra — <span id="modalVolExNome"></span></div>
+          <div style="font-size:.82rem;color:var(--muted);margin-bottom:12px">
+            Use quando a produção rendeu mais do que o volume registrado e o tanque comportou esse excedente.
+            <span id="modalVolExAtual" style="display:block;margin-top:6px;font-weight:700;color:var(--ink)"></span>
+          </div>
+          <div style="margin-bottom:14px">
+            <label style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Volume a adicionar (L)</label>
+            <input type="number" id="modalVolExQtd" min="1" step="1" placeholder="ex: 300"
+              style="width:100%;padding:9px 12px;border:1.5px solid var(--linha);border-radius:8px;font-size:1rem;box-sizing:border-box;color:var(--ink);background:var(--card)">
+          </div>
+          <div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px 12px;margin-bottom:14px">
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+              <input type="checkbox" id="modalVolExBeersales" style="margin-top:2px;width:16px;height:16px;flex-shrink:0">
+              <span style="font-size:.85rem;font-weight:600;color:#92400E;line-height:1.4">
+                ✅ Confirmei que o volume extra já foi adicionado no BeerSales
+                <span style="display:block;font-weight:400;font-size:.78rem;margin-top:2px;color:#B45309">Obrigatório para prosseguir</span>
+              </span>
+            </label>
+          </div>
+          <div id="modalVolExLog" style="display:none;margin-bottom:12px;font-size:.75rem;color:var(--muted)"></div>
+          <div class="btn-linha">
+            <button class="btn mini" id="btnSalvarVolEx">Salvar</button>
+            <button class="btn mini secundario" id="btnCancelarVolEx">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- modal de observação de tanque -->
       <div class="modal-overlay" id="modalObsTanque" hidden>
         <div class="modal-box" style="max-width:340px">
@@ -3664,7 +3694,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.89";
+var VERSAO = "3.7.90";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10018,11 +10048,12 @@ async function carregarTanques(){
           "<div style='font-size:.73rem;display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px'>"+
             (tq.lote   ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>"+esc(tq.lote)+"</span>" : "")+
             (tq.volume ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>"+esc(tq.volume)+" L</span>" : "")+
+            (tq.volExtra ? "<span style='background:#DBEAFE;border:1px solid #BFDBFE;border-radius:4px;padding:1px 6px;color:#1D4ED8;font-weight:600;font-size:.72rem' title='Volume extra adicionado'>+"+fmtNum(tq.volExtra)+" L extra</span>" : "")+
             (tq.og     ? "<span style='background:rgba(0,0,0,.07);border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 6px;color:#374151;font-weight:600'>OG "+esc(tq.og)+"</span>" : "")+
           "</div>"+
           // ── Visor de nível do tanque ──────────────────────────────
           (function(){
-            var volTotal = parseFloat(tq.volume) || parseFloat(tq.capacidade) || 0;
+            var volTotal = (parseFloat(tq.volume) || parseFloat(tq.capacidade) || 0) + (parseFloat(tq.volExtra) || 0);
             if (!volTotal) return "";
             // litros saídos = soma dos barrils + soma dos PETs do lote atual
             var nomeUpV = tq.nome.toUpperCase().replace(/[-\s]/g,"");
@@ -10309,6 +10340,11 @@ async function carregarTanques(){
             ? "<button class='tq-btn' style='background:#7C3AED;color:#fff;border-color:#7C3AED' "+
                 "data-tq-zerado='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"'>🫙 Tanque zerado</button>"
             : "")+
+          (!eLivre && !eBrassagem
+            ? "<button class='tq-btn' style='background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE' "+
+                "data-tq-volex='"+esc(tq.id)+"' data-tq-nome='"+esc(tq.nome)+"' "+
+                "data-tq-volex-atual='"+(tq.volExtra||0)+"'>➕ Vol. extra</button>"
+            : "")+
           (temOverride
             ? "<button class='tq-btn' data-tq-auto='"+esc(tq.id)+"'>⟲ Automático</button>"
             : "")+
@@ -10484,6 +10520,47 @@ async function carregarTanques(){
         $("modalObsTanque").hidden = false;
         setTimeout(function(){ $("modalObsTanqueTexto").focus(); }, 50);
       });
+    });
+
+    // ── Botão volume extra ─────────────────────────────────────────
+    var _volExTqId = null;
+    $("tanquesLista").querySelectorAll("[data-tq-volex]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        _volExTqId = btn.dataset.tqVolex;
+        $("modalVolExNome").textContent = btn.dataset.tqNome;
+        var atual = parseFloat(btn.dataset.tqVolexAtual) || 0;
+        $("modalVolExAtual").textContent = atual > 0 ? "Volume extra já registrado: "+fmtNum(atual)+" L" : "";
+        $("modalVolExQtd").value = "";
+        $("modalVolExBeersales").checked = false;
+        // log de adições anteriores
+        var tqObj = _dadosTanques && _dadosTanques.find(function(t){ return t.id === _volExTqId; });
+        var logEl = $("modalVolExLog");
+        if (tqObj && tqObj.volExtraLog && tqObj.volExtraLog.length) {
+          var linhas = tqObj.volExtraLog.map(function(e){
+            var dt = e.em ? new Date(e.em) : null;
+            var dtStr = dt ? (("0"+dt.getDate()).slice(-2)+"/"+("0"+(dt.getMonth()+1)).slice(-2)+" "+("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2)) : "—";
+            return "• +"+fmtNum(e.vol)+" L em "+dtStr+" por "+e.por+(e.beersales?" ✅ BeerSales":"");
+          }).join("<br>");
+          logEl.innerHTML = "<b>Adições anteriores:</b><br>"+linhas;
+          logEl.style.display = "block";
+        } else {
+          logEl.style.display = "none";
+        }
+        $("modalVolExTanque").hidden = false;
+        setTimeout(function(){ $("modalVolExQtd").focus(); }, 50);
+      });
+    });
+    $("btnCancelarVolEx").addEventListener("click", function(){ $("modalVolExTanque").hidden = true; });
+    $("btnSalvarVolEx").addEventListener("click", async function(){
+      var vol = parseFloat($("modalVolExQtd").value);
+      if (!vol || vol <= 0) { toast("Informe o volume a adicionar.","aviso"); return; }
+      if (!$("modalVolExBeersales").checked) { toast("Confirme que o volume foi adicionado no BeerSales antes de prosseguir.","aviso"); return; }
+      try{
+        await api("/api/tanques",{method:"POST",body:{acao:"adicionarVolume",tanqueId:_volExTqId,volExtra:vol,beersalesConfirmado:true}});
+        $("modalVolExTanque").hidden = true;
+        toast("Volume extra de "+fmtNum(vol)+" L adicionado com sucesso! ➕","ok");
+        carregarTanques();
+      }catch(e){ toast(e.message,"erro"); }
     });
 
     $("tanquesLista").querySelectorAll("[data-tq-pronto]").forEach(function(btn){
