@@ -696,6 +696,38 @@ export default protegido(async function handler(req, res) {
       return res.json({ ok: true, volExtra: mapa[tanqueId].volExtra });
     }
 
+    /* -- desfazerVolume (remove a última adição de volume extra) -- */
+    if (dados.acao === "desfazerVolume") {
+      if (!["admin", "gestor"].includes(sessao.papel))
+        return erro(res, 403, "Apenas admin ou gestor.");
+      const { tanqueId, indice } = dados; // indice = posição no volExtraLog (0 = mais recente)
+      if (!TANQUES.find(t => t.id === tanqueId)) return erro(res, 400, "Tanque inválido.");
+      const mapa = (await ler(CHAVE_MANUAL)) || {};
+      const entrada = mapa[tanqueId];
+      if (!entrada || !Array.isArray(entrada.volExtraLog) || entrada.volExtraLog.length === 0)
+        return erro(res, 400, "Nenhuma adição de volume para desfazer.");
+      const idx = typeof indice === "number" ? indice : 0;
+      if (idx < 0 || idx >= entrada.volExtraLog.length)
+        return erro(res, 400, "Índice inválido.");
+      const removida = entrada.volExtraLog[idx];
+      entrada.volExtraLog.splice(idx, 1);
+      // recalcula volExtra somando o que resta
+      entrada.volExtra = entrada.volExtraLog.reduce((acc, e) => acc + (parseFloat(e.vol) || 0), 0);
+      // se zerou o log e não há outro dado relevante, limpa a chave do tanque
+      if (entrada.volExtra === 0 && entrada.volExtraLog.length === 0 && !entrada.estagio && !entrada.zerado && !entrada.maturacaoInicioISO) {
+        delete mapa[tanqueId];
+      }
+      await gravar(CHAVE_MANUAL, mapa);
+      // auditoria
+      const agora = new Date().toISOString();
+      const por = sessao.usuario || sessao.login;
+      const audit = (await ler(CHAVE_AUDIT)) || [];
+      audit.unshift({ acao: "desfazerVolume", tanqueId, vol: removida.vol, volOriginalPor: removida.por, volOriginalEm: removida.em, por, em: agora });
+      if (audit.length > 500) audit.splice(500);
+      await gravar(CHAVE_AUDIT, audit);
+      return res.json({ ok: true, volExtra: (mapa[tanqueId] || {}).volExtra || 0 });
+    }
+
     return erro(res, 400, "Ação desconhecida.");
   }
 
