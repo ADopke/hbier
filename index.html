@@ -3717,7 +3717,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.99";
+var VERSAO = "3.8.00";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10937,7 +10937,8 @@ function _renderRegistrosGraficos(lista){
       var dataTempReal = [];
       var dataTempSet  = [];
       var dataKgf      = [];
-      var dataSgCo2    = [];  // SG (ferm) ou CO₂ (matur) — eixo secundário
+      var dataSG       = [];  // SG — apenas leituras de fermentação (~1.000–1.100)
+      var dataCO2      = [];  // CO₂ (vol) — apenas leituras de maturação (~0–5)
 
       regs.forEach(function(r){
         if ((r.obs||"").indexOf("PURGA") !== -1) return; // pula purgas
@@ -10947,10 +10948,13 @@ function _renderRegistrosGraficos(lista){
         dataTempReal.push(r.tempReal !== "" && r.tempReal != null ? parseFloat(r.tempReal) : null);
         dataTempSet.push( r.tempSet  !== "" && r.tempSet  != null ? parseFloat(r.tempSet)  : null);
         dataKgf.push(     r.kgf      !== "" && r.kgf      != null ? parseFloat(r.kgf)      : null);
-        var sgCo2Val = r.tipo === "ferm"
-          ? (r.sg  !== "" && r.sg  != null ? parseFloat(r.sg)  : null)
-          : (r.co2 !== "" && r.co2 != null ? parseFloat(r.co2) : null);
-        dataSgCo2.push(sgCo2Val);
+        if (r.tipo === "ferm") {
+          dataSG.push( r.sg  !== "" && r.sg  != null ? parseFloat(r.sg)  : null);
+          dataCO2.push(null);
+        } else {
+          dataSG.push(null);
+          dataCO2.push(r.co2 !== "" && r.co2 != null ? parseFloat(r.co2) : null);
+        }
       });
 
       var isDark = document.documentElement.dataset.theme === "dark"
@@ -10999,13 +11003,23 @@ function _renderRegistrosGraficos(lista){
               spanGaps: true,
             },
             {
-              label: "SG / CO₂ (vol)",
-              data: dataSgCo2,
+              label: "SG (ferm)",
+              data: dataSG,
+              borderColor: "#06B6D4",
+              tension: 0.3,
+              pointRadius: 3,
+              borderWidth: 2,
+              yAxisID: "ySG",
+              spanGaps: true,
+            },
+            {
+              label: "CO₂ vol (matur)",
+              data: dataCO2,
               borderColor: "#10B981",
               tension: 0.3,
               pointRadius: 3,
               borderWidth: 2,
-              yAxisID: "ySgCo2",
+              yAxisID: "yCO2",
               spanGaps: true,
             },
           ]
@@ -11042,9 +11056,17 @@ function _renderRegistrosGraficos(lista){
               ticks: { color: "#6366F1", font: { size: 9 } },
               grid:  { drawOnChartArea: false }
             },
-            ySgCo2: {
+            ySG: {
               type: "linear", position: "right",
-              title: { display: true, text: "SG/CO₂", color: tickColor, font: { size: 9 } },
+              suggestedMin: 0.990, suggestedMax: 1.110,
+              title: { display: true, text: "SG", color: tickColor, font: { size: 9 } },
+              ticks: { color: "#06B6D4", font: { size: 9 } },
+              grid:  { drawOnChartArea: false }
+            },
+            yCO2: {
+              type: "linear", position: "right",
+              suggestedMin: 0, suggestedMax: 5,
+              title: { display: true, text: "CO₂ vol", color: tickColor, font: { size: 9 } },
               ticks: { color: "#10B981", font: { size: 9 } },
               grid:  { drawOnChartArea: false }
             }
