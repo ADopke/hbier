@@ -322,22 +322,24 @@
   .tm-sub{ font-size:.68rem;color:var(--muted); }
   .tm-barra{ height:4px;background:rgba(0,0,0,.08);border-radius:99px;overflow:hidden;margin-top:5px; }
   .tm-fill{ height:100%;border-radius:99px; }
-  .tm-brass{ background:var(--verde-claro);border:1px solid #A8D4B4; }
+  .tm-brass{ background:var(--verde-claro);border:1px solid #A8D4B4;grid-column:1/-1; }
   .tm-env{ background:#E8F0FF;border:1px solid #B3C8F5; }
   .tm-barril{ background:#FFF3E8;border:1px solid #D4905A; }
-  .tm-vol{ background:var(--dourado-claro);border:1px solid #E6C84A;grid-column:1/-1; }
   .tm-brass .tm-num{ color:var(--verde); }
   .tm-env .tm-num{ color:#003E99; }
   .tm-barril .tm-num{ color:#7A4500; }
-  .tm-vol .tm-num{ color:var(--verde);font-size:1.1rem; }
-  .tm-vol-linha{ display:flex;align-items:baseline;gap:8px; }
-  .tm-vol-meta{ font-size:.72rem;color:var(--muted); }
+  .tm-brass-header{ display:flex;align-items:baseline;gap:10px;flex-wrap:wrap; }
+  .tm-brass-vol{ font-size:.78rem;color:var(--muted);margin-left:auto; }
+  .tm-brass-vol strong{ color:var(--verde);font-size:.9rem; }
+  .tm-vol-meta{ font-size:.70rem;color:var(--muted); }
   .tm-estilos{ display:flex;flex-wrap:wrap;gap:3px;margin-top:4px; }
   .tm-estilo-chip{ font-size:.65rem;background:rgba(0,0,0,.06);border-radius:20px;padding:1px 7px;color:var(--ink);white-space:nowrap; }
   .tm-brass .tm-estilo-chip{ background:rgba(34,139,34,.10); }
   .tm-env .tm-estilo-chip{ background:rgba(0,62,153,.10); }
   .tm-barril .tm-estilo-chip{ background:rgba(122,69,0,.10); }
-  .tm-vol .tm-estilo-chip{ background:rgba(180,140,0,.12); }
+  .tm-env-meta-chips{ display:flex;flex-wrap:wrap;gap:3px;margin-top:3px; }
+  .tm-env-meta-chip{ font-size:.62rem;background:rgba(0,62,153,.06);border:1px solid rgba(0,62,153,.15);border-radius:20px;padding:1px 6px;color:#003E99;white-space:nowrap; }
+  .tm-env-meta-chip.atingido{ background:rgba(0,153,60,.10);border-color:rgba(0,153,60,.25);color:var(--verde); }
 
   /* ---- legenda calendário ---- */
   .cal-legenda{ padding:6px 14px;border-bottom:1px solid var(--linha);display:flex;gap:10px;flex-wrap:wrap;background:var(--cinza); }
@@ -3723,7 +3725,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.04";
+var VERSAO = "3.8.05";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6961,24 +6963,67 @@ async function carregarProgMensal(){
   // helper: monta lista de estilos em chips compactos
   function tmEstiloChips(mapa, fmt){
     return Object.keys(mapa).sort().map(function(k){
-      return "<span class='tm-estilo-chip'>"+esc(k)+": <strong>"+fmt(mapa[k])+"</strong></span>";
+      return "<span class='tm-estilo-chip'>"+esc(k)+": <strong>"+fmt(mapa[k],k)+"</strong></span>";
     }).join("");
   }
   _calDadosMes=mapaDia;
-  var metaBrass=0;
-  try{var mr=await api("/api/metas?ano="+ano+"&mes="+(mes+1));metaBrass=(mr.meta&&mr.meta.brass)||0;}catch(e){}
+  var metaBrass=0, metaEnvTotal=0, metaEnvFormatos={};
+  try{
+    var mr=await api("/api/metas?ano="+ano+"&mes="+(mes+1));
+    metaBrass=(mr.meta&&mr.meta.brass)||0;
+    metaEnvTotal=(mr.meta&&mr.meta.envTotal)||0;
+    metaEnvFormatos=(mr.meta&&mr.meta.formatos)||{};
+  }catch(e){}
   var pctVol=metaBrass?Math.min(100,Math.round(totVolReal/metaBrass*100)):0;
+  var pctEnvMes=metaEnvTotal?Math.min(100,Math.round(totEnv/metaEnvTotal*100)):0;
   var brassCom=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="brassagem"&&x.resultado;}).length;},0);
   var envCom=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="envase"&&x.resultado;}).length;},0);
   var totBarrilL=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="barril";}).reduce(function(a,b){return a+(b.total||0);},0);},0);
-  var chipsB  = tmEstiloChips(brassPorEstilo,  function(v){ return v.qtd+(v.vol?" · "+fmtNum(v.vol)+" L":""); });
-  var chipsPET= tmEstiloChips(envPetPorEstilo,  function(v){ return v; });
-  var chipsBar= tmEstiloChips(barrilPorEstilo,  function(v){ return v.qtd+(v.litros?" · "+fmtNum(v.litros)+" L":""); });
-  $("progMensalTotais").innerHTML=
-    "<div class='tm-card tm-brass'><span class='tm-label'>🍺 Brassagens</span><span class='tm-num'>"+totBrass+"</span><span class='tm-sub'>"+brassCom+" com resultado</span>"+(chipsB?"<div class='tm-estilos'>"+chipsB+"</div>":"")+"<div class='tm-barra'><div class='tm-fill' style='width:"+(totBrass?Math.round(brassCom/totBrass*100):0)+"%;background:var(--verde)'></div></div></div>"+
-    "<div class='tm-card tm-env'><span class='tm-label'>📦 Envases PET</span><span class='tm-num'>"+totEnv+"</span><span class='tm-sub'>"+envCom+" com resultado</span>"+(chipsPET?"<div class='tm-estilos'>"+chipsPET+"</div>":"")+"<div class='tm-barra'><div class='tm-fill' style='width:"+(totEnv?Math.round(envCom/totEnv*100):0)+"%;background:#003E99'></div></div></div>"+
-    "<div class='tm-card tm-barril'><span class='tm-label'>🛢 Barris</span><span class='tm-num'>"+totBarril+"</span><span class='tm-sub'>"+(totBarrilL?fmtNum(totBarrilL)+" L total":"nenhum")+"</span>"+(chipsBar?"<div class='tm-estilos'>"+chipsBar+"</div>":"")+"</div>"+
-    "<div class='tm-card tm-vol'><span class='tm-label'>Volume brassado</span><div class='tm-vol-linha'><span class='tm-num'>"+fmtNum(totVolReal)+" L</span>"+(metaBrass?"<span class='tm-vol-meta'>de "+fmtNum(metaBrass)+" L meta ("+pctVol+"%)</span>":"")+"</div>"+(chipsB?"<div class='tm-estilos'>"+tmEstiloChips(brassPorEstilo,function(v){return v.vol?fmtNum(v.vol)+" L":"—";})+"</div>":"")+"<div class='tm-barra'><div class='tm-fill' style='width:"+pctVol+"%;background:var(--dourado)'></div></div></div>";
+  // chips de brassagem: estilo → qtd brassagens · vol brassado
+  var chipsB  = tmEstiloChips(brassPorEstilo, function(v){ return v.qtd+(v.vol?" · "+fmtNum(v.vol)+" L":""); });
+  // chips de envase: produto → qtd realizada [/ meta se existir]
+  var chipsPET= tmEstiloChips(envPetPorEstilo, function(v,k){
+    var m=metaEnvFormatos[k]||0;
+    return m ? v+" / "+m : String(v);
+  });
+  // chips de meta de envase por formato (mostra meta mesmo sem realização)
+  var metaFmtChips="";
+  Object.keys(metaEnvFormatos).sort().forEach(function(k){
+    var m=metaEnvFormatos[k]||0; if(!m) return;
+    var real=envPetPorEstilo[k]||0;
+    var atingido=real>=m;
+    metaFmtChips+="<span class='tm-env-meta-chip"+(atingido?" atingido":"")+"'>"+esc(k)+": "+real+"/"+m+"</span>";
+  });
+  var chipsBar= tmEstiloChips(barrilPorEstilo, function(v){ return v.qtd+(v.litros?" · "+fmtNum(v.litros)+" L":""); });
+  // --- card brassagens (ocupa linha inteira): total + volume brassado + meta vol + chips estilo ---
+  var brassSub=brassCom+" com resultado";
+  var volStr=fmtNum(totVolReal)+" L brassados";
+  if(metaBrass) volStr+=" <span class='tm-vol-meta'>de "+fmtNum(metaBrass)+" L meta ("+pctVol+"%)</span>";
+  var htmlBrass="<div class='tm-card tm-brass'>"+
+    "<span class='tm-label'>🍺 Brassagens</span>"+
+    "<div class='tm-brass-header'><span class='tm-num'>"+totBrass+"</span><span class='tm-sub'>"+brassSub+"</span><span class='tm-brass-vol'>"+volStr+"</span></div>"+
+    (chipsB?"<div class='tm-estilos'>"+chipsB+"</div>":"")+
+    "<div class='tm-barra'><div class='tm-fill' style='width:"+pctVol+"%;background:var(--verde)'></div></div>"+
+    "</div>";
+  // --- card envases PET: total + meta + chips produto c/ realizado/meta + barra ---
+  var envSub=envCom+" com resultado";
+  if(metaEnvTotal) envSub+=" &nbsp;·&nbsp; <span class='tm-vol-meta'>meta "+metaEnvTotal+" un ("+pctEnvMes+"%)</span>";
+  var htmlEnv="<div class='tm-card tm-env'>"+
+    "<span class='tm-label'>📦 Envases PET</span>"+
+    "<span class='tm-num'>"+totEnv+"</span>"+
+    "<span class='tm-sub'>"+envSub+"</span>"+
+    (metaFmtChips?"<div class='tm-env-meta-chips'>"+metaFmtChips+"</div>":
+     chipsPET?"<div class='tm-estilos'>"+chipsPET+"</div>":"")+
+    "<div class='tm-barra'><div class='tm-fill' style='width:"+pctEnvMes+"%;background:#003E99'></div></div>"+
+    "</div>";
+  // --- card barris ---
+  var htmlBarril="<div class='tm-card tm-barril'>"+
+    "<span class='tm-label'>🛢 Barris</span>"+
+    "<span class='tm-num'>"+totBarril+"</span>"+
+    "<span class='tm-sub'>"+(totBarrilL?fmtNum(totBarrilL)+" L total":"nenhum")+"</span>"+
+    (chipsBar?"<div class='tm-estilos'>"+chipsBar+"</div>":"")+
+    "</div>";
+  $("progMensalTotais").innerHTML=htmlBrass+htmlEnv+htmlBarril;
   // Calendário
   var hojeStr=(function(){var h=new Date();h.setHours(0,0,0,0);return h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);})();
   var ini=new Date(ano,mes,1);
