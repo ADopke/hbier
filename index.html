@@ -3717,7 +3717,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.98";
+var VERSAO = "3.7.99";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10907,6 +10907,155 @@ $("btnAuditoriaTanques").addEventListener("click", async function(){
 $("modalAuditoriaTanques").addEventListener("click", function(e){ if(e.target === this) this.hidden = true; });
 
 // ── Registros de Fermentação e Maturação ──────────────────────────────────────
+
+// Carrega Chart.js uma vez (lazy) e renderiza os gráficos por tanque
+var _chartJsPromise = null;
+function _loadChartJs(){
+  if (_chartJsPromise) return _chartJsPromise;
+  _chartJsPromise = new Promise(function(resolve){
+    if (window.Chart) { resolve(window.Chart); return; }
+    var s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js";
+    s.onload = function(){ resolve(window.Chart); };
+    document.head.appendChild(s);
+  });
+  return _chartJsPromise;
+}
+
+var _regGraficos = []; // instâncias Chart ativas para destruir antes de recriar
+function _renderRegistrosGraficos(lista){
+  _regGraficos.forEach(function(c){ try{ c.destroy(); }catch(e){} });
+  _regGraficos = [];
+
+  _loadChartJs().then(function(Chart){
+    lista.forEach(function(item){
+      var canvas = document.getElementById(item.canvasId);
+      if (!canvas) return;
+
+      var regs = item.regsAsc;
+      var labels   = [];
+      var dataTempReal = [];
+      var dataTempSet  = [];
+      var dataKgf      = [];
+      var dataSgCo2    = [];  // SG (ferm) ou CO₂ (matur) — eixo secundário
+
+      regs.forEach(function(r){
+        if ((r.obs||"").indexOf("PURGA") !== -1) return; // pula purgas
+        var d = new Date(r.dt);
+        var pad = function(n){ return ("0"+n).slice(-2); };
+        labels.push(pad(d.getDate())+"/"+pad(d.getMonth()+1)+" "+pad(d.getHours())+":"+pad(d.getMinutes()));
+        dataTempReal.push(r.tempReal !== "" && r.tempReal != null ? parseFloat(r.tempReal) : null);
+        dataTempSet.push( r.tempSet  !== "" && r.tempSet  != null ? parseFloat(r.tempSet)  : null);
+        dataKgf.push(     r.kgf      !== "" && r.kgf      != null ? parseFloat(r.kgf)      : null);
+        var sgCo2Val = r.tipo === "ferm"
+          ? (r.sg  !== "" && r.sg  != null ? parseFloat(r.sg)  : null)
+          : (r.co2 !== "" && r.co2 != null ? parseFloat(r.co2) : null);
+        dataSgCo2.push(sgCo2Val);
+      });
+
+      var isDark = document.documentElement.dataset.theme === "dark"
+        || (!document.documentElement.dataset.theme && window.matchMedia("(prefers-color-scheme:dark)").matches);
+      var gridColor  = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
+      var tickColor  = isDark ? "#9CA3AF" : "#6B7280";
+      var tooltipBg  = isDark ? "#1F2937" : "#FFFFFF";
+      var tooltipFg  = isDark ? "#F9FAFB" : "#111827";
+
+      var chart = new Chart(canvas, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Temp real (°C)",
+              data: dataTempReal,
+              borderColor: "#EF4444",
+              backgroundColor: "rgba(239,68,68,0.10)",
+              tension: 0.3,
+              pointRadius: 3,
+              borderWidth: 2,
+              yAxisID: "yTemp",
+              spanGaps: true,
+            },
+            {
+              label: "Temp set (°C)",
+              data: dataTempSet,
+              borderColor: "#F97316",
+              borderDash: [4,3],
+              tension: 0.3,
+              pointRadius: 2,
+              borderWidth: 1.5,
+              yAxisID: "yTemp",
+              spanGaps: true,
+            },
+            {
+              label: "kgf/cm²",
+              data: dataKgf,
+              borderColor: "#6366F1",
+              backgroundColor: "rgba(99,102,241,0.08)",
+              tension: 0.3,
+              pointRadius: 3,
+              borderWidth: 2,
+              yAxisID: "yKgf",
+              spanGaps: true,
+            },
+            {
+              label: "SG / CO₂ (vol)",
+              data: dataSgCo2,
+              borderColor: "#10B981",
+              tension: 0.3,
+              pointRadius: 3,
+              borderWidth: 2,
+              yAxisID: "ySgCo2",
+              spanGaps: true,
+            },
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: {
+              labels: { color: tickColor, font: { size: 10 }, boxWidth: 14, padding: 10 }
+            },
+            tooltip: {
+              backgroundColor: tooltipBg,
+              titleColor: tooltipFg,
+              bodyColor: tooltipFg,
+              borderColor: gridColor,
+              borderWidth: 1,
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: tickColor, font: { size: 9 }, maxRotation: 35, maxTicksLimit: 12 },
+              grid:  { color: gridColor }
+            },
+            yTemp: {
+              type: "linear", position: "left",
+              title: { display: true, text: "°C", color: tickColor, font: { size: 9 } },
+              ticks: { color: "#EF4444", font: { size: 9 } },
+              grid:  { color: gridColor }
+            },
+            yKgf: {
+              type: "linear", position: "right",
+              title: { display: true, text: "kgf", color: tickColor, font: { size: 9 } },
+              ticks: { color: "#6366F1", font: { size: 9 } },
+              grid:  { drawOnChartArea: false }
+            },
+            ySgCo2: {
+              type: "linear", position: "right",
+              title: { display: true, text: "SG/CO₂", color: tickColor, font: { size: 9 } },
+              ticks: { color: "#10B981", font: { size: 9 } },
+              grid:  { drawOnChartArea: false }
+            }
+          }
+        }
+      });
+      _regGraficos.push(chart);
+    });
+  });
+}
+
 (function(){
   var _regCache = null; // cache das fichas carregadas
 
@@ -11010,19 +11159,33 @@ $("modalAuditoriaTanques").addEventListener("click", function(e){ if(e.target ==
         return;
       }
 
+      // Monta HTML e coleta dados para gráficos
       var html = "";
+      var graficosParaRender = []; // { canvasId, regsAsc }
+
       tanques.forEach(function(tanque){
         var regs = porTanque[tanque];
         if (!regs.length) return;
-        // ordena por data desc
-        regs.sort(function(a,b){ return (b.dt||"").localeCompare(a.dt||""); });
 
-        html += "<div style='margin-bottom:20px'>";
-        html += "<div style='font-weight:700;font-size:.9rem;padding:6px 10px;background:var(--linha-bg,#f3f4f6);border-radius:8px;margin-bottom:6px'>🏭 "+esc(tanque)+" <span style='font-weight:400;font-size:.78rem;color:var(--muted)'>("+regs.length+" registro"+(regs.length!==1?"s":"")+")</span></div>";
+        // ordena ASC para gráfico, DESC para tabela
+        var regsAsc  = regs.slice().sort(function(a,b){ return (a.dt||"").localeCompare(b.dt||""); });
+        var regsDesc = regs.slice().sort(function(a,b){ return (b.dt||"").localeCompare(a.dt||""); });
 
-        // Agrupa por lote dentro do tanque
+        var canvasId = "regGrafico_"+tanque.replace(/[^a-z0-9]/gi,"_");
+        graficosParaRender.push({ canvasId: canvasId, regsAsc: regsAsc, tanque: tanque });
+
+        html += "<div style='margin-bottom:24px'>";
+        // cabeçalho do tanque
+        html += "<div style='font-weight:700;font-size:.9rem;padding:6px 10px;background:var(--linha-bg,#f3f4f6);border-radius:8px;margin-bottom:8px'>🏭 "+esc(tanque)+" <span style='font-weight:400;font-size:.78rem;color:var(--muted)'>("+regs.length+" registro"+(regs.length!==1?"s":"")+")</span></div>";
+
+        // gráfico
+        html += "<div style='background:var(--card);border:1px solid var(--linha);border-radius:8px;padding:10px;margin-bottom:10px'>";
+        html += "<canvas id='"+canvasId+"' height='110' style='width:100%;display:block'></canvas>";
+        html += "</div>";
+
+        // tabela por lote
         var porLote = {};
-        regs.forEach(function(r){
+        regsDesc.forEach(function(r){
           var k = r.lote+"||"+r.estilo;
           if (!porLote[k]) porLote[k] = { lote: r.lote, estilo: r.estilo, regs: [] };
           porLote[k].regs.push(r);
@@ -11049,18 +11212,19 @@ $("modalAuditoriaTanques").addEventListener("click", function(e){ if(e.target ==
             var tipoBadge = r.tipo === "ferm"
               ? "<span style='background:#EFF6FF;color:#2563EB;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>🌡 Ferm</span>"
               : "<span style='background:#F0FDF4;color:#16A34A;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>❄️ Matur</span>";
+            var isPurga = (r.obs || "").indexOf("PURGA") !== -1;
             var sgOuCo2 = r.tipo === "ferm"
-              ? (r.sg   != null && r.sg   !== "" ? r.sg   : "—")
-              : (r.co2  != null && r.co2  !== "" ? r.co2+" vol" : "—");
-            html += "<tr style='border-top:1px solid var(--linha);background:"+bgRow+"'>";
-            html += "<td style='padding:4px 6px'>"+tipoBadge+"</td>";
+              ? (r.sg  != null && r.sg  !== "" ? r.sg        : "—")
+              : (r.co2 != null && r.co2 !== "" ? r.co2+" vol": "—");
+            html += "<tr style='border-top:1px solid var(--linha);background:"+(isPurga?"rgba(107,114,128,.08)":bgRow)+";"+( isPurga?"border-left:3px solid #9CA3AF":"")+"'>";
+            html += "<td style='padding:4px 6px'>"+(isPurga?"<span style='background:#F3F4F6;color:#6B7280;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>🔽 Purga</span>":tipoBadge)+"</td>";
             html += "<td style='padding:4px 6px;white-space:nowrap;color:var(--muted)'>"+fmtDtReg(r.dt)+"</td>";
             html += "<td style='padding:4px 6px'>"+(r.tempReal != null && r.tempReal !== "" ? r.tempReal+"°C" : "—")+"</td>";
             html += "<td style='padding:4px 6px;color:var(--muted)'>"+(r.tempSet  != null && r.tempSet  !== "" ? r.tempSet+"°C"  : "—")+"</td>";
-            html += "<td style='padding:4px 6px'>"+(r.kgf      != null && r.kgf      !== "" ? r.kgf          : "—")+"</td>";
-            html += "<td style='padding:4px 6px'>"+(r.ph       != null && r.ph       !== "" ? r.ph            : "—")+"</td>";
+            html += "<td style='padding:4px 6px'>"+(r.kgf != null && r.kgf !== "" ? r.kgf : "—")+"</td>";
+            html += "<td style='padding:4px 6px'>"+(r.ph  != null && r.ph  !== "" ? r.ph  : "—")+"</td>";
             html += "<td style='padding:4px 6px'>"+esc(String(sgOuCo2))+"</td>";
-            html += "<td style='padding:4px 6px;color:var(--muted)'>"+esc(r.obs || "")+"</td>";
+            html += "<td style='padding:4px 6px;color:var(--muted)'>"+esc(isPurga ? "" : (r.obs || ""))+"</td>";
             html += "<td style='padding:4px 6px'>"+esc(r.resp ? "@"+r.resp : "—")+"</td>";
             html += "</tr>";
           });
@@ -11072,6 +11236,9 @@ $("modalAuditoriaTanques").addEventListener("click", function(e){ if(e.target ==
       });
 
       conteudo.innerHTML = html;
+
+      // Renderiza gráficos após o DOM estar pronto
+      _renderRegistrosGraficos(graficosParaRender);
 
     } catch(e) {
       conteudo.innerHTML = "<div class='vazio'>Erro ao carregar registros: "+esc(e.message)+"</div>";
