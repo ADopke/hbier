@@ -3717,7 +3717,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.97";
+var VERSAO = "3.7.98";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11653,6 +11653,35 @@ function preencherLogDivs(containerId, rows, addFn, silentMode){
     inputs.forEach(function(el,i){
       if(valsAdj[i]!==undefined) el.value=valsAdj[i];
     });
+    /* Destaque visual para linha de PURGA no maturLog */
+    if(containerId==='fp-matur-log'){
+      // obs está no índice 7 (datetime,ts,tr,kgf,ph,co2,clareza,obs,resp,del)
+      var obsVal = valsAdj[7] || "";
+      if(obsVal.indexOf("PURGA") !== -1){
+        row.style.background = "rgba(107,114,128,0.10)";
+        row.style.borderLeft = "3px solid #6B7280";
+        // insere badge PURGA no início da linha
+        var badge = document.createElement("div");
+        badge.className = "fp-log-cell";
+        badge.style.cssText = "position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;padding:0 6px;pointer-events:none";
+        // sobrepõe o datetime com um label de purga
+        var dtCell = row.querySelector(".fp-log-cell:first-child");
+        if(dtCell){
+          var dtInp = dtCell.querySelector("input");
+          if(dtInp){
+            var lbl = document.createElement("span");
+            lbl.style.cssText = "font-size:10px;font-weight:700;color:#6B7280;background:#E5E7EB;border-radius:4px;padding:1px 6px;margin-left:4px;white-space:nowrap";
+            lbl.textContent = "🔽 PURGA";
+            dtCell.appendChild(lbl);
+          }
+        }
+        // desabilita inputs numéricos da linha (read-only visual)
+        row.querySelectorAll("input[type='number'], select").forEach(function(el){
+          el.style.opacity = "0.35";
+          el.style.pointerEvents = "none";
+        });
+      }
+    }
   });
   /* Após restaurar log de maturação, atualiza banner CO₂ (após todos os valores preenchidos) */
   if(containerId==='fp-matur-log') setTimeout(fp_recCO2, 0);
