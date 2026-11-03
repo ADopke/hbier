@@ -332,6 +332,12 @@
   .tm-vol .tm-num{ color:var(--verde);font-size:1.1rem; }
   .tm-vol-linha{ display:flex;align-items:baseline;gap:8px; }
   .tm-vol-meta{ font-size:.72rem;color:var(--muted); }
+  .tm-estilos{ display:flex;flex-wrap:wrap;gap:3px;margin-top:4px; }
+  .tm-estilo-chip{ font-size:.65rem;background:rgba(0,0,0,.06);border-radius:20px;padding:1px 7px;color:var(--ink);white-space:nowrap; }
+  .tm-brass .tm-estilo-chip{ background:rgba(34,139,34,.10); }
+  .tm-env .tm-estilo-chip{ background:rgba(0,62,153,.10); }
+  .tm-barril .tm-estilo-chip{ background:rgba(122,69,0,.10); }
+  .tm-vol .tm-estilo-chip{ background:rgba(180,140,0,.12); }
 
   /* ---- legenda calendário ---- */
   .cal-legenda{ padding:6px 14px;border-bottom:1px solid var(--linha);display:flex;gap:10px;flex-wrap:wrap;background:var(--cinza); }
@@ -3717,7 +3723,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.03";
+var VERSAO = "3.8.04";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6905,6 +6911,10 @@ async function carregarProgMensal(){
   var DIAS_OFF={"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
   var mapaDia={};
   var totBrass=0,totEnv=0,totBarril=0,totVolReal=0;
+  // contadores por estilo
+  var brassPorEstilo={};   // estilo → {qtd, vol}
+  var envPetPorEstilo={};  // produto → qtd
+  var barrilPorEstilo={};  // produto → {qtd, litros}
   res.forEach(function(semR){
     var seg=semR.seg;
     semR.itens.forEach(function(it){
@@ -6916,8 +6926,19 @@ async function carregarProgMensal(){
       if(dm.getMonth()!==mes||dm.getFullYear()!==ano) return;
       if(!mapaDia[di]) mapaDia[di]=[];
       mapaDia[di].push(it);
-      if(it.tipo==="brassagem"){totBrass++;if(it.resultado&&it.volPrev)totVolReal+=parseFloat((it.volPrev+"").replace(",","."))||0;}
-      else if(it.tipo==="envase") totEnv++;
+      if(it.tipo==="brassagem"){
+        totBrass++;
+        var vol=0;
+        if(it.resultado&&it.volPrev){vol=parseFloat((it.volPrev+"").replace(",","."))||0;totVolReal+=vol;}
+        var est=(it.estilo||"—").trim();
+        if(!brassPorEstilo[est]) brassPorEstilo[est]={qtd:0,vol:0};
+        brassPorEstilo[est].qtd++;
+        brassPorEstilo[est].vol+=vol;
+      } else if(it.tipo==="envase"){
+        totEnv++;
+        var prod=(it.produto||"—").trim();
+        envPetPorEstilo[prod]=(envPetPorEstilo[prod]||0)+1;
+      }
     });
     var chSem=seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
     var regsB=semR.barreis["barril-"+chSem]||[];
@@ -6931,8 +6952,18 @@ async function carregarProgMensal(){
       if(!mapaDia[di]) mapaDia[di]=[];
       mapaDia[di].push({tipo:"barril",produto:r.produto,total:r.total,_barrilReg:r});
       totBarril++;
+      var prod=(r.produto||"—").trim();
+      if(!barrilPorEstilo[prod]) barrilPorEstilo[prod]={qtd:0,litros:0};
+      barrilPorEstilo[prod].qtd++;
+      barrilPorEstilo[prod].litros+=(r.total||0);
     });
   });
+  // helper: monta lista de estilos em chips compactos
+  function tmEstiloChips(mapa, fmt){
+    return Object.keys(mapa).sort().map(function(k){
+      return "<span class='tm-estilo-chip'>"+esc(k)+": <strong>"+fmt(mapa[k])+"</strong></span>";
+    }).join("");
+  }
   _calDadosMes=mapaDia;
   var metaBrass=0;
   try{var mr=await api("/api/metas?ano="+ano+"&mes="+(mes+1));metaBrass=(mr.meta&&mr.meta.brass)||0;}catch(e){}
@@ -6940,11 +6971,14 @@ async function carregarProgMensal(){
   var brassCom=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="brassagem"&&x.resultado;}).length;},0);
   var envCom=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="envase"&&x.resultado;}).length;},0);
   var totBarrilL=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="barril";}).reduce(function(a,b){return a+(b.total||0);},0);},0);
+  var chipsB  = tmEstiloChips(brassPorEstilo,  function(v){ return v.qtd+(v.vol?" · "+fmtNum(v.vol)+" L":""); });
+  var chipsPET= tmEstiloChips(envPetPorEstilo,  function(v){ return v; });
+  var chipsBar= tmEstiloChips(barrilPorEstilo,  function(v){ return v.qtd+(v.litros?" · "+fmtNum(v.litros)+" L":""); });
   $("progMensalTotais").innerHTML=
-    "<div class='tm-card tm-brass'><span class='tm-label'>🍺 Brassagens</span><span class='tm-num'>"+totBrass+"</span><span class='tm-sub'>"+brassCom+" com resultado</span><div class='tm-barra'><div class='tm-fill' style='width:"+(totBrass?Math.round(brassCom/totBrass*100):0)+"%;background:var(--verde)'></div></div></div>"+
-    "<div class='tm-card tm-env'><span class='tm-label'>📦 Envases</span><span class='tm-num'>"+totEnv+"</span><span class='tm-sub'>"+envCom+" com resultado</span><div class='tm-barra'><div class='tm-fill' style='width:"+(totEnv?Math.round(envCom/totEnv*100):0)+"%;background:#003E99'></div></div></div>"+
-    "<div class='tm-card tm-barril'><span class='tm-label'>🛢 Barris</span><span class='tm-num'>"+totBarril+"</span><span class='tm-sub'>"+(totBarrilL?fmtNum(totBarrilL)+" L total":"nenhum")+"</span></div>"+
-    "<div class='tm-card tm-vol'><span class='tm-label'>Volume brassado</span><div class='tm-vol-linha'><span class='tm-num'>"+fmtNum(totVolReal)+" L</span>"+(metaBrass?"<span class='tm-vol-meta'>de "+fmtNum(metaBrass)+" L meta ("+pctVol+"%)</span>":"")+"</div><div class='tm-barra'><div class='tm-fill' style='width:"+pctVol+"%;background:var(--dourado)'></div></div></div>";
+    "<div class='tm-card tm-brass'><span class='tm-label'>🍺 Brassagens</span><span class='tm-num'>"+totBrass+"</span><span class='tm-sub'>"+brassCom+" com resultado</span>"+(chipsB?"<div class='tm-estilos'>"+chipsB+"</div>":"")+"<div class='tm-barra'><div class='tm-fill' style='width:"+(totBrass?Math.round(brassCom/totBrass*100):0)+"%;background:var(--verde)'></div></div></div>"+
+    "<div class='tm-card tm-env'><span class='tm-label'>📦 Envases PET</span><span class='tm-num'>"+totEnv+"</span><span class='tm-sub'>"+envCom+" com resultado</span>"+(chipsPET?"<div class='tm-estilos'>"+chipsPET+"</div>":"")+"<div class='tm-barra'><div class='tm-fill' style='width:"+(totEnv?Math.round(envCom/totEnv*100):0)+"%;background:#003E99'></div></div></div>"+
+    "<div class='tm-card tm-barril'><span class='tm-label'>🛢 Barris</span><span class='tm-num'>"+totBarril+"</span><span class='tm-sub'>"+(totBarrilL?fmtNum(totBarrilL)+" L total":"nenhum")+"</span>"+(chipsBar?"<div class='tm-estilos'>"+chipsBar+"</div>":"")+"</div>"+
+    "<div class='tm-card tm-vol'><span class='tm-label'>Volume brassado</span><div class='tm-vol-linha'><span class='tm-num'>"+fmtNum(totVolReal)+" L</span>"+(metaBrass?"<span class='tm-vol-meta'>de "+fmtNum(metaBrass)+" L meta ("+pctVol+"%)</span>":"")+"</div>"+(chipsB?"<div class='tm-estilos'>"+tmEstiloChips(brassPorEstilo,function(v){return v.vol?fmtNum(v.vol)+" L":"—";})+"</div>":"")+"<div class='tm-barra'><div class='tm-fill' style='width:"+pctVol+"%;background:var(--dourado)'></div></div></div>";
   // Calendário
   var hojeStr=(function(){var h=new Date();h.setHours(0,0,0,0);return h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);})();
   var ini=new Date(ano,mes,1);
