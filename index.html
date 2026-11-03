@@ -2058,12 +2058,15 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
                 <div style="background:#EEF2FF;border-radius:8px;padding:10px 12px;margin-bottom:10px">
                   <div style="font-size:.8rem;font-weight:700;color:#003E99;margin-bottom:8px">
                     📦 PET 1L</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
                     <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Helles (un)</label>
                       <input type="number" id="metaEnv1LHelles" placeholder="0"
                         style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
                     <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Oktoberfest (un)</label>
                       <input type="number" id="metaEnv1LOktoberfest" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Redefort (un)</label>
+                      <input type="number" id="metaEnv1LRedefort" placeholder="0"
                         style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
                   </div>
                 </div>
@@ -3723,7 +3726,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.07";
+var VERSAO = "3.8.08";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7639,7 +7642,7 @@ $("envTanque").addEventListener("change", function(){
 
 var ENV_ESTILOS = {
   "PET 500ml": ["Helles","Red Ale","IPA","Sem Álcool"],
-  "PET 1L":    ["Helles","Oktoberfest"]
+  "PET 1L":    ["Helles","Oktoberfest","Redefort"]
 };
 function atualizarEnvEstilo(){
   var fmt     = $("envFormato").value;
@@ -8413,7 +8416,7 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
   var grupos = {
     "Garrafa 355ml": ["Garrafa 355ml Helles","Garrafa 355ml Red Ale","Garrafa 355ml IPA","Garrafa 355ml Sem Alcool"],
     "PET 500ml":     ["PET 500ml Helles","PET 500ml Red Ale","PET 500ml IPA","PET 500ml Sem Alcool"],
-    "PET 1L":        ["PET 1L Helles","PET 1L Oktoberfest"],
+    "PET 1L":        ["PET 1L Helles","PET 1L Oktoberfest","PET 1L Redefort"],
     "PET 2L":        ["PET 2L"]
   };
 
@@ -8484,7 +8487,7 @@ function renderMetaSemanas(semanas, meta){
   var GRUPOS_META={
     "Garrafa 355ml":["Garrafa 355ml Helles","Garrafa 355ml Red Ale","Garrafa 355ml IPA","Garrafa 355ml Sem Álcool"],
     "PET 500ml":["PET 500ml Helles","PET 500ml Red Ale","PET 500ml IPA","PET 500ml Sem Álcool"],
-    "PET 1L":["PET 1L Helles","PET 1L Oktoberfest"],
+    "PET 1L":["PET 1L Helles","PET 1L Oktoberfest","PET 1L Redefort"],
     "PET 2L":["PET 2L"]
   };
   $("metaSemanas").innerHTML = semanas.map(function(sem){
@@ -8587,6 +8590,7 @@ function renderMetaFormularios(meta){
     "PET 500ml Sem Alcool":    "metaEnv500SemAlcool",
     "PET 1L Helles":           "metaEnv1LHelles",
     "PET 1L Oktoberfest":      "metaEnv1LOktoberfest",
+    "PET 1L Redefort":         "metaEnv1LRedefort",
     "PET 2L":                  "metaEnv2L"
   };
   Object.keys(camposEnv).forEach(function(chave){
@@ -8642,6 +8646,7 @@ $("btnSalvarMetaEnv").addEventListener("click", async function(){
     "PET 500ml Sem Alcool":"metaEnv500SemAlcool",
     "PET 1L Helles":"metaEnv1LHelles",
     "PET 1L Oktoberfest":"metaEnv1LOktoberfest",
+    "PET 1L Redefort":"metaEnv1LRedefort",
     "PET 2L":"metaEnv2L"
   };
   var fmts = {};
