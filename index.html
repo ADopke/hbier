@@ -3717,7 +3717,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.00";
+var VERSAO = "3.8.01";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11895,6 +11895,12 @@ function fp_addRow(tblId){
   fp_markDirty();
 }
 function fp_addFermRow(){
+  // Trava: não permite leitura de fermentação se já existir maturação iniciada
+  var maturLog = document.getElementById('fp-matur-log');
+  if (maturLog && maturLog.querySelectorAll('.fp-mlog-row:not(.header)').length > 0) {
+    toast('⚠️ Maturação já iniciada — não é possível adicionar leituras de fermentação.', 'aviso');
+    return;
+  }
   var now=new Date(), local=now.toISOString().slice(0,16);
   var usuario = (typeof sessao !== 'undefined' && sessao && sessao.nome) ? sessao.nome : '';
   var c=document.getElementById('fp-ferm-log');
@@ -11916,6 +11922,14 @@ function fp_addFermRow(){
   fp_markDirty(); fp_calcFermStats();
 }
 function fp_addMaturRow(silent){
+  // Trava: não permite leitura de maturação se não existir nenhuma fermentação registrada
+  if (!silent) {
+    var fermLog = document.getElementById('fp-ferm-log');
+    if (!fermLog || fermLog.querySelectorAll('.fp-mlog-row:not(.header)').length === 0) {
+      toast('⚠️ Nenhuma leitura de fermentação encontrada — registre ao menos uma antes de iniciar a maturação.', 'aviso');
+      return;
+    }
+  }
   var now=new Date(), local=now.toISOString().slice(0,16);
   var usuario = (typeof sessao !== 'undefined' && sessao && sessao.nome) ? sessao.nome : '';
   var c=document.getElementById('fp-matur-log');
