@@ -8419,7 +8419,7 @@ async function carregarMetas(){
   var meta = (await metaLer(metaAnoAtual, metaMesAtual)) || {};
   // Carregar programação de todas as semanas do mês em paralelo
   var resultados = await Promise.all(semanas.map(function(seg){
-    return api("/api/prog?semana="+chaveSemanaData(seg)).catch(function(){ return {itens:[]}; });
+    return api("/api/prog?semana="+chaveSemanaData(seg)).catch(function(){ return {itens:[],barreis:{}}; });
   }));
 
   // Acumuladores separados: previsto = o que foi programado, realizado = resultado real lançado
@@ -8434,11 +8434,30 @@ async function carregarMetas(){
   var detalhesSemanas= [];
   var totalTemPrevisto = false;
 
+  var DIAS_OFF_META = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
   semanas.forEach(function(seg, i){
     var r = resultados[i];
     var itens = r.itens || [];
     var semVolReal = 0, semVolPrev = 0, semQtdReal = 0, semQtdPrev = 0;
     var semFmtReal = {}; var semFmtPrev = {};
+
+    // Acumular barris do storage separado (r.barreis), igual a carregarProgMensal
+    var chSem = seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
+    var regsBarril = (r.barreis || {})["barril-"+chSem] || [];
+    regsBarril.forEach(function(rb){
+      var di = null;
+      if (rb.dataISO) { di = rb.dataISO; }
+      else if (rb.dia && DIAS_OFF_META[rb.dia] !== undefined){
+        var dd = new Date(seg); dd.setDate(dd.getDate()+DIAS_OFF_META[rb.dia]);
+        di = dd.getFullYear()+"-"+("0"+(dd.getMonth()+1)).slice(-2)+"-"+("0"+dd.getDate()).slice(-2);
+      }
+      if (!di) return;
+      var dm = new Date(di+"T00:00:00");
+      if (dm.getMonth() !== metaMesAtual || dm.getFullYear() !== metaAnoAtual) return;
+      var prodBar = _normalizarEstiloBarril((rb.produto||"").trim()) || "—";
+      if (!barrisRealizados[prodBar]) barrisRealizados[prodBar] = 0;
+      barrisRealizados[prodBar] += (rb.total||0);
+    });
 
     itens.forEach(function(it){
       // Filtrar pelo mês/ano da meta usando dataISO ou dia da semana
@@ -8513,10 +8532,6 @@ async function carregarMetas(){
             } else {if(!semFmtReal[fmt])semFmtReal[fmt]=0;semFmtReal[fmt]+=qr;}
           }
         }
-      } else if (it.tipo === "barril"){
-        var prodBar = _normalizarEstiloBarril((it.produto||"").trim()) || "—";
-        if (!barrisRealizados[prodBar]) barrisRealizados[prodBar] = 0;
-        barrisRealizados[prodBar] += (it.total||0);
       }
     });
 
