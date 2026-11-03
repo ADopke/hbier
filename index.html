@@ -3717,7 +3717,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.01";
+var VERSAO = "3.8.02";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11842,6 +11842,20 @@ function preencherLogDivs(containerId, rows, addFn, silentMode){
     inputs.forEach(function(el,i){
       if(valsAdj[i]!==undefined) el.value=valsAdj[i];
     });
+    /* Destaque visual para temp abaixo de 8°C no fermLog (dados de maturação lançados errado) */
+    if(containerId==='fp-ferm-log'){
+      // índices 2=temp_set, 3=temp_real na linha de fermentação
+      [2,3].forEach(function(idx){
+        var inp = inputs[idx];
+        if(inp){
+          var val = parseFloat(inp.value);
+          if(!isNaN(val) && val < 8){
+            inp.style.borderColor = '#EF4444';
+            inp.style.background  = 'rgba(239,68,68,0.10)';
+          }
+        }
+      });
+    }
     /* Destaque visual para linha de PURGA no maturLog */
     if(containerId==='fp-matur-log'){
       // obs está no índice 7 (datetime,ts,tr,kgf,ph,co2,clareza,obs,resp,del)
@@ -11915,8 +11929,23 @@ function fp_addFermRow(){
     '<div class="fp-log-cell"><input placeholder="nome" value="'+esc(usuario)+'"></div>'+
     '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
   c.appendChild(row);
-  // atualiza stats ao adicionar linha
-  row.querySelectorAll('input').forEach(function(inp){
+  // atualiza stats ao adicionar linha + trava de temperatura de maturação
+  var tempInputs = row.querySelectorAll('input[type="number"]');
+  // índices 1=temp set, 2=temp real na linha de fermentação
+  tempInputs.forEach(function(inp, idx){
+    if (idx === 1 || idx === 2) { // temp set e temp real
+      inp.addEventListener('input', function(){
+        var val = parseFloat(this.value);
+        if (!isNaN(val) && val < 8) {
+          this.style.borderColor = '#EF4444';
+          this.style.background  = 'rgba(239,68,68,0.10)';
+          toast('🌡️ Temperatura abaixo de 8°C detectada na fermentação — essa faixa é de maturação. Verifique se o lançamento está na aba correta.', 'aviso');
+        } else {
+          this.style.borderColor = '';
+          this.style.background  = '';
+        }
+      });
+    }
     inp.addEventListener('input', fp_calcFermStats);
   });
   fp_markDirty(); fp_calcFermStats();
