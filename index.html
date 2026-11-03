@@ -3723,7 +3723,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.06";
+var VERSAO = "3.8.07";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6937,7 +6937,12 @@ async function carregarProgMensal(){
       } else if(it.tipo==="envase"){
         totEnv++;
         var prod=(it.produto||"—").trim();
-        envPetPorEstilo[prod]=(envPetPorEstilo[prod]||0)+1;
+        var qtdEnv=0;
+        if(it.resultado&&it.resultado.qtdEnvasada) qtdEnv=parseFloat(it.resultado.qtdEnvasada)||0;
+        if(!qtdEnv&&it.qtd) qtdEnv=parseFloat((it.qtd+"").replace(",","."))||0; // fallback: qtd prevista
+        if(!envPetPorEstilo[prod]) envPetPorEstilo[prod]={env:0,qtd:0};
+        envPetPorEstilo[prod].env++;
+        envPetPorEstilo[prod].qtd+=qtdEnv;
       }
     });
     var chSem=seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
@@ -6979,13 +6984,14 @@ async function carregarProgMensal(){
   var totBarrilL=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="barril";}).reduce(function(a,b){return a+(b.total||0);},0);},0);
   // chips de brassagem: estilo → qtd brassagens · vol brassado
   var chipsB  = tmEstiloChips(brassPorEstilo, function(v){ return v.qtd+(v.vol?" · "+fmtNum(v.vol)+" L":""); });
-  // chips de envase: apenas produtos com realização > 0; exibe qtd / meta (se meta definida)
+  // chips de envase: apenas produtos com envases > 0; exibe unidades reais / meta (se meta definida)
   var chipsPET="";
   Object.keys(envPetPorEstilo).sort().forEach(function(k){
-    var real=envPetPorEstilo[k]||0; if(!real) return;
+    var obj=envPetPorEstilo[k]; if(!obj||!obj.env) return;
+    var unStr=obj.qtd>0 ? fmtNum(obj.qtd)+" un" : obj.env+" envase"+(obj.env>1?"s":"");
     var m=metaEnvFormatos[k]||0;
-    var label=m ? real+" / "+m : String(real);
-    var atingido=m&&real>=m;
+    var label=m ? unStr+" / "+fmtNum(m) : unStr;
+    var atingido=m&&obj.qtd>=m;
     chipsPET+="<span class='tm-estilo-chip"+(atingido?" tm-chip-ok":"")+"'>"+esc(k)+": <strong>"+label+"</strong></span>";
   });
   var metaFmtChips="";
