@@ -2970,11 +2970,18 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         <div>
           <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">
             Produto / Estilo</label>
-          <input type="text" id="barrilProduto" readonly
-            placeholder="Preenchido automaticamente pelo tanque"
+          <select id="barrilProduto"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);
-            border-radius:8px;font-size:.9rem;background:var(--bg2,#f5f5f5);
-            color:var(--txt2,#666);cursor:default">
+            border-radius:8px;font-size:.9rem;background:#fff">
+            <option value="">Selecione o tanque primeiro…</option>
+            <option value="Helles">Helles</option>
+            <option value="Oktoberfest">Oktoberfest</option>
+            <option value="Redefort">Redefort</option>
+            <option value="American IPA">American IPA</option>
+            <option value="Red Ale">Red Ale</option>
+            <option value="Stout">Stout</option>
+            <option value="Export">Export</option>
+          </select>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
@@ -3726,7 +3733,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.09";
+var VERSAO = "3.8.10";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5346,8 +5353,12 @@ $("barrilTanque").addEventListener("change", function(){
     var tqNorm = (tanqueVal||"").toUpperCase().replace(/[-\s]/g,"");
     if (tqNorm && _dadosTanques) {
       var tq = _dadosTanques.find(function(t){ return t.nome.toUpperCase() === tqNorm; });
-      if (tq) {
-        $("barrilProduto").value = tq.estilo || tq.nome || "";
+      if (tq && tq.estilo) {
+        // normaliza o estilo do tanque para uma das opções do select
+        var estiloNorm = _normalizarEstiloBarril(tq.estilo);
+        var sel = $("barrilProduto");
+        var opt = Array.from(sel.options).find(function(o){ return o.value === estiloNorm; });
+        sel.value = opt ? estiloNorm : "";
       }
     }
   }
@@ -6960,7 +6971,7 @@ async function carregarProgMensal(){
       if(!mapaDia[di]) mapaDia[di]=[];
       mapaDia[di].push({tipo:"barril",produto:r.produto,total:r.total,_barrilReg:r});
       totBarril++;
-      var prod=(r.produto||"—").trim();
+      var prod=_normalizarEstiloBarril((r.produto||"").trim())||"—";
       if(!barrilPorEstilo[prod]) barrilPorEstilo[prod]={qtd:0,litros:0};
       barrilPorEstilo[prod].qtd++;
       barrilPorEstilo[prod].litros+=(r.total||0);
@@ -7640,6 +7651,20 @@ $("envTanque").addEventListener("change", function(){
   }, 80);
 });
 
+// Normaliza estilo livre do tanque para opção padronizada do select de barril
+function _normalizarEstiloBarril(estilo){
+  if(!estilo) return "";
+  var s = estilo.toLowerCase().trim();
+  if(s.indexOf("helles")!==-1 || s.indexOf("munich")!==-1) return "Helles";
+  if(s.indexOf("oktoberfest")!==-1 || s.indexOf("oktober")!==-1) return "Oktoberfest";
+  if(s.indexOf("redefort")!==-1) return "Redefort";
+  if(s.indexOf("ipa")!==-1) return "American IPA";
+  if(s.indexOf("red ale")!==-1 || s.indexOf("red")!==-1) return "Red Ale";
+  if(s.indexOf("stout")!==-1) return "Stout";
+  if(s.indexOf("export")!==-1 || s.indexOf("dortmund")!==-1) return "Export";
+  return estilo; // mantém original se não reconhecido
+}
+
 var ENV_ESTILOS = {
   "PET 500ml": ["Helles","Red Ale","IPA","Sem Álcool"],
   "PET 1L":    ["Helles","Oktoberfest","Redefort"],
@@ -7815,7 +7840,10 @@ $("progLista").addEventListener("click", async function(ev){
       _barrilSegProg = segundaDe(new Date(semEditar+"T00:00:00"));
       $('barrilSemanaSelector').hidden = true;
       atualizarBarrilSemana();
-      $("barrilProduto").value = reg.produto||"";
+      var prodNorm = _normalizarEstiloBarril(reg.produto||"");
+      var selBP = $("barrilProduto");
+      var optBP = Array.from(selBP.options).find(function(o){ return o.value === prodNorm; });
+      selBP.value = optBP ? prodNorm : (reg.produto||"");
       $("barrilTanque").value  = reg.tanque||"";
       // Popular select de lote para o tanque e pre-selecionar o lote salvo
       popularLotesPorTanque(reg.tanque||"", "barrilLote", "var(--linha)");
