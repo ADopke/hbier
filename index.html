@@ -2075,8 +2075,8 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
                   <div style="font-size:.8rem;font-weight:700;color:#003E99;margin-bottom:8px">
                     📦 PET 2L</div>
                   <div>
-                    <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Total (un)</label>
-                    <input type="number" id="metaEnv2L" placeholder="0"
+                    <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Helles (un)</label>
+                    <input type="number" id="metaEnv2LHelles" placeholder="0"
                       style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem">
                   </div>
                 </div>
@@ -3726,7 +3726,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.08";
+var VERSAO = "3.8.09";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7642,7 +7642,8 @@ $("envTanque").addEventListener("change", function(){
 
 var ENV_ESTILOS = {
   "PET 500ml": ["Helles","Red Ale","IPA","Sem Álcool"],
-  "PET 1L":    ["Helles","Oktoberfest","Redefort"]
+  "PET 1L":    ["Helles","Oktoberfest","Redefort"],
+  "PET 2L":    ["Helles"]
 };
 function atualizarEnvEstilo(){
   var fmt     = $("envFormato").value;
@@ -8417,7 +8418,7 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
     "Garrafa 355ml": ["Garrafa 355ml Helles","Garrafa 355ml Red Ale","Garrafa 355ml IPA","Garrafa 355ml Sem Alcool"],
     "PET 500ml":     ["PET 500ml Helles","PET 500ml Red Ale","PET 500ml IPA","PET 500ml Sem Alcool"],
     "PET 1L":        ["PET 1L Helles","PET 1L Oktoberfest","PET 1L Redefort"],
-    "PET 2L":        ["PET 2L"]
+    "PET 2L":        ["PET 2L Helles"]
   };
 
   // realizado por produto: vem do porFormato (keyed pelo formato do item, ex: "PET 1L")
@@ -8488,7 +8489,7 @@ function renderMetaSemanas(semanas, meta){
     "Garrafa 355ml":["Garrafa 355ml Helles","Garrafa 355ml Red Ale","Garrafa 355ml IPA","Garrafa 355ml Sem Álcool"],
     "PET 500ml":["PET 500ml Helles","PET 500ml Red Ale","PET 500ml IPA","PET 500ml Sem Álcool"],
     "PET 1L":["PET 1L Helles","PET 1L Oktoberfest","PET 1L Redefort"],
-    "PET 2L":["PET 2L"]
+    "PET 2L":["PET 2L Helles"]
   };
   $("metaSemanas").innerHTML = semanas.map(function(sem){
     var temBrass=sem.volReal||sem.volPrev;
@@ -8591,7 +8592,7 @@ function renderMetaFormularios(meta){
     "PET 1L Helles":           "metaEnv1LHelles",
     "PET 1L Oktoberfest":      "metaEnv1LOktoberfest",
     "PET 1L Redefort":         "metaEnv1LRedefort",
-    "PET 2L":                  "metaEnv2L"
+    "PET 2L Helles":           "metaEnv2LHelles"
   };
   Object.keys(camposEnv).forEach(function(chave){
     var el = $(camposEnv[chave]);
@@ -8647,7 +8648,7 @@ $("btnSalvarMetaEnv").addEventListener("click", async function(){
     "PET 1L Helles":"metaEnv1LHelles",
     "PET 1L Oktoberfest":"metaEnv1LOktoberfest",
     "PET 1L Redefort":"metaEnv1LRedefort",
-    "PET 2L":"metaEnv2L"
+    "PET 2L Helles":"metaEnv2LHelles"
   };
   var fmts = {};
   Object.keys(camposEnv).forEach(function(chave){
