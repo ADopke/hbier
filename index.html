@@ -2471,7 +2471,27 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <button class="btn mini secundario" id="btnAtualizarTanques">↺ Atualizar</button>
           <button class="btn mini secundario" id="btnExportarTanquesPDF">📄 PDF</button>
           <button class="btn mini secundario" id="btnExportarTanquesExcel">📊 Excel</button>
+          <button class="btn mini secundario" id="btnRegistrosTanques">📋 Registros</button>
           <button class="btn mini secundario" id="btnAuditoriaTanques" style="margin-left:auto">🔍 Auditoria</button>
+        </div>
+        <!-- Modal de registros de fermentação/maturação -->
+        <div id="modalRegistrosTanques" hidden style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px">
+          <div style="background:var(--card);border-radius:12px;width:100%;max-width:780px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--linha);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+              <span style="font-weight:700;font-size:1rem">📋 Registros de Fermentação e Maturação</span>
+              <button onclick="document.getElementById('modalRegistrosTanques').hidden=true" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);line-height:1">×</button>
+            </div>
+            <div style="padding:12px 16px;border-bottom:1px solid var(--linha);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <label style="font-size:.82rem;color:var(--muted);white-space:nowrap">De:</label>
+              <input type="date" id="regDataInicio" style="font-size:.82rem;padding:4px 8px;border:1px solid var(--linha);border-radius:6px;background:var(--card);color:var(--fg)">
+              <label style="font-size:.82rem;color:var(--muted);white-space:nowrap">Até:</label>
+              <input type="date" id="regDataFim" style="font-size:.82rem;padding:4px 8px;border:1px solid var(--linha);border-radius:6px;background:var(--card);color:var(--fg)">
+              <button id="btnFiltrarRegistros" class="btn mini" style="margin-left:4px">Filtrar</button>
+            </div>
+            <div id="modalRegistrosConteudo" style="overflow-y:auto;padding:16px;font-size:.82rem">
+              <div class="vazio">Carregando…</div>
+            </div>
+          </div>
         </div>
         <!-- Modal de auditoria -->
         <div id="modalAuditoriaTanques" hidden style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px">
@@ -3697,7 +3717,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.95";
+var VERSAO = "3.7.96";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10871,6 +10891,206 @@ $("btnAuditoriaTanques").addEventListener("click", async function(){
   }
 });
 $("modalAuditoriaTanques").addEventListener("click", function(e){ if(e.target === this) this.hidden = true; });
+
+// ── Registros de Fermentação e Maturação ──────────────────────────────────────
+(function(){
+  var _regCache = null; // cache das fichas carregadas
+
+  function fmtDtReg(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    var pad = function(n){ return ("0"+n).slice(-2); };
+    return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+d.getFullYear()+" "+pad(d.getHours())+":"+pad(d.getMinutes());
+  }
+
+  function parseDateStr(s) {
+    // "YYYY-MM-DD" ou ISO completo
+    if (!s) return null;
+    return new Date(s.length === 10 ? s + "T00:00:00" : s);
+  }
+
+  async function carregarRegistros(dataInicio, dataFim) {
+    var conteudo = $("modalRegistrosConteudo");
+    conteudo.innerHTML = "<div class='vazio'>Carregando fichas…</div>";
+
+    try {
+      // Carrega índice
+      if (!_regCache) {
+        var r = await api("/api/ficha?lista=1");
+        var lotes = (r.lotes || []);
+        // Busca fichas em paralelo (máximo 30 mais recentes para não sobrecarregar)
+        var lotesParaBuscar = lotes.slice(0, 30);
+        var fichas = await Promise.all(lotesParaBuscar.map(function(l){
+          return api("/api/ficha?lote="+encodeURIComponent(l.lote)).then(function(fr){ return fr.ficha || null; });
+        }));
+        _regCache = fichas.filter(Boolean);
+      }
+
+      // Agrupa registros por tanque
+      var porTanque = {};
+
+      _regCache.forEach(function(ficha){
+        var tanque = (ficha.cabecalho && ficha.cabecalho.tanque) ? ficha.cabecalho.tanque.toUpperCase().trim() : "SEM TANQUE";
+        var lote   = (ficha.cabecalho && ficha.cabecalho.lote)   ? ficha.cabecalho.lote   : "?";
+        var estilo = (ficha.cabecalho && ficha.cabecalho.estilo) ? ficha.cabecalho.estilo : "";
+
+        if (!porTanque[tanque]) porTanque[tanque] = [];
+
+        // fermLog: [datetime, SG, temp_set, temp_real, kgf, pH, obs, responsável, del]
+        var fermLog = ficha.fermLog || [];
+        fermLog.forEach(function(row){
+          if (!row || row[8] === "del") return; // deletado
+          var dt = row[0];
+          if (!dt) return;
+          var d = parseDateStr(dt);
+          if (dataInicio && d < dataInicio) return;
+          if (dataFim   && d > dataFim)   return;
+          porTanque[tanque].push({
+            tipo: "ferm",
+            lote: lote,
+            estilo: estilo,
+            dt: dt,
+            sg: row[1],
+            tempSet: row[2],
+            tempReal: row[3],
+            kgf: row[4],
+            ph: row[5],
+            obs: row[6],
+            resp: row[7]
+          });
+        });
+
+        // maturLog: [datetime, temp_set, temp_real, kgf, pH, co2, clareza, obs, responsável, del]
+        var maturLog = ficha.maturLog || [];
+        maturLog.forEach(function(row){
+          if (!row || row[9] === "del") return; // deletado
+          var dt = row[0];
+          if (!dt) return;
+          var d = parseDateStr(dt);
+          if (dataInicio && d < dataInicio) return;
+          if (dataFim   && d > dataFim)   return;
+          porTanque[tanque].push({
+            tipo: "matur",
+            lote: lote,
+            estilo: estilo,
+            dt: dt,
+            tempSet: row[1],
+            tempReal: row[2],
+            kgf: row[3],
+            ph: row[4],
+            co2: row[5],
+            clareza: row[6],
+            obs: row[7],
+            resp: row[8]
+          });
+        });
+      });
+
+      // Ordena tanques e registros
+      var tanques = Object.keys(porTanque).sort();
+      var totalRegistros = 0;
+      tanques.forEach(function(t){ totalRegistros += porTanque[t].length; });
+
+      if (!totalRegistros) {
+        conteudo.innerHTML = "<div class='vazio'>Nenhum registro encontrado no período selecionado.</div>";
+        return;
+      }
+
+      var html = "";
+      tanques.forEach(function(tanque){
+        var regs = porTanque[tanque];
+        if (!regs.length) return;
+        // ordena por data desc
+        regs.sort(function(a,b){ return (b.dt||"").localeCompare(a.dt||""); });
+
+        html += "<div style='margin-bottom:20px'>";
+        html += "<div style='font-weight:700;font-size:.9rem;padding:6px 10px;background:var(--linha-bg,#f3f4f6);border-radius:8px;margin-bottom:6px'>🏭 "+esc(tanque)+" <span style='font-weight:400;font-size:.78rem;color:var(--muted)'>("+regs.length+" registro"+(regs.length!==1?"s":"")+")</span></div>";
+
+        // Agrupa por lote dentro do tanque
+        var porLote = {};
+        regs.forEach(function(r){
+          var k = r.lote+"||"+r.estilo;
+          if (!porLote[k]) porLote[k] = { lote: r.lote, estilo: r.estilo, regs: [] };
+          porLote[k].regs.push(r);
+        });
+
+        Object.values(porLote).forEach(function(grupo){
+          html += "<div style='margin-bottom:10px;padding-left:8px;border-left:3px solid var(--linha)'>";
+          html += "<div style='font-size:.78rem;color:var(--muted);margin-bottom:4px'>Lote: <strong>"+esc(grupo.lote)+"</strong>"+(grupo.estilo ? " — "+esc(grupo.estilo) : "")+"</div>";
+          html += "<table style='width:100%;border-collapse:collapse;font-size:.77rem'>";
+          html += "<thead><tr style='background:var(--linha-bg,#f3f4f6);text-align:left'>";
+          html += "<th style='padding:4px 6px'>Tipo</th>";
+          html += "<th style='padding:4px 6px'>Data/hora</th>";
+          html += "<th style='padding:4px 6px'>Temp real</th>";
+          html += "<th style='padding:4px 6px'>Temp set</th>";
+          html += "<th style='padding:4px 6px'>kgf</th>";
+          html += "<th style='padding:4px 6px'>pH</th>";
+          html += "<th style='padding:4px 6px'>SG/CO₂</th>";
+          html += "<th style='padding:4px 6px'>Obs</th>";
+          html += "<th style='padding:4px 6px'>Responsável</th>";
+          html += "</tr></thead><tbody>";
+
+          grupo.regs.forEach(function(r, i){
+            var bgRow = i%2===0 ? "transparent" : "var(--linha-bg,#f9fafb)";
+            var tipoBadge = r.tipo === "ferm"
+              ? "<span style='background:#EFF6FF;color:#2563EB;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>🌡 Ferm</span>"
+              : "<span style='background:#F0FDF4;color:#16A34A;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>❄️ Matur</span>";
+            var sgOuCo2 = r.tipo === "ferm"
+              ? (r.sg   != null && r.sg   !== "" ? r.sg   : "—")
+              : (r.co2  != null && r.co2  !== "" ? r.co2+" vol" : "—");
+            html += "<tr style='border-top:1px solid var(--linha);background:"+bgRow+"'>";
+            html += "<td style='padding:4px 6px'>"+tipoBadge+"</td>";
+            html += "<td style='padding:4px 6px;white-space:nowrap;color:var(--muted)'>"+fmtDtReg(r.dt)+"</td>";
+            html += "<td style='padding:4px 6px'>"+(r.tempReal != null && r.tempReal !== "" ? r.tempReal+"°C" : "—")+"</td>";
+            html += "<td style='padding:4px 6px;color:var(--muted)'>"+(r.tempSet  != null && r.tempSet  !== "" ? r.tempSet+"°C"  : "—")+"</td>";
+            html += "<td style='padding:4px 6px'>"+(r.kgf      != null && r.kgf      !== "" ? r.kgf          : "—")+"</td>";
+            html += "<td style='padding:4px 6px'>"+(r.ph       != null && r.ph       !== "" ? r.ph            : "—")+"</td>";
+            html += "<td style='padding:4px 6px'>"+esc(String(sgOuCo2))+"</td>";
+            html += "<td style='padding:4px 6px;color:var(--muted)'>"+esc(r.obs || "")+"</td>";
+            html += "<td style='padding:4px 6px'>"+esc(r.resp ? "@"+r.resp : "—")+"</td>";
+            html += "</tr>";
+          });
+
+          html += "</tbody></table></div>";
+        });
+
+        html += "</div>";
+      });
+
+      conteudo.innerHTML = html;
+
+    } catch(e) {
+      conteudo.innerHTML = "<div class='vazio'>Erro ao carregar registros: "+esc(e.message)+"</div>";
+    }
+  }
+
+  $("btnRegistrosTanques").addEventListener("click", function(){
+    _regCache = null; // força reload ao abrir
+    var modal = $("modalRegistrosTanques");
+    modal.hidden = false;
+    // Preenche datas padrão: últimos 30 dias
+    var hoje = new Date();
+    var treintaDias = new Date(hoje - 30*24*60*60*1000);
+    var pad = function(n){ return ("0"+n).slice(-2); };
+    var fmtDate = function(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); };
+    if (!$("regDataInicio").value) $("regDataInicio").value = fmtDate(treintaDias);
+    if (!$("regDataFim").value)    $("regDataFim").value    = fmtDate(hoje);
+    carregarRegistros(
+      parseDateStr($("regDataInicio").value),
+      parseDateStr($("regDataFim").value + "T23:59:59")
+    );
+  });
+
+  $("btnFiltrarRegistros").addEventListener("click", function(){
+    _regCache = null; // força reload ao filtrar
+    carregarRegistros(
+      parseDateStr($("regDataInicio").value),
+      parseDateStr($("regDataFim").value ? $("regDataFim").value + "T23:59:59" : null)
+    );
+  });
+
+  $("modalRegistrosTanques").addEventListener("click", function(e){ if(e.target === this) this.hidden = true; });
+})();
 
 // Exportar PDF da aba tanques
 $("btnExportarTanquesPDF").addEventListener("click", function(){
