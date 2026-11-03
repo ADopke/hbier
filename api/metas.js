@@ -6,7 +6,7 @@ import {
 // POST /api/metas                  → salva a meta do mês
 //
 // Estrutura salva:
-//   { brass, envTotal, formatos: { "Garrafa 355ml": N, "PET 500ml": N, ... } }
+//   { brass, envTotal, formatos: { "Garrafa 355ml": N, "PET 500ml": N, ... }, barris: { "Helles": N, ... } }
 //
 // Qualquer papel autenticado pode ler.
 // Apenas admin e gestor podem salvar.
@@ -42,6 +42,7 @@ export default protegido(async function handler(req, res) {
       brass:    dados.brass    != null ? Number(dados.brass)    : undefined,
       envTotal: dados.envTotal != null ? Number(dados.envTotal) : undefined,
       formatos: {},
+      barris:   {},
       atualizadoPor: sessao.login,
       em: new Date().toISOString(),
     };
@@ -50,6 +51,13 @@ export default protegido(async function handler(req, res) {
       for (const [fmt, val] of Object.entries(dados.formatos)) {
         const n = Number(val);
         if (n > 0) meta.formatos[fmt] = n;
+      }
+    }
+
+    if (dados.barris && typeof dados.barris === "object") {
+      for (const [prod, val] of Object.entries(dados.barris)) {
+        const n = Number(val);
+        if (n > 0) meta.barris[prod] = n;
       }
     }
 
