@@ -3717,7 +3717,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.02";
+var VERSAO = "3.8.03";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11844,15 +11844,21 @@ function preencherLogDivs(containerId, rows, addFn, silentMode){
     });
     /* Destaque visual para temp abaixo de 8°C no fermLog (dados de maturação lançados errado) */
     if(containerId==='fp-ferm-log'){
-      // índices 2=temp_set, 3=temp_real na linha de fermentação
-      [2,3].forEach(function(idx){
-        var inp = inputs[idx];
-        if(inp){
-          var val = parseFloat(inp.value);
-          if(!isNaN(val) && val < 8){
-            inp.style.borderColor = '#EF4444';
-            inp.style.background  = 'rgba(239,68,68,0.10)';
-          }
+      var fgAlvoEl2 = document.getElementById('fp-fg-alvo');
+      var fgAlvo2 = fgAlvoEl2 ? parseFloat((fgAlvoEl2.value||'').replace(',','.')) : NaN;
+      inputs.forEach(function(inp, idx){
+        if(!inp || inp.type !== 'number') return;
+        var val = parseFloat(inp.value);
+        // idx dentro dos inputs do DOM: 0=datetime(text), 1=SG, 2=temp_set, 3=temp_real, 4=kgf, 5=pH, 6=obs(text), 7=nome(text)
+        // mas inputs aqui inclui todos (input, select, textarea), então verificamos placeholder
+        var ph = inp.placeholder || '';
+        if((ph.indexOf('°C') !== -1) && !isNaN(val) && val < 8){
+          inp.style.borderColor = '#EF4444';
+          inp.style.background  = 'rgba(239,68,68,0.10)';
+        }
+        if((ph === '1.040' || ph.indexOf('1.') === 0) && !isNaN(val) && !isNaN(fgAlvo2) && fgAlvo2 > 1 && val <= fgAlvo2){
+          inp.style.borderColor = '#10B981';
+          inp.style.background  = 'rgba(16,185,129,0.10)';
         }
       });
     }
@@ -11929,17 +11935,34 @@ function fp_addFermRow(){
     '<div class="fp-log-cell"><input placeholder="nome" value="'+esc(usuario)+'"></div>'+
     '<div class="fp-log-cell"><button class="fp-del-btn" onclick="fp_delLog(this)">✕</button></div>';
   c.appendChild(row);
-  // atualiza stats ao adicionar linha + trava de temperatura de maturação
-  var tempInputs = row.querySelectorAll('input[type="number"]');
-  // índices 1=temp set, 2=temp real na linha de fermentação
-  tempInputs.forEach(function(inp, idx){
-    if (idx === 1 || idx === 2) { // temp set e temp real
+  // atualiza stats + travas de temperatura e SG ao adicionar linha
+  var numInputs = row.querySelectorAll('input[type="number"]');
+  // layout da linha ferm: [0]=SG, [1]=temp_set, [2]=temp_real, [3]=kgf, [4]=pH
+  numInputs.forEach(function(inp, idx){
+    // Trava temperatura: aviso se temp set ou temp real < 8°C (faixa de maturação)
+    if (idx === 1 || idx === 2) {
       inp.addEventListener('input', function(){
         var val = parseFloat(this.value);
         if (!isNaN(val) && val < 8) {
           this.style.borderColor = '#EF4444';
           this.style.background  = 'rgba(239,68,68,0.10)';
-          toast('🌡️ Temperatura abaixo de 8°C detectada na fermentação — essa faixa é de maturação. Verifique se o lançamento está na aba correta.', 'aviso');
+          toast('🌡️ Temperatura abaixo de 8°C na fermentação — essa faixa é de maturação. Verifique se o lançamento está na aba correta.', 'aviso');
+        } else {
+          this.style.borderColor = '';
+          this.style.background  = '';
+        }
+      });
+    }
+    // Aviso FG: quando SG digitado ≤ FG alvo, sugere iniciar maturação
+    if (idx === 0) {
+      inp.addEventListener('input', function(){
+        var sg = parseFloat(this.value);
+        var fgAlvoEl = document.getElementById('fp-fg-alvo');
+        var fgAlvo = fgAlvoEl ? parseFloat((fgAlvoEl.value||'').replace(',','.')) : NaN;
+        if (!isNaN(sg) && !isNaN(fgAlvo) && fgAlvo > 1 && sg <= fgAlvo) {
+          this.style.borderColor = '#10B981';
+          this.style.background  = 'rgba(16,185,129,0.10)';
+          toast('🍺 SG atingiu o FG alvo ('+fgAlvo+')! Confirme esta leitura de fermentação e registre a primeira leitura na aba de Maturação para iniciar o processo.', 'ok');
         } else {
           this.style.borderColor = '';
           this.style.background  = '';
