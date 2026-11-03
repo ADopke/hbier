@@ -3733,7 +3733,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.10";
+var VERSAO = "3.8.11";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6924,7 +6924,7 @@ async function carregarProgMensal(){
   }));
   var DIAS_OFF={"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5};
   var mapaDia={};
-  var totBrass=0,totEnv=0,totBarril=0,totVolReal=0;
+  var totBrass=0,totEnv=0,totBarril=0,totVolReal=0,totQtdEnvReal=0;
   // contadores por estilo
   var brassPorEstilo={};   // estilo → {qtd, vol}
   var envPetPorEstilo={};  // produto → qtd
@@ -6957,6 +6957,7 @@ async function carregarProgMensal(){
         if(!envPetPorEstilo[prod]) envPetPorEstilo[prod]={env:0,qtd:0};
         envPetPorEstilo[prod].env++;
         envPetPorEstilo[prod].qtd+=qtdEnv;
+        totQtdEnvReal+=qtdEnv;
       }
     });
     var chSem=seg.getFullYear()+"-"+("0"+(seg.getMonth()+1)).slice(-2)+"-"+("0"+seg.getDate()).slice(-2);
@@ -6992,7 +6993,7 @@ async function carregarProgMensal(){
     metaEnvFormatos=(mr.meta&&mr.meta.formatos)||{};
   }catch(e){}
   var pctVol=metaBrass?Math.min(100,Math.round(totVolReal/metaBrass*100)):0;
-  var pctEnvMes=metaEnvTotal?Math.min(100,Math.round(totEnv/metaEnvTotal*100)):0;
+  var pctEnvMes=metaEnvTotal?Math.min(100,Math.round(totQtdEnvReal/metaEnvTotal*100)):0;
   var brassCom=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="brassagem"&&x.resultado;}).length;},0);
   var envCom=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="envase"&&x.resultado;}).length;},0);
   var totBarrilL=Object.values(mapaDia).reduce(function(acc,lst){return acc+lst.filter(function(x){return x.tipo==="barril";}).reduce(function(a,b){return a+(b.total||0);},0);},0);
@@ -7022,7 +7023,7 @@ async function carregarProgMensal(){
     "</div>";
   // --- card envases PET: total + meta + chips produto c/ realizado/meta + barra ---
   var envSub=envCom+" com resultado";
-  if(metaEnvTotal) envSub+=" &nbsp;·&nbsp; <span class='tm-vol-meta'>meta "+metaEnvTotal+" un ("+pctEnvMes+"%)</span>";
+  if(metaEnvTotal) envSub+=" &nbsp;·&nbsp; <span class='tm-vol-meta'>meta "+fmtNum(metaEnvTotal)+" un ("+pctEnvMes+"%)</span>";
   var htmlEnv="<div class='tm-card tm-env'>"+
     "<span class='tm-label'>📦 Envases PET</span>"+
     "<span class='tm-num'>"+totEnv+"</span>"+
