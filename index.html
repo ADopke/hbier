@@ -2089,6 +2089,50 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
             </div>
           </div>
 
+          <!-- BARRIL -->
+          <div class="meta-card">
+            <div class="meta-card-header" style="background:#7A4500">
+              <span>🛢 Barris</span>
+              <button class="meta-edit-btn" id="btnEditarMetaBarril">✏ definir meta</button>
+            </div>
+            <div class="meta-card-body">
+              <div class="meta-form" id="metaFormBarril" hidden>
+                <div style="background:#FFF3E8;border-radius:8px;padding:10px 12px;margin-bottom:12px">
+                  <div style="font-size:.8rem;font-weight:700;color:#7A4500;margin-bottom:8px">
+                    🛢 Barris por produto (un)</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Helles</label>
+                      <input type="number" id="metaBarrilHelles" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Oktoberfest</label>
+                      <input type="number" id="metaBarrilOktoberfest" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Redefort</label>
+                      <input type="number" id="metaBarrilRedefort" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">American IPA</label>
+                      <input type="number" id="metaBarrilAIPA" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Red Ale</label>
+                      <input type="number" id="metaBarrilRedAle" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Stout</label>
+                      <input type="number" id="metaBarrilStout" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                    <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px">Export</label>
+                      <input type="number" id="metaBarrilExport" placeholder="0"
+                        style="width:100%;padding:7px;border:1.5px solid var(--linha);border-radius:6px;font-size:.85rem"></div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                  <button class="btn mini" id="btnSalvarMetaBarril">Salvar</button>
+                  <button class="btn mini secundario" id="btnCancelarMetaBarril">Cancelar</button>
+                </div>
+              </div>
+              <div id="metaBarraBarril"></div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Detalhe das semanas -->
@@ -3733,7 +3777,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.11";
+var VERSAO = "3.8.12";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6985,12 +7029,13 @@ async function carregarProgMensal(){
     }).join("");
   }
   _calDadosMes=mapaDia;
-  var metaBrass=0, metaEnvTotal=0, metaEnvFormatos={};
+  var metaBrass=0, metaEnvTotal=0, metaEnvFormatos={}, metaBarris={};
   try{
     var mr=await api("/api/metas?ano="+ano+"&mes="+(mes+1));
     metaBrass=(mr.meta&&mr.meta.brass)||0;
     metaEnvTotal=(mr.meta&&mr.meta.envTotal)||0;
     metaEnvFormatos=(mr.meta&&mr.meta.formatos)||{};
+    metaBarris=(mr.meta&&mr.meta.barris)||{};
   }catch(e){}
   var pctVol=metaBrass?Math.min(100,Math.round(totVolReal/metaBrass*100)):0;
   var pctEnvMes=metaEnvTotal?Math.min(100,Math.round(totQtdEnvReal/metaEnvTotal*100)):0;
@@ -7009,8 +7054,16 @@ async function carregarProgMensal(){
     var atingido=m&&obj.qtd>=m;
     chipsPET+="<span class='tm-estilo-chip"+(atingido?" tm-chip-ok":"")+"'>"+esc(k)+": <strong>"+label+"</strong></span>";
   });
-  var metaFmtChips="";
-  var chipsBar= tmEstiloChips(barrilPorEstilo, function(v){ return v.qtd+(v.litros?" · "+fmtNum(v.litros)+" L":""); });
+  var totalMetaBarril=Object.values(metaBarris).reduce(function(a,b){return a+b;},0);
+  var pctBarrilMes=totalMetaBarril?Math.min(100,Math.round(totBarril/totalMetaBarril*100)):0;
+  var chipsBar="";
+  Object.keys(barrilPorEstilo).sort().forEach(function(k){
+    var obj=barrilPorEstilo[k]; if(!obj||!obj.qtd) return;
+    var m=metaBarris[k]||0;
+    var label=m ? fmtNum(obj.qtd)+" / "+fmtNum(m)+" un" : fmtNum(obj.qtd)+" un"+(obj.litros?" · "+fmtNum(obj.litros)+" L":"");
+    var atingido=m&&obj.qtd>=m;
+    chipsBar+="<span class='tm-estilo-chip"+(atingido?" tm-chip-ok":"")+"'>"+esc(k)+": <strong>"+label+"</strong></span>";
+  });
   // --- card brassagens (ocupa linha inteira): total + volume brassado + meta vol + chips estilo ---
   var brassSub=brassCom+" com resultado";
   var volStr=fmtNum(totVolReal)+" L brassados";
@@ -7032,11 +7085,14 @@ async function carregarProgMensal(){
     "<div class='tm-barra'><div class='tm-fill' style='width:"+pctEnvMes+"%;background:#003E99'></div></div>"+
     "</div>";
   // --- card barris ---
+  var barrilSub=(totBarrilL?fmtNum(totBarrilL)+" L total":"nenhum");
+  if(totalMetaBarril) barrilSub+=" &nbsp;·&nbsp; <span class='tm-vol-meta'>meta "+fmtNum(totalMetaBarril)+" un ("+pctBarrilMes+"%)</span>";
   var htmlBarril="<div class='tm-card tm-barril'>"+
     "<span class='tm-label'>🛢 Barris</span>"+
     "<span class='tm-num'>"+totBarril+"</span>"+
-    "<span class='tm-sub'>"+(totBarrilL?fmtNum(totBarrilL)+" L total":"nenhum")+"</span>"+
+    "<span class='tm-sub'>"+barrilSub+"</span>"+
     (chipsBar?"<div class='tm-estilos'>"+chipsBar+"</div>":"")+
+    "<div class='tm-barra'><div class='tm-fill' style='width:"+pctBarrilMes+"%;background:#7A4500'></div></div>"+
     "</div>";
   $("progMensalTotais").innerHTML=htmlBrass+htmlEnv+htmlBarril;
   // Calendário
@@ -8241,13 +8297,15 @@ async function metaSalvar(ano, mes, obj){
   if (obj.brass    !== undefined) merged.brass    = obj.brass    || null;
   if (obj.envTotal !== undefined) merged.envTotal = obj.envTotal || null;
   if (obj.formatos !== undefined) merged.formatos = obj.formatos || {};
+  if (obj.barris   !== undefined) merged.barris   = obj.barris   || {};
 
   await api("/api/metas", {method:"POST", body:{
     ano:      ano,
     mes:      mes+1,
     brass:    merged.brass    || null,
     envTotal: merged.envTotal || null,
-    formatos: merged.formatos || {}
+    formatos: merged.formatos || {},
+    barris:   merged.barris   || {}
   }});
 }
 
@@ -8299,6 +8357,7 @@ async function carregarMetas(){
   var qtdPrevista    = 0;   // unidades previstas (qtd do item)
   var litrosEnvasados= 0;
   var porFormato     = {};
+  var barrisRealizados = {};  // produto → count
   var detalhesSemanas= [];
   var totalTemPrevisto = false;
 
@@ -8377,6 +8436,10 @@ async function carregarMetas(){
             } else {if(!semFmtReal[fmt])semFmtReal[fmt]=0;semFmtReal[fmt]+=qr;}
           }
         }
+      } else if (it.tipo === "barril"){
+        var prodBar = _normalizarEstiloBarril((it.produto||"").trim()) || "—";
+        if (!barrisRealizados[prodBar]) barrisRealizados[prodBar] = 0;
+        barrisRealizados[prodBar]++;
       }
     });
 
@@ -8393,8 +8456,10 @@ async function carregarMetas(){
     });
   });
 
+  var totBarrisRealizados = Object.values(barrisRealizados).reduce(function(a,b){return a+b;},0);
   renderMetaBrassagem(meta, volRealizado, volPrevisto);
   renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porFormato);
+  renderMetaBarril(meta, totBarrisRealizados, barrisRealizados);
   renderMetaSemanas(detalhesSemanas, meta);
   renderMetaFormularios(meta);
 }
@@ -8511,7 +8576,35 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
   $("metaBarraEnv").innerHTML = html;
 }
 
+function renderMetaBarril(meta, totRealizado, porProduto){
+  var metasBarril = meta.barris || {};
+  var totalMeta = Object.values(metasBarril).reduce(function(a,b){return a+b;},0);
+  var html = renderBarra(totRealizado, 0, totalMeta||null, "un", "Barril");
 
+  var produtos = ["Helles","Oktoberfest","Redefort","American IPA","Red Ale","Stout","Export"];
+  var temAlgo = totalMeta > 0 || totRealizado > 0;
+  if (temAlgo){
+    html += "<div style='margin-top:12px;display:flex;flex-direction:column;gap:6px'>";
+    produtos.forEach(function(prod){
+      var metaProd = metasBarril[prod] || 0;
+      var realProd = porProduto[prod]  || 0;
+      if (!metaProd && !realProd) return;
+      var pct = metaProd ? Math.min(100, Math.round(realProd/metaProd*100)) : 0;
+      var classe = pct>=100?"acima":pct>=80?"atingida":"";
+      html += "<div style='background:#FFF3E8;border-radius:8px;padding:8px 12px'>"+
+        "<div class='meta-barra-numeros' style='margin-bottom:3px'>"+
+          "<span style='font-size:.82rem;font-weight:700;color:#7A4500'>"+esc(prod)+"</span>"+
+          "<span style='font-size:.75rem;color:var(--muted)'>"+fmtNum(realProd)+" / "+fmtNum(metaProd||"?")+" un</span>"+
+        "</div>"+
+        (metaProd?"<div class='meta-barra-bg'><div class='meta-barra-fill "+classe+"' style='width:"+pct+"%'></div></div>"+
+        "<div class='meta-pct'>"+pct+"% atingido"+(pct>=100?" 🎉":"")+"</div>":""+
+        "<div style='font-size:.75rem;color:var(--muted)'>Realizado: <b style='color:var(--ink)'>"+fmtNum(realProd)+" un</b> (sem meta)</div>")+
+      "</div>";
+    });
+    html += "</div>";
+  }
+  $("metaBarraBarril").innerHTML = html;
+}
 
 function renderMetaSemanas(semanas, meta){
   var GRUPOS_META={
@@ -8608,6 +8701,20 @@ function renderMetaSemanas(semanas, meta){
 function renderMetaFormularios(meta){
   // brassagem
   $("metaValorBrass").value = meta.brass || "";
+  // barril — campos por produto
+  var camposBarril = {
+    "Helles":       "metaBarrilHelles",
+    "Oktoberfest":  "metaBarrilOktoberfest",
+    "Redefort":     "metaBarrilRedefort",
+    "American IPA": "metaBarrilAIPA",
+    "Red Ale":      "metaBarrilRedAle",
+    "Stout":        "metaBarrilStout",
+    "Export":       "metaBarrilExport"
+  };
+  Object.keys(camposBarril).forEach(function(chave){
+    var el = $(camposBarril[chave]);
+    if (el) el.value = (meta.barris && meta.barris[chave]) || "";
+  });
   // envase — campos individuais por produto×formato
   var camposEnv = {
     "Garrafa 355ml Helles":    "metaEnv355Helles",
@@ -8664,6 +8771,37 @@ $("btnEditarMetaEnv").addEventListener("click", function(){
   if(!$("metaFormEnv").hidden) $("metaEnv355Helles").focus();
 });
 $("btnCancelarMetaEnv").addEventListener("click", function(){ $("metaFormEnv").hidden=true; });
+
+// Formulário barril
+$("btnEditarMetaBarril").addEventListener("click", function(){
+  $("metaFormBarril").hidden = !$("metaFormBarril").hidden;
+  if(!$("metaFormBarril").hidden) $("metaBarrilHelles").focus();
+});
+$("btnCancelarMetaBarril").addEventListener("click", function(){ $("metaFormBarril").hidden=true; });
+$("btnSalvarMetaBarril").addEventListener("click", async function(){
+  var camposBarril = {
+    "Helles":       "metaBarrilHelles",
+    "Oktoberfest":  "metaBarrilOktoberfest",
+    "Redefort":     "metaBarrilRedefort",
+    "American IPA": "metaBarrilAIPA",
+    "Red Ale":      "metaBarrilRedAle",
+    "Stout":        "metaBarrilStout",
+    "Export":       "metaBarrilExport"
+  };
+  var barris = {};
+  Object.keys(camposBarril).forEach(function(chave){
+    var v = parseFloat($(camposBarril[chave]).value)||0;
+    if(v) barris[chave] = v;
+  });
+  var meta = { barris: barris };
+  try{
+    await metaSalvar(metaAnoAtual,metaMesAtual,meta);
+    $("metaFormBarril").hidden=true;
+    carregarMetas();
+    toast("Meta de barris salva.");
+  }catch(e){ toast(e.message,"erro"); }
+});
+
 $("btnSalvarMetaEnv").addEventListener("click", async function(){
   var camposEnv = {
     "Garrafa 355ml Helles":"metaEnv355Helles",
