@@ -3717,7 +3717,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.7.96";
+var VERSAO = "3.7.97";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -3854,7 +3854,12 @@ async function api(rota, opcoes){
   var r = await fetch(rota, conf);
   var dados = {};
   try { dados = await r.json(); } catch(e){}
-  if (!r.ok) throw new Error(dados.erro || "Falha na comunicação com o servidor.");
+  if (!r.ok) {
+    var err = new Error(dados.mensagem || dados.erro || "Falha na comunicação com o servidor.");
+    err.status = r.status;
+    err.data   = dados;
+    throw err;
+  }
   return dados;
 }
 
@@ -9800,7 +9805,8 @@ async function leiturasRegistrarPurga(tqId, lote){
     // [datetime, temp_set, temp_real, kgf, pH, co2, clareza, obs, resp, del_placeholder]
     var row = [dt, "", "", "", "", "", "", "🔽 PURGA", sessao.login || "", ""];
     ficha.maturLog.push(row);
-    await api("/api/ficha", {method:"POST", body:{lote:lote, dados:ficha}});
+    var versaoPurga = (ficha.meta && ficha.meta.versao) ? ficha.meta.versao : 0;
+    await api("/api/ficha", {method:"POST", body:{lote:lote, dados:ficha, versaoEsperada:versaoPurga}});
     toast("🔽 Purga registrada — lote "+lote, "ok");
   } catch(e) {
     toast("Erro ao registrar purga: "+String(e), "erro");
@@ -9909,9 +9915,10 @@ async function leiturasSalvar(tqId, lote, tipo){
       ficha.maturLog.push(row);
     }
 
-    // 2. salvar ficha de volta
+    // 2. salvar ficha de volta (passa versão que acabou de ler — evita conflito simultâneo)
     console.log("[leituras] salvando ficha...");
-    var saveRes = await api("/api/ficha", {method:"POST", body:{lote:lote, dados:ficha}});
+    var versaoLida = (ficha.meta && ficha.meta.versao) ? ficha.meta.versao : 0;
+    var saveRes = await api("/api/ficha", {method:"POST", body:{lote:lote, dados:ficha, versaoEsperada:versaoLida}});
     console.log("[leituras] salvo:", saveRes);
     if (!autoMatur) toast("✅ Leitura salva — lote "+lote, "ok");
 
@@ -9923,7 +9930,14 @@ async function leiturasSalvar(tqId, lote, tipo){
     var elDt = document.getElementById("leit_dt_"+tqId); if(elDt) elDt.value = leiturasDtNow();
   } catch(e) {
     console.error("[leituras] ERRO:", e);
-    toast("Erro ao salvar: "+String(e), "erro");
+    if (e && e.status === 409) {
+      var d = e.data || {};
+      var quem = d.salvoPor ? "@"+d.salvoPor : "outro usuário";
+      var quando = d.salvoEm ? " às "+new Date(d.salvoEm).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) : "";
+      toast("⚠️ Conflito: "+quem+" salvou a ficha"+quando+". Tente novamente.", "aviso");
+    } else {
+      toast("Erro ao salvar: "+String(e), "erro");
+    }
   }
   if (btn){ btn.disabled = false; btn.textContent = txtOrig; }
 }
@@ -12692,6 +12706,22 @@ function fp_removerBatelada(btn){
   fp_markDirty();
 }
 var fp_dirty=false;
+var fp_versaoCarregada=0; // versão da ficha no momento do carregamento (optimistic locking)
+
+// Trata erro 409 (conflito de versão) nos saves da ficha
+function fp_tratarConflito(errData, onRecarregar){
+  var salvoPor = errData && errData.salvoPor ? "@"+errData.salvoPor : "outro usuário";
+  var salvoEm  = errData && errData.salvoEm  ? " às "+new Date(errData.salvoEm).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) : "";
+  var msg = "⚠️ Conflito de edição\n\n"
+    + salvoPor+" salvou esta ficha"+salvoEm+".\n\n"
+    + "Seus dados ainda NÃO foram salvos.\n\n"
+    + "Clique OK para recarregar a ficha (seus dados não salvos serão perdidos).\n"
+    + "Clique Cancelar para continuar editando sem salvar.";
+  if (confirm(msg)) {
+    if (typeof onRecarregar === "function") onRecarregar();
+  }
+}
+
 function fp_markDirty(){
   fp_dirty=true;
   var s=document.getElementById('fp-saveStatus');
@@ -13237,9 +13267,11 @@ function fp_simSave(btn){
   };
 
   btn.textContent='⏳ Salvando…'; btn.disabled=true;
-  api('/api/ficha', {method:'POST', body:{ lote: loteVal, dados: dados }})
+  var versaoEnviada = fp_versaoCarregada;
+  api('/api/ficha', {method:'POST', body:{ lote: loteVal, dados: dados, versaoEsperada: versaoEnviada }})
     .then(function(r){
       fp_dirty=false;
+      fp_versaoCarregada = r.versao; // atualiza versão local após save bem-sucedido
       var s=document.getElementById('fp-saveStatus');
       var hora = new Date(r.salvoEm).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       if(s){s.textContent='✓ Salvo às '+hora+' (v'+r.versao+')';s.className='fp-unsaved';}
@@ -13247,12 +13279,17 @@ function fp_simSave(btn){
       setTimeout(function(){if(!fp_dirty&&s) s.textContent='';},4000);
     })
     .catch(function(e){
-      toast('Erro ao salvar: '+e.message);
       btn.textContent='💾 Salvar Ficha'; btn.disabled=false;
+      if (e && e.status === 409) {
+        fp_tratarConflito(e.data, function(){ abrirFichaLote(window._fpTqAtual); });
+        return;
+      }
+      toast('Erro ao salvar: '+e.message);
     });
 }
 
 function abrirFichaLote(tq){
+  window._fpTqAtual = tq; // guarda para reabrir em caso de conflito
   /* — dados do cabeçalho vindos do objeto tq — */
   var lote    = tq.lote   || "—";
   var estilo  = tq.estilo || "—";
@@ -14179,6 +14216,8 @@ function fp_preencherFicha(ficha){
       }, 800);
     }
   }
+  // guarda versão para optimistic locking
+  fp_versaoCarregada = (ficha.meta && ficha.meta.versao) ? ficha.meta.versao : 0;
   // indicador de salvo
   if(ficha.meta && ficha.meta.salvoEm){
     var s=document.getElementById('fp-saveStatus');
