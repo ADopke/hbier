@@ -8413,6 +8413,14 @@ function chaveSemanaData(d){
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 }
 
+// Retorna "YYYY-MM-DDTHH:MM" no horário local (sem conversão UTC)
+// toISOString() usa UTC e causaria deslocamento de 3h no Brasil
+function localDatetimeStr(d){
+  d = d || new Date();
+  var pad = function(n){ return String(n).padStart(2,"0"); };
+  return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes());
+}
+
 async function carregarMetas(){
   atualizarLabelsMetaMes();
   var semanas = semanasDoMes(metaAnoAtual, metaMesAtual);
@@ -12389,7 +12397,7 @@ function fp_addFermRow(){
     toast('⚠️ Maturação já iniciada — não é possível adicionar leituras de fermentação.', 'aviso');
     return;
   }
-  var now=new Date(), local=now.toISOString().slice(0,16);
+  var now=new Date(), local=localDatetimeStr(now);
   var usuario = (typeof sessao !== 'undefined' && sessao && sessao.nome) ? sessao.nome : '';
   var c=document.getElementById('fp-ferm-log');
   var row=document.createElement('div'); row.className='fp-mlog-row ferm';
@@ -12450,7 +12458,7 @@ function fp_addMaturRow(silent){
       return;
     }
   }
-  var now=new Date(), local=now.toISOString().slice(0,16);
+  var now=new Date(), local=localDatetimeStr(now);
   var usuario = (typeof sessao !== 'undefined' && sessao && sessao.nome) ? sessao.nome : '';
   var c=document.getElementById('fp-matur-log');
   // Se é a primeira linha de maturação, registra início de maturação no tanque
@@ -13036,7 +13044,7 @@ function fp_ogRealBlur(inp){
     if(sgInp && parseFloat(sgInp.value).toFixed(3) === sgStr) return; // já existe, não duplicar
   }
   // Cria primeira linha de fermentação com a OG como SG inicial
-  var now = new Date(), local = now.toISOString().slice(0,16);
+  var now = new Date(), local = localDatetimeStr(now);
   var usuario = (typeof sessao !== 'undefined' && sessao && sessao.nome) ? sessao.nome : '';
   var row = document.createElement('div');
   row.className = 'fp-mlog-row ferm';
@@ -13085,7 +13093,7 @@ function fp_aprovarLote(){
   if (coletaAviso) coletaAviso.hidden = true;
 
   var now = new Date();
-  var local = now.toISOString().slice(0,16);
+  var local = localDatetimeStr(now);
   var dtEl   = document.getElementById('fp-aprov-dt');
   var respEl = document.getElementById('fp-aprov-resp');
   // preenche data/hora atual se vazio
