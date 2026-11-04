@@ -3849,7 +3849,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.14";
+var VERSAO = "3.8.17";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8091,6 +8091,10 @@ $("progLista").addEventListener("click", function(ev){
     }
   }
   _resItem = {id:b.dataset.progRes, semana:b.dataset.progSemana, tipo:b.dataset.progTipo, formato:b.dataset.progFormato||""};
+  // Guardar checks para validação dentro da ficha de produção
+  window._fpProgChecks = (b.dataset.progTipo === "brassagem")
+    ? {moagem: b.dataset.checksMoagem === "1", cip: b.dataset.checksCip === "1"}
+    : null;
   var isEnvase = _resItem.tipo === "envase";
   $("resTitulo").textContent = isEnvase ? "📦 Resultado do envase" : "🍺 Resultado da brassagem";
   $("campoResBrassagem").hidden = isEnvase;
@@ -11147,6 +11151,7 @@ async function carregarTanques(){
         var tqId = btn.dataset.tqFichaAgora;
         var tq = (_dadosTanques||[]).find(function(t){ return t.id === tqId; });
         if (!tq) return;
+        window._fpProgChecks = null; // aberto pelos tanques, sem checks de programação
         abrirFichaLote(tq);
       });
     });
@@ -11170,6 +11175,7 @@ async function carregarTanques(){
           diasTanque: null,
           historico: []
         };
+        window._fpProgChecks = null; // aberto pelos tanques, sem checks de programação
         abrirFichaLote(tqProx);
       });
     });
@@ -13275,6 +13281,18 @@ function fp_calcEficienciaReal(card){
 }
 
 function fp_addBatelada(){
+  // Bloquear se Moagem Malte ou CIP Tanque não estiverem marcados (apenas quando aberto via programação)
+  var chk = window._fpProgChecks;
+  if (chk !== null && chk !== undefined) {
+    var faltando = [];
+    if (!chk.moagem) faltando.push("⚙ Moagem Malte");
+    if (!chk.cip)    faltando.push("🧹 CIP Tanque");
+    if (faltando.length) {
+      toast("Marque "+faltando.join(" e ")+" na programação antes de adicionar uma batelada.", "erro");
+      return;
+    }
+  }
+
   var list=document.getElementById('fp-bat-list');
   if(!list){ console.error('fp-bat-list não encontrado'); return; }
   var num=list.querySelectorAll('.fp-bat-card').length+1;
@@ -14050,6 +14068,7 @@ function fp_simSave(btn){
 
 function abrirFichaLote(tq){
   window._fpTqAtual = tq; // guarda para reabrir em caso de conflito
+  window._fpProgChecks = window._fpProgChecks || null; // preserva se veio do botão da prog, senão null
   /* — dados do cabeçalho vindos do objeto tq — */
   var lote    = tq.lote   || "—";
   var estilo  = tq.estilo || "—";
