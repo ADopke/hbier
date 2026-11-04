@@ -237,10 +237,11 @@ export default protegido(async function handler(req, res) {
         .filter(b => b.tanque === nomeUp && b.previstahoje)
         .sort((a, b) => a.em.localeCompare(b.em))[0] || null;
 
-      // próxima brassagem planejada (ainda não realizada, futura) — info adicional
-      const proximaBrass = brassagens
+      // próximas brassagens planejadas (ainda não realizadas, futuras) — todas, ordenadas por data
+      const proximasBrassagensTodas = brassagens
         .filter(b => b.tanque === nomeUp && b.planejada)
-        .sort((a, b) => a.em.localeCompare(b.em))[0] || null;
+        .sort((a, b) => a.em.localeCompare(b.em));
+      const proximaBrass = proximasBrassagensTodas[0] || null;
 
       // brassagem finalizada mais recente (para histórico)
       const brassFinalizada = brassagens
@@ -381,6 +382,14 @@ export default protegido(async function handler(req, res) {
           dataISO: proximaBrass.em,
           volPrev: proximaBrass.volume,
         } : null,
+        proximasBrassagens: proximasBrassagensTodas.map(b => ({
+          id:      b.id,
+          estilo:  b.estilo,
+          lote:    b.lote,
+          semana:  b.semana,
+          dataISO: b.em,
+          volPrev: b.volume,
+        })),
         envase:       envase ? {
           lote:    envase.lote,
           estilo:  envase.estilo,
