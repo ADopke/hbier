@@ -3849,7 +3849,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.18";
+var VERSAO = "3.8.19";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10812,22 +10812,25 @@ async function carregarTanques(){
       }
 
       // ── BLOCO PRÓXIMO ────────────────────────────────────────────
-      // O que está previsto entrar no tanque
+      // Fila de brassagens planejadas para este tanque
+      var proximasBrass = tq.proximasBrassagens || (tq.proximaBrass ? [tq.proximaBrass] : []);
       var proximoConteudo = "";
-      if (tq.proximaBrass) {
-        var pb = tq.proximaBrass;
+
+      function _renderPbItem(pb, idx, total){
         var pbDataISO = pb.dataISO ? pb.dataISO.slice(0,10) : pb.semana;
         var pbDataLabel = fmtDataCurta(pbDataISO);
-
-        // dias até a brassagem
         var pbDiff = pbDataISO ? Math.round((new Date(pbDataISO+"T00:00:00") - new Date(new Date().toDateString())) / 86400000) : null;
         var pbDiffLabel = pbDiff !== null && pbDiff > 0 ? pbDiff+"d" : (pbDiff === 0 ? "hoje" : "");
-        proximoConteudo =
+        var isFirst = idx === 0;
+        var borderTop = idx > 0 ? "border-top:1px dashed #C7D2FE;padding-top:8px;margin-top:8px;" : "";
+        return "<div style='"+borderTop+"'>"+
+          // posição na fila (quando há mais de uma)
+          (total > 1 ? "<div style='font-size:.65rem;font-weight:700;color:#818CF8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px'>Fila "+(idx+1)+"º</div>" : "")+
           // estilo em destaque
           (pb.estilo ? "<div style='font-weight:700;font-size:.88rem;color:#1E1B4B;line-height:1.2;margin-bottom:5px'>"+esc(pb.estilo)+"</div>" : "")+
           // lote previsto (se informado)
           (pb.lote ? "<div style='font-size:.72rem;color:#3730A3;font-weight:600;margin-bottom:4px'>🏷 "+esc(pb.lote)+"</div>" : "")+
-          // chips: data + semana + volume + countdown
+          // chips: data + volume + countdown
           "<div style='display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px'>"+
             "<span style='background:#C7D2FE;border:1px solid #818CF8;border-radius:4px;padding:2px 7px;font-size:.71rem;font-weight:700;color:#3730A3'>"+
               "📅 "+esc(pbDataLabel)+
@@ -10839,15 +10842,46 @@ async function carregarTanques(){
           (pb.id && pb.semana ? "<button data-brass-nav-sem='"+esc(pb.semana)+"' data-brass-nav-id='"+esc(pb.id)+"' "+
             "style='background:none;border:1px solid #818CF8;border-radius:5px;padding:2px 8px;font-size:.7rem;"+
             "color:#4338CA;cursor:pointer;font-weight:600'>✏️ editar brassagem</button>" : "")+
-          // ── Botão Ficha no bloco Próximo ─────────────────────────
-          (pb.lote
+          // Botão Ficha do Lote (só para o primeiro da fila)
+          (isFirst && pb.lote
             ? "<button data-tq-ficha-proximo='"+esc(tq.id)+"' data-tq-ficha-proximo-lote='"+esc(pb.lote)+"' "+
                 "data-tq-ficha-proximo-estilo='"+esc(pb.estilo||"")+"' data-tq-ficha-proximo-vol='"+esc(pb.volPrev||"")+"' "+
                 "style='display:block;width:100%;margin-top:8px;background:#3730A3;border:none;border-radius:6px;"+
                 "padding:5px 0;font-size:.72rem;color:#fff;cursor:pointer;font-weight:700;"+
                 "font-family:\"Barlow Condensed\",sans-serif;letter-spacing:.04em;text-align:center'>"+
                 "🗒 Ficha do Lote</button>"
-            : "");
+            : "")+
+        "</div>";
+      }
+
+      if (proximasBrass.length > 0) {
+        // Primeira da fila sempre visível; demais colapsáveis se houver mais de 2
+        var mostrarColapso = proximasBrass.length > 2;
+        var filaId = "fila-"+esc(tq.id);
+        proximoConteudo = _renderPbItem(proximasBrass[0], 0, proximasBrass.length);
+        if (proximasBrass.length > 1) {
+          if (mostrarColapso) {
+            // Itens 2+ ficam dentro de um collapse toggleável
+            var itensOcultos = proximasBrass.slice(1).map(function(pb,i){ return _renderPbItem(pb, i+1, proximasBrass.length); }).join("");
+            proximoConteudo +=
+              "<div id='"+filaId+"' hidden style='overflow:hidden'>"+itensOcultos+"</div>"+
+              "<button data-tq-fila-toggle='"+filaId+"' "+
+                "style='background:none;border:1px dashed #818CF8;border-radius:5px;padding:2px 8px;font-size:.68rem;"+
+                "color:#4338CA;cursor:pointer;font-weight:600;margin-top:6px;width:100%'>"+
+                "▼ ver mais "+(proximasBrass.length-1)+" na fila</button>";
+          } else {
+            proximoConteudo += proximasBrass.slice(1).map(function(pb,i){ return _renderPbItem(pb, i+1, proximasBrass.length); }).join("");
+          }
+        }
+        // botão adicionar à fila
+        if (podeEditar) {
+          proximoConteudo +=
+            "<button data-tq-prog-brass='"+esc(tq.id)+"' data-tq-prog-nome='"+esc(tq.nome)+"' "+
+              "style='display:block;width:100%;margin-top:8px;background:none;border:1px solid #818CF8;"+
+              "border-radius:6px;padding:4px 0;font-size:.7rem;color:#4338CA;cursor:pointer;"+
+              "font-weight:700;font-family:\"Barlow Condensed\",sans-serif;letter-spacing:.03em;text-align:center'>"+
+              "＋ Adicionar à fila</button>";
+        }
       } else {
         proximoConteudo =
           "<div style='color:#A5B4FC;font-size:.75rem;font-style:italic;padding-top:4px;margin-bottom:8px'>Sem previsão</div>"+
@@ -11136,7 +11170,22 @@ async function carregarTanques(){
       });
     });
 
-    // Botão "+ Programar brassagem" no bloco PRÓXIMO
+    // Botão toggle de fila colapsável (▼ ver mais N na fila)
+    $("tanquesLista").querySelectorAll("[data-tq-fila-toggle]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var targetId = btn.dataset.tqFilaToggle;
+        var el = document.getElementById(targetId);
+        if (!el) return;
+        var aberto = !el.hidden;
+        el.hidden = aberto;
+        var total = parseInt(btn.textContent.match(/\d+/) || [0], 10);
+        btn.textContent = aberto
+          ? "▼ ver mais "+total+" na fila"
+          : "▲ ocultar fila";
+      });
+    });
+
+    // Botão "+ Programar brassagem" / "+ Adicionar à fila" no bloco PRÓXIMO
     $("tanquesLista").querySelectorAll("[data-tq-prog-brass]").forEach(function(btn){
       btn.addEventListener("click", function(){
         var tqNome = btn.dataset.tqProgNome; // ex: "TQ03"
