@@ -3849,7 +3849,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.17";
+var VERSAO = "3.8.18";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8659,10 +8659,16 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
           var realProd  = semEstilo ? ((porFormato[fmt]||{}).qtd||0) : (porFormato["_prod_"+prod]||0);
           var pct = metaProd ? Math.min(100, Math.round(realProd/metaProd*100)) : 0;
           var classe = pct>=100?"acima":pct>=80?"atingida":"";
+          var litrosPorUn  = LITROS_FORMATO[fmt] || 0;
+          var realProdL    = litrosPorUn ? realProd * litrosPorUn : 0;
+          var metaProdL    = litrosPorUn ? metaProd * litrosPorUn : 0;
+          var subLabel     = litrosPorUn
+            ? fmtNum(realProd)+" un / "+fmtNum(realProdL)+" L &nbsp;·&nbsp; meta "+fmtNum(metaProd)+" un / "+fmtNum(metaProdL)+" L"
+            : fmtNum(realProd)+" / "+fmtNum(metaProd)+" un";
           html += "<div style='margin-bottom:6px'>"+
             "<div class='meta-barra-numeros' style='margin-bottom:3px'>"+
               "<span style='font-size:.8rem;font-weight:600;color:var(--ink)'>"+esc(nomeProd)+"</span>"+
-              "<span style='font-size:.75rem;color:var(--muted)'>"+fmtNum(realProd)+" / "+fmtNum(metaProd)+" un</span>"+
+              "<span style='font-size:.75rem;color:var(--muted)'>"+subLabel+"</span>"+
             "</div>"+
             "<div class='meta-barra-bg'>"+
               "<div class='meta-barra-fill "+classe+"' style='width:"+pct+"%'></div>"+
@@ -8670,12 +8676,23 @@ function renderMetaEnvase(meta, qtdRealizada, qtdPrevista, litrosEnvasados, porF
           "</div>";
         });
         // total do formato realizado
+        var fmtLitrosPorUn = LITROS_FORMATO[fmt] || 0;
+        var realFmtL = fmtLitrosPorUn ? realFmt * fmtLitrosPorUn : 0;
+        var metaFmtL = fmtLitrosPorUn ? metaFmt * fmtLitrosPorUn : 0;
+        var footerReal = fmtLitrosPorUn
+          ? "<b style='color:var(--ink)'>"+fmtNum(realFmt)+" un</b> <span style='color:var(--muted);font-size:.75rem'>("+fmtNum(realFmtL)+" L)</span>"
+          : "<b style='color:var(--ink)'>"+fmtNum(realFmt)+" un</b>";
+        var footerMeta = fmtLitrosPorUn
+          ? "<b>"+fmtNum(metaFmt)+" un</b> <span style='font-size:.75rem'>("+fmtNum(metaFmtL)+" L)</span>"
+          : "<b>"+fmtNum(metaFmt)+" un</b>";
         html += "<div style='font-size:.78rem;color:var(--muted);margin-top:4px'>"+
-          "Realizado no formato: <b style='color:var(--ink)'>"+fmtNum(realFmt)+" un</b> / "+
-          "Meta total: <b>"+fmtNum(metaFmt)+" un</b></div>";
+          "Realizado no formato: "+footerReal+" / "+
+          "Meta total: "+footerMeta+"</div>";
       } else {
         // sem meta definida, só mostrar realizado
-        html += "<div style='font-size:.8rem;color:var(--muted)'>Realizado: <b style='color:var(--ink)'>"+fmtNum(realFmt)+" un</b> (sem meta definida)</div>";
+        var semMetaL = (LITROS_FORMATO[fmt]||0) * realFmt;
+        var semMetaStr = semMetaL ? fmtNum(realFmt)+" un ("+fmtNum(semMetaL)+" L)" : fmtNum(realFmt)+" un";
+        html += "<div style='font-size:.8rem;color:var(--muted)'>Realizado: <b style='color:var(--ink)'>"+semMetaStr+"</b> (sem meta definida)</div>";
       }
       html += "</div>";
     });
