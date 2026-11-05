@@ -3849,7 +3849,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.19";
+var VERSAO = "3.8.21";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10522,7 +10522,8 @@ async function carregarTanques(){
       var ePronto     = tq.estagio === "pronto";
       var eLivre      = tq.estagio === "livre";
       var eBrassagem  = tq.estagio === "brassagem";
-      var temOverride = !!(tq.manualOverride && !ePronto);
+      // "⟲ Automático" só aparece quando há override que NÃO seja o zerado intencional
+      var temOverride = !!(tq.manualOverride && !ePronto && !tq.manualOverride.zerado);
 
       // cor da borda esquerda do card (reflete estagio atual)
       var corBorda = tq.estagioCorBorda;
@@ -11217,7 +11218,9 @@ async function carregarTanques(){
         var tqId = btn.dataset.tqFichaAgora;
         var tq = (_dadosTanques||[]).find(function(t){ return t.id === tqId; });
         if (!tq) return;
-        window._fpProgChecks = null; // aberto pelos tanques, sem checks de programação
+        // Usar checks reais da brassagem para validar "+ Adicionar batelada"
+        var bc = tq.brassadoChecks;
+        window._fpProgChecks = bc ? { moagem: !!bc.moagemMalte, cip: !!bc.cipTanque } : { moagem: false, cip: false };
         abrirFichaLote(tq);
       });
     });
@@ -11241,7 +11244,8 @@ async function carregarTanques(){
           diasTanque: null,
           historico: []
         };
-        window._fpProgChecks = null; // aberto pelos tanques, sem checks de programação
+        // Lote previsto ainda não tem checks reais (brassagem não realizada) — bloquear batelada
+        window._fpProgChecks = { moagem: false, cip: false };
         abrirFichaLote(tqProx);
       });
     });
@@ -12064,6 +12068,19 @@ async function abrirFichaPorLote(lote){
     historico: [],
     _fichaPrecarregada: ficha
   };
+  // Buscar checks da brassagem na programação (se tiver semana e id disponíveis)
+  if (cab.brassadoSem && cab.brassadoId) {
+    try {
+      var rProg = await api("/api/prog?semana="+encodeURIComponent(cab.brassadoSem));
+      var itBrass = (rProg.itens||[]).find(function(x){ return x.id === cab.brassadoId; });
+      var ch = itBrass && itBrass.checks ? itBrass.checks : {};
+      window._fpProgChecks = { moagem: !!(ch.moagemMalte), cip: !!(ch.cipTanque) };
+    } catch(e) {
+      window._fpProgChecks = { moagem: false, cip: false };
+    }
+  } else {
+    window._fpProgChecks = { moagem: false, cip: false };
+  }
   abrirFichaLote(tqFake);
 }
 
@@ -13346,13 +13363,15 @@ function fp_calcEficienciaReal(card){
   eficEl.value = Math.round(efic * 10) / 10;
 }
 
-function fp_addBatelada(){
-  // Bloquear se Moagem Malte ou CIP Tanque não estiverem marcados (apenas quando aberto via programação)
-  var chk = window._fpProgChecks;
-  if (chk !== null && chk !== undefined) {
+function fp_addBatelada(opts){
+  // Bloquear se Moagem Malte ou CIP Tanque não estiverem marcados
+  // (pulado apenas quando restaurando bateladas salvas)
+  var restaurando = opts && opts.restaurando;
+  if (!restaurando) {
+    var chk = window._fpProgChecks;
     var faltando = [];
-    if (!chk.moagem) faltando.push("⚙ Moagem Malte");
-    if (!chk.cip)    faltando.push("🧹 CIP Tanque");
+    if (!chk || !chk.moagem) faltando.push("⚙ Moagem Malte");
+    if (!chk || !chk.cip)    faltando.push("🧹 CIP Tanque");
     if (faltando.length) {
       toast("Marque "+faltando.join(" e ")+" na programação antes de adicionar uma batelada.", "erro");
       return;
@@ -14851,7 +14870,7 @@ function fp_preencherFicha(ficha){
     if(batList){
       batList.innerHTML = '';
       ficha.bateladas.forEach(function(bat, idx){
-        fp_addBatelada(); // cria card vazio com perfil de mash atual
+        fp_addBatelada({restaurando: true}); // restauração — pula validação de checks
         var card = batList.querySelectorAll('.fp-bat-card')[idx];
         if(!card) return;
         // preenche volumes (inclui os campos de tempo operacionais que alimentam o resumo)
