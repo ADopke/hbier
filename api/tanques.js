@@ -108,6 +108,7 @@ export default protegido(async function handler(req, res) {
               planejada,
               previstahoje,
               semana:           sem,
+              checks:           it.checks    || {},
             });
             // Adiciona brassagem ao histórico de movimentos
             if (temResultado || ehHoje || !ehFutura) {
@@ -374,6 +375,7 @@ export default protegido(async function handler(req, res) {
         brassadoEm:   ref ? ref.em     : "",
         brassadoSem:  ref ? ref.semana : "",
         brassadoId:   ref ? ref.id     : "",
+        brassadoChecks: ref ? { moagemMalte: !!(ref.checks && ref.checks.moagemMalte), cipTanque: !!(ref.checks && ref.checks.cipTanque) } : null,
         proximaBrass: proximaBrass ? {
           id:      proximaBrass.id,
           estilo:  proximaBrass.estilo,
