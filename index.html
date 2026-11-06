@@ -3849,7 +3849,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.22";
+var VERSAO = "3.8.23";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11494,6 +11494,9 @@ function _renderRegistrosGraficos(lista){
 
       regs.forEach(function(r){
         if ((r.obs||"").indexOf("PURGA") !== -1) return; // pula purgas
+        // pula adições (Clearmax, Levedura, Coleta) — não têm dados de temperatura
+        if (r.tipo === "adicao_cx_pro" || r.tipo === "adicao_cx_l" ||
+            r.tipo === "adicao_lev"    || r.tipo === "coleta_lev") return;
         var d = new Date(r.dt);
         var pad = function(n){ return ("0"+n).slice(-2); };
         labels.push(pad(d.getDate())+"/"+pad(d.getMonth()+1)+" "+pad(d.getHours())+":"+pad(d.getMinutes()));
@@ -11721,6 +11724,71 @@ function _renderRegistrosGraficos(lista){
             resp: row[8]
           });
         });
+
+        // adicoesTanque: Clearmax Pro, Clearmax L, Levedura, Coleta de levedura
+        var adic = ficha.adicoesTanque || {};
+
+        // helper: constrói ISO de "YYYY-MM-DD" + "HH:MM"
+        function _adicDt(dataStr, horaStr) {
+          if (!dataStr) return null;
+          var h = horaStr && horaStr.length >= 5 ? horaStr : "00:00";
+          return dataStr + "T" + h + ":00";
+        }
+
+        // Clearmax Pro
+        if (adic.clearmax && adic.clearmax.confirmado) {
+          var cx = adic.clearmax;
+          var cxDt = _adicDt(cx.dataInp || cx.data, cx.horaInp || cx.hora);
+          if (cxDt) {
+            var dCx = parseDateStr(cxDt);
+            if ((!dataInicio || dCx >= dataInicio) && (!dataFim || dCx <= dataFim)) {
+              porTanque[tanque].push({ tipo: "adicao_cx_pro", lote: lote, estilo: estilo, dt: cxDt,
+                produto: "Clearmax Pro", dose: cx.doseLabel || "", resp: cx.quem || "" });
+            }
+          }
+        }
+
+        // Clearmax L
+        if (adic.clearmaxL && adic.clearmaxL.confirmado) {
+          var cxL = adic.clearmaxL;
+          var cxLDt = _adicDt(cxL.dataInp || cxL.data, cxL.horaInp || cxL.hora);
+          if (cxLDt) {
+            var dCxL = parseDateStr(cxLDt);
+            if ((!dataInicio || dCxL >= dataInicio) && (!dataFim || dCxL <= dataFim)) {
+              var qtdCxL = cxL.qtdInp || cxL.qtd || "";
+              porTanque[tanque].push({ tipo: "adicao_cx_l", lote: lote, estilo: estilo, dt: cxLDt,
+                produto: "Clearmax L", dose: qtdCxL ? qtdCxL+" mL" : "", resp: cxL.quem || "" });
+            }
+          }
+        }
+
+        // Levedura (inoculação)
+        if (adic.lev && adic.lev.confirmado) {
+          var lv = adic.lev;
+          var lvDt = _adicDt(lv.data, lv.hora);
+          if (lvDt) {
+            var dLv = parseDateStr(lvDt);
+            if ((!dataInicio || dLv >= dataInicio) && (!dataFim || dLv <= dataFim)) {
+              var lvExtra = [];
+              if (lv.geracao) lvExtra.push("Geração: "+lv.geracao);
+              if (lv.temp)    lvExtra.push("Temp: "+lv.temp+"°C");
+              porTanque[tanque].push({ tipo: "adicao_lev", lote: lote, estilo: estilo, dt: lvDt,
+                produto: "Levedura", dose: lvExtra.join(" · "), resp: lv.quem || "" });
+            }
+          }
+        }
+
+        // Coleta de levedura
+        var col = ficha.coleta || {};
+        if (col.realizada && col.realizadaEm) {
+          var colDt = col.realizadaEm.length === 10 ? col.realizadaEm + "T00:00:00" : col.realizadaEm;
+          var dCol = parseDateStr(colDt);
+          if ((!dataInicio || dCol >= dataInicio) && (!dataFim || dCol <= dataFim)) {
+            var colDose = col.destino ? "Destino: "+col.destino : "";
+            porTanque[tanque].push({ tipo: "coleta_lev", lote: lote, estilo: estilo, dt: colDt,
+              produto: "Coleta de levedura", dose: colDose, resp: col.realizadaPor || "" });
+          }
+        }
       });
 
       // Ordena tanques e registros
@@ -11772,8 +11840,8 @@ function _renderRegistrosGraficos(lista){
           html += "<thead><tr style='background:var(--linha-bg,#f3f4f6);text-align:left'>";
           html += "<th style='padding:4px 6px'>Tipo</th>";
           html += "<th style='padding:4px 6px'>Data/hora</th>";
-          html += "<th style='padding:4px 6px'>Temp real</th>";
-          html += "<th style='padding:4px 6px'>Temp set</th>";
+          html += "<th style='padding:4px 6px'>Temp real / Produto</th>";
+          html += "<th style='padding:4px 6px'>Temp set / Dose</th>";
           html += "<th style='padding:4px 6px'>kgf</th>";
           html += "<th style='padding:4px 6px'>pH</th>";
           html += "<th style='padding:4px 6px'>SG/CO₂</th>";
@@ -11783,6 +11851,33 @@ function _renderRegistrosGraficos(lista){
 
           grupo.regs.forEach(function(r, i){
             var bgRow = i%2===0 ? "transparent" : "var(--linha-bg,#f9fafb)";
+
+            // Tipos de adição: renderização especial (sem colunas de temperatura/kgf/pH/SG)
+            var isAdicao = r.tipo === "adicao_cx_pro" || r.tipo === "adicao_cx_l" ||
+                           r.tipo === "adicao_lev"    || r.tipo === "coleta_lev";
+            if (isAdicao) {
+              var adicBadge = {
+                adicao_cx_pro: "<span style='background:#FDF4FF;color:#9333EA;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>🧪 CX Pro</span>",
+                adicao_cx_l:   "<span style='background:#FDF4FF;color:#7C3AED;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>🧪 CX L</span>",
+                adicao_lev:    "<span style='background:#FFFBEB;color:#D97706;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>🌿 Lev</span>",
+                coleta_lev:    "<span style='background:#F0FDF4;color:#15803D;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>🫙 Coleta</span>"
+              }[r.tipo] || "";
+              html += "<tr style='border-top:1px solid var(--linha);background:"+bgRow+"'>";
+              html += "<td style='padding:4px 6px'>"+adicBadge+"</td>";
+              html += "<td style='padding:4px 6px;white-space:nowrap;color:var(--muted)'>"+fmtDtReg(r.dt)+"</td>";
+              // coluna Temp real → Produto
+              html += "<td style='padding:4px 6px;font-weight:600'>"+esc(r.produto || "")+"</td>";
+              // coluna Temp set → Dose/info (colspan visual via conteúdo)
+              html += "<td style='padding:4px 6px;color:var(--muted)'>"+esc(r.dose || "—")+"</td>";
+              html += "<td style='padding:4px 6px'>—</td>"; // kgf
+              html += "<td style='padding:4px 6px'>—</td>"; // pH
+              html += "<td style='padding:4px 6px'>—</td>"; // SG/CO₂
+              html += "<td style='padding:4px 6px'>—</td>"; // Obs
+              html += "<td style='padding:4px 6px'>"+esc(r.resp ? "@"+r.resp : "—")+"</td>";
+              html += "</tr>";
+              return;
+            }
+
             var tipoBadge = r.tipo === "ferm"
               ? "<span style='background:#EFF6FF;color:#2563EB;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>🌡 Ferm</span>"
               : "<span style='background:#F0FDF4;color:#16A34A;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>❄️ Matur</span>";
