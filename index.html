@@ -2606,12 +2606,24 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
               <span style="font-weight:700;font-size:1rem">📋 Registros de Fermentação e Maturação</span>
               <button onclick="document.getElementById('modalRegistrosTanques').hidden=true" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);line-height:1">×</button>
             </div>
-            <div style="padding:12px 16px;border-bottom:1px solid var(--linha);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <label style="font-size:.82rem;color:var(--muted);white-space:nowrap">De:</label>
-              <input type="date" id="regDataInicio" style="font-size:.82rem;padding:4px 8px;border:1px solid var(--linha);border-radius:6px;background:var(--card);color:var(--fg)">
-              <label style="font-size:.82rem;color:var(--muted);white-space:nowrap">Até:</label>
-              <input type="date" id="regDataFim" style="font-size:.82rem;padding:4px 8px;border:1px solid var(--linha);border-radius:6px;background:var(--card);color:var(--fg)">
-              <button id="btnFiltrarRegistros" class="btn mini" style="margin-left:4px">Filtrar</button>
+            <div style="padding:12px 16px;border-bottom:1px solid var(--linha);display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <label style="font-size:.82rem;color:var(--muted);white-space:nowrap">De:</label>
+                <input type="date" id="regDataInicio" style="font-size:.82rem;padding:4px 8px;border:1px solid var(--linha);border-radius:6px;background:var(--card);color:var(--fg)">
+                <label style="font-size:.82rem;color:var(--muted);white-space:nowrap">Até:</label>
+                <input type="date" id="regDataFim" style="font-size:.82rem;padding:4px 8px;border:1px solid var(--linha);border-radius:6px;background:var(--card);color:var(--fg)">
+                <button id="btnFiltrarRegistros" class="btn mini" style="margin-left:4px">FILTRAR</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:2px">
+                <span style="font-size:.75rem;color:var(--muted);white-space:nowrap;margin-right:2px">Mostrar:</span>
+                <label style="display:flex;align-items:center;gap:3px;font-size:.75rem;cursor:pointer;user-select:none"><input type="checkbox" id="regFiltFerm"     checked> <span style="background:#EFF6FF;color:#2563EB;border-radius:3px;padding:1px 5px;font-weight:700">🌡 Ferm</span></label>
+                <label style="display:flex;align-items:center;gap:3px;font-size:.75rem;cursor:pointer;user-select:none"><input type="checkbox" id="regFiltMatur"    checked> <span style="background:#F0FDF4;color:#16A34A;border-radius:3px;padding:1px 5px;font-weight:700">❄️ Matur</span></label>
+                <label style="display:flex;align-items:center;gap:3px;font-size:.75rem;cursor:pointer;user-select:none"><input type="checkbox" id="regFiltPurga"    checked> <span style="background:#F3F4F6;color:#6B7280;border-radius:3px;padding:1px 5px;font-weight:700">🔽 Purga</span></label>
+                <label style="display:flex;align-items:center;gap:3px;font-size:.75rem;cursor:pointer;user-select:none"><input type="checkbox" id="regFiltCxPro"    checked> <span style="background:#FDF4FF;color:#9333EA;border-radius:3px;padding:1px 5px;font-weight:700">🧪 CX Pro</span></label>
+                <label style="display:flex;align-items:center;gap:3px;font-size:.75rem;cursor:pointer;user-select:none"><input type="checkbox" id="regFiltCxL"      checked> <span style="background:#FDF4FF;color:#7C3AED;border-radius:3px;padding:1px 5px;font-weight:700">🧪 CX L</span></label>
+                <label style="display:flex;align-items:center;gap:3px;font-size:.75rem;cursor:pointer;user-select:none"><input type="checkbox" id="regFiltLev"      checked> <span style="background:#FFFBEB;color:#D97706;border-radius:3px;padding:1px 5px;font-weight:700">🌿 Lev</span></label>
+                <label style="display:flex;align-items:center;gap:3px;font-size:.75rem;cursor:pointer;user-select:none"><input type="checkbox" id="regFiltColeta"   checked> <span style="background:#F0FDF4;color:#15803D;border-radius:3px;padding:1px 5px;font-weight:700">🫙 Coleta</span></label>
+              </div>
             </div>
             <div id="modalRegistrosConteudo" style="overflow-y:auto;padding:16px;font-size:.82rem">
               <div class="vazio">Carregando…</div>
@@ -3849,7 +3861,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.23";
+var VERSAO = "3.8.24";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11791,6 +11803,28 @@ function _renderRegistrosGraficos(lista){
         }
       });
 
+      // Lê checkboxes de tipo
+      var filtTipos = {
+        ferm:         !!($("regFiltFerm")    && $("regFiltFerm").checked),
+        matur:        !!($("regFiltMatur")   && $("regFiltMatur").checked),
+        purga:        !!($("regFiltPurga")   && $("regFiltPurga").checked),
+        adicao_cx_pro:!!($("regFiltCxPro")   && $("regFiltCxPro").checked),
+        adicao_cx_l:  !!($("regFiltCxL")     && $("regFiltCxL").checked),
+        adicao_lev:   !!($("regFiltLev")     && $("regFiltLev").checked),
+        coleta_lev:   !!($("regFiltColeta")  && $("regFiltColeta").checked)
+      };
+
+      function tipoVisivel(r) {
+        var isPurga = (r.obs || "").indexOf("PURGA") !== -1;
+        if (isPurga) return filtTipos.purga;
+        return !!filtTipos[r.tipo];
+      }
+
+      // Aplica filtro de tipo em cada tanque
+      Object.keys(porTanque).forEach(function(t){
+        porTanque[t] = porTanque[t].filter(tipoVisivel);
+      });
+
       // Ordena tanques e registros
       var tanques = Object.keys(porTanque).sort();
       var totalRegistros = 0;
@@ -11813,15 +11847,33 @@ function _renderRegistrosGraficos(lista){
         var regsAsc  = regs.slice().sort(function(a,b){ return (a.dt||"").localeCompare(b.dt||""); });
         var regsDesc = regs.slice().sort(function(a,b){ return (b.dt||"").localeCompare(a.dt||""); });
 
+        // Gráfico: apenas registros do lote mais recente (ferm/matur com maior dt)
+        var lotesComDt = {};
+        regsAsc.forEach(function(r){
+          if (r.tipo !== "ferm" && r.tipo !== "matur") return; // adições não definem lote do gráfico
+          if (!lotesComDt[r.lote] || r.dt > lotesComDt[r.lote]) lotesComDt[r.lote] = r.dt;
+        });
+        var loteMaisRecente = null;
+        Object.keys(lotesComDt).forEach(function(l){
+          if (!loteMaisRecente || lotesComDt[l] > lotesComDt[loteMaisRecente]) loteMaisRecente = l;
+        });
+        var regsAscGrafico = loteMaisRecente
+          ? regsAsc.filter(function(r){ return r.lote === loteMaisRecente; })
+          : regsAsc;
+
         var canvasId = "regGrafico_"+tanque.replace(/[^a-z0-9]/gi,"_");
-        graficosParaRender.push({ canvasId: canvasId, regsAsc: regsAsc, tanque: tanque });
+        graficosParaRender.push({ canvasId: canvasId, regsAsc: regsAscGrafico, tanque: tanque, loteMaisRecente: loteMaisRecente });
 
         html += "<div style='margin-bottom:24px'>";
         // cabeçalho do tanque
         html += "<div style='font-weight:700;font-size:.9rem;padding:6px 10px;background:var(--linha-bg,#f3f4f6);border-radius:8px;margin-bottom:8px'>🏭 "+esc(tanque)+" <span style='font-weight:400;font-size:.78rem;color:var(--muted)'>("+regs.length+" registro"+(regs.length!==1?"s":"")+")</span></div>";
 
-        // gráfico
+        // gráfico — só do lote mais recente
+        var labelGrafico = loteMaisRecente
+          ? "<span style='font-size:.7rem;color:var(--muted)'>Gráfico — lote mais recente: <strong>"+esc(loteMaisRecente)+"</strong></span>"
+          : "<span style='font-size:.7rem;color:var(--muted)'>Gráfico</span>";
         html += "<div style='background:var(--card);border:1px solid var(--linha);border-radius:8px;padding:10px;margin-bottom:10px'>";
+        html += "<div style='margin-bottom:6px'>"+labelGrafico+"</div>";
         html += "<canvas id='"+canvasId+"' height='110' style='width:100%;display:block'></canvas>";
         html += "</div>";
 
@@ -11932,11 +11984,23 @@ function _renderRegistrosGraficos(lista){
   });
 
   $("btnFiltrarRegistros").addEventListener("click", function(){
-    _regCache = null; // força reload ao filtrar
+    _regCache = null; // força reload ao filtrar por data
     carregarRegistros(
       parseDateStr($("regDataInicio").value),
       parseDateStr($("regDataFim").value ? $("regDataFim").value + "T23:59:59" : null)
     );
+  });
+
+  // Checkboxes de tipo: re-renderiza do cache sem recarregar fichas
+  ["regFiltFerm","regFiltMatur","regFiltPurga","regFiltCxPro","regFiltCxL","regFiltLev","regFiltColeta"].forEach(function(id){
+    var el = $(id);
+    if (!el) return;
+    el.addEventListener("change", function(){
+      carregarRegistros(
+        parseDateStr($("regDataInicio").value),
+        parseDateStr($("regDataFim").value ? $("regDataFim").value + "T23:59:59" : null)
+      );
+    });
   });
 
   $("modalRegistrosTanques").addEventListener("click", function(e){ if(e.target === this) this.hidden = true; });
