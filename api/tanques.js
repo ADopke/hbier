@@ -239,8 +239,10 @@ export default protegido(async function handler(req, res) {
         .sort((a, b) => a.em.localeCompare(b.em))[0] || null;
 
       // próximas brassagens planejadas (ainda não realizadas, futuras) — todas, ordenadas por data
+      // Quando o tanque está zerado, inclui também a brassagem de hoje (previstahoje)
+      // para que ela apareça em PRÓXIMO mesmo no dia em que foi planejada
       const proximasBrassagensTodas = brassagens
-        .filter(b => b.tanque === nomeUp && b.planejada)
+        .filter(b => b.tanque === nomeUp && (b.planejada || (b.previstahoje && overrideEhZerado)))
         .sort((a, b) => a.em.localeCompare(b.em));
       const proximaBrass = proximasBrassagensTodas[0] || null;
 
