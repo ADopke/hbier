@@ -44,6 +44,26 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.31 — 12/11/2026
+
+**Diferença régua × calculado com validação do gestor**
+
+No resultado do envase, quando o consumo pela régua (início − fim) difere em
+1 L ou mais do calculado (unidades × (capacidade + excedente)):
+
+- Aparece o quadro *Régua × calculado* com os dois volumes, a diferença e o
+  excedente por frasco equivalente
+- O motivo da diferença passa a ser obrigatório para salvar
+- Admin/gestor vê a opção *Validar: usar o volume da régua na baixa do tanque*
+- Validado, o nível, o saldo e a quebra do tanque usam o volume da régua
+  naquele envase; sem validação, continuam usando o calculado
+- Se início, fim, quantidade ou excedente forem alterados depois, a validação
+  cai e precisa ser feita de novo
+- O resultado na programação e o histórico do tanque mostram
+  "⏳ aguardando gestor" ou "✔ régua validada"
+
+---
+
 ## 3.8.30 — 12/11/2026
 
 **Nível início da régua preenchido automaticamente no envase**

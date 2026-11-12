@@ -3429,6 +3429,20 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
               style="width:120px;padding:9px;border:1.5px solid var(--linha);
               border-radius:8px;font-size:.9rem">
           </div>
+          <!-- Diferença régua × calculado + validação do gestor -->
+          <div id="campoDifRegua" hidden style="margin-bottom:12px;border:1.5px solid #FCD34D;background:#FFFBEB;border-radius:9px;padding:10px 12px">
+            <div style="font-size:.78rem;font-weight:800;color:#92400E;margin-bottom:4px">⚖️ Régua × calculado</div>
+            <div id="difReguaTexto" style="font-size:.8rem;color:#78350F;line-height:1.45"></div>
+            <label style="font-size:.76rem;font-weight:600;display:block;margin:8px 0 3px;color:#78350F">Motivo da diferença *</label>
+            <textarea id="resReguaJust" rows="2" placeholder="Ex.: perda na enchedora, espuma, frascos descartados, régua conferida 2x…"
+              style="width:100%;padding:8px;border:1.5px solid #FCD34D;border-radius:8px;font-size:.84rem;resize:vertical"></textarea>
+            <div id="difReguaStatus" style="font-size:.76rem;margin-top:6px"></div>
+            <label id="lblValidarRegua" hidden style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;cursor:pointer;font-size:.8rem;color:#14532D;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:8px;padding:8px 10px">
+              <input type="checkbox" id="resValidarRegua" style="margin-top:2px;width:16px;height:16px;accent-color:#16A34A">
+              <span><b>Validar: usar o volume da régua na baixa do tanque</b><br>
+              <span id="lblValidarReguaSub" style="font-weight:400;color:#166534"></span></span>
+            </label>
+          </div>
           <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;
             cursor:pointer;margin-bottom:14px">
             <input type="checkbox" id="resTanqFinalizado">
@@ -3862,7 +3876,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.30";
+var VERSAO = "3.8.31";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6263,6 +6277,12 @@ function renderResultadoEnvase(r){
       "<span class='pr-label'>Litros fim</span><span class='pr-val'>"+
         fmtNum(r.litrosFim)+" L"+(r.tanqueFinalizado?" (finalizado)":"")+"</span>"+
       "<span class='pr-label'>Litros usados</span><span class='pr-val'>"+fmtNum(r.litrosUsados)+" L</span>"+
+      (r.diferencaRegua && Math.abs(r.diferencaRegua) >= 1
+        ? "<span class='pr-label'>Régua × calc.</span><span class='pr-val'>"+(r.diferencaRegua>0?"+":"")+fmtNum(r.diferencaRegua)+" L "+
+            (r.reguaValidada
+              ? "<span style='color:#15803D;font-weight:700'>✔ validada @"+esc(r.reguaValidada.por)+"</span>"
+              : "<span style='color:#B45309;font-weight:700'>⏳ aguardando gestor</span>")+"</span>"
+        : "")+
       "<span class='pr-label'>Qtd envasada</span><span class='pr-val'>"+fmtNum(r.qtdEnvasada)+" un</span>"+
       (r.sleeveTotal?"<span class='pr-label'>Sleeve total</span><span class='pr-val'>"+
         fmtNum(r.sleeveTotal)+" (+"+fmtNum(r.sleevePerd)+" perdidos)</span>":"")+
@@ -8123,6 +8143,10 @@ $("progLista").addEventListener("click", function(ev){
   if($("resLitrosFim")) $("resLitrosFim")._editadoManual = false;
   if($("resLitrosFimHint")) $("resLitrosFimHint").textContent="";
   if($("resLitrosIni")) $("resLitrosIni")._editadoManual = false;
+  _resReguaValidada = null;
+  if($("resReguaJust")) $("resReguaJust").value = "";
+  if($("resValidarRegua")) $("resValidarRegua").checked = false;
+  if($("campoDifRegua")) $("campoDifRegua").hidden = true;
   if($("resLitrosIniHint")) $("resLitrosIniHint").textContent="";
   if($("resLitrosIniInfo")) { $("resLitrosIniInfo").style.display="none"; $("resLitrosIniInfo").textContent=""; }
   if($("resLitrosFimInfo")) { $("resLitrosFimInfo").style.display="none"; $("resLitrosFimInfo").textContent=""; }
@@ -8194,6 +8218,9 @@ $("progLista").addEventListener("click", function(ev){
       // excedente salvo — ou mantém o padrão que já foi preenchido acima
       if($("resExcedenteMl") && (res.excessoMl !== undefined && res.excessoMl !== null))
         $("resExcedenteMl").value = res.excessoMl;
+      _resReguaValidada = res.reguaValidada || null;
+      if($("resReguaJust")) $("resReguaJust").value = res.reguaJustificativa || "";
+      if($("resValidarRegua")) $("resValidarRegua").checked = !!res.reguaValidada;
       // mostra o info de cálculo comparativo
       setTimeout(_recalcLitrosFim, 50);
     }
@@ -8253,6 +8280,14 @@ $("btnResSalvar").addEventListener("click", async function(){
     payload.tanqueFinalizado= $("resTanqFinalizado").checked?"sim":"nao";
     payload.qtdEnvasada     = $("resQtdEnv").value;
     payload.excessoMl       = $("resExcedenteMl") ? $("resExcedenteMl").value : "";
+    var difR = _difReguaAtual();
+    if (difR && Math.abs(difR.dif) >= 1){
+      var just = ($("resReguaJust").value||"").trim();
+      if (!just){ toast("Informe o motivo da diferença entre a régua e o calculado.","erro"); $("resReguaJust").focus(); return; }
+      payload.reguaJustificativa = just;
+      if (["admin","gestor"].includes(sessao.papel))
+        payload.validarRegua = $("resValidarRegua").checked ? "sim" : "nao";
+    }
     payload.sleevePerd      = $("resSleeve").value;
     payload.petPerd         = $("resPet").value;
     payload.tampasPerd      = $("resTampas").value;
@@ -8333,10 +8368,46 @@ function _recalcLitrosFim(){
   if (!$("resLitrosFim")._editadoManual) {
     $("resLitrosFim").value = litrosFimCalc < 0 ? 0 : litrosFimCalc;
   }
+  _renderDifRegua();
+}
+var _resReguaValidada = null;
+// Diferença entre o consumo pela régua (início − fim) e o calculado (un × (cap + excedente))
+function _difReguaAtual(){
+  if (!_resItem || _resItem.tipo !== "envase") return null;
+  var ini = parseFloat($("resLitrosIni").value), fim = parseFloat($("resLitrosFim").value);
+  var qtd = parseFloat($("resQtdEnv").value), lpu = _litrosPorUnidade(_resItem.formato);
+  var exc = parseFloat(($("resExcedenteMl")||{}).value) || 0;
+  if (!lpu || isNaN(ini) || isNaN(fim) || isNaN(qtd) || qtd <= 0 || ini <= fim) return null;
+  var regua = ini - fim, calc = qtd * (lpu + exc / 1000);
+  return {regua: regua, calc: calc, dif: regua - calc, excReal: (regua / qtd - lpu) * 1000};
+}
+function _renderDifRegua(){
+  var box = $("campoDifRegua"); if (!box) return;
+  var d = _difReguaAtual();
+  if (!d || Math.abs(d.dif) < 1){ box.hidden = true; return; }
+  box.hidden = false;
+  var r1 = function(n){ return n.toLocaleString("pt-BR",{maximumFractionDigits:1}); };
+  $("difReguaTexto").innerHTML =
+    "Régua: <b>"+r1(d.regua)+" L</b> · Calculado: <b>"+r1(d.calc)+" L</b><br>"+
+    "Diferença: <b style='color:"+(d.dif>0?"#B91C1C":"#1D4ED8")+"'>"+(d.dif>0?"+":"")+r1(d.dif)+" L</b> "+
+    "<span style='color:#92400E'>("+(d.dif>0?"saiu mais do que os frascos explicam":"saiu menos do que o calculado")+
+    " · equivale a "+Math.round(d.excReal)+" ml de excedente por frasco)</span>";
+  var ehGestor = ["admin","gestor"].includes(sessao.papel);
+  $("lblValidarRegua").hidden = !ehGestor;
+  $("lblValidarReguaSub").textContent = "A baixa passa de "+r1(d.calc)+" L para "+r1(d.regua)+" L.";
+  var st = $("difReguaStatus");
+  if (_resReguaValidada){
+    st.innerHTML = "<span style='color:#15803D;font-weight:700'>✔ Régua validada por @"+esc(_resReguaValidada.por)+" · "+fmtCheckEm(_resReguaValidada.em)+
+      "</span><span style='color:#92400E'> — se mudar os números, precisa validar de novo.</span>";
+  } else {
+    st.innerHTML = "<span style='color:#B45309;font-weight:700'>⏳ Sem validação: a baixa do tanque usa o calculado ("+r1(d.calc)+" L)"+
+      (ehGestor ? "." : " até um gestor validar.")+"</span>";
+  }
 }
 // marcar edição manual para não sobrescrever
 $("resLitrosFim").addEventListener("input", function(){
   this._editadoManual = true;
+  _renderDifRegua();
 });
 // ── Nível início automático: fim do envase anterior do mesmo lote/tanque,
 //    menos os barris tirados depois dele. Sem envase anterior: volume do lote.
@@ -8389,6 +8460,7 @@ $("resLitrosIni").addEventListener("input", function(){
   this._editadoManual = true;
   // se litrosFim foi calc auto, recalcular quando ini muda
   if (!$("resLitrosFim")._editadoManual) _recalcLitrosFim();
+  else _renderDifRegua();
 });
 $("resQtdEnv").addEventListener("input", function(){
   _recalcLitrosFim();
@@ -8428,6 +8500,11 @@ function _excessoEfetivoMl(m){
   return exc;
 }
 function _litrosReaisEnvase(m){
+  // Régua validada pelo gestor: a baixa usa o consumo medido (início − fim)
+  if (m.reguaValidada){
+    var ini = parseFloat(m.litrosInicio), fim = parseFloat(m.litrosFim);
+    if (ini > 0 && fim >= 0 && ini > fim) return ini - fim;
+  }
   var qtd = parseInt(m.qtd) || 0;
   var cap = LITROS_FORMATO[m.formato] || 0;
   if (!cap) return m.litrosUsadosPET ? (parseFloat(m.litrosUsadosPET) || 0) : 0;
@@ -10858,6 +10935,11 @@ async function carregarTanques(){
                     "Tanque: "+(m.litrosInicio ? fmtNum(m.litrosInicio)+" L" : "?")+" → "+
                     (m.litrosFim  ? fmtNum(m.litrosFim)+" L" : "?")+
                     (consumo !== null && consumo > 0 ? " <b style='color:#003E99'>(−"+fmtNum(consumo)+" L)</b>" : "")+
+                    (m.diferencaRegua && Math.abs(m.diferencaRegua) >= 1
+                      ? (m.reguaValidada
+                          ? " <span style='color:#15803D;font-weight:700'>✔ régua validada</span>"
+                          : " <span style='color:#B45309;font-weight:700'>⏳ régua "+(m.diferencaRegua>0?"+":"")+fmtNum(m.diferencaRegua)+" L aguardando gestor</span>")
+                      : "")+
                   "</div>"
                 : "";
 

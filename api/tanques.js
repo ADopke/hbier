@@ -158,6 +158,8 @@ export default protegido(async function handler(req, res) {
               litrosFim:   it.resultado ? (it.resultado.litrosFim    || "") : "",
               litrosUsadosPET: it.resultado ? (it.resultado.litrosUsadosPET ?? "") : "",
               excessoMl:   it.resultado ? (it.resultado.excessoMl    ?? "") : "",
+              diferencaRegua: it.resultado ? (it.resultado.diferencaRegua || 0) : 0,
+              reguaValidada:  it.resultado ? (it.resultado.reguaValidada || null) : null,
               temResultado,
               semana:      sem,
             });

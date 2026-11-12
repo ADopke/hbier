@@ -236,9 +236,27 @@ export default protegido(async function handler(req, res) {
         ? Math.round(qtdEnvasada * (capNominal + excessoMl / 1000) * 10) / 10
         : litrosUsadosRegua; // fallback para formatos desconhecidos
 
+      // Diferença régua × calculado e validação do gestor para usar a régua na baixa
+      const temRegua = litrosInicio > 0 && litrosFim >= 0 && litrosInicio > litrosFim;
+      const diferencaRegua = temRegua ? Math.round((litrosUsadosRegua - litrosUsadosPET) * 10) / 10 : 0;
+      const ant = it.resultado || {};
+      const mesmosNumeros = ant.litrosInicio === litrosInicio && ant.litrosFim === litrosFim &&
+                            ant.qtdEnvasada === qtdEnvasada && ant.excessoMl === excessoMl;
+      const ehGestor = ["admin", "gestor"].includes(sessao.papel);
+      let reguaValidada = (mesmosNumeros && ant.reguaValidada) ? ant.reguaValidada : null;
+      if (ehGestor && dados.validarRegua === "sim" && temRegua && Math.abs(diferencaRegua) >= 1) {
+        if (!reguaValidada) reguaValidada = { por: sessao.login, em: new Date().toISOString(), litros: litrosUsadosRegua };
+      } else if (ehGestor && dados.validarRegua === "nao") {
+        reguaValidada = null;
+      }
+      if (!temRegua || Math.abs(diferencaRegua) < 1) reguaValidada = null;
+
       it.resultado = {
         litrosInicio,
         litrosFim,
+        diferencaRegua,                        // + = régua consumiu mais que o calculado
+        reguaJustificativa: (dados.reguaJustificativa || "").trim(),
+        reguaValidada,                         // {por, em, litros} → baixa do tanque usa a régua
         litrosUsados:    litrosUsadosRegua,   // régua — só para info de quebra
         litrosUsadosPET,                       // consumo real calculado por unidade
         excessoMl,
