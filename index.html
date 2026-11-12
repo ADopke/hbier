@@ -3861,7 +3861,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.27";
+var VERSAO = "3.8.28";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8364,6 +8364,23 @@ var LITROS_FORMATO = {
   "PET 2L": 2
 };
 
+// Litros REAIS que um envase PET tirou do tanque = qtd × (capacidade + excedente).
+// Excedente: o valor gravado no lançamento; se estiver vazio/zero ou for um dos
+// padrões antigos (500ml=5, 1L=10, 2L=20), usa o padrão medido em 12/11/2026.
+var _EXCESSO_PADRAO_ANTIGO = {"PET 500ml":5, "PET 1L":10, "PET 2L":20};
+function _excessoEfetivoMl(m){
+  var fmt = m.formato || "";
+  var exc = parseFloat(String(m.excessoMl==null?"":m.excessoMl).replace(",","."));
+  if (isNaN(exc) || exc <= 0 || exc === _EXCESSO_PADRAO_ANTIGO[fmt]) return _excessoPadraoMl(fmt);
+  return exc;
+}
+function _litrosReaisEnvase(m){
+  var qtd = parseInt(m.qtd) || 0;
+  var cap = LITROS_FORMATO[m.formato] || 0;
+  if (!cap) return m.litrosUsadosPET ? (parseFloat(m.litrosUsadosPET) || 0) : 0;
+  return qtd * (cap + _excessoEfetivoMl(m) / 1000);
+}
+
 // Metas salvas no localStorage por "AAAA-MM"
 // Metas salvas no servidor (Redis) — visíveis em todos os dispositivos
 async function metaLer(ano, mes){
@@ -10632,10 +10649,7 @@ async function carregarTanques(){
             var saidoPET = 0, saidoBarril = 0;
             if (todosEnvasesPET.length) {
               saidoPET = todosEnvasesPET.reduce(function(s, m){
-                if (m.litrosUsadosPET) return s + parseFloat(m.litrosUsadosPET);
-                var qtdN = parseInt(m.qtd) || 0;
-                var capN = LITROS_FORMATO[m.formato] || 0;
-                return s + qtdN * capN;
+                return s + _litrosReaisEnvase(m);
               }, 0);
               saidoBarril = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
             } else {
@@ -10765,11 +10779,9 @@ async function carregarTanques(){
                 return !isNaN(d)&&m.dataISO ? d : null;
               })() : null;
 
-              // calcular litros desta linha: qtd × ml do formato
+              // litros reais desta linha: qtd × (capacidade + excedente por frasco)
               var qtdN  = parseInt(m.qtd) || 0;
-              var mlFmt = (typeof LITROS_FORMATO !== "undefined" && m.formato)
-                          ? (LITROS_FORMATO[m.formato] || 0) : 0;
-              var litLinha = qtdN * mlFmt;
+              var litLinha = _litrosReaisEnvase(m);
               totalUnPET  += qtdN;
               totalLitPET += litLinha;
 
@@ -11294,8 +11306,7 @@ function _calcTotalEnvasado(tqObj) {
     return m.tipo==="envase" && (m.lote||"").trim().toUpperCase()===loteUp && m.qtd;
   });
   var saidoPET = envasesPET.reduce(function(s, m){
-    if (m.litrosUsadosPET) return s + parseFloat(m.litrosUsadosPET);
-    return s + (parseInt(m.qtd)||0) * (LITROS_FORMATO[m.formato]||0);
+    return s + _litrosReaisEnvase(m);
   }, 0);
   var saidoBarril = barrilsLote.reduce(function(s,r){ return s+(parseFloat(r.total)||0); }, 0);
   return saidoPET + saidoBarril;
@@ -11334,8 +11345,7 @@ $("btnConfirmarZerado").addEventListener("click", async function(){
       });
       var volInicial = parseFloat(tqObj.volume) || 0;
       var saidoPETZ = regsPetZ.reduce(function(s, m){
-        if (m.litrosUsadosPET) return s + parseFloat(m.litrosUsadosPET);
-        return s + (parseInt(m.qtd)||0) * (LITROS_FORMATO[m.formato]||0);
+        return s + _litrosReaisEnvase(m);
       }, 0);
       var totalEnvasadoZ = litBarris + saidoPETZ;
       var quebraTanque, somaLitragemBeerSales;

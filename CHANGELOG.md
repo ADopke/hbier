@@ -44,6 +44,21 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.28 — 12/11/2026
+
+**Saldo e quebra do tanque pelo volume real envasado**
+
+O saldo do tanque, a quebra calculada ao zerar e os litros de cada envase no
+histórico do tanque passam a contar cada frasco PET pelo volume real
+(capacidade + excedente), não mais pelo nominal.
+
+- Usa o excedente gravado no lançamento
+- Lançamentos antigos sem excedente, ou com os padrões antigos (5 / 10 / 20 ml),
+  passam a usar o padrão medido: 500ml 34 ml · 1L 34 ml · 2L 12 ml
+- Metas de envase continuam em unidades e litros nominais (volume vendido)
+
+---
+
 ## 3.8.27 — 12/11/2026
 
 **Excedente por frasco atualizado com a pesagem real**
