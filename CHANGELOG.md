@@ -44,6 +44,25 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.27 — 12/11/2026
+
+**Excedente por frasco atualizado com a pesagem real**
+
+O campo *Excedente por frasco (ml)* do resultado de envase passa a vir
+preenchido com o enchimento medido na balança (frasco cheio − frasco vazio,
+densidade 1,010):
+
+| Formato | Volume real | Excedente padrão |
+|---|---|---|
+| PET 500ml | ~534 ml | 34 ml (antes 5) |
+| PET 1L | ~1034 ml | 34 ml (antes 10) |
+| PET 2L | ~2012 ml | 12 ml (antes 20) |
+
+O valor continua editável em cada lançamento, e resultados já salvos mantêm
+o excedente que foi gravado neles.
+
+---
+
 ## 3.7.0 — 20/10/2026
 
 **Sistema de auditoria de lançamentos na Ficha de Produção**

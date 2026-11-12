@@ -3424,7 +3424,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
               Excedente por frasco (ml)
               <span style="font-weight:400;color:var(--muted);font-size:.72rem"> — volume extra que cada frasco consome do tanque</span>
             </label>
-            <input type="number" id="resExcedenteMl" placeholder="Ex.: 20" min="0" step="1"
+            <input type="number" id="resExcedenteMl" placeholder="Ex.: 34" min="0" step="1"
               style="width:120px;padding:9px;border:1.5px solid var(--linha);
               border-radius:8px;font-size:.9rem">
           </div>
@@ -3861,7 +3861,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.26";
+var VERSAO = "3.8.27";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8128,7 +8128,7 @@ $("progLista").addEventListener("click", function(ev){
   // preencher excedente padrão por formato
   if($("resExcedenteMl") && isEnvase) {
     var fmt = (_resItem.formato||"").toUpperCase();
-    var excPad = fmt.indexOf("2L")!==-1 ? 20 : fmt.indexOf("1L")!==-1 ? 10 : fmt.indexOf("500")!==-1 ? 5 : 0;
+    var excPad = _excessoPadraoMl(fmt); // medido na balança em 12/11/2026
     $("resExcedenteMl").value = excPad || "";
   }
   if($("campoExcedente")) $("campoExcedente").hidden = !isEnvase || !_litrosPorUnidade(_resItem.formato||"");
@@ -8289,9 +8289,11 @@ function _litrosPorUnidade(formato){
 }
 function _excessoPadraoMl(formato){
   var f = (formato||"").toUpperCase();
-  if (f.indexOf("2L") !== -1) return 20;
-  if (f.indexOf("1L") !== -1) return 10;
-  if (f.indexOf("500") !== -1) return 5;
+  // Excedente medido na balança em 12/11/2026 (peso cheio − frasco vazio, densidade 1,010):
+  // PET 500ml ≈ 534 ml · PET 1L ≈ 1034 ml · PET 2L ≈ 2012 ml
+  if (f.indexOf("2L") !== -1) return 12;
+  if (f.indexOf("1L") !== -1) return 34;
+  if (f.indexOf("500") !== -1) return 34;
   return 0;
 }
 function _recalcLitrosFim(){
