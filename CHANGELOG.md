@@ -44,6 +44,18 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.29 — 12/11/2026
+
+**Correção: "Tanque zerado" voltava para Maturando**
+
+Desde o envio de 12/11, o zerado era ignorado sempre que o tanque tinha
+qualquer brassagem anterior, e o tanque voltava para Maturando/Fermentando.
+Agora o zerado vale até que uma brassagem nova seja realizada no tanque
+no mesmo dia do zerado ou depois dele. Brassagens anteriores ao zerado
+(o lote que foi esvaziado) não desfazem mais o zerado.
+
+---
+
 ## 3.8.28 — 12/11/2026
 
 **Saldo e quebra do tanque pelo volume real envasado**

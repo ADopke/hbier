@@ -250,6 +250,13 @@ export default protegido(async function handler(req, res) {
       const overrideEhLivre = overrideAtivo && (manual[tq.id].estagio === "livre");
       const overrideEhPronto = overrideAtivo && (manual[tq.id].estagio === "pronto");
       const overrideEhZerado = overrideEhLivre && !!(manual[tq.id].zerado);
+      // Brassagem realizada DEPOIS do zerado (mesmo dia ou posterior, horário de Brasília):
+      // só ela desfaz o zerado. Brassagens anteriores ao zerado são o lote que foi esvaziado.
+      const zeradoDia = overrideEhZerado && manual[tq.id].em
+        ? new Date(new Date(manual[tq.id].em).getTime() - 3 * 3600000).toISOString().slice(0, 10)
+        : null;
+      const brassPosZerado = overrideEhZerado && brass && zeradoDia && brass.em >= zeradoDia ? brass : null;
+      const zeradoVigente = overrideEhZerado && !brassPosZerado;
 
       // próximas brassagens planejadas (ainda não realizadas, futuras) — todas, ordenadas por data
       // Quando o tanque está zerado, inclui também a brassagem de hoje (previstahoje)
@@ -261,7 +268,7 @@ export default protegido(async function handler(req, res) {
       // "pronto" sempre tem prioridade; "zerado" sobrepõe brassagens antigas mas cede para brassagem de hoje
       // ou para brassagem com resultado (realizou a brassagem no dia → auto-limpa o zerado visualmente);
       // "livre manual" cede se há brassagem ativa
-      const usarOverride = overrideEhPronto || (overrideEhZerado && !brassHoje && !brass) || (overrideEhLivre && !brass && !brassHoje);
+      const usarOverride = overrideEhPronto || (zeradoVigente && !brassHoje) || (overrideEhLivre && !brass && !brassHoje);
 
       let estagio, estagioLabel, estagioIcone, estagioCorBg, estagioCorBorda;
       let maturacaoInicio = null; // declarado aqui para ficar acessível fora do bloco else
@@ -327,22 +334,22 @@ export default protegido(async function handler(req, res) {
       // referência de conteúdo: brassagem de hoje tem prioridade sobre anterior em maturação
       // quando o tanque foi zerado sem brassagem realizada, ignorar brassagens antigas
       // mas se já há resultado (brass), mostrar normalmente
-      const refBrass = (overrideEhZerado && !brass) ? (brassHoje || null) : (brassHoje || brass || null);
+      const refBrass = zeradoVigente ? (brassHoje || null) : (brassHoje || brass || null);
       const ref = refBrass;
 
       // envases vinculados ao lote da brassagem atual (para exibição)
-      const envase = brass && !brassHoje && !overrideEhZerado
+      const envase = brass && !brassHoje && !zeradoVigente
         ? envases
             .filter(e => e.lote && brass.lote && e.lote === brass.lote)
             .sort((a, b) => b.em.localeCompare(a.em))[0] || null
         : null;
 
-      const diasTanque = brass && !brassHoje && !overrideEhZerado ? diasDesde(brass.em) : null;
+      const diasTanque = brass && !brassHoje && !zeradoVigente ? diasDesde(brass.em) : null;
 
       // Cálculo de dias separados: fermentação vs maturação
       // maturacaoInicio já foi calculado acima a partir da ficha (1ª linha do maturLog)
       let diasFermentando = null, diasMaturando = null;
-      if (brass && !brassHoje && !overrideEhZerado) {
+      if (brass && !brassHoje && !zeradoVigente) {
         if (maturacaoInicio) {
           // Fermentação: do brassado ao início de maturação
           const maturDate = new Date(maturacaoInicio);
