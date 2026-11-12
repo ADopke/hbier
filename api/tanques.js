@@ -146,6 +146,7 @@ export default protegido(async function handler(req, res) {
             }
             movimentos.push({
               tipo:        "envase",
+              id:          it.id      || "",
               tanque:      tanqueNorm,
               lote:        it.lote    || "",
               estilo:      it.estilo  || "",

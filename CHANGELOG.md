@@ -44,6 +44,21 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.30 — 12/11/2026
+
+**Nível início da régua preenchido automaticamente no envase**
+
+Ao lançar o resultado de um envase, o *Nível início (régua)* vem calculado:
+
+- Envase anterior do mesmo lote e tanque: usa o *nível fim* que foi lançado nele,
+  menos os barris do lote registrados depois daquele envase
+- Primeiro envase do lote: usa o volume do lote, menos os barris já tirados
+- Abaixo do campo aparece de onde veio o número
+- Continua editável; se o operador digitar, o valor dele prevalece
+- Resultados já salvos mantêm o nível início gravado
+
+---
+
 ## 3.8.29 — 12/11/2026
 
 **Correção: "Tanque zerado" voltava para Maturando**

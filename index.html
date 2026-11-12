@@ -3404,10 +3404,11 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <div>
               <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
-                Nível início (régua)</label>
+                Nível início (régua) <span id="resLitrosIniHint" style="font-weight:400;color:var(--muted);font-size:.73rem"></span></label>
               <input type="number" id="resLitrosIni" placeholder="Ex.: 3150"
                 style="width:100%;padding:9px;border:1.5px solid var(--linha);
                 border-radius:8px;font-size:.9rem">
+              <div id="resLitrosIniInfo" style="font-size:.72rem;color:var(--muted);margin-top:3px;display:none"></div>
             </div>
             <div>
               <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
@@ -3861,7 +3862,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.29";
+var VERSAO = "3.8.30";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8121,6 +8122,9 @@ $("progLista").addEventListener("click", function(ev){
   // reset flag de edição manual e hint
   if($("resLitrosFim")) $("resLitrosFim")._editadoManual = false;
   if($("resLitrosFimHint")) $("resLitrosFimHint").textContent="";
+  if($("resLitrosIni")) $("resLitrosIni")._editadoManual = false;
+  if($("resLitrosIniHint")) $("resLitrosIniHint").textContent="";
+  if($("resLitrosIniInfo")) { $("resLitrosIniInfo").style.display="none"; $("resLitrosIniInfo").textContent=""; }
   if($("resLitrosFimInfo")) { $("resLitrosFimInfo").style.display="none"; $("resLitrosFimInfo").textContent=""; }
   // reset volume brassado: volta a ser editável ao abrir o modal
   if($("resVolume")){ $("resVolume").readOnly=false; $("resVolume").style.background=""; $("resVolume").style.cursor=""; $("resVolume").title=""; $("resVolume")._editadoManual=false; }
@@ -8165,6 +8169,7 @@ $("progLista").addEventListener("click", function(ev){
         }
       }).catch(function(){});
     }
+    if(isEnvase && it) _autoNivelInicio(it);
     if(!it||!it.resultado) return;
     var res=it.resultado;
     $("btnResRemover").hidden = false;  // tem resultado — pode remover
@@ -8333,7 +8338,55 @@ function _recalcLitrosFim(){
 $("resLitrosFim").addEventListener("input", function(){
   this._editadoManual = true;
 });
+// ── Nível início automático: fim do envase anterior do mesmo lote/tanque,
+//    menos os barris tirados depois dele. Sem envase anterior: volume do lote.
+async function _autoNivelInicio(it){
+  try{
+    var tqNome = (it.tanqueOrigem||"").toUpperCase().replace(/[-\s]/g,"");
+    var lote   = (it.lote||"").trim().toUpperCase();
+    if (!tqNome || !lote) return;
+    var r  = await api("/api/tanques");
+    var tq = (r.tanques||[]).find(function(t){ return (t.nome||"").toUpperCase().replace(/[-\s]/g,"") === tqNome; });
+    if (!tq) return;
+    var dataAtual = it.dataISO || it.semana || "9999-12-31";
+    var hist = tq.historico || [];
+    var anteriores = hist.filter(function(m){
+      return m.tipo === "envase" && m.id !== it.id && m.temResultado &&
+             (m.lote||"").trim().toUpperCase() === lote &&
+             (m.dataISO||"") <= dataAtual && parseFloat(m.litrosFim) > 0;
+    }).sort(function(a,b){ return (b.dataISO||"").localeCompare(a.dataISO||""); });
+    var base, origem, desde;
+    if (anteriores.length){
+      var ant = anteriores[0];
+      base = parseFloat(ant.litrosFim); desde = ant.dataISO || "";
+      var d = desde.split("-");
+      origem = "fim do envase de "+(d.length===3 ? d[2]+"/"+d[1] : desde)+", "+(ant.formato||"PET");
+    } else if ((tq.lote||"").trim().toUpperCase() === lote && parseFloat(tq.volume) > 0){
+      base = parseFloat(tq.volume); desde = ""; origem = "volume do lote";
+    } else return;
+    var barris = hist.filter(function(m){
+      if (m.tipo !== "barril") return false;
+      var bl = (m.lote||"").trim().toUpperCase();
+      if (!bl || !(bl === lote || lote.indexOf(bl) === 0)) return false;
+      var dt = m.dataISO || "";
+      return dt > desde && dt <= dataAtual;
+    }).reduce(function(s,m){ return s + (parseFloat(m.totalL)||0); }, 0);
+    var inicio = Math.max(0, Math.round((base - barris) * 10) / 10);
+    var el = $("resLitrosIni");
+    if (!el || el._editadoManual || el.value !== "" || !_resItem || _resItem.id !== it.id) return;
+    el.value = inicio;
+    if ($("resLitrosIniHint")) $("resLitrosIniHint").textContent = "(calculado auto)";
+    var info = $("resLitrosIniInfo");
+    if (info){
+      info.style.display = "block";
+      info.textContent = fmtNum(base)+" L ("+origem+")"+
+        (barris ? " − "+fmtNum(barris)+" L em barris" : "")+" = "+fmtNum(inicio)+" L";
+    }
+    _recalcLitrosFim();
+  }catch(e){ /* sem dados — mantém digitação manual */ }
+}
 $("resLitrosIni").addEventListener("input", function(){
+  this._editadoManual = true;
   // se litrosFim foi calc auto, recalcular quando ini muda
   if (!$("resLitrosFim")._editadoManual) _recalcLitrosFim();
 });
