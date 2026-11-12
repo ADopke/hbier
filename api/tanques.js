@@ -258,9 +258,10 @@ export default protegido(async function handler(req, res) {
         .filter(b => b.tanque === nomeUp && (b.planejada || (b.previstahoje && overrideEhZerado)))
         .sort((a, b) => a.em.localeCompare(b.em));
       const proximaBrass = proximasBrassagensTodas[0] || null;
-      // "pronto" sempre tem prioridade; "zerado" sobrepõe brassagens antigas mas cede para brassagem de hoje;
+      // "pronto" sempre tem prioridade; "zerado" sobrepõe brassagens antigas mas cede para brassagem de hoje
+      // ou para brassagem com resultado (realizou a brassagem no dia → auto-limpa o zerado visualmente);
       // "livre manual" cede se há brassagem ativa
-      const usarOverride = overrideEhPronto || (overrideEhZerado && !brassHoje) || (overrideEhLivre && !brass && !brassHoje);
+      const usarOverride = overrideEhPronto || (overrideEhZerado && !brassHoje && !brass) || (overrideEhLivre && !brass && !brassHoje);
 
       let estagio, estagioLabel, estagioIcone, estagioCorBg, estagioCorBorda;
       let maturacaoInicio = null; // declarado aqui para ficar acessível fora do bloco else
@@ -324,8 +325,9 @@ export default protegido(async function handler(req, res) {
       }
 
       // referência de conteúdo: brassagem de hoje tem prioridade sobre anterior em maturação
-      // quando o tanque foi zerado, ignorar brassagens antigas — mas brassagem de hoje sempre aparece
-      const refBrass = overrideEhZerado ? (brassHoje || null) : (brassHoje || brass || null);
+      // quando o tanque foi zerado sem brassagem realizada, ignorar brassagens antigas
+      // mas se já há resultado (brass), mostrar normalmente
+      const refBrass = (overrideEhZerado && !brass) ? (brassHoje || null) : (brassHoje || brass || null);
       const ref = refBrass;
 
       // envases vinculados ao lote da brassagem atual (para exibição)
