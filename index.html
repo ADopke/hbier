@@ -3876,7 +3876,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.31";
+var VERSAO = "3.8.32";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8420,6 +8420,8 @@ async function _autoNivelInicio(it){
     var tq = (r.tanques||[]).find(function(t){ return (t.nome||"").toUpperCase().replace(/[-\s]/g,"") === tqNome; });
     if (!tq) return;
     var dataAtual = it.dataISO || it.semana || "9999-12-31";
+    var hojeISO = new Date(Date.now() - 3*3600000).toISOString().slice(0,10);
+    var limiteBarril = dataAtual > hojeISO ? dataAtual : hojeISO;
     var hist = tq.historico || [];
     var anteriores = hist.filter(function(m){
       return m.tipo === "envase" && m.id !== it.id && m.temResultado &&
@@ -8440,7 +8442,9 @@ async function _autoNivelInicio(it){
       var bl = (m.lote||"").trim().toUpperCase();
       if (!bl || !(bl === lote || lote.indexOf(bl) === 0)) return false;
       var dt = m.dataISO || "";
-      return dt > desde && dt <= dataAtual;
+      // limite = data do envase ou hoje (o que for maior): barril lançado hoje para
+      // um envase programado em dia anterior já saiu do tanque antes deste resultado
+      return dt > desde && dt <= limiteBarril;
     }).reduce(function(s,m){ return s + (parseFloat(m.totalL)||0); }, 0);
     var inicio = Math.max(0, Math.round((base - barris) * 10) / 10);
     var el = $("resLitrosIni");

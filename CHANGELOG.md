@@ -44,6 +44,17 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.32 — 13/11/2026
+
+**Correção: nível início não descontava barris lançados depois da data do envase**
+
+O nível início automático só descontava barris com data até a data
+programada do envase. Barris lançados hoje para um envase programado em dia
+anterior ficavam de fora (ex.: TQ05 mostrava 14.200 L em vez de 13.460 L).
+Agora o limite é a data do envase ou hoje, o que for maior.
+
+---
+
 ## 3.8.31 — 12/11/2026
 
 **Diferença régua × calculado com validação do gestor**
