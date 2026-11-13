@@ -44,6 +44,18 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.33 — 13/11/2026
+
+**Correção: barris não chegavam ao histórico dos tanques**
+
+`api/tanques.js` lia os barris na chave `prog:barril-AAAA-MM-DD`, mas
+`api/prog.js` grava em `prog:barril:AAAA-MM-DD`. O histórico de cada tanque
+nunca recebia barris, então o nível início automático do envase não os
+descontava (TQ05 seguia em 14.200 L). Chave corrigida; os barris também
+passam a aparecer no histórico do tanque.
+
+---
+
 ## 3.8.32 — 13/11/2026
 
 **Correção: nível início não descontava barris lançados depois da data do envase**

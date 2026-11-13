@@ -56,7 +56,7 @@ export default protegido(async function handler(req, res) {
     // Importar dinamicamente para não criar dependência circular em prod
     // (prog.js já exporta sua lógica via Redis; aqui lemos diretamente)
     const CHAVE_PROG        = (sem) => `prog:${sem}`;
-    const CHAVE_PROG_BARRIL = (sem) => `prog:barril-${sem}`;
+    const CHAVE_PROG_BARRIL = (sem) => `prog:barril:${sem}`;  // mesma chave que api/prog.js grava
 
     // Coletar todos os itens de brassagem, envase e barril
     const brassagens = []; // { tanque, lote, estilo, em, volume, og, tanqueFinalizado, semana }
