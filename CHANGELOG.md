@@ -44,6 +44,19 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.34 — 16/11/2026
+
+**Correção: nível início pegava o envase errado quando havia dois no mesmo dia**
+
+- Com mais de um envase do lote na mesma data, o nível início usava o fim do
+  primeiro (ex.: TQ05 veio 12.157,2 L em vez de partir de 9.956,8 L). Agora
+  usa o de menor nível fim, que é sempre o último (a régua só desce)
+- Barris do mesmo dia do envase anterior: passa a comparar o horário de
+  lançamento do barril com o horário do resultado do envase, para descontar
+  só os barris lançados depois dele
+
+---
+
 ## 3.8.33 — 13/11/2026
 
 **Correção: barris não chegavam ao histórico dos tanques**

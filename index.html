@@ -3876,7 +3876,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.33";
+var VERSAO = "3.8.34";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8427,15 +8427,20 @@ async function _autoNivelInicio(it){
       return m.tipo === "envase" && m.id !== it.id && m.temResultado &&
              (m.lote||"").trim().toUpperCase() === lote &&
              (m.dataISO||"") <= dataAtual && parseFloat(m.litrosFim) > 0;
-    }).sort(function(a,b){ return (b.dataISO||"").localeCompare(a.dataISO||""); });
+    }).sort(function(a,b){
+      // mais recente primeiro: data; no mesmo dia, o de menor nível fim (a régua só desce)
+      var c = (b.dataISO||"").localeCompare(a.dataISO||"");
+      return c !== 0 ? c : (parseFloat(a.litrosFim) - parseFloat(b.litrosFim));
+    });
     var base, origem, desde;
     if (anteriores.length){
       var ant = anteriores[0];
       base = parseFloat(ant.litrosFim); desde = ant.dataISO || "";
       var d = desde.split("-");
       origem = "fim do envase de "+(d.length===3 ? d[2]+"/"+d[1] : desde)+", "+(ant.formato||"PET");
+      var antEm = ant.resEm || "";
     } else if ((tq.lote||"").trim().toUpperCase() === lote && parseFloat(tq.volume) > 0){
-      base = parseFloat(tq.volume); desde = ""; origem = "volume do lote";
+      base = parseFloat(tq.volume); desde = ""; origem = "volume do lote"; var antEm = "";
     } else return;
     var barris = hist.filter(function(m){
       if (m.tipo !== "barril") return false;
@@ -8444,7 +8449,11 @@ async function _autoNivelInicio(it){
       var dt = m.dataISO || "";
       // limite = data do envase ou hoje (o que for maior): barril lançado hoje para
       // um envase programado em dia anterior já saiu do tanque antes deste resultado
-      return dt > desde && dt <= limiteBarril;
+      if (dt > limiteBarril) return false;
+      // Depois do envase anterior: compara o horário de lançamento quando os dois têm
+      // (resolve envase e barris no mesmo dia); senão, compara a data.
+      if (antEm && m.lancadoEm) return m.lancadoEm > antEm;
+      return dt > desde;
     }).reduce(function(s,m){ return s + (parseFloat(m.totalL)||0); }, 0);
     var inicio = Math.max(0, Math.round((base - barris) * 10) / 10);
     var el = $("resLitrosIni");

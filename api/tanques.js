@@ -160,6 +160,7 @@ export default protegido(async function handler(req, res) {
               excessoMl:   it.resultado ? (it.resultado.excessoMl    ?? "") : "",
               diferencaRegua: it.resultado ? (it.resultado.diferencaRegua || 0) : 0,
               reguaValidada:  it.resultado ? (it.resultado.reguaValidada || null) : null,
+              resEm:          it.resultado ? (it.resultado.em || it.resultado.emReal || "") : "",   // horário do lançamento do resultado
               temResultado,
               semana:      sem,
             });
@@ -194,6 +195,7 @@ export default protegido(async function handler(req, res) {
             dataISO:   dataISO,
             linhas:    reg.linhas  || [],
             totalL:    reg.total   || 0,
+            lancadoEm: reg.em      || "",   // horário em que o barril foi lançado
             descricao: linhasDesc,
             semana:    sem,
           });
