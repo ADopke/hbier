@@ -388,6 +388,21 @@ export default protegido(async function handler(req, res) {
         diasFermentando,
         diasMaturando,
         maturacaoInicioISO: maturacaoInicio || null,
+        // Clearmax Pro (garantia de glúten) — lido da Ficha de Produção do lote atual
+        clearmax: (function () {
+          if (!ref || !ref.lote || brassHoje) return null;
+          const f = fichasAtivas[ref.lote] || null;
+          const cx = (f && f.adicoesTanque && f.adicoesTanque.clearmax) ||
+                     (f && f.aplicacoes && f.aplicacoes.clearmax) || null;
+          if (!cx || !cx.confirmado) return { usado: false, temFicha: !!f };
+          return {
+            usado: true,
+            data:  cx.dataInp || cx.data || "",
+            hora:  cx.horaInp || cx.hora || "",
+            dose:  cx.doseLabel || "",
+            quem:  cx.quem || "",
+          };
+        })(),
         brassadoEm:   ref ? ref.em     : "",
         brassadoSem:  ref ? ref.semana : "",
         brassadoId:   ref ? ref.id     : "",

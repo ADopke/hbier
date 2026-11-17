@@ -44,6 +44,21 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.35 — 17/11/2026
+
+**Alerta de Clearmax Pro nos tanques (garantia de glúten)**
+
+- Cada card de tanque com lote mostra um aviso grande, lido da Ficha de
+  Produção do lote:
+  - 🌾 **CLEARMAX PRO APLICADO** (verde): data/hora, dose e quem aplicou
+  - 🚫 **SEM CLEARMAX PRO REGISTRADO** (vermelho, piscando): lote sem
+    garantia de glúten; pede para confirmar na Ficha do Lote
+- Resumo no topo da aba: "🚫 N lotes SEM Clearmax Pro: TQxx…" ou
+  "🌾 Clearmax Pro OK em todos os lotes"
+- Tanques livres e brassagem prevista para hoje não mostram o aviso
+
+---
+
 ## 3.8.34 — 16/11/2026
 
 **Correção: nível início pegava o envase errado quando havia dois no mesmo dia**

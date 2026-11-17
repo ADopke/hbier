@@ -998,6 +998,10 @@
     border-radius:12px;padding:13px 14px;border-left:4px solid transparent;
     border:1px solid var(--linha);
   }
+  @keyframes tq-pulse-cx{
+    0%,100%{box-shadow:0 0 0 2px #FCA5A5,0 2px 8px rgba(185,28,28,.35)}
+    50%{box-shadow:0 0 0 6px #FECACA,0 4px 18px rgba(185,28,28,.6)}
+  }
   @keyframes tq-pulse-brass{
     0%,100%{box-shadow:0 0 0 3px #FCD34D,0 2px 8px rgba(180,83,9,.4)}
     50%{box-shadow:0 0 0 5px #FDE68A,0 4px 16px rgba(180,83,9,.6)}
@@ -3876,7 +3880,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.34";
+var VERSAO = "3.8.35";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10679,6 +10683,12 @@ async function carregarTanques(){
         (contagem.fermentando? "<span style='background:#FFFBEB;border:1px solid #F59E0B;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#92400E'>🍺 "+contagem.fermentando+" fermentando</span>" : "")+
         (contagem.maturando  ? "<span style='background:#EFF6FF;border:1px solid #3B82F6;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#1D4ED8'>🧊 "+contagem.maturando+" maturando</span>" : "")+
         (contagem.critico    ? "<span style='background:#fff;border:1px solid #DC2626;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#DC2626'>🚨 "+contagem.critico+" atenção</span>" : "")+
+        (function(){
+          var semCx = _dadosTanques.filter(function(t){ return t.clearmax && !t.clearmax.usado && t.estagio !== "livre"; });
+          if (!semCx.length) return "<span style='background:#DCFCE7;border:1px solid #16A34A;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:800;color:#14532D'>🌾 Clearmax Pro OK em todos os lotes</span>";
+          return "<span style='background:#DC2626;border:1px solid #991B1B;border-radius:20px;padding:3px 12px;font-size:.82rem;font-weight:900;color:#fff;animation:tq-pulse-cx 1.4s ease-in-out infinite'>🚫 "+
+            semCx.length+" lote"+(semCx.length>1?"s":"")+" SEM Clearmax Pro: "+semCx.map(function(t){ return esc(t.nome); }).join(", ")+"</span>";
+        })()+
       "</div>";
 
     // ── Agrupar por disponibilidade ──────────────────────────────────
@@ -11136,6 +11146,25 @@ async function carregarTanques(){
           })()+
           "<span style='font-size:.7rem;color:var(--muted);margin-left:auto;white-space:nowrap'>"+fmtNum(tq.capacidade)+" L</span>"+
         "</div>"+
+
+        // ── ALERTA CLEARMAX PRO (garantia de glúten do lote) ────────
+        (function(){
+          var cx = tq.clearmax;
+          if (!cx || eLivre) return "";
+          if (cx.usado){
+            var dt = (cx.data||"").split("-"); var dtF = dt.length===3 ? dt[2]+"/"+dt[1] : (cx.data||"");
+            return "<div style='margin-bottom:8px;background:#DCFCE7;border:2.5px solid #16A34A;border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:10px'>"+
+              "<span style='font-size:1.6rem;line-height:1'>🌾</span>"+
+              "<div><div style='font-family:\"Barlow Condensed\",sans-serif;font-weight:900;font-size:1.05rem;color:#14532D;letter-spacing:.03em'>CLEARMAX PRO APLICADO</div>"+
+              "<div style='font-size:.74rem;color:#166534'>"+[dtF + (cx.hora ? " "+esc(cx.hora) : ""), cx.dose ? esc(cx.dose) : "", cx.quem ? "@"+esc(cx.quem) : ""].filter(Boolean).join(" · ")+
+              "</div></div></div>";
+          }
+          return "<div style='margin-bottom:8px;background:#DC2626;border:3px solid #7F1D1D;border-radius:10px;padding:11px 12px;display:flex;align-items:center;gap:10px;animation:tq-pulse-cx 1.4s ease-in-out infinite'>"+
+            "<span style='font-size:1.9rem;line-height:1'>🚫</span>"+
+            "<div><div style='font-family:\"Barlow Condensed\",sans-serif;font-weight:900;font-size:1.2rem;color:#fff;letter-spacing:.04em'>SEM CLEARMAX PRO REGISTRADO</div>"+
+            "<div style='font-size:.76rem;color:#FEE2E2;font-weight:600'>Lote "+esc(tq.lote||"")+" sem garantia de glúten. "+
+            (cx.temFicha ? "Confirme a aplicação na Ficha do Lote." : "Ficha de Produção do lote não encontrada.")+"</div></div></div>";
+        })()+
 
         // dois blocos — lado a lado em desktop, empilhados em mobile
         "<div class='tq-split' style='border:2px solid "+esc(corBorda)+";--tq-borda:"+esc(corBorda)+"'>"+
