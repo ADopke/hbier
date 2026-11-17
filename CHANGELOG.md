@@ -44,6 +44,21 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.36 — 17/11/2026
+
+**Alertas de Clearmax L e levedura nos tanques**
+
+- O aviso do card passa a ter três linhas, lidas da Ficha de Produção:
+  Clearmax Pro, Clearmax L e Levedura
+- Registrado: linha verde com data/hora, dose (ou geração/temperatura da
+  levedura) e quem lançou
+- Não registrado: faixa vermelha grande piscando
+  ("SEM CLEARMAX L REGISTRADO", "SEM LEVEDURA REGISTRADO"…)
+- Resumo no topo: um aviso vermelho por item faltante, com os tanques
+  ("🚫 SEM LEVEDURA: TQ03")
+
+---
+
 ## 3.8.35 — 17/11/2026
 
 **Alerta de Clearmax Pro nos tanques (garantia de glúten)**

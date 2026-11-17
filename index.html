@@ -3880,7 +3880,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.35";
+var VERSAO = "3.8.36";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -10684,10 +10684,19 @@ async function carregarTanques(){
         (contagem.maturando  ? "<span style='background:#EFF6FF;border:1px solid #3B82F6;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#1D4ED8'>🧊 "+contagem.maturando+" maturando</span>" : "")+
         (contagem.critico    ? "<span style='background:#fff;border:1px solid #DC2626;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#DC2626'>🚨 "+contagem.critico+" atenção</span>" : "")+
         (function(){
-          var semCx = _dadosTanques.filter(function(t){ return t.clearmax && !t.clearmax.usado && t.estagio !== "livre"; });
-          if (!semCx.length) return "<span style='background:#DCFCE7;border:1px solid #16A34A;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:800;color:#14532D'>🌾 Clearmax Pro OK em todos os lotes</span>";
-          return "<span style='background:#DC2626;border:1px solid #991B1B;border-radius:20px;padding:3px 12px;font-size:.82rem;font-weight:900;color:#fff;animation:tq-pulse-cx 1.4s ease-in-out infinite'>🚫 "+
-            semCx.length+" lote"+(semCx.length>1?"s":"")+" SEM Clearmax Pro: "+semCx.map(function(t){ return esc(t.nome); }).join(", ")+"</span>";
+          var falta = {};
+          _dadosTanques.forEach(function(t){
+            if (!t.adicoes || t.estagio === "livre") return;
+            t.adicoes.itens.forEach(function(it){
+              if (!it.usado){ (falta[it.nome] = falta[it.nome] || []).push(t.nome); }
+            });
+          });
+          var nomes = Object.keys(falta);
+          if (!nomes.length) return "<span style='background:#DCFCE7;border:1px solid #16A34A;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:800;color:#14532D'>🌾 Clearmax Pro, Clearmax L e levedura OK em todos os lotes</span>";
+          return nomes.map(function(n){
+            return "<span style='background:#DC2626;border:1px solid #991B1B;border-radius:20px;padding:3px 12px;font-size:.82rem;font-weight:900;color:#fff;animation:tq-pulse-cx 1.4s ease-in-out infinite'>🚫 SEM "+
+              esc(n.toUpperCase())+": "+falta[n].map(esc).join(", ")+"</span>";
+          }).join("");
         })()+
       "</div>";
 
@@ -11147,23 +11156,31 @@ async function carregarTanques(){
           "<span style='font-size:.7rem;color:var(--muted);margin-left:auto;white-space:nowrap'>"+fmtNum(tq.capacidade)+" L</span>"+
         "</div>"+
 
-        // ── ALERTA CLEARMAX PRO (garantia de glúten do lote) ────────
+        // ── ALERTA ADIÇÕES: Clearmax Pro (glúten), Clearmax L, levedura ──
         (function(){
-          var cx = tq.clearmax;
-          if (!cx || eLivre) return "";
-          if (cx.usado){
-            var dt = (cx.data||"").split("-"); var dtF = dt.length===3 ? dt[2]+"/"+dt[1] : (cx.data||"");
-            return "<div style='margin-bottom:8px;background:#DCFCE7;border:2.5px solid #16A34A;border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:10px'>"+
-              "<span style='font-size:1.6rem;line-height:1'>🌾</span>"+
-              "<div><div style='font-family:\"Barlow Condensed\",sans-serif;font-weight:900;font-size:1.05rem;color:#14532D;letter-spacing:.03em'>CLEARMAX PRO APLICADO</div>"+
-              "<div style='font-size:.74rem;color:#166534'>"+[dtF + (cx.hora ? " "+esc(cx.hora) : ""), cx.dose ? esc(cx.dose) : "", cx.quem ? "@"+esc(cx.quem) : ""].filter(Boolean).join(" · ")+
-              "</div></div></div>";
-          }
-          return "<div style='margin-bottom:8px;background:#DC2626;border:3px solid #7F1D1D;border-radius:10px;padding:11px 12px;display:flex;align-items:center;gap:10px;animation:tq-pulse-cx 1.4s ease-in-out infinite'>"+
-            "<span style='font-size:1.9rem;line-height:1'>🚫</span>"+
-            "<div><div style='font-family:\"Barlow Condensed\",sans-serif;font-weight:900;font-size:1.2rem;color:#fff;letter-spacing:.04em'>SEM CLEARMAX PRO REGISTRADO</div>"+
-            "<div style='font-size:.76rem;color:#FEE2E2;font-weight:600'>Lote "+esc(tq.lote||"")+" sem garantia de glúten. "+
-            (cx.temFicha ? "Confirme a aplicação na Ficha do Lote." : "Ficha de Produção do lote não encontrada.")+"</div></div></div>";
+          var ad = tq.adicoes;
+          if (!ad || eLivre) return "";
+          var MOTIVO = {
+            clearmax:  "Lote sem garantia de glúten.",
+            clearmaxL: "Aplicação não registrada.",
+            lev:       "Inoculação não registrada.",
+          };
+          var linhas = ad.itens.map(function(it){
+            if (it.usado){
+              var dt = (it.data||"").split("-"); var dtF = dt.length===3 ? dt[2]+"/"+dt[1] : (it.data||"");
+              var det = [dtF + (it.hora ? " "+esc(it.hora) : ""), it.info ? esc(it.info) : "", it.quem ? "@"+esc(it.quem) : ""].filter(Boolean).join(" · ");
+              return "<div style='background:#DCFCE7;border:2px solid #16A34A;border-radius:9px;padding:6px 10px;display:flex;align-items:center;gap:8px'>"+
+                "<span style='font-size:1.15rem;line-height:1'>✅</span>"+
+                "<span style='font-family:\"Barlow Condensed\",sans-serif;font-weight:900;font-size:.98rem;color:#14532D;letter-spacing:.03em;white-space:nowrap'>"+esc(it.nome.toUpperCase())+"</span>"+
+                "<span style='font-size:.72rem;color:#166534'>"+det+"</span></div>";
+            }
+            return "<div style='background:#DC2626;border:3px solid #7F1D1D;border-radius:9px;padding:9px 11px;display:flex;align-items:center;gap:9px;animation:tq-pulse-cx 1.4s ease-in-out infinite'>"+
+              "<span style='font-size:1.6rem;line-height:1'>🚫</span>"+
+              "<div><div style='font-family:\"Barlow Condensed\",sans-serif;font-weight:900;font-size:1.12rem;color:#fff;letter-spacing:.04em'>SEM "+esc(it.nome.toUpperCase())+" REGISTRADO</div>"+
+              "<div style='font-size:.74rem;color:#FEE2E2;font-weight:600'>"+(MOTIVO[it.chave]||"")+" "+
+              (ad.temFicha ? "Confirme na Ficha do Lote." : "Ficha de Produção do lote não encontrada.")+"</div></div></div>";
+          }).join("");
+          return "<div style='margin-bottom:8px;display:flex;flex-direction:column;gap:5px'>"+linhas+"</div>";
         })()+
 
         // dois blocos — lado a lado em desktop, empilhados em mobile

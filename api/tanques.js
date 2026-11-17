@@ -388,19 +388,25 @@ export default protegido(async function handler(req, res) {
         diasFermentando,
         diasMaturando,
         maturacaoInicioISO: maturacaoInicio || null,
-        // Clearmax Pro (garantia de glúten) — lido da Ficha de Produção do lote atual
-        clearmax: (function () {
+        // Adições obrigatórias do lote (Clearmax Pro, Clearmax L, levedura) — lidas da Ficha de Produção
+        adicoes: (function () {
           if (!ref || !ref.lote || brassHoje) return null;
           const f = fichasAtivas[ref.lote] || null;
-          const cx = (f && f.adicoesTanque && f.adicoesTanque.clearmax) ||
-                     (f && f.aplicacoes && f.aplicacoes.clearmax) || null;
-          if (!cx || !cx.confirmado) return { usado: false, temFicha: !!f };
+          const pega = (k) => (f && f.adicoesTanque && f.adicoesTanque[k]) || (f && f.aplicacoes && f.aplicacoes[k]) || null;
+          const item = (chave, nome, info) => {
+            const a = pega(chave);
+            if (!a || !a.confirmado) return { chave, nome, usado: false };
+            return { chave, nome, usado: true,
+              data: a.dataInp || a.data || "", hora: a.horaInp || a.hora || "",
+              info: info(a), quem: a.quem || "" };
+          };
           return {
-            usado: true,
-            data:  cx.dataInp || cx.data || "",
-            hora:  cx.horaInp || cx.hora || "",
-            dose:  cx.doseLabel || "",
-            quem:  cx.quem || "",
+            temFicha: !!f,
+            itens: [
+              item("clearmax",  "Clearmax Pro", a => a.doseLabel || ""),
+              item("clearmaxL", "Clearmax L",   a => { const q = a.qtdInp || a.qtd || ""; return q ? q + " mL" : ""; }),
+              item("lev",       "Levedura",     a => [a.geracao ? "Geração " + a.geracao : "", a.temp ? a.temp + "°C" : ""].filter(Boolean).join(" · ")),
+            ],
           };
         })(),
         brassadoEm:   ref ? ref.em     : "",
