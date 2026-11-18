@@ -12,7 +12,7 @@ import {
 // Apenas admin e gestor podem salvar.
 
 const CHAVE_CFG = "config:planejamento";
-const CFG_PADRAO = { cicloDias: 15, intervaloDias: 1, bateladasDia: 6, litrosBatelada: 1450, brassaSabado: false };
+const CFG_PADRAO = { cicloDias: 15, intervaloDias: 1, bateladasDia: 6, litrosBatelada: 1450, brassaSabado: false, bateladasTanque: { TQ05: 9 } };
 function chaveDemanda(ano, mes) { return `plan:demanda:${ano}-${String(mes).padStart(2, "0")}`; }
 
 function chave(ano, mes) {
@@ -52,6 +52,11 @@ export default protegido(async function handler(req, res) {
           bateladasDia:   n(dd.bateladasDia, 1, 20, CFG_PADRAO.bateladasDia),
           litrosBatelada: n(dd.litrosBatelada, 100, 10000, CFG_PADRAO.litrosBatelada),
           brassaSabado:   !!dd.brassaSabado,
+          bateladasTanque: (function () {
+            const o = {};
+            Object.entries(dd.bateladasTanque || {}).forEach(([k, v]) => { const x = Number(v); if (k.trim() && x >= 1 && x <= 40) o[k.trim().toUpperCase()] = Math.round(x); });
+            return o;
+          })(),
           atualizadoPor:  sessao.login,
           em:             new Date().toISOString(),
         };

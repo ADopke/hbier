@@ -44,6 +44,20 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.4 — 18/11/2026
+
+**Planejador: bateladas por tanque**
+
+- Novo parâmetro "Bateladas para encher cada tanque" (⚙ Parâmetros): TQ05
+  vem com 9; os demais usam capacidade ÷ L/batelada arredondado, sem passar de
+  ~1.600 L por batelada (TQ01–04 = 6, TQ06 2.000 L = 2, TQ07 3.000 L = 2)
+- Volume parcial usa bateladas proporcionais ao tanque (ex.: 6.000 L no TQ01
+  = 5 bat.)
+- Tanque com mais bateladas que o dia (TQ05: 9 > 6) ocupa dois dias seguidos
+  (6 + 3); os demais terminam no mesmo dia (substitui a folga de 10% da 3.10.3)
+
+---
+
 ## 3.10.3 — 18/11/2026
 
 **Planejador: tanque termina no mesmo dia**
