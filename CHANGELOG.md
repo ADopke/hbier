@@ -44,6 +44,19 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.3 — 18/11/2026
+
+**Planejador: tanque termina no mesmo dia**
+
+- Brassagem que cabe num dia de produção (bateladas/dia × L/batelada, com 10%
+  de folga — ex.: 9.000 L em 6 bateladas) é programada inteira num único dia;
+  se o dia já tem bateladas ocupadas e não sobra o suficiente, vai para o
+  próximo dia com espaço
+- Só tanques maiores que um dia de produção (ex.: TQ05 14.000 L) continuam
+  ocupando dias seguidos
+
+---
+
 ## 3.10.2 — 18/11/2026
 
 **Estilos vêm das receitas cadastradas**
