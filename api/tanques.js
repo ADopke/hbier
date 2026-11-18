@@ -211,6 +211,8 @@ export default protegido(async function handler(req, res) {
         .filter(b => !b.planejada && !b.previstahoje && b.lote)
         .map(b => b.lote)
     )];
+    const cfgPlan = (await ler("config:planejamento")) || {};
+    const cicloDiasCfg = Number(cfgPlan.cicloDias) > 0 ? Number(cfgPlan.cicloDias) : 15;
     const fichasAtivas = {};
     if (lotesAtivos.length) {
       const chavesFichas = lotesAtivos.map(l => `ficha:${l}`);
@@ -308,7 +310,7 @@ export default protegido(async function handler(req, res) {
         estagioCorBorda = "#22C55E";
       } else {
         const dias = diasDesde(brass.em);
-        const DIAS_CRITICO = 15;
+        const DIAS_CRITICO = cicloDiasCfg;   // configurável no planejador (config:planejamento)
         // Fonte de verdade: ficha do lote atual tem linhas de maturação?
         const fichaLote = brass.lote ? (fichasAtivas[brass.lote] || null) : null;
         const maturLog  = fichaLote && Array.isArray(fichaLote.maturLog) ? fichaLote.maturLog : [];

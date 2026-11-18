@@ -44,6 +44,33 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.0 — 18/11/2026
+
+**🧠 Planejador de brassagens (aba Programação)**
+
+- Sugere as brassagens do mês escolhido (atual + 2 seguintes): para cada
+  tanque calcula quando fica livre (última brassagem/fila + ciclo + CIP) e
+  ocupa o primeiro dia útil livre, sempre com o tanque que libera primeiro
+- Dias úteis: segunda a sexta (sábado opcional), sem feriados; pontos
+  facultativos aparecem marcados (◐); dias que já têm brassagem são respeitados
+- Tanque maior que um dia de produção (bateladas/dia × L/batelada) ocupa dias
+  seguidos (ex.: TQ05 14.000 L = 2 dias)
+- Necessidade por estilo do mês (Helles + outros estilos), salva por mês;
+  sem necessidade cadastrada usa a meta de brassagem da aba Metas
+- Resumo: previsto × meta, já programado, capacidade máxima e o que falta,
+  com o gargalo explicado
+- Lotes numerados na sequência do estilo/ano (ex.: HELLES 81/26T01);
+  estilo, volume e lote editáveis antes de programar
+- "✅ Programar selecionadas" cria as brassagens marcadas (admin/gestor)
+- **Parâmetros da fábrica** editáveis (admin/gestor): ciclo máximo no tanque
+  (15 d), intervalo p/ CIP (1 d), bateladas por dia (6), litros finais por
+  batelada (1.450), brassar aos sábados. O ciclo passa a valer para o app
+  todo: limite dos cards de tanque, alerta amarelo (ciclo − 3), estágio
+  "atenção" no servidor e avisos de conflito
+- Config e necessidade gravadas via api/metas.js (`?config=1`, `?demanda=1`)
+
+---
+
 ## 3.9.0 — 18/11/2026
 
 **Programação: sete melhorias**

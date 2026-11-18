@@ -2023,7 +2023,9 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
               style="background:#7A4500;border-color:#7A4500;color:#fff">🛢 Barril</button>
             <button class="btn mini" id="btnAddLimpeza"
               style="background:#065F46;border-color:#065F46;color:#fff">🧹 Limpeza</button>
-            <button class="btn mini secundario" id="btnInsumos" style="margin-left:auto"
+            <button class="btn mini" id="btnPlanejar" style="margin-left:auto;background:#14532D;border-color:#14532D;color:#fff"
+              title="Sugere as brassagens do mês pelos tanques, ciclo e necessidade">🧠 Planejar</button>
+            <button class="btn mini secundario" id="btnInsumos"
               title="Insumos das brassagens da semana em tela + seguinte">🧾 Insumos</button>
           </div>
         </div>
@@ -3898,7 +3900,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.9.0";
+var VERSAO = "3.10.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5983,6 +5985,7 @@ var _progEditando = null;
 var DIAS_PROG = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 
 async function carregarProg(){
+  await _carregarCfgPlan();
   if (_progVisao === "mensal"){
     var MESES_L=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
     $("progMesLabel").textContent = MESES_L[segProg.getMonth()];
@@ -7060,6 +7063,333 @@ function _ddepTanqueMudou(sel){
   if (es && tq && tq.estilo && !es.value) es.value = tq.estilo;
 }
 
+// ══════════════════════════════════════════════════════════════
+//  PLANEJADOR DE BRASSAGENS (v3.10.0)
+// ══════════════════════════════════════════════════════════════
+var _cfgPlan = null;
+var CFG_PLAN_PADRAO = { cicloDias:15, intervaloDias:1, bateladasDia:6, litrosBatelada:1450, brassaSabado:false };
+async function _carregarCfgPlan(forcar){
+  if (_cfgPlan && !forcar) return _cfgPlan;
+  try{ var r = await api("/api/metas?config=1"); _cfgPlan = Object.assign({}, CFG_PLAN_PADRAO, (r && r.config) || {}); }
+  catch(e){ _cfgPlan = Object.assign({}, CFG_PLAN_PADRAO); }
+  // ciclo configurável alimenta os limites do app todo (cards de tanque, alertas, conflitos)
+  DIAS_CRITICO = Number(_cfgPlan.cicloDias) || 15;
+  DIAS_AVISO   = Math.max(1, DIAS_CRITICO - 3);
+  return _cfgPlan;
+}
+function _addDias(iso, n){ var d = new Date(iso+"T00:00:00"); d.setDate(d.getDate()+n); return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
+
+/* Núcleo do cálculo (sem tela) — testável.
+   p = { ano, mes(0-11), cfg, tanques, existentes:[{dataISO,tanque,estilo,litros}], demanda:{estilo:L}, meta, hoje, lotes:[str] } */
+function _planejarMes(p){
+  var cfg = p.cfg, ciclo = +cfg.cicloDias, intv = +cfg.intervaloDias;
+  var dailyL = (+cfg.bateladasDia) * (+cfg.litrosBatelada);
+  var ini = p.ano+"-"+("0"+(p.mes+1)).slice(-2)+"-01";
+  var fimD = new Date(p.ano, p.mes+1, 0);
+  var fim = _addDias(ini, fimD.getDate()-1);
+  var desde = p.hoje > ini ? p.hoje : ini;
+  var fer = _feriadosBR(p.ano), avisos = [];
+  // dias úteis de brassagem
+  var dias = [];
+  for (var d = ini; d <= fim; d = _addDias(d,1)){
+    if (d < desde) continue;
+    var dow = new Date(d+"T00:00:00").getDay();
+    if (dow === 0 || (dow === 6 && !cfg.brassaSabado)) continue;
+    var f = fer[d];
+    if (f && !f.facultativo) continue;
+    dias.push({iso:d, facult: f && f.facultativo ? f.nome : ""});
+  }
+  var usado = {};
+  (p.existentes||[]).forEach(function(e){ if (e.dataISO) usado[e.dataISO] = (e.tanque||"") || "ocupado"; });
+  // disponibilidade de cada tanque
+  var tqs = (p.tanques||[]).filter(function(t){ return +t.capacidade > 0; }).map(function(t){
+    var bases = [];
+    if (t.estagio !== "livre" && t.brassadoEm) bases.push(String(t.brassadoEm).slice(0,10));
+    (t.proximasBrassagens||[]).forEach(function(b){ if (b.dataISO) bases.push(String(b.dataISO).slice(0,10)); });
+    (p.existentes||[]).forEach(function(e){ if (_tqNorm(e.tanque) === _tqNorm(t.nome) && e.dataISO) bases.push(e.dataISO); });
+    var base = bases.sort().pop() || null;
+    var livre = base ? _addDias(base, ciclo + intv) : desde;
+    if (base && livre < p.hoje && t.estagio !== "livre")
+      avisos.push(t.nome+": lote atual ("+(t.lote||"")+") passa do limite de "+ciclo+" dias — tanque considerado livre a partir de hoje.");
+    if (livre < desde) livre = desde;
+    var cap = +t.capacidade;
+    var nd = cap <= dailyL*1.1 ? 1 : Math.ceil(cap / dailyL);
+    return { nome:t.nome, cap:cap, nd:nd, livre:livre };
+  });
+  // existentes contam para a meta
+  var totalExist = 0, existPorEstilo = {};
+  (p.existentes||[]).forEach(function(e){ totalExist += +e.litros||0; var k=_normTxt(e.estilo); existPorEstilo[k]=(existPorEstilo[k]||0)+(+e.litros||0); });
+  // slots (alocação gulosa: sempre o tanque que libera primeiro)
+  var slots = [];
+  for (var guard = 0; guard < 200; guard++){
+    var melhor = null;
+    tqs.forEach(function(t){
+      for (var i = 0; i < dias.length; i++){
+        if (dias[i].iso < t.livre) continue;
+        var ok = true;
+        for (var k = 0; k < t.nd; k++){ if (!dias[i+k] || usado[dias[i+k].iso]) { ok = false; break; } }
+        if (!ok) continue;
+        if (!melhor || dias[i].iso < melhor.dia.iso || (dias[i].iso === melhor.dia.iso && t.cap > melhor.t.cap)) melhor = {t:t, i:i, dia:dias[i]};
+        break;
+      }
+    });
+    if (!melhor) break;
+    var dd = [];
+    for (var k2 = 0; k2 < melhor.t.nd; k2++){ usado[dias[melhor.i+k2].iso] = melhor.t.nome; dd.push(dias[melhor.i+k2].iso); }
+    slots.push({ dataISO: melhor.dia.iso, dias: dd, tanque: melhor.t.nome, litros: melhor.t.cap, facult: melhor.dia.facult,
+                 bateladas: Math.round(melhor.t.cap / (+cfg.litrosBatelada)) });
+    melhor.t.livre = _addDias(melhor.dia.iso, ciclo + intv);
+  }
+  // estilos: necessidade restante
+  var restante = {}, nomes = {};
+  Object.keys(p.demanda||{}).forEach(function(e){ var k=_normTxt(e); nomes[k]=e; restante[k]=(+p.demanda[e]||0)-(existPorEstilo[k]||0); });
+  var meta = Object.keys(p.demanda||{}).length
+    ? Object.keys(p.demanda).reduce(function(s,e){ return s + (+p.demanda[e]||0); }, 0)
+    : (+p.meta || 0);
+  var padrao = Object.keys(restante).sort(function(a,b){ return (+p.demanda[nomes[b]]||0)-(+p.demanda[nomes[a]]||0); })[0];
+  var estiloPadrao = padrao ? nomes[padrao] : "Helles";
+  // numeração de lotes por estilo/ano
+  var seqs = {};
+  function proxLote(estilo, dataISO, tanque){
+    var E = estilo.trim().toUpperCase(), yy = dataISO.slice(2,4), key = E+"|"+yy;
+    if (seqs[key] == null){
+      var mx = 0, re = new RegExp("^(.+?)\\s*(\\d+)\\/"+yy+"T\\d+$","i");
+      (p.lotes||[]).forEach(function(l){ var m=(l||"").trim().match(re); if (m && m[1].trim().toUpperCase()===E) mx=Math.max(mx, parseInt(m[2],10)); });
+      seqs[key] = mx;
+    }
+    seqs[key]++;
+    var tn = (tanque||"").toUpperCase().replace(/^TQ?0*(\d+)$/, function(_,n){ return "T"+("0"+n).slice(-2); });
+    return E+" "+("0"+seqs[key]).slice(-2)+"/"+yy+tn;
+  }
+  var acum = totalExist;
+  slots.forEach(function(s){
+    s.selecionado = meta ? acum < meta : true;
+    var est = estiloPadrao;
+    if (s.selecionado){
+      // estilo com maior % ainda por atender; empate → o de menor necessidade (estilos menores entram cedo)
+      var ks = Object.keys(restante).filter(function(k){ return restante[k] > 0; })
+        .sort(function(a,b){
+          var ta = +p.demanda[nomes[a]]||1, tb = +p.demanda[nomes[b]]||1;
+          var fa = restante[a]/ta, fb = restante[b]/tb;
+          return Math.abs(fb-fa) > 1e-9 ? fb-fa : ta-tb;
+        });
+      if (ks.length){ est = nomes[ks[0]]; restante[ks[0]] -= s.litros; }
+      acum += s.litros;
+    }
+    s.estilo = est;
+    s.lote = proxLote(est, s.dataISO, s.tanque);
+  });
+  var capMax = totalExist + slots.reduce(function(a,s){ return a+s.litros; }, 0);
+  var sug = slots.filter(function(s){ return s.selecionado; }).reduce(function(a,s){ return a+s.litros; }, 0);
+  return { slots:slots, totalExist:totalExist, totalSugerido:sug, previsto: totalExist+sug, meta:meta, capMax:capMax,
+           faltam: meta ? Math.max(0, meta - capMax) : 0, avisos:avisos, diasUteis: dias.length, dailyL: dailyL };
+}
+
+/* ── Tela do planejador ── */
+var _planCtx = null;
+async function _abrirPlanejador(){
+  var m = $("modalPlan");
+  if (!m){
+    m = document.createElement("div"); m.id = "modalPlan"; m.hidden = true;
+    m.setAttribute("style","position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:999;padding:12px");
+    m.innerHTML =
+      "<div style='background:#fff;border-radius:14px;width:100%;max-width:820px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden'>"+
+        "<div style='background:var(--verde);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:8px'>"+
+          "<span style='font-family:\"Barlow Condensed\",sans-serif;font-weight:800;text-transform:uppercase;flex:1'>🧠 Planejar brassagens do mês</span>"+
+          "<button type='button' id='planFechar' style='background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer'>✕</button>"+
+        "</div>"+
+        "<div style='padding:12px 16px;overflow:auto;font-size:.84rem' id='planCorpo'>"+
+          "<div style='display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end'>"+
+            "<label style='font-weight:700'>Mês<br><select id='planMes' style='padding:7px;border:1.5px solid var(--linha);border-radius:8px'></select></label>"+
+            "<button type='button' id='planCalc' class='btn mini' style='padding:8px 14px'>Calcular sugestão</button>"+
+            "<span id='planMetaInfo' style='color:var(--muted)'></span>"+
+          "</div>"+
+          "<details id='planCfgBox' style='margin-top:10px;border:1px solid var(--linha);border-radius:9px;padding:8px 10px'>"+
+            "<summary style='cursor:pointer;font-weight:800'>⚙ Parâmetros da fábrica <span id='planCfgResumo' style='font-weight:400;color:var(--muted)'></span></summary>"+
+            "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:8px'>"+
+              "<label>Ciclo máx. no tanque (dias)<input type='number' id='planCiclo' min='5' max='60' style='width:100%;padding:6px;border:1.5px solid var(--linha);border-radius:6px'></label>"+
+              "<label>Intervalo p/ CIP (dias)<input type='number' id='planIntv' min='0' max='10' style='width:100%;padding:6px;border:1.5px solid var(--linha);border-radius:6px'></label>"+
+              "<label>Bateladas por dia<input type='number' id='planBat' min='1' max='20' style='width:100%;padding:6px;border:1.5px solid var(--linha);border-radius:6px'></label>"+
+              "<label>Litros finais por batelada<input type='number' id='planLBat' min='100' style='width:100%;padding:6px;border:1.5px solid var(--linha);border-radius:6px'></label>"+
+              "<label style='display:flex;align-items:center;gap:6px;margin-top:14px'><input type='checkbox' id='planSab'> Brassar aos sábados</label>"+
+            "</div>"+
+            "<div style='font-size:.74rem;color:var(--muted);margin-top:6px'>O ciclo também define o limite de dias nos cards de tanque, os alertas e os avisos de conflito do app inteiro.</div>"+
+            "<button type='button' id='planCfgSalvar' class='btn mini' style='margin-top:6px'>Salvar parâmetros</button>"+
+          "</details>"+
+          "<div style='margin-top:10px;border:1px solid var(--linha);border-radius:9px;padding:8px 10px'>"+
+            "<div style='font-weight:800;margin-bottom:4px'>🍺 Necessidade por estilo no mês (L)</div>"+
+            "<div id='planDem'></div>"+
+            "<div style='display:flex;gap:6px;margin-top:6px'>"+
+              "<button type='button' id='planDemAdd' class='btn mini secundario'>＋ estilo</button>"+
+              "<button type='button' id='planDemSalvar' class='btn mini secundario'>Salvar necessidade</button>"+
+            "</div>"+
+          "</div>"+
+          "<div id='planRes' style='margin-top:12px'></div>"+
+        "</div></div>";
+    document.body.appendChild(m);
+    $("planFechar").onclick = function(){ m.hidden = true; };
+    $("planCalc").onclick = _planCalcular;
+    $("planMes").onchange = _planCarregarMes;
+    $("planDemAdd").onclick = function(){ _planDemLinha("", ""); };
+    $("planDemSalvar").onclick = async function(){
+      var c = _planMesSel();
+      try{ await api("/api/metas",{method:"POST",body:{acao:"demanda",ano:c.ano,mes:c.mes+1,estilos:_planDemLer()}}); toast("Necessidade salva."); }
+      catch(e){ toast(e.message,"erro"); }
+    };
+    $("planCfgSalvar").onclick = async function(){
+      try{
+        var r = await api("/api/metas",{method:"POST",body:Object.assign({acao:"config"}, _planCfgLer())});
+        _cfgPlan = null; await _carregarCfgPlan(true); _planCfgPreencher();
+        toast("Parâmetros salvos — limites dos tanques atualizados.");
+        if (typeof carregarTanques === "function") try{ carregarTanques(); }catch(e){}
+      }catch(e){ toast(e.message,"erro"); }
+    };
+  }
+  var ehGestor = ["admin","gestor"].includes(sessao.papel);
+  ["planCfgSalvar","planDemSalvar"].forEach(function(id){ $(id).hidden = !ehGestor; });
+  // meses: atual + 2 seguintes (padrão: próximo)
+  var MES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  var h = new Date(), opts = "";
+  for (var i = 0; i < 3; i++){ var d = new Date(h.getFullYear(), h.getMonth()+i, 1); opts += "<option value='"+d.getFullYear()+"-"+d.getMonth()+"'"+(i===1?" selected":"")+">"+MES[d.getMonth()]+" "+d.getFullYear()+"</option>"; }
+  $("planMes").innerHTML = opts;
+  m.hidden = false;
+  await _carregarCfgPlan(true);
+  _planCfgPreencher();
+  _planCarregarMes();
+}
+function _planMesSel(){ var v = $("planMes").value.split("-"); return {ano:+v[0], mes:+v[1]}; }
+function _planCfgPreencher(){
+  var c = _cfgPlan;
+  $("planCiclo").value = c.cicloDias; $("planIntv").value = c.intervaloDias; $("planBat").value = c.bateladasDia;
+  $("planLBat").value = c.litrosBatelada; $("planSab").checked = !!c.brassaSabado;
+  $("planCfgResumo").textContent = "— ciclo "+c.cicloDias+"d · CIP "+c.intervaloDias+"d · "+c.bateladasDia+" bat/dia × "+fmtNum(c.litrosBatelada)+" L = "+fmtNum(c.bateladasDia*c.litrosBatelada)+" L/dia"+(c.brassaSabado?" · sábado":"");
+}
+function _planCfgLer(){
+  return { cicloDias:+$("planCiclo").value, intervaloDias:+$("planIntv").value, bateladasDia:+$("planBat").value,
+           litrosBatelada:+$("planLBat").value, brassaSabado:$("planSab").checked };
+}
+function _planDemLinha(estilo, litros){
+  var row = document.createElement("div");
+  row.style.cssText = "display:flex;gap:6px;margin-bottom:4px";
+  row.innerHTML = "<input class='plan-dem-est' placeholder='Estilo' value='"+esc(estilo)+"' style='flex:1;padding:6px;border:1.5px solid var(--linha);border-radius:6px'>"+
+    "<input class='plan-dem-l' type='number' placeholder='Litros' value='"+esc(litros)+"' style='width:120px;padding:6px;border:1.5px solid var(--linha);border-radius:6px'>"+
+    "<button type='button' style='border:none;background:none;cursor:pointer;color:#B91C1C'>✕</button>";
+  row.querySelector("button").onclick = function(){ row.remove(); };
+  $("planDem").appendChild(row);
+}
+function _planDemLer(){
+  var o = {};
+  $("planDem").querySelectorAll("div").forEach(function(r){
+    var e = (r.querySelector(".plan-dem-est")||{}).value, l = +(r.querySelector(".plan-dem-l")||{}).value;
+    if (e && e.trim() && l > 0) o[e.trim()] = (o[e.trim()]||0) + l;
+  });
+  return o;
+}
+async function _planCarregarMes(){
+  var c = _planMesSel();
+  $("planRes").innerHTML = "";
+  $("planDem").innerHTML = "<div style='color:var(--muted)'>Carregando…</div>";
+  var meta = 0, dem = {};
+  try{ var rm = await api("/api/metas?ano="+c.ano+"&mes="+(c.mes+1)); meta = +(rm.meta && rm.meta.brass) || 0; }catch(e){}
+  try{ var rd = await api("/api/metas?demanda=1&ano="+c.ano+"&mes="+(c.mes+1)); dem = rd.estilos || {}; }catch(e){}
+  $("planDem").innerHTML = "";
+  var ks = Object.keys(dem);
+  if (ks.length) ks.forEach(function(k){ _planDemLinha(k, dem[k]); });
+  else _planDemLinha("Helles", meta || "");
+  _planCtx = { meta: meta };
+  $("planMetaInfo").textContent = meta ? "Meta de brassagem do mês (aba Metas): "+fmtNum(meta)+" L" : "Sem meta de brassagem cadastrada para o mês.";
+}
+async function _planCalcular(){
+  var c = _planMesSel(), res = $("planRes");
+  res.innerHTML = "<div style='color:var(--muted)'>Calculando…</div>";
+  try{
+    var cfg = _planCfgLer();
+    var rt = await api("/api/tanques"); var tanques = (rt && rt.tanques) || []; _dadosTanques = tanques;
+    // semanas que cobrem o mês
+    var seg = segundaDe(new Date(c.ano, c.mes, 1)), fimMes = new Date(c.ano, c.mes+1, 0), sems = [];
+    for (var d = new Date(seg); d <= fimMes; d.setDate(d.getDate()+7)) sems.push(chaveSemana(d));
+    var progs = await Promise.all(sems.map(function(s){ return api("/api/prog?semana="+s).catch(function(){ return {itens:[]}; }); }));
+    var ini = c.ano+"-"+("0"+(c.mes+1)).slice(-2)+"-01", fimISO = _addDias(ini, fimMes.getDate()-1);
+    var existentes = [], lotes = [];
+    progs.forEach(function(r){ (r.itens||[]).forEach(function(it){
+      if (it.lote) lotes.push(it.lote);
+      if (it.tipo === "brassagem" && it.dataISO >= ini && it.dataISO <= fimISO)
+        existentes.push({ dataISO: it.dataISO, tanque: it.tanque, estilo: it.estilo, lote: it.lote,
+          litros: +((it.resultado && it.resultado.volume) || String(it.volPrev||"").replace(/\D/g,"")) || 0 });
+    }); });
+    tanques.forEach(function(t){ if (t.lote) lotes.push(t.lote); (t.proximasBrassagens||[]).forEach(function(b){ if (b.lote) lotes.push(b.lote); }); });
+    (window._progItensCache||[]).forEach(function(it){ if (it.lote) lotes.push(it.lote); });
+    try{ var rf = await fetch("/api/ficha?lista=1",{credentials:"include"}).then(function(x){ return x.json(); }); ((rf&&rf.lotes)||[]).forEach(function(l){ if (l.lote) lotes.push(l.lote); }); }catch(e){}
+    var r = _planejarMes({ ano:c.ano, mes:c.mes, cfg:cfg, tanques:tanques, existentes:existentes, demanda:_planDemLer(),
+                           meta:_planCtx ? _planCtx.meta : 0, hoje:_hojeISO(), lotes:lotes });
+    _planCtx.res = r;
+    var pct = r.meta ? Math.round(r.previsto/r.meta*100) : 0;
+    var cor = !r.meta ? "#1E3A8A" : (r.previsto >= r.meta ? "#15803D" : "#B45309");
+    var html = "<div style='border:2px solid "+cor+";border-radius:10px;padding:9px 12px;color:"+cor+"'>"+
+      "<div style='font-weight:900;font-size:1rem'>"+(r.meta ? "Previsto "+fmtNum(r.previsto)+" L de "+fmtNum(r.meta)+" L ("+pct+"%)" : "Capacidade do mês: "+fmtNum(r.capMax)+" L")+"</div>"+
+      "<div style='font-size:.78rem;margin-top:2px'>Já programado no mês: "+fmtNum(r.totalExist)+" L ("+existentes.length+" brassage"+(existentes.length===1?"m":"ns")+") · sugerido: "+fmtNum(r.totalSugerido)+" L · "+
+        r.diasUteis+" dias úteis de brassagem · "+fmtNum(r.dailyL)+" L/dia</div>"+
+      (r.faltam ? "<div style='font-weight:800;margin-top:4px'>⚠️ Faltam "+fmtNum(r.faltam)+" L: com o ciclo de "+cfg.cicloDias+" dias, os tanques atuais rendem no máximo "+fmtNum(r.capMax)+" L neste mês. "+
+        "Para cobrir, seria preciso reduzir o ciclo, brassar aos sábados ou ter mais tanques.</div>" : "")+
+      "</div>"+
+      (r.avisos.length ? "<div style='margin-top:6px;color:#B91C1C;font-size:.78rem'>"+r.avisos.map(function(a){ return "⚠️ "+esc(a); }).join("<br>")+"</div>" : "");
+    if (!r.slots.length){ html += "<div style='margin-top:10px'>Nenhum tanque fica livre em dia útil neste mês.</div>"; res.innerHTML = html; return; }
+    html += "<table style='width:100%;border-collapse:collapse;margin-top:10px;font-size:.8rem'><thead><tr style='text-align:left;color:var(--muted)'>"+
+      "<th></th><th>Data</th><th>Tanque</th><th>Estilo</th><th style='text-align:right'>Volume</th><th>Lote</th></tr></thead><tbody>"+
+      r.slots.map(function(s, i){
+        var dts = s.dias.map(_fmtDM).join(" + ");
+        return "<tr style='border-top:1px solid var(--linha)"+(s.selecionado?"":";opacity:.6")+"'>"+
+          "<td><input type='checkbox' class='plan-sel' data-i='"+i+"'"+(s.selecionado?" checked":"")+"></td>"+
+          "<td style='white-space:nowrap'>"+dts+(s.facult?" <span title='Ponto facultativo' style='color:#C2410C'>◐</span>":"")+"</td>"+
+          "<td><b>"+esc(s.tanque)+"</b></td>"+
+          "<td><input class='plan-est' data-i='"+i+"' value='"+esc(s.estilo)+"' style='width:110px;padding:4px;border:1px solid var(--linha);border-radius:5px'></td>"+
+          "<td style='text-align:right'><input class='plan-vol' data-i='"+i+"' type='number' value='"+s.litros+"' style='width:80px;padding:4px;border:1px solid var(--linha);border-radius:5px;text-align:right'> L<div style='font-size:.68rem;color:var(--muted)'>~"+s.bateladas+" bat.</div></td>"+
+          "<td><input class='plan-lote' data-i='"+i+"' value='"+esc(s.lote)+"' style='width:150px;padding:4px;border:1px solid var(--linha);border-radius:5px'></td></tr>";
+      }).join("")+"</tbody></table>"+
+      "<div style='font-size:.72rem;color:var(--muted);margin-top:6px'>Marcadas = necessárias para atingir a necessidade/meta; as demais mostram a capacidade extra do mês. "+
+        "Cada tanque volta a ficar livre "+cfg.cicloDias+" + "+cfg.intervaloDias+" dias depois da brassagem. Tanques maiores que um dia de produção ocupam dias seguidos.</div>"+
+      (["admin","gestor"].includes(sessao.papel) ? "<button type='button' id='planProgramar' class='btn mini' style='margin-top:10px;padding:9px 16px'>✅ Programar selecionadas</button>" : "");
+    res.innerHTML = html;
+    res.querySelectorAll(".plan-est").forEach(function(el){
+      el.onchange = function(){
+        var lt = res.querySelector(".plan-lote[data-i='"+el.dataset.i+"']");
+        if (lt) lt.value = lt.value.replace(/^.+?(\s*\d+\/\d{2}T\d+)$/, el.value.trim().toUpperCase()+"$1");
+      };
+    });
+    var bp = $("planProgramar"); if (bp) bp.onclick = _planProgramar;
+  }catch(e){ res.innerHTML = "<div style='color:#B91C1C'>Erro: "+esc(e.message)+"</div>"; }
+}
+async function _planProgramar(){
+  var r = _planCtx && _planCtx.res; if (!r) return;
+  var res = $("planRes"), linhas = [];
+  res.querySelectorAll(".plan-sel").forEach(function(cb){
+    if (!cb.checked) return;
+    var i = cb.dataset.i, s = r.slots[i];
+    linhas.push({ s:s, estilo: res.querySelector(".plan-est[data-i='"+i+"']").value.trim(),
+      vol: res.querySelector(".plan-vol[data-i='"+i+"']").value.trim(), lote: res.querySelector(".plan-lote[data-i='"+i+"']").value.trim() });
+  });
+  if (!linhas.length){ toast("Marque ao menos uma brassagem.","erro"); return; }
+  if (linhas.some(function(l){ return !l.estilo || !l.lote || !(+l.vol > 0); })){ toast("Preencha estilo, volume e lote de todas as marcadas.","erro"); return; }
+  if (!confirm("Programar "+linhas.length+" brassage"+(linhas.length>1?"ns":"m")+" ("+fmtNum(linhas.reduce(function(a,l){ return a + (+l.vol); },0))+" L)?")) return;
+  var bp = $("planProgramar"); bp.disabled = true;
+  var ok = 0;
+  for (var k = 0; k < linhas.length; k++){
+    var l = linhas[k];
+    bp.textContent = "Programando "+(k+1)+"/"+linhas.length+"…";
+    try{
+      await api("/api/prog",{method:"POST",body:{ acao:"criar", semana: chaveSemana(segundaDe(new Date(l.s.dataISO+"T00:00:00"))),
+        tipo:"brassagem", estilo:l.estilo, tanque:l.s.tanque, lote:l.lote, volPrev:String(l.vol),
+        dia:_nomeDiaDaSemana(l.s.dataISO), dataISO:l.s.dataISO,
+        obs:"Planejador"+(l.s.dias.length>1?" · "+l.s.dias.length+" dias de brassagem ("+l.s.dias.map(_fmtDM).join(" + ")+")":"") }});
+      ok++;
+    }catch(e){ toast("Erro em "+l.s.tanque+" "+_fmtDM(l.s.dataISO)+": "+e.message,"erro"); }
+  }
+  toast(ok+" brassage"+(ok===1?"m programada":"ns programadas")+".");
+  $("modalPlan").hidden = true;
+  segProg = segundaDe(new Date(linhas[0].s.dataISO+"T00:00:00"));
+  carregarProg();
+}
+
 var _ferCache={};
 function _feriadosBR(ano){
   if(_ferCache[ano]) return _ferCache[ano];
@@ -8042,6 +8372,7 @@ async function popularSelectTanques(selectId, modoEnvase, valorAtual) {
 
 
 $("btnInsumos").addEventListener("click", _abrirInsumos);
+$("btnPlanejar").addEventListener("click", _abrirPlanejador);
 $("envFormato").addEventListener("change", _atualizarSugestaoEnvase);
 $("btnAddProg").addEventListener("click", function(){
   _brasseditando = null;
@@ -11028,6 +11359,7 @@ async function leiturasSalvar(tqId, lote, tipo){
 }
 
 async function carregarTanques(){
+  await _carregarCfgPlan();
   $("tanquesLista").innerHTML = "<div class='vazio'>Carregando…</div>";
   try{
     // buscar tanques + barreis das últimas 8 semanas em paralelo
