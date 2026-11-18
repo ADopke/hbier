@@ -13,6 +13,7 @@ import {
 
 const CHAVE_CFG = "config:planejamento";
 const CFG_PADRAO = { cicloDias: 15, intervaloDias: 1, bateladasDia: 6, litrosBatelada: 1450, brassaSabado: false, bateladasTanque: { TQ05: 9 } };
+function chaveLanc(ano, mes) { return `plan:lanc:${ano}-${String(mes).padStart(2, "0")}`; }
 function chaveDemanda(ano, mes) { return `plan:demanda:${ano}-${String(mes).padStart(2, "0")}`; }
 
 function chave(ano, mes) {
@@ -33,6 +34,12 @@ export default protegido(async function handler(req, res) {
     const cfg = (await ler(CHAVE_CFG)) || {};
     return res.json({ ok: true, config: { ...CFG_PADRAO, ...cfg } });
   }
+  //   GET  /api/metas?lancamentos=1&ano=&mes=  → lançamentos do planejador no mês
+  if (req.method === "GET" && req.query.lancamentos === "1") {
+    const ano = parseInt(req.query.ano, 10), mes = parseInt(req.query.mes, 10);
+    if (!ano || !mes) return erro(res, 400, "ano e mes obrigatórios.");
+    return res.json({ ok: true, lancamentos: (await ler(chaveLanc(ano, mes))) || [] });
+  }
   if (req.method === "GET" && req.query.demanda === "1") {
     const ano = parseInt(req.query.ano, 10), mes = parseInt(req.query.mes, 10);
     if (!ano || !mes) return erro(res, 400, "ano e mes obrigatórios.");
@@ -41,6 +48,24 @@ export default protegido(async function handler(req, res) {
   }
   if (req.method === "POST") {
     const dd = corpo(req);
+    if (dd && (dd.acao === "planLanc" || dd.acao === "planLancDesfeito")) {
+      if (!["admin", "gestor"].includes(sessao.papel))
+        return erro(res, 403, "Apenas admin ou gestor.");
+      const ano = parseInt(dd.ano, 10), mes = parseInt(dd.mes, 10);
+      if (!ano || !mes) return erro(res, 400, "ano e mes obrigatórios.");
+      const lista = (await ler(chaveLanc(ano, mes))) || [];
+      if (dd.acao === "planLanc") {
+        lista.unshift({
+          id: String(dd.planId || "").slice(0, 40), por: sessao.login, em: new Date().toISOString(),
+          itens: (dd.itens || []).slice(0, 100).map((x) => ({ semana: x.semana, dataISO: x.dataISO, tanque: x.tanque, lote: x.lote, estilo: x.estilo, litros: Number(x.litros) || 0 })),
+        });
+      } else {
+        const l = lista.find((x) => x.id === dd.planId);
+        if (l) { l.desfeitoPor = sessao.login; l.desfeitoEm = new Date().toISOString(); l.removidos = Number(dd.removidos) || 0; l.mantidos = dd.mantidos || []; }
+      }
+      await gravar(chaveLanc(ano, mes), lista.slice(0, 30));
+      return res.json({ ok: true, lancamentos: lista.slice(0, 30) });
+    }
     if (dd && (dd.acao === "config" || dd.acao === "demanda")) {
       if (!["admin", "gestor"].includes(sessao.papel))
         return erro(res, 403, "Apenas admin ou gestor podem alterar o planejamento.");

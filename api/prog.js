@@ -98,6 +98,7 @@ export default protegido(async function handler(req, res) {
       dia:       (dados.dia     || "").trim(),
       obs:       (dados.obs     || "").trim(),
       dataISO:   (dados.dataISO || "").trim(),
+      planId:    (dados.planId  || "").toString().slice(0, 40) || undefined,   // lançado pelo planejador
       criadaPor: sessao.login,
       em:        new Date().toISOString(),
     };
@@ -222,6 +223,21 @@ export default protegido(async function handler(req, res) {
   }
 
   /* ---------- remover ---------- */
+  /* ---------- desfazer um lançamento do planejador (nesta semana) ---------- */
+  if (dados.acao === "remover_plano") {
+    if (!podeProgramar(sessao.papel))
+      return erro(res, 403, "Apenas admin ou gestor podem desfazer o planejamento.");
+    const pid = (dados.planId || "").toString();
+    if (!pid) return erro(res, 400, "planId obrigatório.");
+    const doPlano = itens.filter((x) => x.planId === pid);
+    const mantidos = doPlano.filter((x) => x.resultado);           // já brassado: não apaga
+    const removidos = doPlano.filter((x) => !x.resultado);
+    if (removidos.length) await gravar(chave(semana), itens.filter((x) => !(x.planId === pid && !x.resultado)));
+    return res.json({ ok: true,
+      removidos: removidos.map((x) => ({ id: x.id, dataISO: x.dataISO, tanque: x.tanque, lote: x.lote })),
+      mantidos:  mantidos.map((x) => ({ id: x.id, dataISO: x.dataISO, tanque: x.tanque, lote: x.lote })) });
+  }
+
   if (dados.acao === "remover") {
     if (!podeProgramar(sessao.papel))
       return erro(res, 403, "Apenas admin ou gestor podem remover.");

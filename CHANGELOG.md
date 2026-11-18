@@ -44,6 +44,23 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.5 — 18/11/2026
+
+**Planejador: desfazer um lançamento**
+
+- Cada "Programar selecionadas" vira um lançamento identificado (planId) e
+  fica listado no planejador em "📜 Lançamentos do planejador neste mês"
+  (data/hora, quem, brassagens, litros)
+- "↩ Desfazer" (admin/gestor) remove da programação todas as brassagens
+  daquele lançamento que ainda não têm resultado; as já brassadas são
+  mantidas e listadas
+- Encontra também brassagens do lançamento que tenham sido movidas de semana
+  dentro do mês
+- Novas ações: `remover_plano` (api/prog.js); `planLanc`, `planLancDesfeito`
+  e `?lancamentos=1` (api/metas.js)
+
+---
+
 ## 3.10.4 — 18/11/2026
 
 **Planejador: bateladas por tanque**

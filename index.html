@@ -3902,7 +3902,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.10.4";
+var VERSAO = "3.10.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7309,6 +7309,7 @@ async function _abrirPlanejador(){
             "</div>"+
           "</div>"+
           "<div id='planRes' style='margin-top:12px'></div>"+
+          "<div id='planLancs' style='margin-top:14px'></div>"+
         "</div></div>";
     document.body.appendChild(m);
     $("planFechar").onclick = function(){ m.hidden = true; };
@@ -7396,6 +7397,7 @@ async function _planCarregarMes(){
   else _planDemLinha(_estiloCanonico("Helles") || ((_estilosCache||[])[0]||{}).nome || "Helles", meta || "");
   if (!(_estilosCache||[]).length) $("planDem").insertAdjacentHTML("afterbegin","<div style='color:#B91C1C;font-size:.78rem'>Nenhuma receita cadastrada — cadastre as receitas para escolher os estilos.</div>");
   _planCtx = { meta: meta };
+  _planListarLanc();
   $("planMetaInfo").textContent = meta ? "Meta de brassagem do mês (aba Metas): "+fmtNum(meta)+" L" : "Sem meta de brassagem cadastrada para o mês.";
 }
 async function _planCalcular(){
@@ -7460,6 +7462,52 @@ async function _planCalcular(){
     var bp = $("planProgramar"); if (bp) bp.onclick = _planProgramar;
   }catch(e){ res.innerHTML = "<div style='color:#B91C1C'>Erro: "+esc(e.message)+"</div>"; }
 }
+async function _planListarLanc(){
+  var box = $("planLancs"); if (!box) return;
+  var c = _planMesSel(), lst = [];
+  try{ var r = await api("/api/metas?lancamentos=1&ano="+c.ano+"&mes="+(c.mes+1)); lst = r.lancamentos || []; }catch(e){}
+  if (!lst.length){ box.innerHTML = ""; return; }
+  var ehGestor = ["admin","gestor"].includes(sessao.papel);
+  box.innerHTML = "<div style='font-weight:800;margin-bottom:4px'>📜 Lançamentos do planejador neste mês</div>"+
+    lst.map(function(l){
+      var tot = (l.itens||[]).reduce(function(a,x){ return a + (+x.litros||0); }, 0);
+      var quando = new Date(l.em); var qt = ("0"+quando.getDate()).slice(-2)+"/"+("0"+(quando.getMonth()+1)).slice(-2)+" "+("0"+quando.getHours()).slice(-2)+":"+("0"+quando.getMinutes()).slice(-2);
+      var det = (l.itens||[]).map(function(x){ return _fmtDM(x.dataISO)+" "+x.tanque; }).join(", ");
+      return "<div style='border:1px solid var(--linha);border-radius:8px;padding:7px 10px;margin-bottom:5px;display:flex;gap:8px;align-items:center;"+(l.desfeitoEm?"opacity:.55":"")+"'>"+
+        "<div style='flex:1;font-size:.78rem'><b>"+qt+"</b> · @"+esc(l.por)+" · "+(l.itens||[]).length+" brassagens · "+fmtNum(tot)+" L"+
+          "<div style='color:var(--muted);font-size:.72rem'>"+esc(det)+"</div>"+
+          (l.desfeitoEm ? "<div style='color:#B45309;font-size:.72rem'>↩ desfeito por @"+esc(l.desfeitoPor)+" — "+(l.removidos||0)+" removida(s)"+
+            ((l.mantidos||[]).length ? ", mantidas por já terem resultado: "+l.mantidos.map(function(x){ return _fmtDM(x.dataISO)+" "+x.tanque; }).join(", ") : "")+"</div>" : "")+
+        "</div>"+
+        (!l.desfeitoEm && ehGestor ? "<button type='button' class='btn mini secundario' data-plan-desfazer='"+esc(l.id)+"'>↩ Desfazer</button>" : "")+
+      "</div>";
+    }).join("");
+  box.querySelectorAll("[data-plan-desfazer]").forEach(function(b){
+    b.onclick = function(){ _planDesfazer(lst.find(function(x){ return x.id === b.dataset.planDesfazer; })); };
+  });
+}
+async function _planDesfazer(l){
+  if (!l) return;
+  if (!confirm("Desfazer este lançamento do planejador?\n\nAs "+(l.itens||[]).length+" brassagens criadas serão removidas da programação. "+
+    "As que já tiverem resultado lançado são mantidas.")) return;
+  // semanas do registro + semanas do mês (caso alguma tenha sido movida)
+  var sems = {};
+  (l.itens||[]).forEach(function(x){ if (x.semana) sems[x.semana] = 1; });
+  var c = _planMesSel();
+  for (var d = segundaDe(new Date(c.ano, c.mes, 1)); d <= new Date(c.ano, c.mes+1, 7); d.setDate(d.getDate()+7)) sems[chaveSemana(d)] = 1;
+  var rem = 0, mant = [];
+  for (var sem in sems){
+    try{
+      var r = await api("/api/prog",{method:"POST",body:{acao:"remover_plano", semana:sem, planId:l.id}});
+      rem += (r.removidos||[]).length; mant = mant.concat(r.mantidos||[]);
+    }catch(e){}
+  }
+  try{ await api("/api/metas",{method:"POST",body:{acao:"planLancDesfeito", ano:c.ano, mes:c.mes+1, planId:l.id, removidos:rem, mantidos:mant}}); }catch(e){}
+  toast("↩ "+rem+" brassage"+(rem===1?"m removida":"ns removidas")+(mant.length?" · "+mant.length+" mantida(s) por já terem resultado":"")+".");
+  _planListarLanc();
+  if ($("planRes")) $("planRes").innerHTML = "";
+  carregarProg();
+}
 async function _planProgramar(){
   var r = _planCtx && _planCtx.res; if (!r) return;
   var res = $("planRes"), linhas = [];
@@ -7473,17 +7521,22 @@ async function _planProgramar(){
   if (linhas.some(function(l){ return !l.estilo || !l.lote || !(+l.vol > 0); })){ toast("Preencha estilo, volume e lote de todas as marcadas.","erro"); return; }
   if (!confirm("Programar "+linhas.length+" brassage"+(linhas.length>1?"ns":"m")+" ("+fmtNum(linhas.reduce(function(a,l){ return a + (+l.vol); },0))+" L)?")) return;
   var bp = $("planProgramar"); bp.disabled = true;
-  var ok = 0;
+  var ok = 0, planId = "PL" + Date.now().toString(36), criados = [];
   for (var k = 0; k < linhas.length; k++){
     var l = linhas[k];
     bp.textContent = "Programando "+(k+1)+"/"+linhas.length+"…";
     try{
       await api("/api/prog",{method:"POST",body:{ acao:"criar", semana: chaveSemana(segundaDe(new Date(l.s.dataISO+"T00:00:00"))),
-        tipo:"brassagem", estilo:l.estilo, tanque:l.s.tanque, lote:l.lote, volPrev:String(l.vol),
+        tipo:"brassagem", planId:planId, estilo:l.estilo, tanque:l.s.tanque, lote:l.lote, volPrev:String(l.vol),
         dia:_nomeDiaDaSemana(l.s.dataISO), dataISO:l.s.dataISO,
         obs:"Planejador"+(l.s.dias.length>1?" · "+l.s.dias.length+" dias de brassagem ("+l.s.dias.map(_fmtDM).join(" + ")+")":"") }});
       ok++;
+      criados.push({ semana: chaveSemana(segundaDe(new Date(l.s.dataISO+"T00:00:00"))), dataISO:l.s.dataISO, tanque:l.s.tanque, lote:l.lote, estilo:l.estilo, litros:+l.vol });
     }catch(e){ toast("Erro em "+l.s.tanque+" "+_fmtDM(l.s.dataISO)+": "+e.message,"erro"); }
+  }
+  if (criados.length){
+    var cm = _planMesSel();
+    try{ await api("/api/metas",{method:"POST",body:{acao:"planLanc", ano:cm.ano, mes:cm.mes+1, planId:planId, itens:criados}}); }catch(e){}
   }
   toast(ok+" brassage"+(ok===1?"m programada":"ns programadas")+".");
   $("modalPlan").hidden = true;
