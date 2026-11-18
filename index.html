@@ -3547,9 +3547,11 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
       <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Estilo *</label>
-          <input type="text" id="brassEstilo" placeholder="Ex.: Pilsen, IPA, Weizen&hellip;"
+          <input type="text" id="brassEstilo" list="dlEstilosReceita" autocomplete="off" placeholder="Escolha o estilo das receitas&hellip;"
             style="width:100%;padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.9rem"
-            oninput="if(!document.getElementById('brassLote')._editadoManual && window._sugerirLote) window._sugerirLote()">
+            oninput="if(!document.getElementById('brassLote')._editadoManual && window._sugerirLote) window._sugerirLote()"
+            onfocus="_carregarDatalistEstilos()">
+          <datalist id="dlEstilosReceita"></datalist>
         </div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--verde);display:block;margin-bottom:4px">Tanque destino</label>
@@ -3900,7 +3902,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.10.1";
+var VERSAO = "3.10.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7007,10 +7009,11 @@ async function _abrirInsumos(){
     var cacheRec = {};
     async function receitaPara(estilo){
       var e = _normTxt(estilo); if (!e) return null;
-      var cands = lista.filter(function(r){
+      var exatas = lista.filter(function(r){ return _normTxt(r.estilo) === e; });
+      var cands = (exatas.length ? exatas : lista.filter(function(r){
         var a = _normTxt(r.estilo), b = _normTxt(r.nome);
-        return a === e || b === e || (a && (a.indexOf(e) !== -1 || e.indexOf(a) !== -1)) || (b && b.indexOf(e) !== -1);
-      }).sort(function(x,y){ return (y.atualizadoEm||"").localeCompare(x.atualizadoEm||""); });
+        return b === e || (a && (a.indexOf(e) !== -1 || e.indexOf(a) !== -1)) || (b && b.indexOf(e) !== -1);
+      })).sort(function(x,y){ return (y.atualizadoEm||"").localeCompare(x.atualizadoEm||""); });
       if (!cands.length) return null;
       var id = cands[0].id;
       if (!cacheRec[id]){
@@ -7204,6 +7207,48 @@ function _planejarMes(p){
            faltam: falta, avisos:avisos, diasUteis: dias.length, dailyL: dailyL };
 }
 
+// ── Estilos oficiais = estilos das receitas cadastradas (sem repetir) ──
+async function _carregarDatalistEstilos(){
+  var dl = document.getElementById("dlEstilosReceita"); if (!dl) return;
+  var lst = await _estilosReceitas();
+  dl.innerHTML = lst.map(function(e){ return "<option value='"+esc(e.nome)+"'>"+(e.receitas>1?e.receitas+" receitas":"")+"</option>"; }).join("");
+}
+var _estilosCache = null, _estilosCacheEm = 0;
+async function _estilosReceitas(forcar){
+  if (_estilosCache && !forcar && Date.now() - _estilosCacheEm < 300000) return _estilosCache;
+  try{
+    var r = await fetch('/api/receita?lista=1',{credentials:'include'}).then(function(x){ return x.json(); });
+    var lista = ((r && r.receitas) || []).slice().sort(function(a,b){ return (b.atualizadoEm||"").localeCompare(a.atualizadoEm||""); });
+    var vistos = {}, out = [];
+    lista.forEach(function(rec){
+      var e = (rec.estilo && rec.estilo !== "—" ? rec.estilo : rec.nome || "").trim();
+      var k = _normTxt(e);
+      if (!k) return;
+      if (vistos[k]) { vistos[k].receitas++; return; }
+      vistos[k] = { nome: e, receitas: 1 };
+      out.push(vistos[k]);
+    });
+    out.sort(function(a,b){ return a.nome.localeCompare(b.nome, "pt-BR"); });
+    _estilosCache = out; _estilosCacheEm = Date.now();
+  }catch(e){ _estilosCache = _estilosCache || []; }
+  return _estilosCache;
+}
+// devolve a grafia cadastrada do estilo (ou null se não houver receita)
+function _estiloCanonico(txt){
+  var k = _normTxt(txt);
+  var e = (_estilosCache||[]).find(function(x){ return _normTxt(x.nome) === k; });
+  return e ? e.nome : null;
+}
+function _optsEstilos(atual){
+  var lst = _estilosCache || [], achou = false;
+  var h = "<option value=''>— estilo —</option>" + lst.map(function(e){
+    var sel = _normTxt(e.nome) === _normTxt(atual); if (sel) achou = true;
+    return "<option value='"+esc(e.nome)+"'"+(sel?" selected":"")+">"+esc(e.nome)+"</option>";
+  }).join("");
+  if (atual && !achou) h += "<option value='"+esc(atual)+"' selected>"+esc(atual)+" (sem receita)</option>";
+  return h;
+}
+
 /* ── Tela do planejador ── */
 var _planCtx = null;
 async function _abrirPlanejador(){
@@ -7290,7 +7335,7 @@ function _planCfgLer(){
 function _planDemLinha(estilo, litros){
   var row = document.createElement("div");
   row.style.cssText = "display:flex;gap:6px;margin-bottom:4px";
-  row.innerHTML = "<input class='plan-dem-est' placeholder='Estilo' value='"+esc(estilo)+"' style='flex:1;padding:6px;border:1.5px solid var(--linha);border-radius:6px'>"+
+  row.innerHTML = "<select class='plan-dem-est' style='flex:1;padding:6px;border:1.5px solid var(--linha);border-radius:6px;background:#fff'>"+_optsEstilos(estilo)+"</select>"+
     "<input class='plan-dem-l' type='number' placeholder='Litros' value='"+esc(litros)+"' style='width:120px;padding:6px;border:1.5px solid var(--linha);border-radius:6px'>"+
     "<button type='button' style='border:none;background:none;cursor:pointer;color:#B91C1C'>✕</button>";
   row.querySelector("button").onclick = function(){ row.remove(); };
@@ -7300,12 +7345,13 @@ function _planDemLer(){
   var o = {};
   $("planDem").querySelectorAll("div").forEach(function(r){
     var e = (r.querySelector(".plan-dem-est")||{}).value, l = +(r.querySelector(".plan-dem-l")||{}).value;
-    if (e && e.trim() && l > 0) o[e.trim()] = (o[e.trim()]||0) + l;
+    if (e && e.trim() && l > 0){ var c = _estiloCanonico(e) || e.trim(); o[c] = (o[c]||0) + l; }
   });
   return o;
 }
 async function _planCarregarMes(){
   var c = _planMesSel();
+  await _estilosReceitas();
   $("planRes").innerHTML = "";
   $("planDem").innerHTML = "<div style='color:var(--muted)'>Carregando…</div>";
   var meta = 0, dem = {};
@@ -7314,7 +7360,8 @@ async function _planCarregarMes(){
   $("planDem").innerHTML = "";
   var ks = Object.keys(dem);
   if (ks.length) ks.forEach(function(k){ _planDemLinha(k, dem[k]); });
-  else _planDemLinha("Helles", meta || "");
+  else _planDemLinha(_estiloCanonico("Helles") || ((_estilosCache||[])[0]||{}).nome || "Helles", meta || "");
+  if (!(_estilosCache||[]).length) $("planDem").insertAdjacentHTML("afterbegin","<div style='color:#B91C1C;font-size:.78rem'>Nenhuma receita cadastrada — cadastre as receitas para escolher os estilos.</div>");
   _planCtx = { meta: meta };
   $("planMetaInfo").textContent = meta ? "Meta de brassagem do mês (aba Metas): "+fmtNum(meta)+" L" : "Sem meta de brassagem cadastrada para o mês.";
 }
@@ -7361,7 +7408,7 @@ async function _planCalcular(){
           "<td><input type='checkbox' class='plan-sel' data-i='"+i+"'"+(s.selecionado?" checked":"")+"></td>"+
           "<td style='white-space:nowrap'>"+dts+(s.facult?" <span title='Ponto facultativo' style='color:#C2410C'>◐</span>":"")+"</td>"+
           "<td><b>"+esc(s.tanque)+"</b></td>"+
-          "<td><input class='plan-est' data-i='"+i+"' value='"+esc(s.estilo)+"' style='width:110px;padding:4px;border:1px solid var(--linha);border-radius:5px'></td>"+
+          "<td><select class='plan-est' data-i='"+i+"' style='width:130px;padding:4px;border:1px solid var(--linha);border-radius:5px;background:#fff'>"+_optsEstilos(s.estilo)+"</select></td>"+
           "<td style='text-align:right'><input class='plan-vol' data-i='"+i+"' type='number' value='"+s.litros+"' style='width:80px;padding:4px;border:1px solid var(--linha);border-radius:5px;text-align:right'> L<div style='font-size:.68rem;color:var(--muted)'>"+s.bateladas+" bat. · tanque "+fmtNum(s.cap)+" L</div></td>"+
           "<td><input class='plan-lote' data-i='"+i+"' value='"+esc(s.lote)+"' style='width:190px;padding:4px;border:1px solid var(--linha);border-radius:5px'></td></tr>";
       }).join("")+"</tbody></table>"+
@@ -8412,6 +8459,15 @@ $("btnAddProg").addEventListener("click", function(){
 });
 
 $("btnBrassSalvar").addEventListener("click", async function(){
+  await _estilosReceitas();
+  var _estDig = $("brassEstilo").value.trim();
+  var _estCan = _estiloCanonico(_estDig);
+  if (_estDig && !_estCan){
+    var _lst = (_estilosCache||[]).map(function(e){ return e.nome; }).join(", ");
+    if (!["admin","gestor"].includes(sessao.papel) || !confirm("O estilo \""+_estDig+"\" não tem receita cadastrada.\n\nEstilos cadastrados: "+(_lst||"nenhum")+"\n\nSalvar mesmo assim? (os totais por estilo não vão juntar com os outros lotes)")){
+      toast("Escolha um estilo da lista (receitas cadastradas).","erro"); $("brassEstilo").focus(); return;
+    }
+  } else if (_estCan) { $("brassEstilo").value = _estCan; }
   var estilo   = $("brassEstilo").value.trim();
   var brassTq  = $("brassTanque").value.trim();
   var brassLt  = $("brassLote").value.trim();

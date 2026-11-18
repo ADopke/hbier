@@ -44,6 +44,21 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.2 — 18/11/2026
+
+**Estilos vêm das receitas cadastradas**
+
+- Lista única de estilos montada a partir das receitas (campo Estilo; sem
+  repetir — várias receitas de Helles viram um único "Helles")
+- Planejador: necessidade por estilo e estilo de cada brassagem sugerida
+  passam a ser escolhidos nessa lista (estilos repetidos se somam)
+- Nova brassagem: o campo Estilo sugere os estilos cadastrados; ao salvar,
+  corrige a grafia para a cadastrada ("helles" → "Helles") e bloqueia estilo
+  sem receita (admin/gestor podem confirmar)
+- Insumos: a receita é localizada primeiro pelo estilo exato
+
+---
+
 ## 3.10.1 — 18/11/2026
 
 **Planejador: volume e tanque certos para estilos menores**
