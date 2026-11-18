@@ -358,6 +358,13 @@
   .cal-dia-m.sel-cal{ background:var(--verde-claro) !important; }
   .cal-dia-m.sel-cal .cal-n-m{ color:var(--verde);font-weight:800; }
   .cal-dia-m.fw-cal .cal-n-m{ color:var(--vermelho); }
+  .cal-dia-m.feriado-cal{ background:#FEF2F2; }
+  .cal-dia-m.feriado-cal .cal-n-m{ color:var(--vermelho);font-weight:800; }
+  .cal-dia-m.facult-cal{ background:#FFF7ED; }
+  .cal-dia-m.facult-cal .cal-n-m{ color:#C2410C;font-weight:800; }
+  .cal-fer{ display:block;font-size:.58rem;line-height:1.15;font-weight:700;color:#B91C1C;margin:1px 0 2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .cal-fer.facult{ color:#C2410C; }
   .cal-n-m{ font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;color:var(--muted);display:block;margin-bottom:3px; }
   .cal-dia-m.tem-cal .cal-n-m{ color:var(--ink); }
   .cal-cpills{ display:flex;flex-direction:column;gap:2px; }
@@ -1919,6 +1926,8 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
             <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#003E99"></span> Envase</span>
             <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#7A4500"></span> Barril</span>
             <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#D1FAE5;border:1px solid #34D399"></span> Com resultado</span>
+            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#FEF2F2;border:1px solid #F87171"></span> Feriado</span>
+            <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#FFF7ED;border:1px solid #FB923C"></span> Ponto facultativo</span>
           </div>
           <div class="cal-header-mensal">
             <div class="cal-dh-m">Seg</div><div class="cal-dh-m">Ter</div>
@@ -3880,7 +3889,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.37";
+var VERSAO = "3.8.38";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6758,6 +6767,41 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
    Visão mensal da programação
    ================================================================ */
 var _progVisao  = "semanal";
+// ── Feriados (Brasil + RS) ────────────────────────────────────
+// Nacionais fixos, móveis pela Páscoa (Sexta-feira Santa, Carnaval e Corpus Christi
+// como ponto facultativo) e Revolução Farroupilha (RS, 20/09).
+var _ferCache={};
+function _feriadosBR(ano){
+  if(_ferCache[ano]) return _ferCache[ano];
+  // Páscoa — algoritmo de Meeus/Jones/Butcher
+  var a=ano%19,b=Math.floor(ano/100),c=ano%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),
+      g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,
+      l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+      mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;
+  var pascoa=new Date(ano,mes-1,dia);
+  function iso(dt){return dt.getFullYear()+"-"+("0"+(dt.getMonth()+1)).slice(-2)+"-"+("0"+dt.getDate()).slice(-2);}
+  function mov(n){var x=new Date(pascoa);x.setDate(x.getDate()+n);return iso(x);}
+  var r={};
+  function fx(mmdd,nome){r[ano+"-"+mmdd]={nome:nome};}
+  fx("01-01","Confraternização Universal");
+  fx("04-21","Tiradentes");
+  fx("05-01","Dia do Trabalho");
+  fx("09-07","Independência");
+  fx("09-20","Revolução Farroupilha (RS)");
+  fx("10-12","N. Sra. Aparecida");
+  fx("11-02","Finados");
+  fx("11-15","Proclamação da República");
+  if(ano>=2024) fx("11-20","Consciência Negra");
+  fx("12-25","Natal");
+  r[mov(-48)]={nome:"Carnaval",facultativo:true};
+  r[mov(-47)]={nome:"Carnaval",facultativo:true};
+  r[mov(-46)]={nome:"Cinzas (até 14h)",facultativo:true};
+  r[mov(-2)] ={nome:"Sexta-feira Santa"};
+  r[mov(60)] ={nome:"Corpus Christi",facultativo:true};
+  _ferCache[ano]=r;
+  return r;
+}
+
 var _calDiaSel  = null;
 var _calDadosMes = {};
 
@@ -7205,6 +7249,7 @@ async function carregarProgMensal(){
     "</div>";
   $("progMensalTotais").innerHTML=htmlBrass+htmlEnv+htmlBarril;
   // Calendário
+  var _fer=_feriadosBR(ano);
   var hojeStr=(function(){var h=new Date();h.setHours(0,0,0,0);return h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2);})();
   var ini=new Date(ano,mes,1);
   ini.setDate(ini.getDate()-((ini.getDay()+6)%7));
@@ -7221,13 +7266,17 @@ async function carregarProgMensal(){
       var ehHoje=isoD===hojeStr;
       var its=mapaDia[isoD]||[];
       var temRes=its.some(function(x){return x.resultado;});
-      var cls="cal-dia-m"+(!doMes?" outro":"")+(ehHoje?" hoje-cal":"")+(fimSem?" fw-cal":"")+(its.length?" tem-cal":"");
+      var fer=_fer[isoD]||(cur.getFullYear()!==ano?_feriadosBR(cur.getFullYear())[isoD]:null);
+      var cls="cal-dia-m"+(!doMes?" outro":"")+(ehHoje?" hoje-cal":"")+(fimSem?" fw-cal":"")+(its.length?" tem-cal":"")+
+        (fer?(fer.facultativo?" facult-cal":" feriado-cal"):"");
       var pills=its.map(function(it){
         var tc=it.tipo==="brassagem"?"cal-cp-b":(it.tipo==="envase"?"cal-cp-e":"cal-cp-r");
         return "<div class='cal-cp "+tc+(it.resultado?" res":"")+"'></div>";
       }).join("");
-      html+="<div class='"+cls+"' data-iso='"+isoD+"' data-dom='"+(doMes?"1":"0")+"'>"+
+      html+="<div class='"+cls+"' data-iso='"+isoD+"' data-dom='"+(doMes?"1":"0")+"'"+
+        (fer?" title='"+esc(fer.nome+(fer.facultativo?" (ponto facultativo)":""))+"'":"")+">"+
         "<span class='cal-n-m'>"+cur.getDate()+"</span>"+
+        (fer&&doMes?"<span class='cal-fer"+(fer.facultativo?" facult":"")+"'>"+(fer.facultativo?"◐ ":"🎌 ")+esc(fer.nome)+"</span>":"")+
         (pills?"<div class='cal-cpills'>"+pills+"</div>":"")+
         (temRes?"<div class='cal-res-dot'></div>":"")+
       "</div>";
@@ -7247,7 +7296,9 @@ async function carregarProgMensal(){
     var dt=new Date(iso+"T00:00:00");
     var NDS=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
     var MC=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
-    $("progDetDiaLabel").textContent=NDS[dt.getDay()]+" — "+dt.getDate()+" "+MC[dt.getMonth()];
+    var ferSel=_feriadosBR(dt.getFullYear())[iso];
+    $("progDetDiaLabel").textContent=NDS[dt.getDay()]+" — "+dt.getDate()+" "+MC[dt.getMonth()]+
+      (ferSel?" · "+(ferSel.facultativo?"◐ ":"🎌 ")+ferSel.nome+(ferSel.facultativo?" (ponto facultativo)":""):"");
     // Guardar referência aos itens para o painel de edição
     var _detDiaItens = its;
     var _detDiaIso   = iso;

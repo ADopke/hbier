@@ -44,6 +44,19 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.38 — 18/11/2026
+
+**Feriados na Programação — visualização mês**
+
+- Cada dia de feriado aparece com o nome (🎌) e fundo vermelho claro; pontos
+  facultativos (◐ Carnaval, Cinzas, Corpus Christi) em laranja claro
+- Calendário: nacionais fixos (inclui Consciência Negra 20/11), Sexta-feira
+  Santa calculada pela Páscoa e Revolução Farroupilha (RS, 20/09)
+- Ao clicar no dia, o título do detalhe mostra o feriado
+- Legenda do calendário ganhou "Feriado" e "Ponto facultativo"
+
+---
+
 ## 3.8.37 — 18/11/2026
 
 **Correção: brassagem de hoje aparecia em AGORA e em PRÓXIMO ao mesmo tempo**
