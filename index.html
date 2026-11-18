@@ -3892,7 +3892,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.39";
+var VERSAO = "3.8.40";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -8211,6 +8211,7 @@ $("progLista").addEventListener("click", function(ev){
   if($("resLitrosFimHint")) $("resLitrosFimHint").textContent="";
   if($("resLitrosIni")) $("resLitrosIni")._editadoManual = false;
   _resReguaValidada = null;
+  _resBatStatus = null;
   if($("resReguaJust")) $("resReguaJust").value = "";
   if($("resValidarRegua")) $("resValidarRegua").checked = false;
   if($("campoDifRegua")) $("campoDifRegua").hidden = true;
@@ -8233,9 +8234,14 @@ $("progLista").addEventListener("click", function(ev){
     // brassagem: busca ficha do lote para calcular volume total das bateladas
     if(!isEnvase && it && it.lote){
       var loteEnc = encodeURIComponent(it.lote);
+      _resBatStatus = { carregando: true, temResultado: !!it.resultado };
       api("/api/ficha?lote="+loteEnc).then(function(fr){
         var ficha = fr && fr.ficha;
-        if(!ficha || !Array.isArray(ficha.bateladas) || !ficha.bateladas.length) return;
+        var bats = (ficha && Array.isArray(ficha.bateladas)) ? ficha.bateladas : [];
+        var falt = [];
+        bats.forEach(function(b, i){ var v = parseFloat(b && b.volResult); if(!(v > 0)) falt.push(i+1); });
+        _resBatStatus = { carregando:false, temResultado: !!it.resultado, temFicha: !!ficha, n: bats.length, faltando: falt, lote: it.lote };
+        if(!ficha || !bats.length) return;
         var total = 0; var partes = [];
         ficha.bateladas.forEach(function(bat, i){
           var v = (bat.volResult !== null && bat.volResult !== undefined) ? bat.volResult : null;
@@ -8258,7 +8264,7 @@ $("progLista").addEventListener("click", function(ev){
             if(hint) hint.textContent = partes.join(" + ")+" = "+total.toFixed(0)+" L";
           }
         }
-      }).catch(function(){});
+      }).catch(function(){ _resBatStatus = null; });
     }
     if(isEnvase && it) _autoNivelInicio(it);
     if(!it||!it.resultado) return;
@@ -8338,6 +8344,22 @@ $("btnResSalvar").addEventListener("click", async function(){
     obsReal: $("resObs").value.trim()
   };
   if(!isEnvase){
+    // Volumes das bateladas obrigatórios para lançar o resultado da brassagem
+    var bs = _resBatStatus;
+    if (bs && bs.carregando && !bs.temResultado){ toast("Aguarde: conferindo os volumes das bateladas na ficha…","aviso"); return; }
+    if (bs && !bs.carregando && !bs.temResultado){
+      var motivo = !bs.temFicha || !bs.n
+        ? "Nenhuma batelada registrada na Ficha do Lote "+(bs.lote||"")+"."
+        : (bs.faltando.length ? "Falta o volume da"+(bs.faltando.length>1?"s bateladas ":" batelada ")+bs.faltando.join(", ")+" na Ficha do Lote." : "");
+      if (motivo){
+        if (["admin","gestor"].includes(sessao.papel)){
+          if(!confirm(motivo+"\n\nO volume total do lote ficará incompleto. Salvar mesmo assim?")) return;
+        } else {
+          toast("🚫 "+motivo+" Preencha Vol. inicial e Vol. final de cada batelada antes de lançar o resultado.","erro");
+          return;
+        }
+      }
+    }
     payload.og     = $("resOg").value.trim();
     payload.volume = $("resVolume").value.trim();
     // sem validação obrigatória — permite salvar vazio ou remover campos
@@ -8438,6 +8460,7 @@ function _recalcLitrosFim(){
   _renderDifRegua();
 }
 var _resReguaValidada = null;
+var _resBatStatus = null;   // volumes das bateladas da ficha (obrigatórios p/ resultado da brassagem)
 // Diferença entre o consumo pela régua (início − fim) e o calculado (un × (cap + excedente))
 function _difReguaAtual(){
   if (!_resItem || _resItem.tipo !== "envase") return null;
@@ -12616,6 +12639,7 @@ function fp_recalcEficTodas(){
 function fp_calcVolBatelada(input){
   var card = input.closest('.fp-bat-card');
   if(!card) return;
+  if (parseFloat(input.value) > 0) { input.style.border = ''; input.style.background = ''; }
   var ini = parseFloat((card.querySelector('.fp-bat-vol-ini')||{}).value);
   var fim = parseFloat((card.querySelector('.fp-bat-vol-fim')||{}).value);
   var res = card.querySelector('.fp-bat-vol-result');
@@ -13887,6 +13911,24 @@ function fp_addBatelada(opts){
 
   var list=document.getElementById('fp-bat-list');
   if(!list){ console.error('fp-bat-list não encontrado'); return; }
+  // Volume da batelada anterior obrigatório antes de abrir a próxima
+  if (!restaurando) {
+    var cardsAnt = list.querySelectorAll('.fp-bat-card');
+    var ult = cardsAnt[cardsAnt.length-1];
+    if (ult) {
+      var vRes = parseFloat((ult.querySelector('.fp-bat-vol-result')||{}).value);
+      if (!(vRes > 0)) {
+        ['.fp-bat-vol-ini','.fp-bat-vol-fim'].forEach(function(sel){
+          var el = ult.querySelector(sel);
+          if (el && !(parseFloat(el.value) > 0)) { el.style.border = '2px solid #DC2626'; el.style.background = '#FEF2F2'; }
+        });
+        var alvo = ult.querySelector('.fp-bat-vol-fim') || ult.querySelector('.fp-bat-vol-ini');
+        if (alvo) { alvo.scrollIntoView({behavior:'smooth', block:'center'}); alvo.focus(); }
+        toast("🚫 Preencha Vol. inicial e Vol. final da Batelada "+cardsAnt.length+" antes de adicionar a próxima.","erro");
+        return;
+      }
+    }
+  }
   var num=list.querySelectorAll('.fp-bat-card').length+1;
   var numStr = num < 10 ? '0'+num : ''+num;
 

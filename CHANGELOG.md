@@ -44,6 +44,19 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.40 — 18/11/2026
+
+**Volumes das bateladas obrigatórios**
+
+- Ficha do Lote: "+ Adicionar batelada" só abre a próxima quando a anterior
+  tem Vol. inicial e Vol. final preenchidos (campos vazios ficam em vermelho)
+- Resultado da brassagem: operador não consegue salvar se faltar volume em
+  alguma batelada da ficha, ou se a ficha não tiver bateladas
+- Admin/gestor pode salvar mesmo assim, com confirmação
+- Resultados de brassagem já lançados podem ser editados sem o bloqueio
+
+---
+
 ## 3.8.39 — 18/11/2026
 
 **Ano na visualização mês da Programação**
