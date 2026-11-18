@@ -44,6 +44,19 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.41 — 18/11/2026
+
+**Bateladas sobrepostas: volume pendente em vez de bloqueio**
+
+- "+ Adicionar batelada" volta a funcionar mesmo sem o volume da anterior
+  (a próxima batelada começa antes do volume final da anterior)
+- A batelada sem volume fica com os campos em vermelho e aparece o aviso
+  "⏳ Volume pendente: Batelada 1, 2…" abaixo da lista
+- A obrigatoriedade continua no resultado da brassagem: sem todos os
+  volumes, o operador não salva (admin/gestor com confirmação)
+
+---
+
 ## 3.8.40 — 18/11/2026
 
 **Volumes das bateladas obrigatórios**

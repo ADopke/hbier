@@ -3892,7 +3892,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.40";
+var VERSAO = "3.8.41";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12683,6 +12683,27 @@ function fp_atualizarVolTotalBateladas(){
     }
   });
   var temDados = partes.length > 0;
+  // bateladas com volume pendente (aviso, cobrado no resultado da brassagem)
+  var pend = [];
+  cards.forEach(function(card, i){
+    var v = parseFloat((card.querySelector('.fp-bat-vol-result')||{}).value);
+    if (!(v > 0)) pend.push(i+1);
+  });
+  var pendEl = document.getElementById('fp-vol-pend-bat');
+  if (!pendEl) {
+    var lst = document.getElementById('fp-bat-list');
+    if (lst && lst.parentNode) {
+      pendEl = document.createElement('div'); pendEl.id = 'fp-vol-pend-bat';
+      pendEl.style.cssText = 'margin:8px 0;padding:8px 12px;border-radius:8px;background:#FEF2F2;border:2px solid #DC2626;color:#991B1B;font-weight:700;font-size:.85rem';
+      lst.parentNode.insertBefore(pendEl, lst.nextSibling);
+    }
+  }
+  if (pendEl) {
+    pendEl.style.display = pend.length ? '' : 'none';
+    pendEl.textContent = pend.length
+      ? '⏳ Volume pendente: Batelada '+pend.join(', ')+' — obrigatório para lançar o resultado da brassagem'
+      : '';
+  }
   // rodapé da aba bateladas
   var rodape = document.getElementById('fp-vol-total-bat');
   var valEl  = document.getElementById('fp-vol-total-bat-val');
@@ -13911,7 +13932,7 @@ function fp_addBatelada(opts){
 
   var list=document.getElementById('fp-bat-list');
   if(!list){ console.error('fp-bat-list não encontrado'); return; }
-  // Volume da batelada anterior obrigatório antes de abrir a próxima
+  // Volume da batelada anterior: só avisa (fica em vermelho até preencher)
   if (!restaurando) {
     var cardsAnt = list.querySelectorAll('.fp-bat-card');
     var ult = cardsAnt[cardsAnt.length-1];
@@ -13922,13 +13943,13 @@ function fp_addBatelada(opts){
           var el = ult.querySelector(sel);
           if (el && !(parseFloat(el.value) > 0)) { el.style.border = '2px solid #DC2626'; el.style.background = '#FEF2F2'; }
         });
-        var alvo = ult.querySelector('.fp-bat-vol-fim') || ult.querySelector('.fp-bat-vol-ini');
-        if (alvo) { alvo.scrollIntoView({behavior:'smooth', block:'center'}); alvo.focus(); }
-        toast("🚫 Preencha Vol. inicial e Vol. final da Batelada "+cardsAnt.length+" antes de adicionar a próxima.","erro");
-        return;
+        // Não bloqueia: a próxima batelada começa antes do volume final da anterior.
+        // Só marca como pendente — a cobrança é no resultado da brassagem.
+        toast("⏳ Batelada "+cardsAnt.length+" com volume pendente — preencha quando a transferência terminar.","aviso");
       }
     }
   }
+  setTimeout(function(){ if (typeof fp_atualizarVolTotalBateladas === "function") fp_atualizarVolTotalBateladas(); }, 0);
   var num=list.querySelectorAll('.fp-bat-card').length+1;
   var numStr = num < 10 ? '0'+num : ''+num;
 
