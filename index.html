@@ -1929,6 +1929,9 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
             <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#FEF2F2;border:1px solid #F87171"></span> Feriado</span>
             <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#FFF7ED;border:1px solid #FB923C"></span> Ponto facultativo</span>
           </div>
+          <div id="progMesTitulo" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;
+            font-size:1.35rem;letter-spacing:.04em;color:var(--verde);text-transform:uppercase;
+            text-align:center;padding:8px 0 6px"></div>
           <div class="cal-header-mensal">
             <div class="cal-dh-m">Seg</div><div class="cal-dh-m">Ter</div>
             <div class="cal-dh-m">Qua</div><div class="cal-dh-m">Qui</div>
@@ -3889,7 +3892,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.38";
+var VERSAO = "3.8.39";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7106,6 +7109,10 @@ async function carregarPainelProducoes(){
 
 async function carregarProgMensal(){
   var ano=segProg.getFullYear(), mes=segProg.getMonth();
+  // título e navegação com o ano (importante na virada de ano)
+  var _MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  if($("progMesTitulo")) $("progMesTitulo").textContent=_MESES[mes]+" de "+ano;
+  if($("progMesLabel"))  $("progMesLabel").textContent=_MESES[mes]+" "+ano;
   var semanas=[];
   var d=new Date(ano,mes,1);
   d.setDate(d.getDate()-((d.getDay()+6)%7));
@@ -7595,15 +7602,20 @@ var MESES_LONGOS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
 $("progPrevSem").addEventListener("click", function(){ progNavegar(-1); });
 $("progNextSem").addEventListener("click", function(){ progNavegar(+1); });
 
+// Primeira segunda-feira que cai DENTRO do mês alvo (evita voltar para o mês
+// anterior quando o dia 1º cai no meio da semana, ex.: 02/11 → 30/11 → nov de novo)
+function _segundaDoMes(ano, mes){
+  var seg = segundaDe(new Date(ano, mes, 1));
+  if (seg.getMonth() !== ((mes % 12) + 12) % 12) seg.setDate(seg.getDate() + 7);
+  return seg;
+}
 $("progPrevMes").addEventListener("click", function(){
-  var nova = new Date(segProg);
-  nova.setMonth(nova.getMonth()-1);
-  segProg = segundaDe(nova); carregarProg();
+  var alvo = new Date(segProg.getFullYear(), segProg.getMonth() - 1, 1);
+  segProg = _segundaDoMes(alvo.getFullYear(), alvo.getMonth()); carregarProg();
 });
 $("progNextMes").addEventListener("click", function(){
-  var nova = new Date(segProg);
-  nova.setMonth(nova.getMonth()+1);
-  segProg = segundaDe(nova); carregarProg();
+  var alvo = new Date(segProg.getFullYear(), segProg.getMonth() + 1, 1);
+  segProg = _segundaDoMes(alvo.getFullYear(), alvo.getMonth()); carregarProg();
 });
 
 $("progPrevAno").addEventListener("click", function(){

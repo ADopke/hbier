@@ -44,6 +44,19 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.39 — 18/11/2026
+
+**Ano na visualização mês da Programação**
+
+- Título grande acima do calendário: "NOVEMBRO DE 2026"
+- Navegação de mês mostra "Novembro 2026" (‹ ›), inclusive ao passar de
+  dezembro para janeiro do ano seguinte
+- Correção: ‹ › de mês podia ficar no mesmo mês quando a semana começava no
+  mês anterior (ex.: a partir de 02/11 ia para 30/11 e continuava em novembro);
+  agora sempre vai para a primeira segunda-feira do mês seguinte/anterior
+
+---
+
 ## 3.8.38 — 18/11/2026
 
 **Feriados na Programação — visualização mês**
