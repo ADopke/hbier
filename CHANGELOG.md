@@ -44,6 +44,33 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.9.0 — 18/11/2026
+
+**Programação: sete melhorias**
+
+1. **Tanque e lote do envase** — no painel do dia (visão mês) o tanque do
+   envase passa a ser escolhido numa lista e o lote vem do tanque; salvar
+   exige tanque e lote. Envases antigos sem tanque/lote mostram
+   "⚠️ Sem tanque/lote — não desconta do tanque"
+2. **Conflito de tanque** — ao programar ou mover uma brassagem, avisa se o
+   lote atual do tanque ainda não terá completado o ciclo (~15 d) na data, ou
+   se já há outra brassagem prevista no mesmo tanque a menos de 15 dias
+3. **Atrasados** — itens com data passada e sem resultado ficam com borda
+   vermelha e "⚠️ Atrasado Xd"; quadro no topo lista os atrasados das últimas
+   6 semanas (clique leva à semana); na visão mês o traço fica contornado
+4. **Sugestão de quantidade no envase** — mostra o volume no tanque, os
+   envases já programados do lote e quantas unidades cabem no formato
+   (com excedente), com botão "usar"
+5. **🧾 Insumos** — soma fermentáveis, lúpulos e levedura das brassagens sem
+   resultado da semana em tela + seguinte, pelas receitas cadastradas
+   (qtd por batelada × volume previsto ÷ volume da receita); botão copiar
+6. **Feriado** — brassagem, envase ou "mover" em feriado/ponto facultativo
+   pedem confirmação
+7. **📅 Mover** — botão em cada brassagem/envase sem resultado para trocar o
+   dia sem editar o resto (nova ação `mover` em api/prog.js)
+
+---
+
 ## 3.8.41 — 18/11/2026
 
 **Bateladas sobrepostas: volume pendente em vez de bloqueio**

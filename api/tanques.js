@@ -154,6 +154,7 @@ export default protegido(async function handler(req, res) {
               dataISO:     emEnvase,
               formato:     it.formato || "",
               qtd:         it.resultado ? (it.resultado.qtdEnvasada || it.qtd || "") : "",
+              qtdPrev:     it.qtd || "",
               litrosInicio:it.resultado ? (it.resultado.litrosInicio || "") : "",
               litrosFim:   it.resultado ? (it.resultado.litrosFim    || "") : "",
               litrosUsadosPET: it.resultado ? (it.resultado.litrosUsadosPET ?? "") : "",

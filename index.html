@@ -1916,6 +1916,8 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
 
         <!-- visão semanal -->
         <div id="progListaWrap">
+          <div id="progAtrasados" hidden style="margin:12px 14px 0;padding:10px 12px;border-radius:10px;
+            background:#FEF2F2;border:2.5px solid #DC2626;color:#7F1D1D"></div>
           <div id="progLista" style="padding:14px"></div>
         </div>
         <!-- visão mensal -->
@@ -2021,6 +2023,8 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
               style="background:#7A4500;border-color:#7A4500;color:#fff">🛢 Barril</button>
             <button class="btn mini" id="btnAddLimpeza"
               style="background:#065F46;border-color:#065F46;color:#fff">🧹 Limpeza</button>
+            <button class="btn mini secundario" id="btnInsumos" style="margin-left:auto"
+              title="Insumos das brassagens da semana em tela + seguinte">🧾 Insumos</button>
           </div>
         </div>
       </section>
@@ -3647,6 +3651,8 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
               style="width:100%;padding:9px;border:1.5px solid #B3C8F5;border-radius:8px;font-size:.9rem">
           </div>
         </div>
+        <div id="envQtdSug" hidden style="font-size:.76rem;color:#1E3A8A;background:#EFF6FF;border:1px solid #BFDBFE;
+          border-radius:8px;padding:7px 10px;line-height:1.45"></div>
         <div>
           <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Dia previsto</label>
           <div style="display:flex;gap:6px;align-items:center">
@@ -3892,7 +3898,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.8.41";
+var VERSAO = "3.9.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5988,6 +5994,7 @@ async function carregarProg(){
 
   var seg = chaveSemana(segProg);
   var fim = new Date(segProg); fim.setDate(fim.getDate()+6);
+  _carregarAtrasados();
 
   // badge indicando qual semana está sendo vista
   var naAtualProg = chaveSemana(segProg) === chaveSemana(segHoje);
@@ -6711,7 +6718,16 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
     }
 
     var tipoClasse = isEnvase ? "prog-item-envase" : "prog-item-brassagem";
-    htmlTotal += "<div class='prog-item "+tipoClasse+"'>"+
+    var _hj = _hojeISO();
+    var atrasado = !it.resultado && it.dataISO && it.dataISO < _hj;
+    var alertaItem = "";
+    if (atrasado) alertaItem += "<div style='margin:6px 0 2px;background:#DC2626;color:#fff;border-radius:6px;padding:4px 9px;font-size:.76rem;font-weight:800;display:inline-block'>⚠️ Atrasado "+_diasEntre(it.dataISO,_hj)+"d — resultado não lançado</div> ";
+    if (isEnvase && (!it.tanqueOrigem || !it.lote)) alertaItem += "<div style='margin:6px 0 2px;background:#FEF3C7;color:#92400E;border:1px solid #F59E0B;border-radius:6px;padding:4px 9px;font-size:.76rem;font-weight:800;display:inline-block'>⚠️ Sem "+(!it.tanqueOrigem?"tanque":"")+(!it.tanqueOrigem&&!it.lote?" e ":"")+(!it.lote?"lote":"")+" — não desconta do tanque. Use editar.</div>";
+    var btnMover = (podeEditar && !it.resultado)
+      ? "<button class='btn-mini secundario' data-prog-mover='"+esc(it.id)+"' data-prog-semana='"+esc(semItem)+"' data-prog-tipo='"+(isEnvase?"envase":"brassagem")+
+        "' data-prog-data='"+esc(it.dataISO||"")+"' data-prog-tanque='"+esc(it.tanque||it.tanqueOrigem||"")+"' data-prog-titulo='"+esc((isEnvase?"📦 ":"🍺 ")+(it.estilo||it.produto||"")+(it.lote?" · "+it.lote:""))+"'>📅 mover</button>"
+      : "";
+    htmlTotal += "<div class='prog-item "+tipoClasse+"'"+(atrasado?" style='border:2px solid #DC2626'":"")+">"+
       "<div class='prog-main'>"+
         "<div class='prog-tipo-header'>"+
           "<span class='prog-tipo-icone'>"+icone+"</span>"+
@@ -6723,6 +6739,7 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
         "<span class='prog-estilo' style='font-size:1rem'>"+esc(it.estilo||it.produto||"—")+"</span>"+
         (detalhe?"<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:6px'>"+detalhe+"</div>":"")+
         (it.obs?"<div class='item-desc' style='margin-top:4px'>"+esc(it.obs)+"</div>":"")+
+        alertaItem+
         "<div style='font-size:.73rem;color:var(--muted);margin-top:4px'>por "+esc(it.criadaPor)+"</div>"+
         resultado+
         (it.tipo === "brassagem" ? badgeTempoTanque(it.resultado) : "")+
@@ -6739,7 +6756,7 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
 
         (podeEditar?
           "<button class='btn-mini secundario' data-prog-edit='"+esc(it.id)+"' data-prog-semana='"+
-          esc(semItem)+"'>editar</button>"+
+          esc(semItem)+"'>editar</button>"+btnMover+
           "<button class='btn-mini perigo' data-prog-del='"+esc(it.id)+"' data-prog-semana='"+
           esc(semItem)+"'>remover</button>" : "")+
         "</div>"+
@@ -6773,6 +6790,276 @@ var _progVisao  = "semanal";
 // ── Feriados (Brasil + RS) ────────────────────────────────────
 // Nacionais fixos, móveis pela Páscoa (Sexta-feira Santa, Carnaval e Corpus Christi
 // como ponto facultativo) e Revolução Farroupilha (RS, 20/09).
+// ══════════════════════════════════════════════════════════════
+//  PROGRAMAÇÃO — melhorias v3.9.0
+// ══════════════════════════════════════════════════════════════
+function _hojeISO(){ var h=new Date(); return h.getFullYear()+"-"+("0"+(h.getMonth()+1)).slice(-2)+"-"+("0"+h.getDate()).slice(-2); }
+function _fmtDM(iso){ var p=(iso||"").split("-"); return p.length===3 ? p[2]+"/"+p[1] : (iso||""); }
+function _diasEntre(a,b){ return Math.round((new Date(b+"T00:00:00")-new Date(a+"T00:00:00"))/86400000); }
+function _tqNorm(n){ return (n||"").toUpperCase().replace(/[-\s]/g,""); }
+async function _garantirTanques(){
+  if (!_dadosTanques){ try{ var r=await api("/api/tanques"); _dadosTanques=(r&&r.tanques)||[]; }catch(e){ _dadosTanques=[]; } }
+  return _dadosTanques;
+}
+
+// ── 6. Feriado: pede confirmação ao programar em feriado/ponto facultativo ──
+function _confirmarFeriado(dataISO){
+  if (!dataISO) return true;
+  var f = _feriadosBR(parseInt(dataISO.slice(0,4),10))[dataISO];
+  if (!f) return true;
+  return confirm("📅 "+_fmtDM(dataISO)+" é "+(f.facultativo?"ponto facultativo":"feriado")+": "+f.nome+".\n\nProgramar mesmo assim?");
+}
+
+// ── 2. Conflito de tanque ao programar brassagem ──
+async function _conflitosTanque(tqNome, dataISO, idIgnorar){
+  var msgs = [];
+  if (!tqNome || !dataISO) return msgs;
+  var tqs = await _garantirTanques();
+  var tq = tqs.find(function(t){ return _tqNorm(t.nome) === _tqNorm(tqNome); });
+  if (!tq) return msgs;
+  var hoje = _hojeISO();
+  var ocupado = ["fermentando","maturando","critico","pronto","envasando"].indexOf(tq.estagio) !== -1;
+  if (ocupado && tq.lote && tq.brassadoId !== idIgnorar){
+    var diasNaData = (tq.diasTanque||0) + Math.max(0, _diasEntre(hoje, dataISO));
+    // só avisa se, na data, o lote atual ainda não terá completado o ciclo (~DIAS_CRITICO dias)
+    if (diasNaData < DIAS_CRITICO)
+      msgs.push(tq.nome+" ainda está com "+tq.lote+" ("+(tq.estagioLabel||tq.estagio)+", "+(tq.diasTanque||0)+"d). "+
+        "Em "+_fmtDM(dataISO)+" ele terá só "+diasNaData+"d no tanque (ciclo ~"+DIAS_CRITICO+"d) — precisa estar envasado e zerado até lá.");
+  }
+  (tq.proximasBrassagens||[]).forEach(function(b){
+    if (!b.dataISO || b.id === idIgnorar) return;
+    var dist = Math.abs(_diasEntre(b.dataISO, dataISO));
+    if (dist < DIAS_CRITICO){
+      msgs.push(tq.nome+" já tem "+(b.lote||b.estilo||"brassagem")+" previsto para "+_fmtDM(b.dataISO)+
+        " ("+dist+" dia"+(dist===1?"":"s")+" de diferença; o ciclo no tanque é ~"+DIAS_CRITICO+" dias).");
+    }
+  });
+  return msgs;
+}
+
+// ── 4. Sugestão de quantidade no envase (quanto ainda dá para tirar do tanque) ──
+function _nivelDisponivelTanque(tq, idIgnorar){
+  var vol = parseFloat(tq.volume) || 0;
+  var lote = (tq.lote||"").trim().toUpperCase();
+  var hist = tq.historico || [];
+  var usado = 0, programadoL = 0, programadoTxt = [];
+  hist.forEach(function(m){
+    var ml = (m.lote||"").trim().toUpperCase();
+    if (m.tipo === "envase" && ml === lote){
+      if (m.temResultado) usado += _litrosReaisEnvase(m);
+      else if (m.id !== idIgnorar){
+        var q = parseInt(String(m.qtdPrev||"").replace(/\D/g,""),10) || 0;
+        var cap = LITROS_FORMATO[m.formato] || 0;
+        if (q && cap){ programadoL += q*(cap+_excessoPadraoMl(m.formato)/1000); programadoTxt.push(fmtNum(q)+" "+(m.formato||"")+" em "+_fmtDM(m.dataISO)); }
+      }
+    } else if (m.tipo === "barril" && ml && (ml === lote || lote.indexOf(ml) === 0)){
+      usado += parseFloat(m.totalL) || 0;
+    }
+  });
+  return { volume: vol, usado: usado, disponivel: Math.max(0, vol - usado), programadoL: programadoL, programadoTxt: programadoTxt };
+}
+async function _atualizarSugestaoEnvase(){
+  var box = $("envQtdSug"); if (!box) return;
+  var tqVal = $("envTanque") ? $("envTanque").value : "";
+  var fmt   = $("envFormato") ? $("envFormato").value : "";
+  if (!tqVal){ box.hidden = true; return; }
+  var tqs = await _garantirTanques();
+  var tq = tqs.find(function(t){ return _tqNorm(t.nome) === _tqNorm(tqVal); });
+  if (!tq || !(parseFloat(tq.volume) > 0)){ box.hidden = true; return; }
+  var n = _nivelDisponivelTanque(tq, _enveditando ? _enveditando.id : null);
+  var livre = Math.max(0, n.disponivel - n.programadoL);
+  var html = "🧮 <b>"+esc(tq.nome)+"</b>: ~"+fmtNum(Math.round(n.disponivel))+" L no tanque";
+  if (n.programadoL > 0) html += " · já programado: "+esc(n.programadoTxt.join(", "))+" (~"+fmtNum(Math.round(n.programadoL))+" L) → sobram ~<b>"+fmtNum(Math.round(livre))+" L</b>";
+  var cap = LITROS_FORMATO[fmt] || 0;
+  if (cap){
+    var porUn = cap + _excessoPadraoMl(fmt)/1000;
+    var cabe = Math.floor(livre / porUn);
+    html += "<br>➜ cabem ~<b>"+fmtNum(cabe)+" un "+esc(fmt)+"</b> ("+fmtNum(Math.round(porUn*1000))+" ml por frasco com excedente)"+
+      " <button type='button' class='btn-mini' style='padding:1px 8px;font-size:.7rem;margin-left:4px' onclick=\"$('envQtd').value='"+cabe+"'\">usar</button>";
+  } else if (fmt) {
+    html += "<br><span style='color:var(--muted)'>Formato sem capacidade cadastrada para calcular unidades.</span>";
+  }
+  box.innerHTML = html; box.hidden = false;
+}
+
+// ── 3. Itens atrasados (sem resultado e com data passada) — últimas 6 semanas ──
+async function _carregarAtrasados(){
+  var box = $("progAtrasados"); if (!box) return;
+  var hoje = _hojeISO();
+  var semanas = [];
+  var seg = segundaDe(new Date());
+  for (var i = 0; i < 6; i++){ var d = new Date(seg); d.setDate(d.getDate() - 7*i); semanas.push(chaveSemana(d)); }
+  try{
+    var res = await Promise.all(semanas.map(function(s){ return api("/api/prog?semana="+s).catch(function(){ return {itens:[]}; }); }));
+    var lista = [];
+    res.forEach(function(r, i){
+      (r.itens||[]).forEach(function(it){
+        if (!it.resultado && it.dataISO && it.dataISO < hoje && (it.tipo==="brassagem" || it.tipo==="envase"))
+          lista.push({it: it, semana: semanas[i]});
+      });
+    });
+    if (!lista.length){ box.hidden = true; box.innerHTML = ""; return; }
+    lista.sort(function(a,b){ return a.it.dataISO.localeCompare(b.it.dataISO); });
+    box.innerHTML = "<div style='font-weight:900;font-size:.9rem;margin-bottom:4px'>⚠️ "+lista.length+" ite"+(lista.length>1?"ns":"m")+" atrasado"+(lista.length>1?"s":"")+" sem resultado lançado</div>"+
+      lista.map(function(x){
+        var it = x.it, dias = _diasEntre(it.dataISO, hoje);
+        return "<button type='button' data-ir-semana='"+esc(x.semana)+"' style='display:block;width:100%;text-align:left;background:none;border:none;border-top:1px solid #FECACA;padding:4px 0;cursor:pointer;color:#7F1D1D;font-size:.8rem'>"+
+          (it.tipo==="brassagem"?"🍺":"📦")+" <b>"+_fmtDM(it.dataISO)+"</b> · "+esc(it.estilo||it.produto||"")+
+          (it.lote?" · "+esc(it.lote):"")+((it.tanque||it.tanqueOrigem)?" · "+esc(it.tanque||it.tanqueOrigem):"")+
+          " <span style='color:#B91C1C;font-weight:800'>(+"+dias+"d)</span> ›</button>";
+      }).join("");
+    box.hidden = false;
+    box.onclick = function(ev){
+      var b = ev.target.closest("[data-ir-semana]"); if (!b) return;
+      segProg = new Date(b.dataset.irSemana+"T00:00:00"); carregarProg();
+    };
+  }catch(e){ box.hidden = true; }
+}
+
+// ── 7. Mover item para outro dia ──
+var _moverCtx = null;
+function _abrirMover(id, semana, tipo, dataAtual, tanque, titulo){
+  _moverCtx = {id:id, semana:semana, tipo:tipo, tanque:tanque};
+  var m = $("modalMover");
+  if (!m){
+    m = document.createElement("div"); m.id = "modalMover"; m.hidden = true;
+    m.setAttribute("style","position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:999;padding:16px");
+    m.innerHTML =
+      "<div style='background:#fff;border-radius:14px;width:100%;max-width:360px;overflow:hidden'>"+
+        "<div style='background:var(--verde);color:#fff;padding:12px 16px;font-family:\"Barlow Condensed\",sans-serif;font-weight:800;text-transform:uppercase'>📅 Mover para outro dia</div>"+
+        "<div style='padding:14px 16px;display:flex;flex-direction:column;gap:10px'>"+
+          "<div id='moverTitulo' style='font-size:.85rem;color:var(--muted)'></div>"+
+          "<input type='date' id='moverData' style='padding:9px;border:1.5px solid var(--linha);border-radius:8px;font-size:.95rem'>"+
+          "<div id='moverAviso' style='font-size:.78rem;color:#B45309'></div>"+
+          "<div style='display:flex;gap:8px;justify-content:flex-end'>"+
+            "<button type='button' id='moverCancelar' style='padding:8px 16px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;cursor:pointer;font-weight:600'>Cancelar</button>"+
+            "<button type='button' id='moverSalvar' style='padding:8px 16px;border:none;border-radius:8px;background:var(--verde);color:#fff;cursor:pointer;font-weight:700'>Mover</button>"+
+          "</div></div></div>";
+    document.body.appendChild(m);
+    $("moverCancelar").onclick = function(){ m.hidden = true; };
+    $("moverData").onchange = function(){
+      var v = this.value, f = v ? _feriadosBR(parseInt(v.slice(0,4),10))[v] : null;
+      $("moverAviso").textContent = f ? "📅 "+(f.facultativo?"Ponto facultativo":"Feriado")+": "+f.nome : "";
+    };
+    $("moverSalvar").onclick = async function(){
+      var c = _moverCtx, nova = $("moverData").value;
+      if (!nova){ toast("Escolha a nova data.","erro"); return; }
+      if (!_confirmarFeriado(nova)) return;
+      if (c.tipo === "brassagem"){
+        var cf = await _conflitosTanque(c.tanque, nova, c.id);
+        if (cf.length && !confirm("⚠️ Conflito de tanque:\n\n• "+cf.join("\n• ")+"\n\nMover mesmo assim?")) return;
+      }
+      try{
+        var r = await api("/api/prog", {method:"POST", body:{acao:"mover", id:c.id, semana:c.semana, dataISO:nova}});
+        m.hidden = true;
+        segProg = segundaDe(new Date(nova+"T00:00:00"));
+        toast("Movido para "+_fmtDM(nova)+". Confira as tarefas vinculadas, se houver.");
+        carregarProg();
+      }catch(e){ toast(e.message,"erro"); }
+    };
+  }
+  $("moverTitulo").textContent = titulo + (dataAtual ? " — hoje em "+_fmtDM(dataAtual) : "");
+  $("moverData").value = dataAtual || "";
+  $("moverAviso").textContent = "";
+  m.hidden = false;
+}
+
+// ── 5. Lista de insumos (semana em tela + seguinte) ──
+function _normTxt(s){ return (s||"").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim(); }
+function _num(v){ var n = parseFloat(String(v==null?"":v).replace(",",".")); return isNaN(n) ? 0 : n; }
+async function _abrirInsumos(){
+  var m = $("modalInsumos");
+  if (!m){
+    m = document.createElement("div"); m.id = "modalInsumos"; m.hidden = true;
+    m.setAttribute("style","position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:999;padding:16px");
+    m.innerHTML =
+      "<div style='background:#fff;border-radius:14px;width:100%;max-width:640px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden'>"+
+        "<div style='background:#7A4500;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:8px'>"+
+          "<span style='font-family:\"Barlow Condensed\",sans-serif;font-weight:800;text-transform:uppercase;flex:1'>🧾 Insumos das brassagens</span>"+
+          "<button type='button' id='insCopiar' style='background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:.78rem'>📋 Copiar</button>"+
+          "<button type='button' id='insFechar' style='background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer'>✕</button>"+
+        "</div><div id='insCorpo' style='padding:14px 16px;overflow:auto;font-size:.84rem'></div></div>";
+    document.body.appendChild(m);
+    $("insFechar").onclick = function(){ m.hidden = true; };
+    $("insCopiar").onclick = function(){
+      var t = ($("insCorpo").innerText||"").trim();
+      if (navigator.clipboard) navigator.clipboard.writeText(t).then(function(){ toast("Lista copiada."); });
+    };
+  }
+  m.hidden = false;
+  var corpo = $("insCorpo");
+  corpo.innerHTML = "<div style='color:var(--muted)'>Carregando programação e receitas…</div>";
+  try{
+    var s1 = new Date(segProg), s2 = new Date(segProg); s2.setDate(s2.getDate()+7);
+    var fim = new Date(s2); fim.setDate(fim.getDate()+6);
+    var sems = [chaveSemana(s1), chaveSemana(s2)];
+    var progs = await Promise.all(sems.map(function(s){ return api("/api/prog?semana="+s); }));
+    var brass = [];
+    progs.forEach(function(r){ (r.itens||[]).forEach(function(it){ if (it.tipo==="brassagem" && !it.resultado) brass.push(it); }); });
+    brass.sort(function(a,b){ return (a.dataISO||"").localeCompare(b.dataISO||""); });
+    var periodo = _fmtDM(chaveSemana(s1))+" a "+_fmtDM(fim.getFullYear()+"-"+("0"+(fim.getMonth()+1)).slice(-2)+"-"+("0"+fim.getDate()).slice(-2))+"/"+fim.getFullYear();
+    if (!brass.length){ corpo.innerHTML = "<div>Nenhuma brassagem pendente de "+periodo+".</div>"; return; }
+    var rl = await fetch('/api/receita?lista=1',{credentials:'include'}).then(function(r){ return r.json(); });
+    var lista = (rl && rl.receitas) || [];
+    var cacheRec = {};
+    async function receitaPara(estilo){
+      var e = _normTxt(estilo); if (!e) return null;
+      var cands = lista.filter(function(r){
+        var a = _normTxt(r.estilo), b = _normTxt(r.nome);
+        return a === e || b === e || (a && (a.indexOf(e) !== -1 || e.indexOf(a) !== -1)) || (b && b.indexOf(e) !== -1);
+      }).sort(function(x,y){ return (y.atualizadoEm||"").localeCompare(x.atualizadoEm||""); });
+      if (!cands.length) return null;
+      var id = cands[0].id;
+      if (!cacheRec[id]){
+        var rr = await fetch('/api/receita?id='+encodeURIComponent(id),{credentials:'include'}).then(function(r){ return r.json(); });
+        cacheRec[id] = rr && rr.receita ? Object.assign({id:id, _alternativas: cands.length-1}, rr.receita) : null;
+      }
+      return cacheRec[id];
+    }
+    var malte = {}, lup = {}, lev = {}, linhas = [], semRec = [];
+    function soma(obj, k, v){ if (!k || !(v>0)) return; obj[k] = (obj[k]||0) + v; }
+    for (var i = 0; i < brass.length; i++){
+      var b = brass[i], rec = await receitaPara(b.estilo);
+      var volPrev = _num(b.volPrev), volRec = rec ? _num(rec.volume) : 0;
+      var nBat = (rec && volRec > 0 && volPrev > 0) ? volPrev / volRec : 0;
+      if (!rec){ semRec.push(b.estilo||"(sem estilo)"); }
+      linhas.push("<tr><td>"+_fmtDM(b.dataISO)+"</td><td>"+esc(b.tanque||"")+"</td><td>"+esc(b.estilo||"")+"</td><td>"+esc(b.lote||"")+"</td><td style='text-align:right'>"+fmtNum(volPrev)+" L</td><td>"+
+        (rec ? esc(rec.nome||"")+(nBat ? " · "+(Math.round(nBat*10)/10).toLocaleString("pt-BR")+" bat." : " · <span style='color:#B91C1C'>receita sem volume</span>")
+             : "<span style='color:#B91C1C;font-weight:700'>receita não encontrada</span>")+"</td></tr>");
+      if (!rec || !nBat) continue;
+      (rec.fermentaveis||[]).forEach(function(r){ soma(malte, (r[0]||"").trim(), _num(r[5]) * nBat); });
+      (rec.lupulos||[]).forEach(function(r){ soma(lup, (r[0]||"").trim(), _num(r[4]) * nBat); });
+      if (rec.levedura) soma(lev, ((rec.levedura.linhagem||"")+" "+(rec.levedura.fabricante?"("+rec.levedura.fabricante+")":"")).trim() || "Levedura", _num(rec.levedura.pitch) * nBat);
+    }
+    function tabela(titulo, obj, un, div){
+      var ks = Object.keys(obj).sort(function(a,b){ return obj[b]-obj[a]; });
+      if (!ks.length) return "";
+      return "<div style='font-weight:800;margin:12px 0 4px'>"+titulo+"</div><table style='width:100%;border-collapse:collapse'>"+
+        ks.map(function(k){
+          var v = obj[k], txt = div && v >= div ? (Math.round(v/div*100)/100).toLocaleString("pt-BR")+" "+(un==="g"?"kg":un) : (Math.round(v*10)/10).toLocaleString("pt-BR")+" "+un;
+          return "<tr><td style='padding:3px 0;border-bottom:1px solid var(--linha)'>"+esc(k)+"</td><td style='text-align:right;font-weight:700;border-bottom:1px solid var(--linha)'>"+txt+"</td></tr>";
+        }).join("")+"</table>";
+    }
+    corpo.innerHTML =
+      "<div style='margin-bottom:6px'><b>Período:</b> "+periodo+" · "+brass.length+" brassage"+(brass.length>1?"ns":"m")+" sem resultado</div>"+
+      "<table style='width:100%;border-collapse:collapse;font-size:.76rem'><thead><tr style='text-align:left;color:var(--muted)'><th>Data</th><th>Tanque</th><th>Estilo</th><th>Lote</th><th style='text-align:right'>Prev.</th><th>Receita</th></tr></thead><tbody>"+linhas.join("")+"</tbody></table>"+
+      tabela("🌾 Fermentáveis", malte, "kg") +
+      tabela("🌿 Lúpulos", lup, "g", 1000) +
+      tabela("🧫 Levedura", lev, "g", 1000) +
+      (semRec.length ? "<div style='margin-top:10px;color:#B91C1C;font-size:.78rem'>⚠️ Sem receita cadastrada para: "+esc(semRec.join(", "))+" — esses lotes não entraram na soma.</div>" : "")+
+      "<div style='margin-top:10px;color:var(--muted);font-size:.72rem'>Cálculo: quantidade por batelada da receita × (volume previsto ÷ volume da receita). Usa a receita mais recente cujo nome/estilo corresponde ao estilo da brassagem.</div>";
+  }catch(e){ corpo.innerHTML = "<div style='color:#B91C1C'>Erro ao montar a lista: "+esc(e.message)+"</div>"; }
+}
+
+// ── 1. Painel do dia: tanque do envase por lista, lote automático ──
+function _ddepTanqueMudou(sel){
+  var tq = (_dadosTanques||[]).find(function(t){ return _tqNorm(t.nome) === _tqNorm(sel.value); });
+  var lt = $("ddep_lote");
+  if (lt && tq && tq.lote) lt.value = tq.lote;
+  var es = $("ddep_estilo");
+  if (es && tq && tq.estilo && !es.value) es.value = tq.estilo;
+}
+
 var _ferCache={};
 function _feriadosBR(ano){
   if(_ferCache[ano]) return _ferCache[ano];
@@ -7109,6 +7396,7 @@ async function carregarPainelProducoes(){
 
 async function carregarProgMensal(){
   var ano=segProg.getFullYear(), mes=segProg.getMonth();
+  _garantirTanques();   // para o painel do dia (tanque do envase por lista)
   // título e navegação com o ano (importante na virada de ano)
   var _MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
   if($("progMesTitulo")) $("progMesTitulo").textContent=_MESES[mes]+" de "+ano;
@@ -7278,7 +7566,8 @@ async function carregarProgMensal(){
         (fer?(fer.facultativo?" facult-cal":" feriado-cal"):"");
       var pills=its.map(function(it){
         var tc=it.tipo==="brassagem"?"cal-cp-b":(it.tipo==="envase"?"cal-cp-e":"cal-cp-r");
-        return "<div class='cal-cp "+tc+(it.resultado?" res":"")+"'></div>";
+        var atr = !it.resultado && isoD < hojeStr && (it.tipo==="brassagem"||it.tipo==="envase");
+        return "<div class='cal-cp "+tc+(it.resultado?" res":"")+"'"+(atr?" style='outline:2px solid #DC2626;outline-offset:1px' title='Atrasado — sem resultado'":"")+"></div>";
       }).join("");
       html+="<div class='"+cls+"' data-iso='"+isoD+"' data-dom='"+(doMes?"1":"0")+"'"+
         (fer?" title='"+esc(fer.nome+(fer.facultativo?" (ponto facultativo)":""))+"'":"")+">"+
@@ -7364,7 +7653,17 @@ async function carregarProgMensal(){
               "<div class='ddep-row'><span class='ddep-label'>Estilo</span>"+
               "<input class='ddep-input' id='ddep_estilo' value='"+esc(it.estilo||"")+"'></div>"+
               "<div class='ddep-row'><span class='ddep-label'>Tanque</span>"+
-              "<input class='ddep-input' id='ddep_tanque' value='"+esc(it.tanqueOrigem||"")+"'></div>"+
+              (function(){
+                var atual = _tqNorm(it.tanqueOrigem||"");
+                var nomes = (_dadosTanques||[]).map(function(t){ return t.nome; });
+                if (atual && nomes.map(_tqNorm).indexOf(atual) === -1) nomes.unshift(it.tanqueOrigem);
+                if (!nomes.length) return "<input class='ddep-input' id='ddep_tanque' value='"+esc(it.tanqueOrigem||"")+"'>";
+                return "<select class='ddep-input' id='ddep_tanque' onchange='_ddepTanqueMudou(this)'><option value=''>— selecione —</option>"+
+                  nomes.map(function(n){
+                    var t = (_dadosTanques||[]).find(function(x){ return x.nome === n; });
+                    return "<option value='"+esc(n)+"'"+(_tqNorm(n)===atual?" selected":"")+">"+esc(n)+(t&&t.lote?" — "+esc(t.lote):"")+"</option>";
+                  }).join("")+"</select>";
+              })()+"</div>"+
               "<div class='ddep-row'><span class='ddep-label'>Lote</span>"+
               "<input class='ddep-input' id='ddep_lote' value='"+esc(it.lote||"")+"'></div>"+
               "<div class='ddep-row'><span class='ddep-label'>Formato</span>"+
@@ -7478,6 +7777,7 @@ async function carregarProgMensal(){
             body.lote         = ($("ddep_lote")||{value:""}).value.trim();
             body.formato      = ($("ddep_formato")||{value:""}).value.trim();
             body.qtd          = ($("ddep_qtd")||{value:""}).value.trim();
+            if (!body.tanqueOrigem || !body.lote){ toast("Informe o tanque e o lote do envase — sem eles o envase não desconta do tanque.","erro"); return; }
           }
           // Usar nova data se foi alterada, senão preservar a original
           var it=_detDiaItens.find(function(x){return x.id===id;});
@@ -7741,6 +8041,8 @@ async function popularSelectTanques(selectId, modoEnvase, valorAtual) {
 }
 
 
+$("btnInsumos").addEventListener("click", _abrirInsumos);
+$("envFormato").addEventListener("change", _atualizarSugestaoEnvase);
 $("btnAddProg").addEventListener("click", function(){
   _brasseditando = null;
   $("brassFormTitulo").textContent = "\uD83C\uDF7A Nova Brassagem";
@@ -7768,6 +8070,10 @@ $("btnBrassSalvar").addEventListener("click", async function(){
   if (!brassLt)  { toast("Informe o lote.","erro"); $("brassLote").focus(); return; }
   if (!brassVol) { toast("Informe o volume previsto.","erro"); $("brassVolPrev").focus(); return; }
   if (!brassDv)  { toast("Selecione o dia previsto.","erro"); $("brassDia").focus(); return; }
+  var _dbChk = parseDiaSelect($("brassDia").value);
+  if (!_confirmarFeriado(_dbChk.dataISO)) return;
+  var _cf = await _conflitosTanque(brassTq, _dbChk.dataISO, _brasseditando ? _brasseditando.id : null);
+  if (_cf.length && !confirm("⚠️ Conflito de tanque:\n\n• "+_cf.join("\n• ")+"\n\nProgramar mesmo assim?")) return;
   try{
     var _db = parseDiaSelect($("brassDia").value);
     var diaBrass = _db.nome;
@@ -7844,12 +8150,15 @@ $("btnAddEnvase").addEventListener("click", async function(){
       }
     }, 80);
   }
+  $("envQtdSug").hidden = true;
   $("modalEnvase").hidden = false;
+  setTimeout(_atualizarSugestaoEnvase, 120);
   setTimeout(function(){ $("envTanque").focus(); }, 80);
 });
 // Quando tanque de envase mudar, popular lotes e preencher produto/lote automaticamente
 $("envTanque").addEventListener("change", function(){
   var tqVal = this.value;
+  setTimeout(_atualizarSugestaoEnvase, 0);
   // Limpar campos dependentes
   $("envProduto").value = "";
   $("envLoteDisplay").value = "";
@@ -7927,6 +8236,7 @@ $("btnEnvSalvar").addEventListener("click", async function(){
   if (ENV_ESTILOS[envFmt]&&!envEstiloVal){ toast("Selecione o estilo.","erro"); $("envEstilo").focus(); return; }
   if (!envQt)   { toast("Informe a qtd prevista.","erro"); $("envQtd").focus(); return; }
   if (!envDv)   { toast("Selecione o dia previsto.","erro"); $("envDia").focus(); return; }
+  if (!_confirmarFeriado(parseDiaSelect(envDv).dataISO)) return;
   try{
     var _de = parseDiaSelect($("envDia").value);
     var diaEnv = _de.nome;
@@ -7976,6 +8286,10 @@ $("btnEnvSalvar").addEventListener("click", async function(){
 $("progLista").addEventListener("click", async function(ev){
   var b = ev.target.closest("button");
   if (!b) return;
+  if (b.dataset.progMover){
+    _abrirMover(b.dataset.progMover, b.dataset.progSemana, b.dataset.progTipo, b.dataset.progData, b.dataset.progTanque, b.dataset.progTitulo);
+    return;
+  }
 
   if (b.dataset.progEdit){
     var semana = b.dataset.progSemana;
@@ -8007,6 +8321,7 @@ $("progLista").addEventListener("click", async function(ev){
       // Atualizar campo display do lote (readonly)
       $("envLoteDisplay").value = loteSalvoEnv;
       $("modalEnvase").hidden = false;
+      setTimeout(_atualizarSugestaoEnvase, 300);
     } else {
       _brasseditando = {id: it.id, semana};
       $("brassFormTitulo").textContent = "\uD83C\uDF7A Editar Brassagem";

@@ -121,6 +121,36 @@ export default protegido(async function handler(req, res) {
     return res.json({ ok: true, itens });
   }
 
+  /* ---------- mover (só muda o dia; mantém todo o resto do item) ---------- */
+  if (dados.acao === "mover") {
+    if (!podeProgramar(sessao.papel))
+      return erro(res, 403, "Apenas admin ou gestor podem mover.");
+    const idx = itens.findIndex((x) => x.id === dados.id);
+    if (idx < 0) return erro(res, 404, "Item não encontrado.");
+    const novaData = (dados.dataISO || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(novaData)) return erro(res, 400, "Data inválida.");
+    const it = itens[idx];
+    if (it.resultado) return erro(res, 400, "Item com resultado lançado não pode ser movido.");
+    const NOMES = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+    const d = new Date(novaData + "T00:00:00");
+    it.dataISO = novaData;
+    it.dia     = NOMES[d.getDay()];
+    it.movidoPor = sessao.login;
+    it.movidoEm  = new Date().toISOString();
+    const seg = new Date(d); seg.setDate(seg.getDate() - ((d.getDay() + 6) % 7));
+    const novaSem = seg.getFullYear() + "-" + String(seg.getMonth() + 1).padStart(2, "0") + "-" + String(seg.getDate()).padStart(2, "0");
+    if (novaSem !== semana) {
+      const restantes = itens.filter((x) => x.id !== dados.id);
+      await gravar(chave(semana), restantes);
+      const destino = (await ler(chave(novaSem))) || [];
+      destino.push(it);
+      await gravar(chave(novaSem), destino);
+      return res.json({ ok: true, itens: restantes, movido: novaSem });
+    }
+    await gravar(chave(semana), itens);
+    return res.json({ ok: true, itens });
+  }
+
   /* ---------- editar ---------- */
   if (dados.acao === "editar") {
     if (!podeProgramar(sessao.papel))
