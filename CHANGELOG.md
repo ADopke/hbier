@@ -44,6 +44,23 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.1 — 18/11/2026
+
+**Planejador: volume e tanque certos para estilos menores**
+
+- Antes, todo estilo enchia o tanque inteiro e o estilo era escolhido sem
+  olhar o tamanho do tanque (ex.: Sem Álcool 1.000 L sugerido com 3.000 L;
+  American IPA 2.000 L num tanque de 8.000 L)
+- Agora os estilos menores entram primeiro, com o volume da necessidade (até
+  a capacidade), no **menor tanque que comporta**; o estilo principal enche
+  os tanques que sobram, e a última brassagem dele usa só o que falta
+- Capacidade diária em **bateladas** (6/dia): dá para brassar mais de um lote
+  no mesmo dia (ex.: 1 bat. de Sem Álcool + 5 de Helles); lote maior que o
+  dia continua no dia útil seguinte
+- Coluna de volume mostra bateladas e capacidade do tanque; campo de lote mais largo
+
+---
+
 ## 3.10.0 — 18/11/2026
 
 **🧠 Planejador de brassagens (aba Programação)**

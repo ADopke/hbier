@@ -3900,7 +3900,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.10.0";
+var VERSAO = "3.10.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7083,13 +7083,13 @@ function _addDias(iso, n){ var d = new Date(iso+"T00:00:00"); d.setDate(d.getDat
    p = { ano, mes(0-11), cfg, tanques, existentes:[{dataISO,tanque,estilo,litros}], demanda:{estilo:L}, meta, hoje, lotes:[str] } */
 function _planejarMes(p){
   var cfg = p.cfg, ciclo = +cfg.cicloDias, intv = +cfg.intervaloDias;
-  var dailyL = (+cfg.bateladasDia) * (+cfg.litrosBatelada);
+  var batDia = +cfg.bateladasDia, Lb = +cfg.litrosBatelada, dailyL = batDia * Lb;
   var ini = p.ano+"-"+("0"+(p.mes+1)).slice(-2)+"-01";
   var fimD = new Date(p.ano, p.mes+1, 0);
   var fim = _addDias(ini, fimD.getDate()-1);
   var desde = p.hoje > ini ? p.hoje : ini;
   var fer = _feriadosBR(p.ano), avisos = [];
-  // dias úteis de brassagem
+  // dias úteis e capacidade de cada dia em BATELADAS
   var dias = [];
   for (var d = ini; d <= fim; d = _addDias(d,1)){
     if (d < desde) continue;
@@ -7097,10 +7097,13 @@ function _planejarMes(p){
     if (dow === 0 || (dow === 6 && !cfg.brassaSabado)) continue;
     var f = fer[d];
     if (f && !f.facultativo) continue;
-    dias.push({iso:d, facult: f && f.facultativo ? f.nome : ""});
+    dias.push({iso:d, facult: f && f.facultativo ? f.nome : "", livre: batDia});
   }
-  var usado = {};
-  (p.existentes||[]).forEach(function(e){ if (e.dataISO) usado[e.dataISO] = (e.tanque||"") || "ocupado"; });
+  var idxDia = {}; dias.forEach(function(x,i){ idxDia[x.iso] = i; });
+  (p.existentes||[]).forEach(function(e){
+    var i = idxDia[e.dataISO]; if (i == null) return;
+    dias[i].livre = Math.max(0, dias[i].livre - Math.max(1, Math.ceil((+e.litros||0) / Lb)));
+  });
   // disponibilidade de cada tanque
   var tqs = (p.tanques||[]).filter(function(t){ return +t.capacidade > 0; }).map(function(t){
     var bases = [];
@@ -7112,43 +7115,75 @@ function _planejarMes(p){
     if (base && livre < p.hoje && t.estagio !== "livre")
       avisos.push(t.nome+": lote atual ("+(t.lote||"")+") passa do limite de "+ciclo+" dias — tanque considerado livre a partir de hoje.");
     if (livre < desde) livre = desde;
-    var cap = +t.capacidade;
-    var nd = cap <= dailyL*1.1 ? 1 : Math.ceil(cap / dailyL);
-    return { nome:t.nome, cap:cap, nd:nd, livre:livre };
+    return { nome:t.nome, cap:+t.capacidade, livre:livre };
   });
-  // existentes contam para a meta
-  var totalExist = 0, existPorEstilo = {};
-  (p.existentes||[]).forEach(function(e){ totalExist += +e.litros||0; var k=_normTxt(e.estilo); existPorEstilo[k]=(existPorEstilo[k]||0)+(+e.litros||0); });
-  // slots (alocação gulosa: sempre o tanque que libera primeiro)
-  var slots = [];
-  for (var guard = 0; guard < 200; guard++){
-    var melhor = null;
-    tqs.forEach(function(t){
-      for (var i = 0; i < dias.length; i++){
-        if (dias[i].iso < t.livre) continue;
-        var ok = true;
-        for (var k = 0; k < t.nd; k++){ if (!dias[i+k] || usado[dias[i+k].iso]) { ok = false; break; } }
-        if (!ok) continue;
-        if (!melhor || dias[i].iso < melhor.dia.iso || (dias[i].iso === melhor.dia.iso && t.cap > melhor.t.cap)) melhor = {t:t, i:i, dia:dias[i]};
-        break;
+  // onde cabe uma brassagem de 'vol' L no tanque t: primeiro dia ≥ livre, bateladas em dias úteis seguidos
+  function encaixe(t, vol){
+    var nb = Math.max(1, Math.ceil(vol / Lb));
+    for (var i = 0; i < dias.length; i++){
+      if (dias[i].iso < t.livre || dias[i].livre <= 0) continue;
+      var falta = nb, usa = [];
+      for (var k = i; k < dias.length && falta > 0; k++){
+        if (dias[k].livre <= 0) break;
+        var q = Math.min(falta, dias[k].livre); usa.push({i:k, q:q}); falta -= q;
       }
-    });
-    if (!melhor) break;
-    var dd = [];
-    for (var k2 = 0; k2 < melhor.t.nd; k2++){ usado[dias[melhor.i+k2].iso] = melhor.t.nome; dd.push(dias[melhor.i+k2].iso); }
-    slots.push({ dataISO: melhor.dia.iso, dias: dd, tanque: melhor.t.nome, litros: melhor.t.cap, facult: melhor.dia.facult,
-                 bateladas: Math.round(melhor.t.cap / (+cfg.litrosBatelada)) });
-    melhor.t.livre = _addDias(melhor.dia.iso, ciclo + intv);
+      if (falta <= 0) return { i:i, usa:usa, nb:nb };
+    }
+    return null;
   }
-  // estilos: necessidade restante
-  var restante = {}, nomes = {};
-  Object.keys(p.demanda||{}).forEach(function(e){ var k=_normTxt(e); nomes[k]=e; restante[k]=(+p.demanda[e]||0)-(existPorEstilo[k]||0); });
-  var meta = Object.keys(p.demanda||{}).length
-    ? Object.keys(p.demanda).reduce(function(s,e){ return s + (+p.demanda[e]||0); }, 0)
-    : (+p.meta || 0);
-  var padrao = Object.keys(restante).sort(function(a,b){ return (+p.demanda[nomes[b]]||0)-(+p.demanda[nomes[a]]||0); })[0];
-  var estiloPadrao = padrao ? nomes[padrao] : "Helles";
-  // numeração de lotes por estilo/ano
+  function reservar(t, enc, vol, estilo, selecionado){
+    enc.usa.forEach(function(u){ dias[u.i].livre -= u.q; });
+    t.livre = _addDias(dias[enc.i].iso, ciclo + intv);
+    return { dataISO: dias[enc.i].iso, dias: enc.usa.map(function(u){ return dias[u.i].iso; }), tanque: t.nome,
+             litros: vol, cap: t.cap, bateladas: enc.nb, facult: dias[enc.i].facult, estilo: estilo, selecionado: selecionado };
+  }
+  // necessidade por estilo (descontando o que já está programado no mês)
+  var existPorEstilo = {}, totalExist = 0;
+  (p.existentes||[]).forEach(function(e){ totalExist += +e.litros||0; var k=_normTxt(e.estilo); existPorEstilo[k]=(existPorEstilo[k]||0)+(+e.litros||0); });
+  var est = Object.keys(p.demanda||{}).map(function(e){ return { nome:e, total:+p.demanda[e]||0, resta:(+p.demanda[e]||0)-(existPorEstilo[_normTxt(e)]||0) }; });
+  var meta = est.length ? est.reduce(function(s,e){ return s+e.total; }, 0) : (+p.meta || 0);
+  est.sort(function(a,b){ return b.total - a.total; });
+  var principal = est.length ? est[0] : { nome:"Helles", total:meta, resta: meta - totalExist };
+  var menores = est.slice(1).sort(function(a,b){ return a.resta - b.resta; });
+  var slots = [];
+  // 1) estilos menores: volume = necessidade (até a capacidade), no menor tanque que comporta; empate → mais cedo
+  menores.forEach(function(e){
+    var guard = 0;
+    while (e.resta > 0 && guard++ < 50){
+      var melhor = null;
+      tqs.forEach(function(t){
+        var vol = Math.min(t.cap, e.resta), enc = encaixe(t, vol);
+        if (!enc) return;
+        var cabe = t.cap >= e.resta;
+        var c = { t:t, enc:enc, vol:vol, cabe:cabe, dia:dias[enc.i].iso };
+        if (!melhor) { melhor = c; return; }
+        if (c.cabe !== melhor.cabe) { if (c.cabe) melhor = c; return; }
+        if (c.cabe){ if (c.t.cap < melhor.t.cap || (c.t.cap === melhor.t.cap && c.dia < melhor.dia)) melhor = c; }
+        else { if (c.t.cap > melhor.t.cap || (c.t.cap === melhor.t.cap && c.dia < melhor.dia)) melhor = c; }
+      });
+      if (!melhor){ avisos.push("Sem tanque/dia disponível para "+e.nome+" (faltam "+fmtNum(e.resta)+" L)."); break; }
+      slots.push(reservar(melhor.t, melhor.enc, melhor.vol, e.nome, true));
+      e.resta -= melhor.vol;
+    }
+  });
+  // 2) estilo principal: tanque cheio, sempre o que libera primeiro; além da necessidade = capacidade extra (desmarcada)
+  for (var guard2 = 0; guard2 < 300; guard2++){
+    var mel = null;
+    tqs.forEach(function(t){
+      var enc = encaixe(t, t.cap); if (!enc) return;
+      var dia = dias[enc.i].iso;
+      if (!mel || dia < mel.dia || (dia === mel.dia && t.cap > mel.t.cap)) mel = { t:t, enc:enc, dia:dia };
+    });
+    if (!mel) break;
+    var precisa = principal.resta > 0;
+    var vol = precisa ? Math.min(mel.t.cap, Math.max(principal.resta, 0)) : mel.t.cap;
+    // última brassagem necessária: usa só o que falta (arredondado em bateladas), se for bem menor que o tanque
+    if (precisa && vol < mel.t.cap) mel.enc = encaixe(mel.t, vol);
+    slots.push(reservar(mel.t, mel.enc, precisa ? vol : mel.t.cap, principal.nome, precisa));
+    if (precisa) principal.resta -= vol;
+  }
+  slots.sort(function(a,b){ return a.dataISO.localeCompare(b.dataISO) || a.tanque.localeCompare(b.tanque); });
+  // numeração de lotes por estilo/ano, em ordem de data
   var seqs = {};
   function proxLote(estilo, dataISO, tanque){
     var E = estilo.trim().toUpperCase(), yy = dataISO.slice(2,4), key = E+"|"+yy;
@@ -7161,28 +7196,12 @@ function _planejarMes(p){
     var tn = (tanque||"").toUpperCase().replace(/^TQ?0*(\d+)$/, function(_,n){ return "T"+("0"+n).slice(-2); });
     return E+" "+("0"+seqs[key]).slice(-2)+"/"+yy+tn;
   }
-  var acum = totalExist;
-  slots.forEach(function(s){
-    s.selecionado = meta ? acum < meta : true;
-    var est = estiloPadrao;
-    if (s.selecionado){
-      // estilo com maior % ainda por atender; empate → o de menor necessidade (estilos menores entram cedo)
-      var ks = Object.keys(restante).filter(function(k){ return restante[k] > 0; })
-        .sort(function(a,b){
-          var ta = +p.demanda[nomes[a]]||1, tb = +p.demanda[nomes[b]]||1;
-          var fa = restante[a]/ta, fb = restante[b]/tb;
-          return Math.abs(fb-fa) > 1e-9 ? fb-fa : ta-tb;
-        });
-      if (ks.length){ est = nomes[ks[0]]; restante[ks[0]] -= s.litros; }
-      acum += s.litros;
-    }
-    s.estilo = est;
-    s.lote = proxLote(est, s.dataISO, s.tanque);
-  });
-  var capMax = totalExist + slots.reduce(function(a,s){ return a+s.litros; }, 0);
+  slots.forEach(function(s){ s.lote = proxLote(s.estilo, s.dataISO, s.tanque); });
   var sug = slots.filter(function(s){ return s.selecionado; }).reduce(function(a,s){ return a+s.litros; }, 0);
+  var capMax = totalExist + slots.reduce(function(a,s){ return a+s.litros; }, 0);
+  var falta = est.length ? est.reduce(function(a,e){ return a + Math.max(0, e.resta); }, 0) : Math.max(0, principal.resta);
   return { slots:slots, totalExist:totalExist, totalSugerido:sug, previsto: totalExist+sug, meta:meta, capMax:capMax,
-           faltam: meta ? Math.max(0, meta - capMax) : 0, avisos:avisos, diasUteis: dias.length, dailyL: dailyL };
+           faltam: falta, avisos:avisos, diasUteis: dias.length, dailyL: dailyL };
 }
 
 /* ── Tela do planejador ── */
@@ -7343,11 +7362,13 @@ async function _planCalcular(){
           "<td style='white-space:nowrap'>"+dts+(s.facult?" <span title='Ponto facultativo' style='color:#C2410C'>◐</span>":"")+"</td>"+
           "<td><b>"+esc(s.tanque)+"</b></td>"+
           "<td><input class='plan-est' data-i='"+i+"' value='"+esc(s.estilo)+"' style='width:110px;padding:4px;border:1px solid var(--linha);border-radius:5px'></td>"+
-          "<td style='text-align:right'><input class='plan-vol' data-i='"+i+"' type='number' value='"+s.litros+"' style='width:80px;padding:4px;border:1px solid var(--linha);border-radius:5px;text-align:right'> L<div style='font-size:.68rem;color:var(--muted)'>~"+s.bateladas+" bat.</div></td>"+
-          "<td><input class='plan-lote' data-i='"+i+"' value='"+esc(s.lote)+"' style='width:150px;padding:4px;border:1px solid var(--linha);border-radius:5px'></td></tr>";
+          "<td style='text-align:right'><input class='plan-vol' data-i='"+i+"' type='number' value='"+s.litros+"' style='width:80px;padding:4px;border:1px solid var(--linha);border-radius:5px;text-align:right'> L<div style='font-size:.68rem;color:var(--muted)'>"+s.bateladas+" bat. · tanque "+fmtNum(s.cap)+" L</div></td>"+
+          "<td><input class='plan-lote' data-i='"+i+"' value='"+esc(s.lote)+"' style='width:190px;padding:4px;border:1px solid var(--linha);border-radius:5px'></td></tr>";
       }).join("")+"</tbody></table>"+
       "<div style='font-size:.72rem;color:var(--muted);margin-top:6px'>Marcadas = necessárias para atingir a necessidade/meta; as demais mostram a capacidade extra do mês. "+
-        "Cada tanque volta a ficar livre "+cfg.cicloDias+" + "+cfg.intervaloDias+" dias depois da brassagem. Tanques maiores que um dia de produção ocupam dias seguidos.</div>"+
+        "Estilos menores usam o volume da necessidade no menor tanque que comporta; o estilo principal enche os tanques. "+
+        "Capacidade diária em bateladas ("+cfg.bateladasDia+"/dia) — dá para brassar mais de um lote no mesmo dia. "+
+        "Cada tanque volta a ficar livre "+cfg.cicloDias+" + "+cfg.intervaloDias+" dias depois da brassagem.</div>"+
       (["admin","gestor"].includes(sessao.papel) ? "<button type='button' id='planProgramar' class='btn mini' style='margin-top:10px;padding:9px 16px'>✅ Programar selecionadas</button>" : "");
     res.innerHTML = html;
     res.querySelectorAll(".plan-est").forEach(function(el){
