@@ -44,6 +44,17 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.8.37 — 18/11/2026
+
+**Correção: brassagem de hoje aparecia em AGORA e em PRÓXIMO ao mesmo tempo**
+
+Em tanque zerado, a brassagem prevista para hoje era mostrada no bloco
+AGORA ("Brassagem prevista") e também como Fila 1º em PRÓXIMO (ex.: TQ05,
+HELLES 71/26T05). Agora ela fica só em AGORA; PRÓXIMO começa na brassagem
+seguinte.
+
+---
+
 ## 3.8.36 — 17/11/2026
 
 **Alertas de Clearmax L e levedura nos tanques**

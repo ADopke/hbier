@@ -267,7 +267,8 @@ export default protegido(async function handler(req, res) {
       // Quando o tanque está zerado, inclui também a brassagem de hoje (previstahoje)
       // para que ela apareça em PRÓXIMO mesmo no dia em que foi planejada
       const proximasBrassagensTodas = brassagens
-        .filter(b => b.tanque === nomeUp && (b.planejada || (b.previstahoje && overrideEhZerado)))
+        // a brassagem de hoje que já aparece em AGORA (brassHoje) não se repete em PRÓXIMO
+        .filter(b => b.tanque === nomeUp && b !== brassHoje && (b.planejada || (b.previstahoje && overrideEhZerado)))
         .sort((a, b) => a.em.localeCompare(b.em));
       const proximaBrass = proximasBrassagensTodas[0] || null;
       // "pronto" sempre tem prioridade; "zerado" sobrepõe brassagens antigas mas cede para brassagem de hoje
