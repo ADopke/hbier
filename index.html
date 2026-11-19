@@ -3861,7 +3861,9 @@ window._sugerirLote = function _sugerirLote(){
     var loteEl   = document.getElementById("brassLote");
     if(!estiloEl || !tanqueEl || !loteEl){ console.log("[lote] elementos não encontrados"); return; }
     if(loteEl._editadoManual){ console.log("[lote] editadoManual=true, saindo"); return; }
-    var estilo = estiloEl.value.trim().toUpperCase();
+    if (typeof _carregarSiglas === "function") { try{ await _carregarSiglas(); }catch(e){} }
+    // lote usa a SIGLA do estilo (ex.: Munich Helles → HELLES)
+    var estilo = (typeof _siglaEstilo === "function" ? _siglaEstilo(estiloEl.value.trim()) : estiloEl.value.trim()).toUpperCase();
     var tanque = tanqueEl.value.trim().toUpperCase();
     console.log("[lote] estilo="+estilo+" tanque="+tanque);
     if(!estilo || !tanque){ console.log("[lote] estilo ou tanque vazio, saindo"); return; }
@@ -3877,7 +3879,7 @@ window._sugerirLote = function _sugerirLote(){
       console.log("[lote] fichas encontradas:", lotes.length, lotes.map(function(l){return l.lote;}).join(", "));
       lotes.forEach(function(l){
         var m = (l.lote||"").trim().match(re);
-        if(m && m[1].trim().toUpperCase() === estilo){
+        if(m && _semAcento(m[1].trim().toUpperCase()) === _semAcento(estilo)){
           var n = parseInt(m[2],10);
           console.log("[lote] match ficha:", l.lote, "→ seq", n);
           if(n > maxSeq) maxSeq = n;
@@ -3888,7 +3890,7 @@ window._sugerirLote = function _sugerirLote(){
       window._progItensCache.forEach(function(it){
         if(it.tipo !== "brassagem") return;
         var m = (it.lote||"").trim().match(re);
-        if(m && m[1].trim().toUpperCase() === estilo){
+        if(m && _semAcento(m[1].trim().toUpperCase()) === _semAcento(estilo)){
           var n = parseInt(m[2],10);
           console.log("[lote] match prog:", it.lote, "→ seq", n);
           if(n > maxSeq) maxSeq = n;
@@ -3908,7 +3910,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.10.12";
+var VERSAO = "3.11.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7212,10 +7214,11 @@ function _planejarMes(p){
   // numeração de lotes por estilo/ano, em ordem de data
   var seqs = {};
   function proxLote(estilo, dataISO, tanque){
-    var E = estilo.trim().toUpperCase(), yy = dataISO.slice(2,4), key = E+"|"+yy;
+    var E = (p.sigla ? p.sigla(estilo) : estilo).trim().toUpperCase(), yy = dataISO.slice(2,4), key = E+"|"+yy;
+    var semAc = function(t){ return String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,""); };
     if (seqs[key] == null){
       var mx = 0, re = new RegExp("^(.+?)\\s*(\\d+)\\/"+yy+"T\\d+$","i");
-      (p.lotes||[]).forEach(function(l){ var m=(l||"").trim().match(re); if (m && m[1].trim().toUpperCase()===E) mx=Math.max(mx, parseInt(m[2],10)); });
+      (p.lotes||[]).forEach(function(l){ var m=(l||"").trim().match(re); if (m && semAc(m[1].trim().toUpperCase())===semAc(E)) mx=Math.max(mx, parseInt(m[2],10)); });
       seqs[key] = mx;
     }
     seqs[key]++;
@@ -7226,8 +7229,9 @@ function _planejarMes(p){
   var sug = slots.filter(function(s){ return s.selecionado; }).reduce(function(a,s){ return a+s.litros; }, 0);
   var capMax = totalExist + slots.reduce(function(a,s){ return a+s.litros; }, 0);
   var falta = est.length ? est.reduce(function(a,e){ return a + Math.max(0, e.resta); }, 0) : Math.max(0, principal.resta);
+  var faltaEstilos = est.filter(function(e){ return e.resta > 0; }).map(function(e){ return { nome:e.nome, litros:e.resta }; });
   return { slots:slots, totalExist:totalExist, totalSugerido:sug, previsto: totalExist+sug, meta:meta, capMax:capMax,
-           faltam: falta, avisos:avisos, diasUteis: dias.length, dailyL: dailyL };
+           faltam: falta, faltaEstilos: faltaEstilos, avisos:avisos, diasUteis: dias.length, dailyL: dailyL };
 }
 
 // ── Estilos oficiais = estilos das receitas cadastradas (sem repetir) ──
@@ -7256,11 +7260,54 @@ async function _estilosReceitas(forcar){
   }catch(e){ _estilosCache = _estilosCache || []; }
   return _estilosCache;
 }
-// devolve a grafia cadastrada do estilo (ou null se não houver receita)
+// devolve a grafia cadastrada do estilo (ou null se não houver receita).
+// Aceita também a sigla do lote como apelido: "Helles" / "HELLES" → "Munich Helles"
 function _estiloCanonico(txt){
-  var k = _normTxt(txt);
+  var k = _normTxt(txt); if (!k) return null;
   var e = (_estilosCache||[]).find(function(x){ return _normTxt(x.nome) === k; });
+  if (e) return e.nome;
+  e = (_estilosCache||[]).find(function(x){ return _normTxt(_siglaEstilo(x.nome)) === k; });
   return e ? e.nome : null;
+}
+
+// ── Sigla do lote por estilo (Munich Helles → HELLES) ──
+function _semAcento(t){ return String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
+var _siglasInferidas = {};   // normTxt(estilo) → sigla mais usada nos lotes das fichas
+var _siglasCarregadas = false;
+var _SIGLAS_PADRAO = [
+  [/helles/i, "HELLES"], [/red ale/i, "RED ALE"], [/india pale ale|\bipa\b/i, "IPA"],
+  [/non.?alcohol|sem alcool|zero/i, "SEM ALCOOL"], [/export|dortmunder/i, "EXPORT"],
+  [/pils/i, "PILSEN"], [/weiss|weizen|wheat/i, "WEISS"], [/bock/i, "BOCK"], [/m[aä]rzen|oktoberfest/i, "MARZEN"],
+  [/stout/i, "STOUT"], [/porter/i, "PORTER"], [/\bapa\b|american pale ale/i, "APA"], [/dunkel/i, "DUNKEL"], [/vienna/i, "VIENNA"]
+];
+async function _carregarSiglas(forcar){
+  if (_siglasCarregadas && !forcar) return;
+  try{
+    await _carregarCfgPlan();
+    var r = await fetch('/api/ficha?lista=1',{credentials:'include'}).then(function(x){ return x.json(); });
+    var cont = {};
+    ((r && r.lotes) || []).forEach(function(l){
+      var m = String(l.lote||"").trim().match(/^(.+?)\s*\d+\/\d{2}(T\d+)?$/i);
+      var k = _normTxt(l.estilo); if (!m || !k) return;
+      var sg = m[1].trim().toUpperCase();
+      cont[k] = cont[k] || {}; cont[k][sg] = (cont[k][sg]||0) + 1;
+    });
+    _siglasInferidas = {};
+    Object.keys(cont).forEach(function(k){
+      _siglasInferidas[k] = Object.keys(cont[k]).sort(function(a,b){ return cont[k][b]-cont[k][a]; })[0];
+    });
+    _siglasCarregadas = true;
+  }catch(e){}
+}
+// sigla: 1) parâmetro salvo  2) a mais usada nos lotes desse estilo  3) sugestão padrão  4) o próprio estilo
+function _siglaEstilo(estilo){
+  var k = _normTxt(estilo); if (!k) return "";
+  var salvas = (_cfgPlan && _cfgPlan.siglas) || {};
+  for (var key in salvas){ if (_normTxt(key) === k && salvas[key]) return String(salvas[key]).toUpperCase().trim(); }
+  if (_siglasInferidas[k]) return _siglasInferidas[k];
+  var e = _semAcento(estilo);
+  for (var i = 0; i < _SIGLAS_PADRAO.length; i++) if (_SIGLAS_PADRAO[i][0].test(e)) return _SIGLAS_PADRAO[i][1];
+  return _semAcento(String(estilo).trim().toUpperCase());
 }
 function _optsEstilos(atual){
   var lst = _estilosCache || [], achou = false;
@@ -7300,6 +7347,8 @@ async function _abrirPlanejador(){
               "<label>Litros finais por batelada<input type='number' id='planLBat' min='100' style='width:100%;padding:6px;border:1.5px solid var(--linha);border-radius:6px'></label>"+
               "<label style='display:flex;align-items:center;gap:6px;margin-top:14px'><input type='checkbox' id='planSab'> Brassar aos sábados</label>"+
             "</div>"+
+            "<div style='font-weight:700;margin-top:10px'>Sigla do lote por estilo <span style='font-weight:400;color:var(--muted);font-size:.74rem'>(nome curto usado no lote: HELLES 77/26T01)</span></div>"+
+            "<div id='planSiglas' style='display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;margin-top:4px'></div>"+
             "<div style='font-weight:700;margin-top:10px'>Bateladas para encher cada tanque</div>"+
             "<div id='planBatTq' style='display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-top:4px'></div>"+
             "<div style='font-size:.74rem;color:var(--muted);margin-top:6px'>Tanque com mais bateladas que o dia (ex.: 9 &gt; 6) ocupa dois dias seguidos; os demais terminam no mesmo dia. "+
@@ -7346,12 +7395,23 @@ async function _abrirPlanejador(){
   m.hidden = false;
   await _carregarCfgPlan(true);
   await _garantirTanques();
+  await _estilosReceitas(); await _carregarSiglas(true);
   _planCfgPreencher();
   _planCarregarMes();
 }
 function _planMesSel(){ var v = $("planMes").value.split("-"); return {ano:+v[0], mes:+v[1]}; }
 function _planCfgPreencher(){
   var c = _cfgPlan;
+  var bs = $("planSiglas");
+  if (bs){
+    bs.innerHTML = (_estilosCache||[]).map(function(e){
+      var salva = ""; var sv = c.siglas || {};
+      for (var key in sv){ if (_normTxt(key) === _normTxt(e.nome)) salva = sv[key]; }
+      return "<label style='font-size:.78rem'>"+esc(e.nome)+
+        "<input class='plan-sigla' data-est='"+esc(e.nome)+"' value='"+esc(salva || _siglaEstilo(e.nome))+"' "+
+        "style='width:100%;padding:5px;border:1.5px solid var(--linha);border-radius:6px;text-transform:uppercase'></label>";
+    }).join("") || "<span style='color:var(--muted);font-size:.78rem'>Nenhuma receita cadastrada.</span>";
+  }
   var box = $("planBatTq");
   if (box){
     box.innerHTML = (_dadosTanques||[]).filter(function(t){ return +t.capacidade > 0; }).map(function(t){
@@ -7367,10 +7427,11 @@ function _planCfgPreencher(){
   $("planCfgResumo").textContent = "— ciclo "+c.cicloDias+"d · CIP "+c.intervaloDias+"d · "+c.bateladasDia+" bat/dia × "+fmtNum(c.litrosBatelada)+" L = "+fmtNum(c.bateladasDia*c.litrosBatelada)+" L/dia"+(c.brassaSabado?" · sábado":"");
 }
 function _planCfgLer(){
-  var bt = {};
+  var bt = {}, sg = {};
   document.querySelectorAll(".plan-battq").forEach(function(el){ var v = +el.value; if (v >= 1) bt[el.dataset.tq] = v; });
+  document.querySelectorAll(".plan-sigla").forEach(function(el){ var v = (el.value||"").trim().toUpperCase(); if (v) sg[el.dataset.est] = v; });
   return { cicloDias:+$("planCiclo").value, intervaloDias:+$("planIntv").value, bateladasDia:+$("planBat").value,
-           litrosBatelada:+$("planLBat").value, brassaSabado:$("planSab").checked, bateladasTanque: bt };
+           litrosBatelada:+$("planLBat").value, brassaSabado:$("planSab").checked, bateladasTanque: bt, siglas: sg };
 }
 function _planDemLinha(estilo, litros){
   var row = document.createElement("div");
@@ -7408,6 +7469,7 @@ async function _planCarregarMes(){
 }
 async function _planCalcular(){
   var c = _planMesSel(), res = $("planRes");
+  await _estilosReceitas(); await _carregarSiglas();
   res.innerHTML = "<div style='color:var(--muted)'>Calculando…</div>";
   try{
     var cfg = _planCfgLer();
@@ -7421,14 +7483,14 @@ async function _planCalcular(){
     progs.forEach(function(r){ (r.itens||[]).forEach(function(it){
       if (it.lote) lotes.push(it.lote);
       if (it.tipo === "brassagem" && it.dataISO >= ini && it.dataISO <= fimISO)
-        existentes.push({ dataISO: it.dataISO, tanque: it.tanque, estilo: it.estilo, lote: it.lote,
+        existentes.push({ dataISO: it.dataISO, tanque: it.tanque, estilo: _estiloCanonico(it.estilo) || it.estilo, lote: it.lote,
           litros: +((it.resultado && it.resultado.volume) || String(it.volPrev||"").replace(/\D/g,"")) || 0 });
     }); });
     tanques.forEach(function(t){ if (t.lote) lotes.push(t.lote); (t.proximasBrassagens||[]).forEach(function(b){ if (b.lote) lotes.push(b.lote); }); });
     (window._progItensCache||[]).forEach(function(it){ if (it.lote) lotes.push(it.lote); });
     try{ var rf = await fetch("/api/ficha?lista=1",{credentials:"include"}).then(function(x){ return x.json(); }); ((rf&&rf.lotes)||[]).forEach(function(l){ if (l.lote) lotes.push(l.lote); }); }catch(e){}
     var r = _planejarMes({ ano:c.ano, mes:c.mes, cfg:cfg, tanques:tanques, existentes:existentes, demanda:_planDemLer(),
-                           meta:_planCtx ? _planCtx.meta : 0, hoje:_hojeISO(), lotes:lotes });
+                           meta:_planCtx ? _planCtx.meta : 0, hoje:_hojeISO(), lotes:lotes, sigla:_siglaEstilo });
     _planCtx.res = r;
     var pct = r.meta ? Math.round(r.previsto/r.meta*100) : 0;
     var cor = !r.meta ? "#1E3A8A" : (r.previsto >= r.meta ? "#15803D" : "#B45309");
@@ -7436,8 +7498,9 @@ async function _planCalcular(){
       "<div style='font-weight:900;font-size:1rem'>"+(r.meta ? "Previsto "+fmtNum(r.previsto)+" L de "+fmtNum(r.meta)+" L ("+pct+"%)" : "Capacidade do mês: "+fmtNum(r.capMax)+" L")+"</div>"+
       "<div style='font-size:.78rem;margin-top:2px'>Já programado no mês: "+fmtNum(r.totalExist)+" L ("+existentes.length+" brassage"+(existentes.length===1?"m":"ns")+") · sugerido: "+fmtNum(r.totalSugerido)+" L · "+
         r.diasUteis+" dias úteis de brassagem · "+fmtNum(r.dailyL)+" L/dia</div>"+
-      (r.faltam ? "<div style='font-weight:800;margin-top:4px'>⚠️ Faltam "+fmtNum(r.faltam)+" L: com o ciclo de "+cfg.cicloDias+" dias, os tanques atuais rendem no máximo "+fmtNum(r.capMax)+" L neste mês. "+
-        "Para cobrir, seria preciso reduzir o ciclo, brassar aos sábados ou ter mais tanques.</div>" : "")+
+      (r.faltam && r.previsto < r.meta ? "<div style='font-weight:800;margin-top:4px'>⚠️ Faltam "+fmtNum(r.meta - r.previsto)+" L: com o ciclo de "+cfg.cicloDias+" dias, os tanques atuais rendem no máximo "+fmtNum(r.capMax)+" L neste mês. "+
+        "Para cobrir, seria preciso reduzir o ciclo, brassar aos sábados ou ter mais tanques.</div>"
+       : (r.faltaEstilos && r.faltaEstilos.length ? "<div style='font-weight:800;margin-top:4px'>⚠️ Necessidade não coberta: "+r.faltaEstilos.map(function(x){ return esc(x.nome)+" "+fmtNum(x.litros)+" L"; }).join(" · ")+"</div>" : ""))+
       "</div>"+
       (r.avisos.length ? "<div style='margin-top:6px;color:#B91C1C;font-size:.78rem'>"+r.avisos.map(function(a){ return "⚠️ "+esc(a); }).join("<br>")+"</div>" : "");
     if (!r.slots.length){ html += "<div style='margin-top:10px'>Nenhum tanque fica livre em dia útil neste mês.</div>"; res.innerHTML = html; return; }
@@ -7462,7 +7525,7 @@ async function _planCalcular(){
     res.querySelectorAll(".plan-est").forEach(function(el){
       el.onchange = function(){
         var lt = res.querySelector(".plan-lote[data-i='"+el.dataset.i+"']");
-        if (lt) lt.value = lt.value.replace(/^.+?(\s*\d+\/\d{2}T\d+)$/, el.value.trim().toUpperCase()+"$1");
+        if (lt) lt.value = lt.value.replace(/^.+?(\s*\d+\/\d{2}T\d+)$/, _siglaEstilo(el.value)+"$1");
       };
     });
     var bp = $("planProgramar"); if (bp) bp.onclick = _planProgramar;
@@ -7887,6 +7950,7 @@ async function carregarPainelProducoes(){
 async function carregarProgMensal(){
   var ano=segProg.getFullYear(), mes=segProg.getMonth();
   _garantirTanques();   // para o painel do dia (tanque do envase por lista)
+  try{ await _estilosReceitas(); await _carregarSiglas(); }catch(e){}
   // título e navegação com o ano (importante na virada de ano)
   var _MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
   if($("progMesTitulo")) $("progMesTitulo").textContent=_MESES[mes]+" de "+ano;
@@ -7926,7 +7990,8 @@ async function carregarProgMensal(){
         totBrass++;
         var vol=0;
         if(it.resultado&&it.volPrev){vol=parseFloat((it.volPrev+"").replace(",","."))||0;totVolReal+=vol;}
-        var est=(it.estilo||"—").trim();
+        // agrupa pela sigla do estilo oficial (Helles / Munich Helles → HELLES)
+        var est=(it.estilo ? (_siglaEstilo(_estiloCanonico(it.estilo)||it.estilo)||it.estilo) : "—").trim();
         if(!brassPorEstilo[est]) brassPorEstilo[est]={qtd:0,vol:0};
         brassPorEstilo[est].qtd++;
         brassPorEstilo[est].vol+=vol;

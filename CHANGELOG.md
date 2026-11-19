@@ -44,6 +44,28 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.11.0 — 19/11/2026
+
+**Sigla do lote por estilo (Munich Helles → HELLES)**
+
+- Estilo (nome técnico da receita) e sigla do lote passam a ser coisas
+  separadas. Nova tabela "Sigla do lote por estilo" em ⚙ Parâmetros do
+  planejador, preenchida automaticamente com a sigla mais usada nos lotes das
+  fichas daquele estilo (ou sugestão: HELLES, RED ALE, IPA, SEM ALCOOL,
+  EXPORT…); editável e salva (admin/gestor)
+- Lotes gerados pelo planejador e pela Nova brassagem usam a sigla e seguem a
+  numeração existente: HELLES 77/26T01 (antes MUNICH HELLES 01/26T01)
+- A sigla vale como apelido do estilo: "Helles" é reconhecido como
+  "Munich Helles" (validação da brassagem, planejador, insumos)
+- Planejador: brassagens já programadas com outro nome do mesmo estilo são
+  descontadas da necessidade certa
+- Resumo da visão mês agrupa brassagens pela sigla (Helles + Munich Helles =
+  HELLES)
+- Correção: não mostra mais "Faltam X L" quando o previsto já passa da meta;
+  se só algum estilo ficou sem cobertura, lista qual
+
+---
+
 ## 3.10.12 — 19/11/2026
 
 **Gráfico da Ficha de Produção igual ao dos Registros**

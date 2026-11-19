@@ -77,6 +77,11 @@ export default protegido(async function handler(req, res) {
           bateladasDia:   n(dd.bateladasDia, 1, 20, CFG_PADRAO.bateladasDia),
           litrosBatelada: n(dd.litrosBatelada, 100, 10000, CFG_PADRAO.litrosBatelada),
           brassaSabado:   !!dd.brassaSabado,
+          siglas: (function () {
+            const o = {};
+            Object.entries(dd.siglas || {}).forEach(([k, v]) => { const t = String(v || "").trim().toUpperCase().slice(0, 20); if (k.trim() && t) o[k.trim()] = t; });
+            return o;
+          })(),
           bateladasTanque: (function () {
             const o = {};
             Object.entries(dd.bateladasTanque || {}).forEach(([k, v]) => { const x = Number(v); if (k.trim() && x >= 1 && x <= 40) o[k.trim().toUpperCase()] = Math.round(x); });
