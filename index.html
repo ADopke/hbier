@@ -2635,7 +2635,13 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
                 <label style="font-size:.82rem;color:var(--muted);white-space:nowrap">Até:</label>
                 <input type="date" id="regDataFim" style="font-size:.82rem;padding:4px 8px;border:1px solid var(--linha);border-radius:6px;background:var(--card);color:var(--fg)">
                 <button id="btnFiltrarRegistros" class="btn mini" style="margin-left:4px">FILTRAR</button>
+                <span style="flex:1"></span>
+                <input type="search" id="regBuscaLote" list="dlRegLotes" placeholder="🔎 Buscar lote… ex.: 66/26" autocomplete="off"
+                  style="font-size:.82rem;padding:5px 9px;border:1.5px solid var(--linha);border-radius:6px;background:var(--card);color:var(--fg);min-width:200px">
+                <datalist id="dlRegLotes"></datalist>
+                <button id="btnBuscarRegLote" class="btn mini secundario">BUSCAR</button>
               </div>
+              <div id="regBuscaInfo" hidden style="font-size:.76rem;color:#1E3A8A;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:4px 9px"></div>
               <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:2px">
                 <span style="font-size:.75rem;color:var(--muted);white-space:nowrap;margin-right:2px">Mostrar:</span>
                 <label style="display:flex;align-items:center;gap:3px;font-size:.75rem;cursor:pointer;user-select:none"><input type="checkbox" id="regFiltFerm"     checked> <span style="background:#EFF6FF;color:#2563EB;border-radius:3px;padding:1px 5px;font-weight:700">🌡 Ferm</span></label>
@@ -3902,7 +3908,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.10.10";
+var VERSAO = "3.10.11";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12869,6 +12875,15 @@ function _renderUmGraficoComChart(Chart, canvas, item) {
 
 (function(){
   var _regCache = null; // cache das fichas carregadas
+  var _regBusca = "";   // termo de busca por lote (ignora o período)
+  var _regListaLotes = null;
+  function _normLote(t){ return String(t||"").toUpperCase().replace(/\s+/g," ").trim(); }
+  async function _regGarantirLista(){
+    if (!_regListaLotes){ try{ var r = await api("/api/ficha?lista=1"); _regListaLotes = r.lotes || []; }catch(e){ _regListaLotes = []; } }
+    var dl = $("dlRegLotes");
+    if (dl && !dl.children.length) dl.innerHTML = _regListaLotes.map(function(l){ return "<option value='"+esc(l.lote)+"'>"+esc(l.estilo||"")+"</option>"; }).join("");
+    return _regListaLotes;
+  }
 
   function fmtDtReg(iso) {
     if (!iso) return "—";
@@ -12888,6 +12903,32 @@ function _renderUmGraficoComChart(Chart, canvas, item) {
     conteudo.innerHTML = "<div class='vazio'>Carregando fichas…</div>";
 
     try {
+      _regGarantirLista();
+      // Busca por lote: carrega as fichas que casam (mesmo fora das 30 mais recentes) e ignora o período
+      var info = $("regBuscaInfo");
+      if (_regBusca){
+        var termo = _normLote(_regBusca);
+        var lst = await _regGarantirLista();
+        var achados = lst.filter(function(l){ return _normLote(l.lote).indexOf(termo) !== -1; });
+        if (!_regCache) _regCache = [];
+        var faltam = achados.filter(function(l){ return !_regCache.some(function(f){ return f.cabecalho && _normLote(f.cabecalho.lote) === _normLote(l.lote); }); });
+        if (faltam.length){
+          var extras = await Promise.all(faltam.slice(0, 20).map(function(l){
+            return api("/api/ficha?lote="+encodeURIComponent(l.lote)).then(function(fr){ return fr.ficha || null; }).catch(function(){ return null; });
+          }));
+          _regCache = _regCache.concat(extras.filter(Boolean));
+        }
+        dataInicio = null; dataFim = null;
+        if (info){
+          info.hidden = false;
+          info.innerHTML = achados.length
+            ? "🔎 <b>"+achados.length+"</b> lote"+(achados.length>1?"s":"")+" com \""+esc(_regBusca)+"\": "+achados.slice(0,8).map(function(l){ return esc(l.lote); }).join(", ")+(achados.length>8?"…":"")+
+              " · período ignorado · <a href='#' id='regBuscaLimpar' style='color:#B91C1C;font-weight:700'>limpar busca</a>"
+            : "Nenhum lote encontrado com \""+esc(_regBusca)+"\". <a href='#' id='regBuscaLimpar' style='color:#B91C1C;font-weight:700'>limpar busca</a>";
+          var lk = $("regBuscaLimpar"); if (lk) lk.onclick = function(ev){ ev.preventDefault(); _regLimparBusca(); };
+        }
+        if (!achados.length){ conteudo.innerHTML = "<div class='vazio'>Nenhum lote encontrado.</div>"; return; }
+      } else if (info) { info.hidden = true; }
       // Carrega índice
       if (!_regCache) {
         var r = await api("/api/ficha?lista=1");
@@ -12904,6 +12945,7 @@ function _renderUmGraficoComChart(Chart, canvas, item) {
       var porTanque = {};
 
       _regCache.forEach(function(ficha){
+        if (_regBusca && !(ficha.cabecalho && _normLote(ficha.cabecalho.lote).indexOf(_normLote(_regBusca)) !== -1)) return;
         var tanque = (ficha.cabecalho && ficha.cabecalho.tanque) ? ficha.cabecalho.tanque.toUpperCase().trim() : "SEM TANQUE";
         var lote   = (ficha.cabecalho && ficha.cabecalho.lote)   ? ficha.cabecalho.lote   : "?";
         var estilo = (ficha.cabecalho && ficha.cabecalho.estilo) ? ficha.cabecalho.estilo : "";
@@ -13233,6 +13275,22 @@ function _renderUmGraficoComChart(Chart, canvas, item) {
       parseDateStr($("regDataFim").value + "T23:59:59")
     );
   });
+
+  function _regRecarregar(){
+    carregarRegistros(
+      parseDateStr($("regDataInicio").value),
+      parseDateStr($("regDataFim").value ? $("regDataFim").value + "T23:59:59" : null)
+    );
+  }
+  function _regLimparBusca(){ _regBusca = ""; $("regBuscaLote").value = ""; _regCache = null; _regRecarregar(); }
+  $("btnBuscarRegLote").addEventListener("click", function(){
+    _regBusca = ($("regBuscaLote").value || "").trim();
+    _regRecarregar();
+  });
+  $("regBuscaLote").addEventListener("keydown", function(ev){
+    if (ev.key === "Enter"){ ev.preventDefault(); _regBusca = this.value.trim(); _regRecarregar(); }
+  });
+  $("regBuscaLote").addEventListener("search", function(){ if (!this.value && _regBusca) _regLimparBusca(); });
 
   $("btnFiltrarRegistros").addEventListener("click", function(){
     _regCache = null; // força reload ao filtrar por data

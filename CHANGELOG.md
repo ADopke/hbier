@@ -44,6 +44,19 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.11 — 19/11/2026
+
+**Busca por lote nos Registros de Fermentação e Maturação**
+
+- Campo "🔎 Buscar lote…" ao lado do filtro de datas, com sugestões dos lotes
+  das fichas; aceita parte do lote (ex.: "66/26", "T05", "RED ALE")
+- Mostra só os lotes encontrados (tabela + gráfico), ignorando o período —
+  busca também lotes antigos, fora das 30 fichas mais recentes
+- Faixa informativa com os lotes encontrados e "limpar busca"
+- Enter busca; limpar o campo volta à visão por período
+
+---
+
 ## 3.10.10 — 19/11/2026
 
 **Ficha de Produção: SG só com ponto**
