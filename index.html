@@ -3902,7 +3902,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.10.9";
+var VERSAO = "3.10.10";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -15476,7 +15476,43 @@ function fp_atribuirKeys(){
     if(!el.dataset.auditKey) fp_auditKey(el);
   });
 }
+// ── SG obrigatoriamente com ponto (1.010) — bloqueia 1010, 10,10 etc. ──
+var _SG_SELETOR = '#fp-ferm-log .fp-mlog-row.ferm .fp-log-cell:nth-child(2) input, .fp-og-real';
+function _sgValorInvalido(inp){
+  var t = String(inp.value == null ? "" : inp.value).trim();
+  if (!t) return false;
+  var n = parseFloat(t.replace(",", "."));
+  return isNaN(n) || n < 0.980 || n > 1.200;
+}
+function _sgMarcar(inp){
+  var ruim = _sgValorInvalido(inp);
+  inp.style.borderColor = ruim ? '#DC2626' : '';
+  inp.style.background  = ruim ? 'rgba(220,38,38,0.12)' : '';
+  inp.title = ruim ? 'SG com ponto: ex. 1.010 (não 1010)' : '';
+  return ruim;
+}
+document.addEventListener('focusout', function(ev){
+  var inp = ev.target;
+  if (!inp || !inp.matches || !inp.matches(_SG_SELETOR)) return;
+  if (_sgMarcar(inp)) {
+    var n = parseFloat(String(inp.value).replace(",", "."));
+    var sug = (n > 980 && n < 1200) ? " Ex.: "+(n/1000).toFixed(3)+" em vez de "+inp.value+"." : "";
+    toast("🚫 SG inválida: use ponto e 3 casas (1.010)."+sug, "erro");
+  }
+}, true);
+function _sgConferirFicha(){
+  var ruins = [];
+  document.querySelectorAll(_SG_SELETOR).forEach(function(inp){ if (_sgMarcar(inp)) ruins.push(inp); });
+  return ruins;
+}
+
 function fp_simSave(btn){
+  var _sgRuins = _sgConferirFicha();
+  if (_sgRuins.length){
+    _sgRuins[0].scrollIntoView({behavior:'smooth', block:'center'}); _sgRuins[0].focus();
+    toast("🚫 "+_sgRuins.length+" SG fora do padrão (ex.: 1010). Corrija para 1.010 antes de salvar a ficha.", "erro");
+    return;
+  }
   // coleta os dados da ficha atual para enviar ao servidor
   var app = document.getElementById('fp-app');
   if (!app) return;

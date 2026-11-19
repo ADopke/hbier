@@ -44,6 +44,19 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.10 — 19/11/2026
+
+**Ficha de Produção: SG só com ponto**
+
+- SG do acompanhamento da fermentação e OG real das bateladas aceitam só
+  valores entre 0.980 e 1.200 (ex.: 1.010)
+- Ao sair do campo com 1010 (ou similar), o campo fica vermelho e aparece
+  "SG inválida: use ponto e 3 casas — Ex.: 1.010 em vez de 1010"
+- "Salvar Ficha" é bloqueado enquanto houver SG fora do padrão; a tela rola
+  até o primeiro campo errado
+
+---
+
 ## 3.10.9 — 19/11/2026
 
 **SG com 3 casas nos registros**
