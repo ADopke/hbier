@@ -44,6 +44,16 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.9 — 19/11/2026
+
+**SG com 3 casas nos registros**
+
+- Tabela, tooltip e eixo do gráfico mostram a densidade com 3 casas e ponto
+  (1.048, 1.010) — antes 1.04 / 1.01
+- SG digitada como 1048 é exibida como 1.048
+
+---
+
 ## 3.10.8 — 19/11/2026
 
 **Gráfico de registros mais alto**

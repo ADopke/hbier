@@ -3902,7 +3902,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.10.8";
+var VERSAO = "3.10.9";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12674,6 +12674,13 @@ var _pluginFaixas = {
     ctx.restore();
   }
 };
+// SG sempre com 3 casas e ponto (1.048), como na leitura do densímetro
+function _fmtSG(v){
+  var n = parseFloat(String(v).replace(",", "."));
+  if (isNaN(n)) return String(v);
+  if (n > 1.2 && n < 1200) n = n / 1000;           // digitado como 1048
+  return n.toFixed(3);
+}
 function _escalaEixo(eixo, dados){
   var e = ESCALA_GRAFICO[eixo], vals = dados.filter(function(v){ return v != null && !isNaN(v); });
   var mn = e.min, mx = e.max;
@@ -12684,7 +12691,7 @@ function _escalaEixo(eixo, dados){
   }
   return {
     min: +mn.toFixed(4), max: +mx.toFixed(4), aberta: (mn !== e.min || mx !== e.max),
-    ticks: { stepSize: e.passo, callback: function(v){ return Number(v).toLocaleString("pt-BR",{minimumFractionDigits:e.casas, maximumFractionDigits:e.casas}); } }
+    ticks: { stepSize: e.passo, callback: function(v){ return eixo === "ySG" ? Number(v).toFixed(3) : Number(v).toLocaleString("pt-BR",{minimumFractionDigits:e.casas, maximumFractionDigits:e.casas}); } }
   };
 }
 
@@ -12805,6 +12812,15 @@ function _renderUmGraficoComChart(Chart, canvas, item) {
               labels: { color: tickColor, font: { size: 10 }, boxWidth: 14, padding: 10 }
             },
             tooltip: {
+              callbacks: {
+                label: function(ctx){
+                  var v = ctx.parsed.y; if (v == null) return null;
+                  var ax = ctx.dataset.yAxisID;
+                  var txt = ax === "ySG" ? Number(v).toFixed(3)
+                          : Number(v).toLocaleString("pt-BR", { maximumFractionDigits: ax === "yKgf" || ax === "yCO2" ? 2 : 1 });
+                  return ctx.dataset.label + ": " + txt;
+                }
+              },
               backgroundColor: tooltipBg,
               titleColor: tooltipFg,
               bodyColor: tooltipFg,
@@ -13158,7 +13174,7 @@ function _renderUmGraficoComChart(Chart, canvas, item) {
               : "<span style='background:#F0FDF4;color:#16A34A;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>❄️ Matur</span>";
             var isPurga = (r.obs || "").indexOf("PURGA") !== -1;
             var sgOuCo2 = r.tipo === "ferm"
-              ? (r.sg  != null && r.sg  !== "" ? r.sg        : "—")
+              ? (r.sg  != null && r.sg  !== "" ? _fmtSG(r.sg) : "—")
               : (r.co2 != null && r.co2 !== "" ? r.co2+" vol": "—");
             html += "<tr style='border-top:1px solid var(--linha);background:"+(isPurga?"rgba(107,114,128,.08)":bgRow)+";"+( isPurga?"border-left:3px solid #9CA3AF":"")+"'>";
             html += "<td style='padding:4px 6px'>"+(isPurga?"<span style='background:#F3F4F6;color:#6B7280;border-radius:3px;padding:1px 5px;font-weight:700;font-size:.7rem'>🔽 Purga</span>":tipoBadge)+"</td>";
