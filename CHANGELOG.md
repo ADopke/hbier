@@ -44,6 +44,19 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.7 — 19/11/2026
+
+**Faixa ideal de fermentação por família do estilo**
+
+- Lagers: 10–14 °C · Ales: 18–24 °C (faixa pintada no gráfico de registros)
+- Família pelo estilo do lote: Helles, Pilsen, Export, Dortmunder, Bock,
+  Märzen, Vienna, Dunkel, Keller… = lager; Ale, IPA, APA, Stout, Porter,
+  Weiss/Weizen, Saison, Kölsch… = ale
+- Estilo sem pista no nome: usa a temperatura de set da fermentação
+  (mediana ≥ 16 °C = ale; senão lager)
+
+---
+
 ## 3.10.6 — 19/11/2026
 
 **Gráfico de Registros de Fermentação e Maturação com escala fixa**

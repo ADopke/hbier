@@ -3902,7 +3902,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.10.6";
+var VERSAO = "3.10.7";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12634,18 +12634,36 @@ var ESCALA_GRAFICO = {
   yCO2:  { min: 0,     max: 3.5,   passo: 0.5,   casas: 1 }
 };
 // Faixas ideais pintadas no fundo (ajustáveis aqui)
+// Fermentação: lagers 10–14 °C · ales 18–24 °C (escolhida pelo estilo do lote)
+var FAIXA_FERM = {
+  lager: { min: 10, max: 14, rotulo: "Ferm. lager 10–14 °C" },
+  ale:   { min: 18, max: 24, rotulo: "Ferm. ale 18–24 °C" }
+};
+var _ESTILOS_ALE   = /\b(ale|ipa|apa|neipa|stout|porter|weiss|weizen|witbier|wit|saison|bitter|tripel|dubbel|belgian|k[oö]lsch|altbier|alt|barley ?wine|sour|gose|berliner|blond[e]?)\b/i;
+var _ESTILOS_LAGER = /\b(lager|helles|pils(e|en|ner)?|export|dortmunder|bock|doppelbock|m[aä]rzen|vienna|dunkel|schwarz|keller|zwickel|rauch|oktoberfest|festbier|american lager)\b/i;
+function _familiaEstilo(estilo, regs){
+  var e = (estilo || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (_ESTILOS_ALE.test(e)) return "ale";
+  if (_ESTILOS_LAGER.test(e)) return "lager";
+  // sem pista no nome: mediana da temperatura de set da fermentação (≥ 16 °C → ale)
+  var sets = (regs || []).filter(function(r){ return r.tipo === "ferm" && r.tempSet !== "" && r.tempSet != null; })
+    .map(function(r){ return parseFloat(r.tempSet); }).filter(function(v){ return !isNaN(v); }).sort(function(a,b){ return a-b; });
+  if (sets.length && sets[Math.floor(sets.length/2)] >= 16) return "ale";
+  return "lager";
+}
 var FAIXAS_GRAFICO = [
-  { eixo: "yTemp", min: 10,  max: 14,  cor: "rgba(239,68,68,0.07)",  rotulo: "Ferm. 10–14 °C" },
+  { eixo: "yTemp", ferm: true, cor: "rgba(239,68,68,0.07)" },
   { eixo: "yKgf",  min: 0.8, max: 1.2, cor: "rgba(99,102,241,0.08)", rotulo: "Pressão 0,8–1,2" },
   { eixo: "yCO2",  min: 2.4, max: 2.7, cor: "rgba(16,185,129,0.12)", rotulo: "CO₂ 2,4–2,7" }
 ];
 var _pluginFaixas = {
   id: "faixasIdeais",
-  beforeDatasetsDraw: function(chart){
+  beforeDatasetsDraw: function(chart, args, opts){
     var ca = chart.chartArea, ctx = chart.ctx; if (!ca) return;
     ctx.save();
     FAIXAS_GRAFICO.forEach(function(f){
       var sc = chart.scales[f.eixo]; if (!sc) return;
+      if (f.ferm){ var ff = FAIXA_FERM[(opts && opts.familia) || "lager"]; f = { eixo:f.eixo, cor:f.cor, min:ff.min, max:ff.max, rotulo:ff.rotulo }; }
       var y1 = sc.getPixelForValue(f.max), y2 = sc.getPixelForValue(f.min);
       var top = Math.max(ca.top, Math.min(y1, y2)), bot = Math.min(ca.bottom, Math.max(y1, y2));
       if (bot <= top) return;
@@ -12781,6 +12799,7 @@ function _renderUmGraficoComChart(Chart, canvas, item) {
           responsive: true,
           interaction: { mode: "index", intersect: false },
           plugins: {
+            faixasIdeais: { familia: _familiaEstilo((regs[0] && regs[0].estilo) || "", regs) },
             legend: {
               labels: { color: tickColor, font: { size: 10 }, boxWidth: 14, padding: 10 }
             },
