@@ -44,6 +44,15 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.8 — 19/11/2026
+
+**Gráfico de registros mais alto**
+
+- Altura fixa de 320 a 460 px (≈ metade da tela), em vez de proporcional à
+  largura — escalas, marcas de 0,2 kgf e faixas ideais ficam legíveis
+
+---
+
 ## 3.10.7 — 19/11/2026
 
 **Faixa ideal de fermentação por família do estilo**

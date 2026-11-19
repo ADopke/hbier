@@ -3902,7 +3902,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.10.7";
+var VERSAO = "3.10.8";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12731,7 +12731,7 @@ function _renderUmGraficoComChart(Chart, canvas, item) {
       var abertas = [["°C",escT],["kgf",escK],["SG",escS],["CO₂",escC]].filter(function(x){ return x[1].aberta; }).map(function(x){ return x[0]; });
       // aviso quando a escala abriu neste lote
       var avisoId = canvas.id + "_escAviso", av = document.getElementById(avisoId);
-      if (!av){ av = document.createElement("div"); av.id = avisoId; av.style.cssText = "font-size:.72rem;color:#B45309;font-weight:700;margin-top:2px"; canvas.parentNode.insertBefore(av, canvas.nextSibling); }
+      if (!av){ av = document.createElement("div"); av.id = avisoId; av.style.cssText = "font-size:.72rem;color:#B45309;font-weight:700;margin-top:2px"; var wr = canvas.parentNode.classList.contains("reg-graf-wrap") ? canvas.parentNode : canvas; wr.parentNode.insertBefore(av, wr.nextSibling); }
       av.textContent = abertas.length ? "⚠ Escala ampliada neste lote (valores fora do padrão): "+abertas.join(", ") : "";
 
       var chart = new Chart(canvas, {
@@ -12797,6 +12797,7 @@ function _renderUmGraficoComChart(Chart, canvas, item) {
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,   // altura vem do contêiner (.reg-graf-wrap)
           interaction: { mode: "index", intersect: false },
           plugins: {
             faixasIdeais: { familia: _familiaEstilo((regs[0] && regs[0].estilo) || "", regs) },
@@ -13096,7 +13097,7 @@ function _renderUmGraficoComChart(Chart, canvas, item) {
           html += "<strong style='font-size:.75rem'>"+esc(loteMaisRecente||"—")+"</strong>";
         }
         html += "</div>";
-        html += "<canvas id='"+canvasId+"' height='110' style='width:100%;display:block'></canvas>";
+        html += "<div class='reg-graf-wrap' style='position:relative;width:100%;height:clamp(320px,52vh,460px)'><canvas id='"+canvasId+"'></canvas></div>";
         html += "</div>";
 
         // tabela por lote
