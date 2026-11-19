@@ -3902,7 +3902,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.10.5";
+var VERSAO = "3.10.6";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12625,6 +12625,51 @@ function _renderRegistrosGraficos(lista){
   });
 }
 
+// ── Escalas fixas do gráfico de registros (iguais para todos os estilos) ──
+// Se algum valor do lote sair da faixa, a escala abre só naquele gráfico.
+var ESCALA_GRAFICO = {
+  yTemp: { min: -2,    max: 30,    passo: 2,     casas: 0 },
+  yKgf:  { min: 0,     max: 3,     passo: 0.2,   casas: 1 },
+  ySG:   { min: 1.000, max: 1.060, passo: 0.010, casas: 3 },
+  yCO2:  { min: 0,     max: 3.5,   passo: 0.5,   casas: 1 }
+};
+// Faixas ideais pintadas no fundo (ajustáveis aqui)
+var FAIXAS_GRAFICO = [
+  { eixo: "yTemp", min: 10,  max: 14,  cor: "rgba(239,68,68,0.07)",  rotulo: "Ferm. 10–14 °C" },
+  { eixo: "yKgf",  min: 0.8, max: 1.2, cor: "rgba(99,102,241,0.08)", rotulo: "Pressão 0,8–1,2" },
+  { eixo: "yCO2",  min: 2.4, max: 2.7, cor: "rgba(16,185,129,0.12)", rotulo: "CO₂ 2,4–2,7" }
+];
+var _pluginFaixas = {
+  id: "faixasIdeais",
+  beforeDatasetsDraw: function(chart){
+    var ca = chart.chartArea, ctx = chart.ctx; if (!ca) return;
+    ctx.save();
+    FAIXAS_GRAFICO.forEach(function(f){
+      var sc = chart.scales[f.eixo]; if (!sc) return;
+      var y1 = sc.getPixelForValue(f.max), y2 = sc.getPixelForValue(f.min);
+      var top = Math.max(ca.top, Math.min(y1, y2)), bot = Math.min(ca.bottom, Math.max(y1, y2));
+      if (bot <= top) return;
+      ctx.fillStyle = f.cor; ctx.fillRect(ca.left, top, ca.right - ca.left, bot - top);
+      ctx.fillStyle = "rgba(107,114,128,0.85)"; ctx.font = "9px sans-serif"; ctx.textBaseline = "top";
+      ctx.fillText(f.rotulo, ca.left + 4, top + 2);
+    });
+    ctx.restore();
+  }
+};
+function _escalaEixo(eixo, dados){
+  var e = ESCALA_GRAFICO[eixo], vals = dados.filter(function(v){ return v != null && !isNaN(v); });
+  var mn = e.min, mx = e.max;
+  if (vals.length){
+    var dmn = Math.min.apply(null, vals), dmx = Math.max.apply(null, vals);
+    if (dmn < mn) mn = Math.floor(dmn / e.passo) * e.passo;      // abre só neste lote
+    if (dmx > mx) mx = Math.ceil(dmx / e.passo) * e.passo;
+  }
+  return {
+    min: +mn.toFixed(4), max: +mx.toFixed(4), aberta: (mn !== e.min || mx !== e.max),
+    ticks: { stepSize: e.passo, callback: function(v){ return Number(v).toLocaleString("pt-BR",{minimumFractionDigits:e.casas, maximumFractionDigits:e.casas}); } }
+  };
+}
+
 function _renderUmGraficoComChart(Chart, canvas, item) {
       var regs = item.regsAsc;
       var labels   = [];
@@ -12661,8 +12706,19 @@ function _renderUmGraficoComChart(Chart, canvas, item) {
       var tooltipBg  = isDark ? "#1F2937" : "#FFFFFF";
       var tooltipFg  = isDark ? "#F9FAFB" : "#111827";
 
+      var escT  = _escalaEixo("yTemp", dataTempReal.concat(dataTempSet));
+      var escK  = _escalaEixo("yKgf",  dataKgf);
+      var escS  = _escalaEixo("ySG",   dataSG);
+      var escC  = _escalaEixo("yCO2",  dataCO2);
+      var abertas = [["°C",escT],["kgf",escK],["SG",escS],["CO₂",escC]].filter(function(x){ return x[1].aberta; }).map(function(x){ return x[0]; });
+      // aviso quando a escala abriu neste lote
+      var avisoId = canvas.id + "_escAviso", av = document.getElementById(avisoId);
+      if (!av){ av = document.createElement("div"); av.id = avisoId; av.style.cssText = "font-size:.72rem;color:#B45309;font-weight:700;margin-top:2px"; canvas.parentNode.insertBefore(av, canvas.nextSibling); }
+      av.textContent = abertas.length ? "⚠ Escala ampliada neste lote (valores fora do padrão): "+abertas.join(", ") : "";
+
       var chart = new Chart(canvas, {
         type: "line",
+        plugins: [_pluginFaixas],
         data: {
           labels: labels,
           datasets: [
@@ -12743,28 +12799,30 @@ function _renderUmGraficoComChart(Chart, canvas, item) {
             },
             yTemp: {
               type: "linear", position: "left",
+              min: escT.min, max: escT.max,
               title: { display: true, text: "°C", color: tickColor, font: { size: 9 } },
-              ticks: { color: "#EF4444", font: { size: 9 } },
+              ticks: { color: "#EF4444", font: { size: 9 }, stepSize: escT.ticks.stepSize, callback: escT.ticks.callback },
               grid:  { color: gridColor }
             },
             yKgf: {
               type: "linear", position: "right",
+              min: escK.min, max: escK.max,
               title: { display: true, text: "kgf", color: tickColor, font: { size: 9 } },
-              ticks: { color: "#6366F1", font: { size: 9 } },
+              ticks: { color: "#6366F1", font: { size: 9 }, stepSize: escK.ticks.stepSize, callback: escK.ticks.callback, autoSkip: false },
               grid:  { drawOnChartArea: false }
             },
             ySG: {
               type: "linear", position: "right",
-              suggestedMin: 0.990, suggestedMax: 1.110,
+              min: escS.min, max: escS.max,
               title: { display: true, text: "SG", color: tickColor, font: { size: 9 } },
-              ticks: { color: "#06B6D4", font: { size: 9 } },
+              ticks: { color: "#06B6D4", font: { size: 9 }, stepSize: escS.ticks.stepSize, callback: escS.ticks.callback },
               grid:  { drawOnChartArea: false }
             },
             yCO2: {
               type: "linear", position: "right",
-              suggestedMin: 0, suggestedMax: 5,
+              min: escC.min, max: escC.max,
               title: { display: true, text: "CO₂ vol", color: tickColor, font: { size: 9 } },
-              ticks: { color: "#10B981", font: { size: 9 } },
+              ticks: { color: "#10B981", font: { size: 9 }, stepSize: escC.ticks.stepSize, callback: escC.ticks.callback },
               grid:  { drawOnChartArea: false }
             }
           }

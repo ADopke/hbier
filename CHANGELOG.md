@@ -44,6 +44,20 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.6 — 19/11/2026
+
+**Gráfico de Registros de Fermentação e Maturação com escala fixa**
+
+- Escalas fixas, iguais para todos os estilos e lotes:
+  temperatura −2 a 30 °C (a cada 2), pressão 0 a 3 kgf/cm² (a cada 0,2),
+  densidade 1,000 a 1,060 (a cada 0,010), CO₂ 0 a 3,5 vol (a cada 0,5)
+- Valor fora da faixa: a escala abre só naquele lote, com aviso
+  "⚠ Escala ampliada neste lote"
+- Faixas ideais pintadas no fundo: fermentação 10–14 °C, pressão 0,8–1,2,
+  CO₂ 2,4–2,7 (valores iniciais, ajustáveis em FAIXAS_GRAFICO)
+
+---
+
 ## 3.10.5 — 18/11/2026
 
 **Planejador: desfazer um lançamento**
