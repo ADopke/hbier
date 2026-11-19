@@ -44,6 +44,19 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.10.12 — 19/11/2026
+
+**Gráfico da Ficha de Produção igual ao dos Registros**
+
+- Aba Gráficos da ficha passa a usar o mesmo gráfico dos Registros de
+  Fermentação e Maturação: temperatura real/set, pressão, SG (ferm) e CO₂
+  (matur), com as escalas fixas, faixas ideais (lager/ale), tooltip com SG
+  de 3 casas e aviso de escala ampliada
+- Usa as leituras da ficha aberta, inclusive as ainda não salvas
+- Substitui o gráfico desenhado à mão (fundo escuro)
+
+---
+
 ## 3.10.11 — 19/11/2026
 
 **Busca por lote nos Registros de Fermentação e Maturação**
