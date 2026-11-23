@@ -3411,6 +3411,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
               <input type="text" id="resOg" placeholder="Ex.: 1.048"
                 style="width:100%;padding:9px;border:1.5px solid var(--linha);
                 border-radius:8px;font-size:.9rem">
+              <div id="resOgHint" style="font-size:.72rem;color:var(--muted);margin-top:3px"></div>
             </div>
             <div>
               <label style="font-size:.79rem;font-weight:600;display:block;margin-bottom:4px">
@@ -3910,7 +3911,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.11.0";
+var VERSAO = "3.11.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -9101,6 +9102,8 @@ $("progLista").addEventListener("click", function(ev){
   // reset volume brassado: volta a ser editável ao abrir o modal
   if($("resVolume")){ $("resVolume").readOnly=false; $("resVolume").style.background=""; $("resVolume").style.cursor=""; $("resVolume").title=""; $("resVolume")._editadoManual=false; }
   if($("resVolumeHint")) $("resVolumeHint").textContent="";
+  if($("resOg")){ $("resOg").readOnly=false; $("resOg").style.background=""; $("resOg").style.cursor=""; $("resOg").title=""; }
+  if($("resOgHint")) $("resOgHint").textContent="";
   // preencher excedente padrão por formato
   if($("resExcedenteMl") && isEnvase) {
     var fmt = (_resItem.formato||"").toUpperCase();
@@ -9143,6 +9146,38 @@ $("progLista").addEventListener("click", function(ev){
             var hint = document.getElementById("resVolumeHint");
             if(hint) hint.textContent = partes.join(" + ")+" = "+total.toFixed(0)+" L";
           }
+        }
+        // ── OG: média das bateladas, ponderada pelo volume de cada uma ──
+        var ogs = [], semOg = [];
+        ficha.bateladas.forEach(function(bat, i){
+          var og = parseFloat(String(bat.ogReal == null ? "" : bat.ogReal).replace(",", "."));
+          if (!(og > 0.98 && og < 1.2) && Array.isArray(bat.volumes)){
+            // fichas antigas: OG real fica entre os campos de volume (único valor entre 0.98 e 1.2)
+            bat.volumes.some(function(v){ var n = parseFloat(String(v||"").replace(",", ".")); if (n > 0.98 && n < 1.2){ og = n; return true; } return false; });
+          }
+          var vol = parseFloat(bat.volResult);
+          if (og > 0.98 && og < 1.2) ogs.push({ i:i+1, og:og, vol:(vol > 0 ? vol : 0) });
+          else semOg.push(i+1);
+        });
+        if (ogs.length && $("resOg") && !$("resOg").value){
+          var somaV = ogs.reduce(function(a,x){ return a + x.vol; }, 0);
+          var media = somaV > 0 && ogs.every(function(x){ return x.vol > 0; })
+            ? ogs.reduce(function(a,x){ return a + x.og * x.vol; }, 0) / somaV
+            : ogs.reduce(function(a,x){ return a + x.og; }, 0) / ogs.length;
+          var ponderada = somaV > 0 && ogs.every(function(x){ return x.vol > 0; });
+          $("resOg").value = media.toFixed(3);
+          var hOg = document.getElementById("resOgHint");
+          if (!semOg.length){
+            $("resOg").readOnly = true;
+            $("resOg").style.background = "var(--fp-bg3, #f5f5f5)";
+            $("resOg").style.cursor = "default";
+            $("resOg").title = "Média "+(ponderada?"ponderada pelo volume ":"")+"das OG das bateladas da ficha";
+          }
+          if (hOg) hOg.innerHTML = ogs.map(function(x){ return "Bat."+x.i+": "+x.og.toFixed(3)+(ponderada?" ("+x.vol+" L)":""); }).join(" + ")+
+            " → média"+(ponderada?" ponderada":"")+" <b>"+media.toFixed(3)+"</b>"+
+            (semOg.length ? " <span style='color:#B45309;font-weight:700'>· sem OG na Bat. "+semOg.join(", ")+" (confira)</span>" : "");
+        } else if (!ogs.length && semOg.length && document.getElementById("resOgHint")) {
+          document.getElementById("resOgHint").innerHTML = "<span style='color:#B45309'>Nenhuma batelada com OG real na ficha — digite a OG.</span>";
         }
       }).catch(function(){ _resBatStatus = null; });
     }
@@ -15420,7 +15455,9 @@ function fp_simSave(btn){
         });
         var volResultEl = card.querySelector('.fp-bat-vol-result');
         var volResult = volResultEl && volResultEl.value ? parseFloat(volResultEl.value) : null;
-        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog, volResult: volResult };
+        var ogEl = card.querySelector('.fp-og-real');
+        var ogReal = ogEl && ogEl.value ? parseFloat(String(ogEl.value).replace(',', '.')) : null;
+        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog, volResult: volResult, ogReal: ogReal };
       });
     })(),
     sais:        coletarTabela('fp-tbl-sais'),

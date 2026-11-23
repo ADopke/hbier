@@ -44,6 +44,21 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.11.1 — 23/11/2026
+
+**OG do resultado da brassagem calculada das bateladas**
+
+- No Resultado da brassagem, a OG vem preenchida com a média das OG reais das
+  bateladas da ficha, **ponderada pelo volume** de cada uma
+  (ex.: Bat.1: 1.048 (1100 L) + Bat.2: 1.046 (1150 L) → média 1.047)
+- Com todas as bateladas com OG, o campo fica travado como o volume; se
+  faltar OG em alguma, preenche com as disponíveis, avisa qual falta e deixa
+  editar
+- Ficha passa a gravar `ogReal` em cada batelada (fichas antigas: a OG é
+  localizada entre os campos da batelada)
+
+---
+
 ## 3.11.0 — 19/11/2026
 
 **Sigla do lote por estilo (Munich Helles → HELLES)**
