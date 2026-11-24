@@ -44,6 +44,23 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.12.1 — 24/11/2026
+
+**Painel de Produções: status e fim do lote pelo tanque**
+
+- Status de cada lote vem da aba Tanques: lote no tanque agora = estágio do
+  tanque (fermentando / maturando / pronto); lote zerado = Encerrado. Antes
+  vinha do campo status da ficha, quase sempre vazio → tudo "Fermentando"
+- Sem tanque nem zerado: usa o status da ficha; lote com mais de 40 dias sem
+  registro vira Encerrado ("sem zerado")
+- Barra termina no **zerado do tanque** (fim real); lote ainda no tanque vai
+  até hoje; sem zerado, até o último envase (antes: +28 dias fixos)
+- Abaixo do status: tanque e data do zerado (ex.: "TQ05 · zerado 21/11")
+- "Ativos" passa a contar só lotes realmente no tanque
+- Nova rota `GET /api/tanques?acao=lotesStatus`
+
+---
+
 ## 3.12.0 — 24/11/2026
 
 **Programação (semana): layout compacto**

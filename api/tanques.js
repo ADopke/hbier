@@ -497,6 +497,29 @@ export default protegido(async function handler(req, res) {
       return res.json({ ok: true, historico: hist });
     }
 
+    // Rota especial: ?acao=lotesStatus → situação de cada lote pelo tanque
+    //   lote no tanque agora: estágio do tanque · lote zerado: encerrado + data do zerado
+    if (url.searchParams.get("acao") === "lotesStatus") {
+      const mapa = {};
+      const norm = (l) => String(l || "").toUpperCase().replace(/\s+/g, " ").trim();
+      const MAP_EST = { brassagem: "fermentando", fermentando: "fermentando", maturando: "maturando",
+                        critico: "pronto", pronto: "pronto", envasando: "pronto" };
+      const hists = await Promise.all(TANQUES.map((t) => ler(CHAVE_HIST(t.id)).then((h) => ({ t, h: h || [] }))));
+      hists.forEach(({ t, h }) => {
+        h.forEach((x) => {
+          const k = norm(x.lote); if (!k) return;
+          if (!mapa[k] || (x.encerradoEm || "") > (mapa[k].encerradoEm || ""))
+            mapa[k] = { status: "encerrado", tanque: t.nome || t.id, encerradoEm: x.encerradoEm || null, fechamento: x.tipoFechamento || "" };
+        });
+      });
+      tanquesEstado.forEach((tq) => {
+        const k = norm(tq.lote); if (!k) return;
+        const st = MAP_EST[tq.estagio];
+        if (st) mapa[k] = { status: st, tanque: tq.nome, estagioLabel: tq.estagioLabel || "", diasTanque: tq.diasTanque || 0 };
+      });
+      return res.json({ ok: true, lotes: mapa });
+    }
+
     // Rota especial: ?acao=auditoria  (admin/gestor)
     if (url.searchParams.get("acao") === "auditoria") {
       if (!["admin", "gestor"].includes(sessao.papel))

@@ -3950,7 +3950,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.12.0";
+var VERSAO = "3.12.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7971,10 +7971,25 @@ async function carregarPainelProducoes(){
     });
   }catch(e){}
 
+  // ── situação real de cada lote pelo tanque (estágio atual ou zerado) ──
+  var stTanque = {};
+  try{ var rT = await api("/api/tanques?acao=lotesStatus"); stTanque = (rT && rT.lotes) || {}; }catch(e){}
+  function _kLote(l){ return String(l||"").toUpperCase().replace(/\s+/g," ").trim(); }
+  var limiteAntigo = toISO(new Date(hoje.getTime() - 40*86400000));
+  // status: 1) tanque (agora / zerado)  2) ficha  3) lote antigo sem tanque → encerrado
+  lotes.forEach(function(f){
+    var t = stTanque[_kLote(f.lote)];
+    if (t){ f._st = t.status; f._fim = t.encerradoEm ? String(t.encerradoEm).slice(0,10) : null; f._tq = t.tanque; f._fonte = "tanque"; return; }
+    var stF = (f.status||"").toLowerCase();
+    if (stF && stF !== "em andamento" && stF !== "ativo"){ f._st = null; f._fonte = "ficha"; return; }
+    if (f.dataInicio && f.dataInicio < limiteAntigo){ f._st = "encerrado"; f._fonte = "antigo"; return; }
+    f._st = null; f._fonte = "ficha";
+  });
   // ── normalização de status ──
   var STATUS_MAP={"em andamento":"fermentando","ativo":"fermentando","fermentando":"fermentando",
     "maturando":"maturando","pronto":"pronto","encerrado":"encerrado","concluido":"encerrado"};
-  function normStatus(s){
+  function normStatus(s, f){
+    if(f && f._st) return f._st;
     if(!s) return "fermentando";
     var sl=s.toLowerCase().replace(/[áà]/g,"a").replace(/ê/g,"e").replace(/ç/g,"c").replace(/[ã]/g,"a");
     return STATUS_MAP[sl]||sl;
@@ -7983,7 +7998,7 @@ async function carregarPainelProducoes(){
 
   // ── filtro de período — lotes ativos NUNCA são descartados por data ──
   var lotesFilt=lotes.filter(function(f){
-    var stNorm=normStatus(f.status);
+    var stNorm=normStatus(f.status,f);
     if(STATUS_ATIVO[stNorm]||STATUS_ATIVO[f.status]) return true;
     var dtI=f.dataInicio;
     if(dtI){ var d=new Date(dtI+"T00:00:00"); if(d>=limiteInicio) return true; }
@@ -8011,7 +8026,7 @@ async function carregarPainelProducoes(){
 
   // ── aplicar filtros de estilo, status e tipo de envase ──
   if(estiloFilt) lotesFilt=lotesFilt.filter(function(f){ return (f.estilo||"")===estiloFilt; });
-  if(statusFilt!=="todos") lotesFilt=lotesFilt.filter(function(f){ return normStatus(f.status)===statusFilt; });
+  if(statusFilt!=="todos") lotesFilt=lotesFilt.filter(function(f){ return normStatus(f.status,f)===statusFilt; });
   if(tipoEnv==="pet")    lotesFilt=lotesFilt.filter(function(f){ return !!(mapaEnvPET[f.lote]&&mapaEnvPET[f.lote].length); });
   if(tipoEnv==="barril") lotesFilt=lotesFilt.filter(function(f){ return !!(mapaEnvBarril[f.lote]&&mapaEnvBarril[f.lote].length); });
 
@@ -8025,7 +8040,7 @@ async function carregarPainelProducoes(){
   var nBrass=lotesFilt.length;
   var nEnvPET=lotesFilt.reduce(function(s,f){ return s+(mapaEnvPET[f.lote]||[]).length; },0);
   var nEnvBar=lotesFilt.reduce(function(s,f){ return s+(mapaEnvBarril[f.lote]||[]).length; },0);
-  var nAtivos=lotesFilt.filter(function(f){ var st=normStatus(f.status); return st==="fermentando"||st==="maturando"||st==="pronto"; }).length;
+  var nAtivos=lotesFilt.filter(function(f){ var st=normStatus(f.status,f); return st==="fermentando"||st==="maturando"||st==="pronto"; }).length;
   if(resumoEl) resumoEl.innerHTML=
     "<span class='pp-resumo-chip'>🍺 <strong>"+nBrass+"</strong> brassagens</span>"+
     "<span class='pp-resumo-chip'>📦 PET <strong>"+nEnvPET+"</strong></span>"+
@@ -8085,14 +8100,17 @@ async function carregarPainelProducoes(){
   lotesFilt.forEach(function(f){
     var lote=f.lote||"?";
     var estilo=f.estilo||"";
-    var st=normStatus(f.status);
+    var st=normStatus(f.status,f);
     var cor=corStatus(st);
     var d1=f.dataInicio||toISO(hoje);
-    var d2=toISO(new Date(new Date(d1+"T00:00:00").getTime()+28*86400000));
-    // última data de envase como fim da barra
+    // fim da barra: zerado do tanque (fim real) → lote ainda no tanque: hoje → senão último envase
     var envsP=mapaEnvPET[lote]||[]; var envsB=mapaEnvBarril[lote]||[];
     var todasDatas=envsP.map(function(e){return e.data;}).concat(envsB.map(function(e){return e.data;})).filter(Boolean).sort();
-    if(todasDatas.length) d2=todasDatas[todasDatas.length-1];
+    var d2;
+    if (f._fim) d2 = f._fim;
+    else if (st==="fermentando"||st==="maturando"||st==="pronto") d2 = toISO(hoje);
+    else if (todasDatas.length) d2 = todasDatas[todasDatas.length-1];
+    else d2 = toISO(new Date(new Date(d1+"T00:00:00").getTime()+15*86400000));
     var startPct=pct(d1), widthPct=largPct(d1,d2);
 
     var dotsPET="";
@@ -8112,7 +8130,10 @@ async function carregarPainelProducoes(){
           "<div class='pp-lote-nome'>"+esc(lote)+"</div>"+
           "<div class='pp-estilo-tag'>"+esc(estilo)+"</div>"+
         "</td>"+
-        "<td style='min-width:90px'>"+badgeStatus(st)+"</td>"+
+        "<td style='min-width:90px'>"+badgeStatus(st)+
+          (f._fonte==="tanque" && f._tq ? "<div style='font-size:.65rem;color:var(--muted);margin-top:2px'>"+esc(f._tq)+(f._fim?" · zerado "+fmtData(f._fim).slice(0,5):"")+"</div>"
+           : f._fonte==="antigo" ? "<div style='font-size:.65rem;color:var(--muted);margin-top:2px' title='Sem registro de zerado; lote com mais de 40 dias'>sem zerado</div>" : "")+
+        "</td>"+
         "<td style='min-width:200px;width:60%'>"+
           "<div class='pp-bar-wrap' style='background:var(--cinza)'>"+
             "<div class='pp-bar' style='left:"+startPct.toFixed(1)+"%;width:"+widthPct.toFixed(1)+"%;"
@@ -8149,7 +8170,7 @@ async function carregarPainelProducoes(){
   lotesFilt.forEach(function(f){
     var lote=f.lote||"?";
     var estilo=f.estilo||"";
-    var st=normStatus(f.status);
+    var st=normStatus(f.status,f);
     var envsP=mapaEnvPET[lote]||[]; var envsB=mapaEnvBarril[lote]||[];
     var envPETStr=envsP.length
       ? envsP.map(function(e){ return fmtData(e.data)+(e.qtd?" ("+esc(e.qtd)+")":""); }).join(", ")
