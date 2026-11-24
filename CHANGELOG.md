@@ -44,6 +44,15 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.11.2 — 24/11/2026
+
+**Lote nas brassagens da Programação**
+
+- Card de brassagem da lista semanal mostra "Lote: HELLES 77/26T03" antes do
+  tanque e do volume previsto (também na busca por lote)
+
+---
+
 ## 3.11.1 — 23/11/2026
 
 **OG do resultado da brassagem calculada das bateladas**

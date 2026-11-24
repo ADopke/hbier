@@ -3911,7 +3911,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.11.1";
+var VERSAO = "3.11.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6193,6 +6193,7 @@ async function carregarProg(){
 
       if(tipo === "brassagem"){
         icone = "🍺"; cor = "var(--verde)"; tag = "Brassagem";
+        if(it.lote)    detalhe += "<span class='item-desc' style='font-weight:700'>Lote: "+esc(it.lote)+"</span> ";
         if(it.tanque)  detalhe += "<span class='item-desc'>Tanque: "+esc(it.tanque)+"</span> ";
         if(it.volPrev) detalhe += "<span class='item-desc' style='color:var(--verde);font-weight:600'>Prev: "+esc(it.volPrev)+" L</span> ";
         if(it.resultado){
@@ -6695,7 +6696,8 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
       if (it.formato)      detalhe += "<span class='item-desc'>"+esc(it.formato)+"</span> ";
       if (it.qtd)          detalhe += "<span class='item-desc'>Prev: "+esc(it.qtd)+"</span>";
     } else {
-      if (it.tanque)   detalhe += "<span class='item-desc'>Tanque: "+esc(it.tanque)+"</span>";
+      if (it.lote)     detalhe += "<span class='item-desc' style='font-weight:700;color:var(--fg)'>Lote: "+esc(it.lote)+"</span> ";
+      if (it.tanque)   detalhe += "<span class='item-desc'>Tanque: "+esc(it.tanque)+"</span> ";
       if (it.volPrev)  detalhe += "<span class='item-desc' style='color:var(--verde);font-weight:600'>Prev: "+esc(it.volPrev)+" L</span>";
     }
 
