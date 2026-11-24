@@ -44,6 +44,21 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.11.3 — 24/11/2026
+
+**Planejador: ciclo mínimo e antecipação (sextas-feiras)**
+
+- Novo parâmetro "Ciclo mínimo no tanque (dias)" — padrão 10, editável
+- Quando o ciclo máximo vence no fim de semana/feriado ou num dia sem
+  bateladas livres, a brassagem é **antecipada** (do dia mais tarde ao mais
+  cedo, sem passar do mínimo) antes de ser adiada — ex.: vence no sábado →
+  sexta. Antes, tudo ia para segunda e as sextas ficavam vazias
+- Resumo dos parâmetros mostra o ciclo como faixa (ex.: "ciclo 10–12d")
+- Tanque de dois dias (TQ05) só usa dias seguidos de calendário — não começa
+  na sexta e termina na segunda
+
+---
+
 ## 3.11.2 — 24/11/2026
 
 **Lote nas brassagens da Programação**

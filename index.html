@@ -3911,7 +3911,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.11.2";
+var VERSAO = "3.11.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -7081,7 +7081,7 @@ function _ddepTanqueMudou(sel){
 //  PLANEJADOR DE BRASSAGENS (v3.10.0)
 // ══════════════════════════════════════════════════════════════
 var _cfgPlan = null;
-var CFG_PLAN_PADRAO = { cicloDias:15, intervaloDias:1, bateladasDia:6, litrosBatelada:1450, brassaSabado:false, bateladasTanque:{ TQ05:9 } };
+var CFG_PLAN_PADRAO = { cicloDias:15, cicloMinDias:10, intervaloDias:1, bateladasDia:6, litrosBatelada:1450, brassaSabado:false, bateladasTanque:{ TQ05:9 } };
 // bateladas para encher o tanque: valor do parâmetro por tanque, senão capacidade ÷ L/batelada (arredondado)
 function _batTanque(cfg, nome, cap){
   var o = (cfg && cfg.bateladasTanque) || {}, v = +o[_tqNorm(nome)];
@@ -7107,6 +7107,7 @@ function _addDias(iso, n){ var d = new Date(iso+"T00:00:00"); d.setDate(d.getDat
    p = { ano, mes(0-11), cfg, tanques, existentes:[{dataISO,tanque,estilo,litros}], demanda:{estilo:L}, meta, hoje, lotes:[str] } */
 function _planejarMes(p){
   var cfg = p.cfg, ciclo = +cfg.cicloDias, intv = +cfg.intervaloDias;
+  var cicloMin = Math.min(ciclo, +cfg.cicloMinDias || ciclo);
   var batDia = +cfg.bateladasDia, Lb = +cfg.litrosBatelada, dailyL = batDia * Lb;
   var ini = p.ano+"-"+("0"+(p.mes+1)).slice(-2)+"-01";
   var fimD = new Date(p.ano, p.mes+1, 0);
@@ -7139,15 +7140,25 @@ function _planejarMes(p){
     if (base && livre < p.hoje && t.estagio !== "livre")
       avisos.push(t.nome+": lote atual ("+(t.lote||"")+") passa do limite de "+ciclo+" dias — tanque considerado livre a partir de hoje.");
     if (livre < desde) livre = desde;
-    return { nome:t.nome, cap:+t.capacidade, livre:livre, bat:_batTanque(cfg, t.nome, t.capacidade) };
+    var livreMin = base ? _addDias(base, cicloMin + intv) : desde;
+    if (livreMin < desde) livreMin = desde;
+    return { nome:t.nome, cap:+t.capacidade, livre:livre, livreMin:livreMin, bat:_batTanque(cfg, t.nome, t.capacidade) };
   });
   // onde cabe uma brassagem de 'vol' L no tanque t: primeiro dia ≥ livre, bateladas em dias úteis seguidos
   function encaixe(t, vol){
     // bateladas proporcionais ao tanque (ex.: TQ05 14.000 L = 9 bat. → ~1.556 L cada; 6.000 L no TQ01 = 5 bat.)
     var porBat = t.cap / t.bat;
     var nb = vol >= t.cap * 0.97 ? t.bat : Math.max(1, Math.ceil(vol / porBat));
-    for (var i = 0; i < dias.length; i++){
-      if (dias[i].iso < t.livre || dias[i].livre <= 0) continue;
+    // ordem de tentativa: 1) o dia em que o ciclo máximo vence; 2) antecipar, do mais tarde ao mais
+    // cedo, sem passar do ciclo mínimo (ex.: vence no sábado → sexta, quinta…); 3) depois do vencimento
+    var ordem = [], iAlvo = dias.length;
+    for (var a = 0; a < dias.length; a++) if (dias[a].iso >= t.livre){ iAlvo = a; break; }
+    if (iAlvo < dias.length && dias[iAlvo].iso === t.livre) ordem.push(iAlvo);
+    for (var b = iAlvo - 1; b >= 0 && dias[b].iso >= (t.livreMin || t.livre); b--) ordem.push(b);
+    for (var c = (ordem[0] === iAlvo ? iAlvo + 1 : iAlvo); c < dias.length; c++) ordem.push(c);
+    for (var oi = 0; oi < ordem.length; oi++){
+      var i = ordem[oi];
+      if (dias[i].livre <= 0) continue;
       if (nb <= batDia){
         if (dias[i].livre >= nb) return { i:i, usa:[{i:i, q:nb}], nb:nb };
         continue;
@@ -7156,6 +7167,7 @@ function _planejarMes(p){
       var falta = nb, usa = [];
       for (var k = i; k < dias.length && falta > 0; k++){
         if (dias[k].livre <= 0) break;
+        if (k > i && dias[k].iso !== _addDias(dias[k-1].iso, 1)) break;   // dias seguidos de calendário (não atravessa fim de semana)
         var q = Math.min(falta, dias[k].livre); usa.push({i:k, q:q}); falta -= q;
       }
       if (falta <= 0) return { i:i, usa:usa, nb:nb };
@@ -7164,7 +7176,8 @@ function _planejarMes(p){
   }
   function reservar(t, enc, vol, estilo, selecionado){
     enc.usa.forEach(function(u){ dias[u.i].livre -= u.q; });
-    t.livre = _addDias(dias[enc.i].iso, ciclo + intv);
+    t.livre    = _addDias(dias[enc.i].iso, ciclo + intv);
+    t.livreMin = _addDias(dias[enc.i].iso, cicloMin + intv);
     return { dataISO: dias[enc.i].iso, dias: enc.usa.map(function(u){ return dias[u.i].iso; }), tanque: t.nome,
              litros: vol, cap: t.cap, bateladas: enc.nb, facult: dias[enc.i].facult, estilo: estilo, selecionado: selecionado };
   }
@@ -7345,6 +7358,7 @@ async function _abrirPlanejador(){
             "<summary style='cursor:pointer;font-weight:800'>⚙ Parâmetros da fábrica <span id='planCfgResumo' style='font-weight:400;color:var(--muted)'></span></summary>"+
             "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:8px'>"+
               "<label>Ciclo máx. no tanque (dias)<input type='number' id='planCiclo' min='5' max='60' style='width:100%;padding:6px;border:1.5px solid var(--linha);border-radius:6px'></label>"+
+              "<label>Ciclo mínimo no tanque (dias)<input type='number' id='planCicloMin' min='1' max='60' style='width:100%;padding:6px;border:1.5px solid var(--linha);border-radius:6px'></label>"+
               "<label>Intervalo p/ CIP (dias)<input type='number' id='planIntv' min='0' max='10' style='width:100%;padding:6px;border:1.5px solid var(--linha);border-radius:6px'></label>"+
               "<label>Bateladas por dia<input type='number' id='planBat' min='1' max='20' style='width:100%;padding:6px;border:1.5px solid var(--linha);border-radius:6px'></label>"+
               "<label>Litros finais por batelada<input type='number' id='planLBat' min='100' style='width:100%;padding:6px;border:1.5px solid var(--linha);border-radius:6px'></label>"+
@@ -7425,15 +7439,15 @@ function _planCfgPreencher(){
         "style='width:100%;padding:5px;border:1.5px solid var(--linha);border-radius:6px'></label>";
     }).join("") || "<span style='color:var(--muted);font-size:.78rem'>Carregando tanques…</span>";
   }
-  $("planCiclo").value = c.cicloDias; $("planIntv").value = c.intervaloDias; $("planBat").value = c.bateladasDia;
+  $("planCiclo").value = c.cicloDias; $("planCicloMin").value = c.cicloMinDias || c.cicloDias; $("planIntv").value = c.intervaloDias; $("planBat").value = c.bateladasDia;
   $("planLBat").value = c.litrosBatelada; $("planSab").checked = !!c.brassaSabado;
-  $("planCfgResumo").textContent = "— ciclo "+c.cicloDias+"d · CIP "+c.intervaloDias+"d · "+c.bateladasDia+" bat/dia × "+fmtNum(c.litrosBatelada)+" L = "+fmtNum(c.bateladasDia*c.litrosBatelada)+" L/dia"+(c.brassaSabado?" · sábado":"");
+  $("planCfgResumo").textContent = "— ciclo "+(c.cicloMinDias && c.cicloMinDias < c.cicloDias ? c.cicloMinDias+"–" : "")+c.cicloDias+"d · CIP "+c.intervaloDias+"d · "+c.bateladasDia+" bat/dia × "+fmtNum(c.litrosBatelada)+" L = "+fmtNum(c.bateladasDia*c.litrosBatelada)+" L/dia"+(c.brassaSabado?" · sábado":"");
 }
 function _planCfgLer(){
   var bt = {}, sg = {};
   document.querySelectorAll(".plan-battq").forEach(function(el){ var v = +el.value; if (v >= 1) bt[el.dataset.tq] = v; });
   document.querySelectorAll(".plan-sigla").forEach(function(el){ var v = (el.value||"").trim().toUpperCase(); if (v) sg[el.dataset.est] = v; });
-  return { cicloDias:+$("planCiclo").value, intervaloDias:+$("planIntv").value, bateladasDia:+$("planBat").value,
+  return { cicloDias:+$("planCiclo").value, cicloMinDias:Math.min(+$("planCicloMin").value || +$("planCiclo").value, +$("planCiclo").value), intervaloDias:+$("planIntv").value, bateladasDia:+$("planBat").value,
            litrosBatelada:+$("planLBat").value, brassaSabado:$("planSab").checked, bateladasTanque: bt, siglas: sg };
 }
 function _planDemLinha(estilo, litros){
@@ -7522,7 +7536,7 @@ async function _planCalcular(){
       "<div style='font-size:.72rem;color:var(--muted);margin-top:6px'>Marcadas = necessárias para atingir a necessidade/meta; as demais mostram a capacidade extra do mês. "+
         "Estilos menores usam o volume da necessidade no menor tanque que comporta; o estilo principal enche os tanques. "+
         "Capacidade diária em bateladas ("+cfg.bateladasDia+"/dia) — dá para brassar mais de um lote no mesmo dia. "+
-        "Cada tanque volta a ficar livre "+cfg.cicloDias+" + "+cfg.intervaloDias+" dias depois da brassagem.</div>"+
+        "Cada tanque volta a ficar livre "+cfg.cicloDias+" + "+cfg.intervaloDias+" dias depois da brassagem; se esse dia cair no fim de semana/feriado ou estiver cheio, a brassagem é antecipada (até o ciclo mínimo de "+cfg.cicloMinDias+" dias) antes de ser adiada.</div>"+
       (["admin","gestor"].includes(sessao.papel) ? "<button type='button' id='planProgramar' class='btn mini' style='margin-top:10px;padding:9px 16px'>✅ Programar selecionadas</button>" : "");
     res.innerHTML = html;
     res.querySelectorAll(".plan-est").forEach(function(el){
