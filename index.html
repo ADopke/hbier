@@ -504,6 +504,45 @@
     flex-shrink:0;
   }
   .prog-dia-sep:first-child{ margin-top:4px; }
+  /* ── Programação: layout compacto (v3.12.0) ── */
+  .prog-toolbar{ position:sticky; top:0; z-index:20; background:var(--card,#fff); border-bottom:1px solid var(--linha);
+    padding:8px 14px 6px; display:flex; flex-direction:column; gap:6px; box-shadow:0 2px 6px rgba(0,0,0,.05); }
+  .pt-linha{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .pt-dias{ flex-wrap:nowrap; overflow-x:auto; }
+  .pt-dia{ flex:0 0 auto; border:1.5px solid var(--linha); background:#fff; border-radius:8px; padding:4px 10px; cursor:pointer;
+    font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:.86rem; letter-spacing:.03em; display:flex; flex-direction:column; align-items:center; line-height:1.1; color:var(--fg); }
+  .pt-dia small{ font-family:inherit; font-weight:600; font-size:.7rem; color:var(--muted); }
+  .pt-dia.hoje{ border-color:var(--verde); background:var(--verde); color:#fff; }
+  .pt-dia.hoje small{ color:#D1FAE5; }
+  .pt-dia.atr{ border-color:#DC2626; }
+  .pt-dia.atr small{ color:#DC2626; }
+  .pt-btn{ border:1.5px solid var(--linha); background:#fff; border-radius:16px; padding:3px 11px; font-size:.76rem; font-weight:700; cursor:pointer; color:var(--fg); }
+  .pt-btn.on{ background:#1E3A8A; border-color:#1E3A8A; color:#fff; }
+  .prog-compacto .pdia{ scroll-margin-top:110px; margin-bottom:6px; }
+  .prog-compacto .pdia-head{ cursor:pointer; display:flex; align-items:center; gap:8px; user-select:none; }
+  .prog-compacto .pdia-info{ margin-left:auto; font-family:'Barlow',sans-serif; font-size:.72rem; font-weight:600; letter-spacing:0; text-transform:none; opacity:.9; }
+  .prog-compacto .pdia-info .atr{ color:#FCA5A5; } .prog-compacto .pdia-info .pnd{ color:#FDE68A; }
+  .prog-compacto .pdia-seta{ display:inline-block; transition:transform .15s; }
+  .prog-compacto .pdia.fechado .pdia-seta{ transform:rotate(-90deg); }
+  .prog-compacto .pdia.fechado .pdia-corpo{ display:none; }
+  .prog-compacto .pdia.hoje .pdia-head{ box-shadow:inset 4px 0 0 #22C55E; }
+  .prog-compacto .pdia.hoje .pdia-corpo{ outline:2px solid #22C55E; outline-offset:-2px; border-radius:0 0 8px 8px; }
+  .prog-compacto .prog-item:not(.prog-item-limpeza){ cursor:pointer; }
+  .prog-compacto .prog-item:not(.aberto) .checks-lancamento,
+  .prog-compacto .prog-item:not(.aberto) .prog-tarefas-vinc,
+  .prog-compacto .prog-item:not(.aberto) .prog-barreis,
+  .prog-compacto .prog-item:not(.aberto) .prog-resultado,
+  .prog-compacto .prog-item:not(.aberto) .btn-linha,
+  .prog-compacto .prog-item:not(.aberto) .prog-por{ display:none !important; }
+  .prog-compacto .prog-item:not(.aberto):not(.prog-item-limpeza) .prog-main{ padding-top:6px; padding-bottom:6px; }
+  .prog-compacto .prog-item.aberto .pc-atalho{ display:none; }
+  .pc-resumo{ display:none; }
+  .prog-compacto .pc-resumo{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:6px; }
+  .pc-chip{ font-size:.72rem; font-weight:700; border-radius:12px; padding:2px 9px; background:#F3F4F6; color:#374151; }
+  .pc-chip.ok{ background:#DCFCE7; color:#166534; } .pc-chip.pend{ background:#FEF3C7; color:#92400E; }
+  .pc-abrir{ margin-left:auto; font-size:.74rem; font-weight:700; color:var(--verde); }
+  .pc-atalho{ font-size:.72rem !important; padding:2px 9px !important; }
+
 
   /* ---- tarefas de produção ---- */
   .prod-feita{ opacity:.75; }
@@ -3911,7 +3950,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.11.3";
+var VERSAO = "3.12.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6631,6 +6670,7 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
     });
     if(!htmlVazio) htmlVazio = "<div class='vazio'>Nenhuma atividade programada esta semana.</div>";
     $("progLista").innerHTML = htmlVazio;
+    _progAplicarLayout();
     return;
   }
 
@@ -6670,7 +6710,7 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
             linhasBarrilHtml+
             "<span class='barril-total-chip'>=\u00a0"+fmtNum(it.total)+" L</span>"+
           "</div>"+
-          "<div style='font-size:.73rem;color:var(--muted);margin-top:4px'>por "+esc(it.lancadoPor)+"</div>"+
+          "<div class='prog-por' style='font-size:.73rem;color:var(--muted);margin-top:4px'>por "+esc(it.lancadoPor)+"</div>"+
           renderChecksBarril(it, semana)+
           (podeEditar?
             "<div class='btn-linha' style='margin-top:8px'>"+
@@ -6756,7 +6796,7 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
         (detalhe?"<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:6px'>"+detalhe+"</div>":"")+
         (it.obs?"<div class='item-desc' style='margin-top:4px'>"+esc(it.obs)+"</div>":"")+
         alertaItem+
-        "<div style='font-size:.73rem;color:var(--muted);margin-top:4px'>por "+esc(it.criadaPor)+"</div>"+
+        "<div class='prog-por' style='font-size:.73rem;color:var(--muted);margin-top:4px'>por "+esc(it.criadaPor)+"</div>"+
         resultado+
         (it.tipo === "brassagem" ? badgeTempoTanque(it.resultado) : "")+
         renderBarrilItem(it, barreis)+
@@ -6797,6 +6837,182 @@ function renderProg(itens, semana, seg, tarefasVinculadas, barreis){
   });
 
   $("progLista").innerHTML = htmlTotal;
+  _progAplicarLayout();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PROGRAMAÇÃO — layout compacto da semana (v3.12.0)
+//  Aplicado por cima da lista clássica: barra de dias fixa, cards
+//  compactos que expandem, dias passados recolhidos e filtros.
+//  "Layout clássico" desliga tudo (preferência salva no navegador).
+// ══════════════════════════════════════════════════════════════
+var _progFiltro = { tipo: "todos", pendentes: false };
+var _progRolouHoje = "";
+function _progLayoutModo(){ try{ return localStorage.getItem("progLayout") || "compacto"; }catch(e){ return "compacto"; } }
+function _progLayoutSet(m){ try{ localStorage.setItem("progLayout", m); }catch(e){} }
+
+function _progAplicarLayout(){
+  var lista = $("progLista"); if (!lista) return;
+  var modo = _progLayoutModo();
+  // barra de ferramentas (criada uma vez)
+  var bar = $("progToolbar");
+  if (!bar){
+    bar = document.createElement("div"); bar.id = "progToolbar"; bar.className = "prog-toolbar";
+    lista.parentNode.insertBefore(bar, lista);
+  }
+  if (modo !== "compacto"){
+    lista.classList.remove("prog-compacto");
+    bar.innerHTML = "<div class='pt-linha'><span style='flex:1'></span>"+
+      "<button type='button' class='pt-btn' data-pt-layout='compacto'>▤ Layout compacto</button></div>";
+    _progToolbarEventos(bar);
+    return;
+  }
+  lista.classList.add("prog-compacto");
+
+  // 1) agrupar cada dia em seção (cabeçalho + corpo)
+  var hoje = _hojeISO(), secoes = [];
+  var filhos = Array.prototype.slice.call(lista.children);
+  var atual = null;
+  filhos.forEach(function(el){
+    if (el.classList.contains("prog-dia-sep")){
+      var sec = document.createElement("div"); sec.className = "pdia";
+      var corpo = document.createElement("div"); corpo.className = "pdia-corpo";
+      lista.insertBefore(sec, el); sec.appendChild(el); sec.appendChild(corpo);
+      el.classList.add("pdia-head");
+      var m = (el.textContent||"").match(/(\d{2})\/(\d{2})/);
+      var iso = "";
+      if (m){
+        var ano = segProg.getFullYear();
+        if (+m[2] < segProg.getMonth()+1 - 6) ano++;        // virada de ano dentro da semana
+        iso = ano+"-"+m[2]+"-"+m[1];
+      }
+      sec.dataset.iso = iso;
+      sec.id = iso ? "pdia-"+iso : "";
+      atual = { sec:sec, corpo:corpo, head:el, iso:iso, nome:(el.textContent||"").split("—")[0].trim() };
+      secoes.push(atual);
+    } else if (atual){
+      atual.corpo.appendChild(el);
+    }
+  });
+
+  // 2) cards compactos: resumo + clique para expandir
+  lista.querySelectorAll(".prog-item").forEach(function(item){
+    var tipo = item.classList.contains("prog-item-brassagem") ? "brassagem"
+             : item.classList.contains("prog-item-envase") ? "envase"
+             : item.classList.contains("prog-item-barril") ? "barril"
+             : item.classList.contains("prog-item-limpeza") ? "limpeza" : "outro";
+    var temRes = !!item.querySelector(".prog-resultado");
+    var pend = (tipo === "brassagem" || tipo === "envase") && !temRes;
+    item.dataset.ptTipo = tipo; item.dataset.ptPend = pend ? "1" : "0";
+    if (tipo === "limpeza" || item.querySelector(".pc-resumo")) return;
+    var chks = item.querySelectorAll(".check-lancamento");
+    var feitos = item.querySelectorAll(".check-lancamento.marcado, .check-lancamento.programado").length;
+    var res = document.createElement("div"); res.className = "pc-resumo";
+    res.innerHTML =
+      (chks.length ? "<span class='pc-chip"+(feitos===chks.length?" ok":"")+"'>✔ "+feitos+"/"+chks.length+" checks</span>" : "")+
+      (tipo === "barril" ? "" : temRes ? "<span class='pc-chip ok'>✔ resultado lançado</span>" : "<span class='pc-chip pend'>⏳ sem resultado</span>")+
+      "<span class='pc-abrir'>detalhes ▾</span>";
+    var main = item.querySelector(".prog-main") || item;
+    var linhaBtn = main.querySelector(".btn-linha");
+    main.insertBefore(res, linhaBtn || null);
+    // atalho: botão de lançar resultado continua visível no compacto
+    var btnRes = linhaBtn && linhaBtn.querySelector("[data-prog-res], [data-prog-resultado], .btn-resultado");
+    if (btnRes && pend && !item.classList.contains("aberto")){
+      var clone = btnRes.cloneNode(true); clone.classList.add("pc-atalho"); res.insertBefore(clone, res.querySelector(".pc-abrir"));
+    }
+    item.addEventListener("click", function(ev){
+      if (ev.target.closest("button, a, input, select, textarea, label")) {
+        if (!ev.target.closest(".pc-abrir")) return;
+      }
+      item.classList.toggle("aberto");
+      var ab = item.querySelector(".pc-abrir"); if (ab) ab.textContent = item.classList.contains("aberto") ? "recolher ▴" : "detalhes ▾";
+    });
+  });
+
+  // 3) cabeçalho de cada dia: contagem, hoje em destaque, passados recolhidos
+  secoes.forEach(function(s){
+    var itens = s.corpo.querySelectorAll(".prog-item:not(.prog-item-limpeza)");
+    var pend = s.corpo.querySelectorAll(".prog-item[data-pt-pend='1']").length;
+    var passado = s.iso && s.iso < hoje, ehHoje = s.iso === hoje;
+    s.pend = pend; s.n = itens.length; s.atraso = passado && pend > 0;
+    var info = document.createElement("span"); info.className = "pdia-info";
+    info.innerHTML = (s.n ? s.n+" ite"+(s.n>1?"ns":"m") : "limpeza")+
+      (pend ? " · <b class='"+(passado?"atr":"pnd")+"'>"+(passado?"⚠ ":"⏳ ")+pend+" pendente"+(pend>1?"s":"")+"</b>" : (s.n ? " · ✔ ok" : ""))+
+      " <span class='pdia-seta'>▾</span>";
+    s.head.appendChild(info);
+    if (ehHoje) s.sec.classList.add("hoje");
+    if (passado && !pend) s.sec.classList.add("fechado");
+    s.head.addEventListener("click", function(){ s.sec.classList.toggle("fechado"); });
+  });
+
+  // 4) barra fixa: dias + filtros + layout
+  var ABR = {"Segunda":"SEG","Terça":"TER","Quarta":"QUA","Quinta":"QUI","Sexta":"SEX","Sábado":"SÁB","Domingo":"DOM"};
+  var chips = secoes.filter(function(s){ return s.iso; }).map(function(s){
+    var nm = ABR[s.nome.charAt(0).toUpperCase()+s.nome.slice(1).toLowerCase()] || s.nome.slice(0,3).toUpperCase();
+    return "<button type='button' class='pt-dia"+(s.iso===hoje?" hoje":"")+(s.atraso?" atr":"")+"' data-pt-dia='"+s.iso+"'>"+
+      nm+" "+s.iso.slice(8)+"<small>"+(s.n||"–")+(s.atraso?" ⚠":s.pend?" ⏳":"")+"</small></button>";
+  }).join("");
+  function fb(v, txt){ return "<button type='button' class='pt-btn"+(_progFiltro.tipo===v?" on":"")+"' data-pt-tipo='"+v+"'>"+txt+"</button>"; }
+  bar.innerHTML =
+    "<div class='pt-linha pt-dias'>"+(chips || "<span style='color:var(--muted);font-size:.8rem'>Sem atividades nesta semana</span>")+"</div>"+
+    "<div class='pt-linha'>"+
+      fb("todos","Todos")+fb("brassagem","🍺 Brassagem")+fb("envase","📦 Envase")+fb("barril","🛢 Barril")+
+      "<button type='button' class='pt-btn"+(_progFiltro.pendentes?" on":"")+"' data-pt-pend='1'>⏳ Só pendentes</button>"+
+      "<span style='flex:1'></span>"+
+      "<button type='button' class='pt-btn' data-pt-expandir='1'>⤢ Expandir tudo</button>"+
+      "<button type='button' class='pt-btn' data-pt-layout='classico'>☰ Layout clássico</button>"+
+    "</div>";
+  _progToolbarEventos(bar);
+  _progAplicarFiltro();
+
+  // 5) semana atual: rola até hoje uma vez
+  var chaveSem = chaveSemana(segProg);
+  if (_progRolouHoje !== chaveSem){
+    _progRolouHoje = chaveSem;
+    var h = $("pdia-"+hoje);
+    if (h) setTimeout(function(){ h.scrollIntoView({behavior:"smooth", block:"start"}); }, 150);
+  }
+}
+
+function _progAplicarFiltro(){
+  var lista = $("progLista"); if (!lista || !lista.classList.contains("prog-compacto")) return;
+  var f = _progFiltro;
+  lista.querySelectorAll(".prog-item").forEach(function(it){
+    var t = it.dataset.ptTipo, ok = true;
+    if (f.tipo !== "todos" && t !== f.tipo) ok = false;
+    if (f.pendentes && it.dataset.ptPend !== "1") ok = false;
+    it.style.display = ok ? "" : "none";
+  });
+  lista.querySelectorAll(".pdia").forEach(function(sec){
+    var vis = Array.prototype.some.call(sec.querySelectorAll(".prog-item"), function(it){ return it.style.display !== "none"; });
+    sec.style.display = (vis || (f.tipo === "todos" && !f.pendentes)) ? "" : "none";
+    if (f.pendentes && vis) sec.classList.remove("fechado");
+  });
+}
+
+function _progToolbarEventos(bar){
+  bar.onclick = function(ev){
+    var b = ev.target.closest("button"); if (!b) return;
+    if (b.dataset.ptLayout){ _progLayoutSet(b.dataset.ptLayout); carregarProg(); return; }
+    if (b.dataset.ptDia){
+      var sec = $("pdia-"+b.dataset.ptDia);
+      if (sec){ sec.classList.remove("fechado"); sec.style.display = ""; sec.scrollIntoView({behavior:"smooth", block:"start"}); }
+      return;
+    }
+    if (b.dataset.ptTipo){ _progFiltro.tipo = b.dataset.ptTipo; }
+    if (b.dataset.ptPend){ _progFiltro.pendentes = !_progFiltro.pendentes; }
+    if (b.dataset.ptExpandir){
+      var lst = $("progLista"), abrir = !lst.classList.contains("tudo-aberto");
+      lst.classList.toggle("tudo-aberto", abrir);
+      lst.querySelectorAll(".pdia").forEach(function(s){ s.classList.toggle("fechado", !abrir && s.dataset.iso && s.dataset.iso < _hojeISO()); });
+      lst.querySelectorAll(".prog-item").forEach(function(i){ i.classList.toggle("aberto", abrir); });
+      b.textContent = abrir ? "⤡ Recolher" : "⤢ Expandir tudo";
+      return;
+    }
+    bar.querySelectorAll("[data-pt-tipo]").forEach(function(x){ x.classList.toggle("on", x.dataset.ptTipo === _progFiltro.tipo); });
+    bar.querySelectorAll("[data-pt-pend]").forEach(function(x){ x.classList.toggle("on", _progFiltro.pendentes); });
+    _progAplicarFiltro();
+  };
 }
 
 /* ================================================================

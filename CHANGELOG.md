@@ -44,6 +44,27 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.12.0 — 24/11/2026
+
+**Programação (semana): layout compacto**
+
+1. **Barra fixa no topo** com os dias (SEG 23 · 3 itens, ⏳ pendentes,
+   ⚠ atrasados); clique leva direto ao dia. Hoje em verde
+2. **Cards compactos**: estilo, lote, tanque e volume + resumo
+   (✔ 4/7 checks · ⏳ sem resultado / ✔ resultado lançado) e atalho
+   "Lançar resultado"; checks, tarefas, resultado e botões aparecem ao
+   clicar no card ("detalhes ▾")
+3. **Dias passados sem pendência recolhidos** (clique no cabeçalho abre);
+   dia de hoje destacado; ao abrir a semana atual a tela rola até hoje
+4. **Filtros**: Todos / 🍺 Brassagem / 📦 Envase / 🛢 Barril e
+   ⏳ Só pendentes; "⤢ Expandir tudo"
+- Botão **☰ Layout clássico** volta à lista anterior (e "▤ Layout compacto"
+  retorna); preferência salva no navegador de cada usuário
+- Implementado por cima da lista existente (`_progAplicarLayout`), sem mudar
+  dados nem a montagem dos cards
+
+---
+
 ## 3.11.3 — 24/11/2026
 
 **Planejador: ciclo mínimo e antecipação (sextas-feiras)**
