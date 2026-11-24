@@ -3950,7 +3950,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.12.1";
+var VERSAO = "3.12.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -6388,20 +6388,14 @@ function renderChecksBarril(it, semana){
   var mConc = !!ch["lancadoBeerSales"];
   var pConc = ch["lancadoBeerSales_por"] ? " @"+ch["lancadoBeerSales_por"] : "";
   var eConc = ch["lancadoBeerSales_em"]  ? " · "+fmtCheckEm(ch["lancadoBeerSales_em"]) : "";
+  // barril: um único check "BeerSales lançado" (campo lancadoBeerSales)
   return "<div class='checks-lancamento'>"+
-    "<button class='check-lancamento"+(mProg?" programado":"")+"'"+
-    " data-barril-check='beerSalesProg'"+
-    " data-barril-check-id='"+esc(it.id)+"'"+
-    " data-barril-check-semana='"+esc(semana)+"'>"+
-    "<span class='cl-icone'>"+(mProg?"✓":"")+"</span>"+
-    "BeerSales Prog."+(mProg?"<span style='font-size:.7rem;opacity:.75'>"+esc(pProg)+eProg+"</span>":"")+
-    "</button>"+
     "<button class='check-lancamento"+(mConc?" marcado":"")+"'"+
     " data-barril-check='lancadoBeerSales'"+
     " data-barril-check-id='"+esc(it.id)+"'"+
     " data-barril-check-semana='"+esc(semana)+"'>"+
     "<span class='cl-icone'>"+(mConc?"✓":"")+"</span>"+
-    "BeerSales Conc."+(mConc?"<span style='font-size:.7rem;opacity:.75'>"+esc(pConc)+eConc+"</span>":"")+
+    "BeerSales lançado"+(mConc?"<span style='font-size:.7rem;opacity:.75'>"+esc(pConc)+eConc+"</span>":"")+
     "</button>"+
   "</div>";
 }
@@ -6452,8 +6446,13 @@ function renderChecksLancamento(it, semana){
   if (!isEnvase) botoes += btnCheckProcesso("cipTanque",   "🧹 CIP Tanque");
   if (!isEnvase) botoes += btnCheckProcesso("quebraBeerSales",       "📋 Quebra BeerSales");
   if (!isEnvase) botoes += btnCheckProcesso("somaLitragemBeerSales", "➕ Soma BeerSales");
-  botoes += btnCheckProg("beerSalesProg",   "BeerSales Prog.");
-  botoes += btnCheck("lancadoBeerSales",    "BeerSales Conc.");
+  if (isEnvase){
+    // envase: um único check (usa o campo lancadoBeerSales — relatórios continuam funcionando)
+    botoes += btnCheck("lancadoBeerSales", "BeerSales lançado");
+  } else {
+    botoes += btnCheckProg("beerSalesProg",   "BeerSales Prog.");
+    botoes += btnCheck("lancadoBeerSales",    "BeerSales Conc.");
+  }
   if (!isEnvase) botoes += btnCheck("lancadoBeerbo", "Beerbo");
 
   return "<div class='checks-lancamento'>"+botoes+"</div>";
@@ -8501,8 +8500,8 @@ async function carregarProgMensal(){
             (isEnvIt?"":chkBtn("cipTanque","🧹 CIP Tanque","processo"))+
             (isEnvIt?"":chkBtn("quebraBeerSales","📋 Quebra BeerSales","processo"))+
             (isEnvIt?"":chkBtn("somaLitragemBeerSales","➕ Soma BeerSales","processo"))+
-            chkBtn("beerSalesProg","BeerSales Prog.","programado")+
-            chkBtn("lancadoBeerSales","BeerSales Conc.","marcado")+
+            (isEnvIt?chkBtn("lancadoBeerSales","BeerSales lançado","marcado")
+                    :chkBtn("beerSalesProg","BeerSales Prog.","programado")+chkBtn("lancadoBeerSales","BeerSales Conc.","marcado"))+
             (isEnvIt?"":chkBtn("lancadoBeerbo","Beerbo","marcado"))+
           "</div>";
 

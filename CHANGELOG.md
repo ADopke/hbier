@@ -44,6 +44,18 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.12.2 — 24/11/2026
+
+**Envase e barril: check único "BeerSales lançado"**
+
+- Envases PET e barris trocam "BeerSales Prog." + "BeerSales Conc." por um
+  único check "BeerSales lançado" (lista semanal, painel do dia e barris)
+- Usa o mesmo campo do antigo "Conc." (lancadoBeerSales): envases já
+  marcados como Conc. aparecem como lançados; relatórios mantidos
+- Brassagem continua com os checks separados
+
+---
+
 ## 3.12.1 — 24/11/2026
 
 **Painel de Produções: status e fim do lote pelo tanque**
