@@ -3950,7 +3950,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.12.2";
+var VERSAO = "3.12.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -15772,6 +15772,11 @@ function fp_simSave(btn){
     .then(function(r){
       fp_dirty=false;
       fp_versaoCarregada = r.versao; // atualiza versão local após save bem-sucedido
+      if (r.mesclado){
+        var quem = r.mescladoDe && r.mescladoDe.salvoPor ? "@"+r.mescladoDe.salvoPor : "outra pessoa";
+        toast("🔀 "+quem+" também tinha salvo esta ficha. As duas versões foram juntadas sem perder dados — recarregando a ficha.", "ok");
+        setTimeout(function(){ if (window._fpTqAtual) abrirFichaLote(window._fpTqAtual); }, 1200);
+      }
       var s=document.getElementById('fp-saveStatus');
       var hora = new Date(r.salvoEm).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       if(s){s.textContent='✓ Salvo às '+hora+' (v'+r.versao+')';s.className='fp-unsaved';}
@@ -19334,10 +19339,33 @@ if ("serviceWorker" in navigator){
     navigator.serviceWorker.addEventListener("controllerchange", function(){
       if (!recarregando){
         recarregando = true;
-        window.location.reload();
+        _recarregarQuandoLivre("sw");
       }
     });
   });
+}
+
+// Há algo sendo editado? (ficha aberta com alterações, ou qualquer modal aberto)
+function _edicaoEmAndamento(){
+  try{
+    if (typeof fp_dirty !== "undefined" && fp_dirty) return true;
+    if (document.getElementById("fp-app")) {
+      var ov = document.getElementById("fp-app").closest("[hidden]");
+      if (!ov) return true;
+    }
+    var abertos = Array.prototype.some.call(document.querySelectorAll(".modal-overlay, [id^='modal']"), function(m){
+      return !m.hidden && m.offsetParent !== null && getComputedStyle(m).display !== "none";
+    });
+    return abertos;
+  }catch(e){ return false; }
+}
+function _recarregarQuandoLivre(motivo){
+  if (!_edicaoEmAndamento()) { window.location.reload(); return; }
+  if (!window._avisoVersaoMostrado){
+    window._avisoVersaoMostrado = true;
+    toast("🔄 Nova versão disponível — o app atualiza sozinho quando você fechar/salvar o que está editando.", "aviso");
+  }
+  setTimeout(function(){ _recarregarQuandoLivre(motivo); }, 30000);
 }
 
 // ── Verificação periódica de versão (para abas que ficam abertas por horas) ──
@@ -19357,8 +19385,10 @@ if ("serviceWorker" in navigator){
         if (versaoServidor !== VERSAO){
           _jaRecarregando = true;
           // Mostra aviso antes de recarregar
+          // nunca recarrega no meio de uma edição (ficha/modal aberto) — evita perder dados não salvos
+          if (_edicaoEmAndamento()) { _recarregarQuandoLivre("versao"); return; }
           toast("🔄 Nova versão disponível ("+versaoServidor+") — atualizando…", "ok");
-          setTimeout(function(){ window.location.reload(); }, 2500);
+          setTimeout(function(){ _recarregarQuandoLivre("versao"); }, 2500);
         }
       })
       .catch(function(){}); // falha silenciosa (offline)

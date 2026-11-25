@@ -44,6 +44,28 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.12.3 — 25/11/2026
+
+**Ficha de Produção: nunca mais apagar o que outra pessoa salvou**
+
+Causa do sumiço da Batelada 4 do HELLES 74/26T03: o app enviava a versão
+da ficha que tinha aberto, mas o servidor **ignorava** essa informação e
+gravava a ficha inteira por cima. Quem estava com a ficha aberta desde antes
+e salvou depois apagou o que tinha sido gravado nesse meio-tempo.
+
+- **Servidor junta as versões**: se a ficha foi salva por outra pessoa depois
+  que a tela foi aberta, o que chega agora vale, mas nada que já estava
+  gravado é apagado — campos vazios são completados com o gravado, bateladas
+  a mais são mantidas e leituras (fermentação/maturação) das duas versões
+  são unidas. A ficha é recarregada na tela com aviso "🔀 … juntadas"
+- **Histórico de versões**: cada gravação guarda a versão anterior
+  (últimas 30) em `ficha:hist:<lote>` — `GET /api/ficha?historico=1&lote=`
+  lista e `&idx=N` devolve a versão
+- **Atualização automática do app** não recarrega mais a tela com ficha ou
+  outra janela aberta / alterações não salvas: avisa e espera fechar
+
+---
+
 ## 3.12.2 — 24/11/2026
 
 **Envase e barril: check único "BeerSales lançado"**
