@@ -3950,7 +3950,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.12.3";
+var VERSAO = "3.12.4";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -13733,8 +13733,15 @@ $("btnExportarTanquesExcel").addEventListener("click", function(){
    Ficha de Produção por Lote
    ================================================================== */
 
-$("btnFichaFechar").addEventListener("click", function(){ $("modalFicha").hidden = true; });
-$("modalFicha").addEventListener("click", function(e){ if (e.target === $("modalFicha")) $("modalFicha").hidden = true; });
+$("btnFichaFechar").addEventListener("click", function(){
+  if (typeof fp_dirty !== "undefined" && fp_dirty){ try{ fp_simSave(null, {auto:true}); }catch(e){} toast("💾 Salvando as alterações antes de fechar…","ok"); }
+  $("modalFicha").hidden = true;
+});
+$("modalFicha").addEventListener("click", function(e){
+  if (e.target !== $("modalFicha")) return;
+  if (typeof fp_dirty !== "undefined" && fp_dirty){ try{ fp_simSave(null, {auto:true}); }catch(err){} }
+  $("modalFicha").hidden = true;
+});
 
 $("btnFichaImprimir").addEventListener("click", function(){
   // Coleta valores atuais dos inputs/selects da ficha para o HTML de impressão
@@ -15187,8 +15194,95 @@ function fp_tratarConflito(errData, onRecarregar){
 function fp_markDirty(){
   fp_dirty=true;
   var s=document.getElementById('fp-saveStatus');
-  if(s){s.textContent='● Alterações não salvas';s.className='fp-unsaved dirty';}
+  if(s){s.textContent='● Alterações não salvas (guardadas neste aparelho)';s.className='fp-unsaved dirty';}
   fp_calcProgresso();
+  // rascunho local logo (1 s) e salvamento automático no servidor (15 s sem digitar)
+  clearTimeout(fp_tRascunho);
+  fp_tRascunho = setTimeout(function(){
+    try{ var c = fp_simSave(null, {soColetar:true}); if (c && c.lote) fp_salvarRascunho(c.lote, c.dados); }catch(e){}
+  }, 1000);
+  fp_agendarAutoSave(15000);
+}
+
+/* ── Rascunho local + salvamento automático (v3.12.4) ── */
+var fp_tRascunho = null, fp_tAuto = null, fp_salvando = false, fp_pendenteSalvar = false;
+function fp_chaveRascunho(lote){ return "hbier:fpRascunho:" + String(lote||"").trim(); }
+function fp_salvarRascunho(lote, dados){
+  try{ localStorage.setItem(fp_chaveRascunho(lote), JSON.stringify({ em: new Date().toISOString(), versaoBase: fp_versaoCarregada, por: (sessao && sessao.login) || "", dados: dados })); }catch(e){}
+}
+function fp_apagarRascunho(lote){ try{ localStorage.removeItem(fp_chaveRascunho(lote)); }catch(e){} }
+function fp_lerRascunho(lote){ try{ var t = localStorage.getItem(fp_chaveRascunho(lote)); return t ? JSON.parse(t) : null; }catch(e){ return null; } }
+function fp_statusAuto(txt){ var s=document.getElementById('fp-saveStatus'); if(s){ s.textContent = txt; s.className='fp-unsaved dirty'; } }
+function fp_agendarAutoSave(ms){
+  clearTimeout(fp_tAuto);
+  fp_tAuto = setTimeout(function(){
+    var app = document.getElementById('fp-app');
+    if (!fp_dirty || !app || $("modalFicha").hidden) return;
+    // não salva no meio da digitação de um campo de SG inválido etc. — fp_simSave cuida disso
+    fp_simSave(null, {auto:true});
+  }, ms);
+}
+// Ao abrir a ficha: há rascunho mais novo que a versão do servidor? oferece recuperar
+function fp_oferecerRascunho(lote, fichaServidor){
+  var r = fp_lerRascunho(lote); if (!r || !r.dados) return;
+  var salvoEm = fichaServidor && fichaServidor.meta && fichaServidor.meta.salvoEm || "";
+  if (salvoEm && r.em <= salvoEm){ fp_apagarRascunho(lote); return; }
+  var hora = new Date(r.em).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  if (confirm("📝 Há alterações NÃO SALVAS desta ficha feitas neste aparelho em "+hora+(r.por?" (@"+r.por+")":"")+".\n\nRecuperar essas alterações?\n\nOK = recuperar (depois clique em Salvar)\nCancelar = descartar o rascunho")){
+    var d = r.dados; d.meta = (fichaServidor && fichaServidor.meta) || d.meta || {};
+    var tq = window._fpTqAtual || {};
+    tq._fichaPrecarregada = d;
+    abrirFichaLote(tq);
+    tq._fichaPrecarregada = null;
+    // a versão base continua a do servidor: ao salvar, o servidor junta com o que mudou lá
+    setTimeout(function(){ fp_versaoCarregada = r.versaoBase || 0; fp_markDirty(); toast("📝 Rascunho recuperado — confira e clique em Salvar Ficha.","ok"); }, 600);
+  } else {
+    fp_apagarRascunho(lote);
+  }
+}
+
+/* ── 🕘 Versões da ficha (admin/gestor) ── */
+async function fp_abrirVersoes(){
+  var app = document.getElementById('fp-app'); if (!app) return;
+  var lote = (app.dataset.fpLote||"").trim();
+  var m = document.getElementById("modalFpVersoes");
+  if (!m){
+    m = document.createElement("div"); m.id = "modalFpVersoes"; m.hidden = true;
+    m.setAttribute("style","position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1100;padding:16px");
+    m.innerHTML = "<div style='background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden'>"+
+      "<div style='background:#5B3A00;color:#fff;padding:12px 16px;display:flex;align-items:center'><b style='flex:1;font-family:\"Barlow Condensed\",sans-serif;text-transform:uppercase'>🕘 Versões da ficha</b>"+
+      "<button type='button' id='fpVerFechar' style='background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer'>✕</button></div>"+
+      "<div id='fpVerCorpo' style='padding:12px 16px;overflow:auto;font-size:.84rem'></div></div>";
+    document.body.appendChild(m);
+    document.getElementById("fpVerFechar").onclick = function(){ m.hidden = true; };
+  }
+  m.hidden = false;
+  var corpo = document.getElementById("fpVerCorpo");
+  corpo.innerHTML = "Carregando…";
+  try{
+    var r = await api("/api/ficha?historico=1&lote="+encodeURIComponent(lote));
+    var vs = r.versoes || [];
+    if (!vs.length){ corpo.innerHTML = "<div style='color:var(--muted)'>Ainda não há versões anteriores guardadas para este lote (o histórico começou na versão 3.12.3).</div>"; return; }
+    corpo.innerHTML = "<div style='color:var(--muted);margin-bottom:8px'>Versão atual: v"+(r.versaoAtual||"?")+". Ao abrir uma versão antiga ela aparece na ficha; confira e clique em <b>Salvar Ficha</b> para restaurá-la.</div>"+
+      vs.map(function(v){
+        var q = v.salvoEm ? new Date(v.salvoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "—";
+        return "<div style='display:flex;align-items:center;gap:8px;border-top:1px solid var(--linha);padding:7px 0'>"+
+          "<div style='flex:1'><b>v"+(v.versao||"?")+"</b> · "+q+(v.salvoPor?" · @"+esc(v.salvoPor):"")+" · "+(v.bateladas||0)+" batelada"+(v.bateladas===1?"":"s")+"</div>"+
+          "<button type='button' class='fp-btn' data-fpver='"+v.idx+"' style='padding:4px 10px'>Abrir esta versão</button></div>";
+      }).join("");
+    corpo.querySelectorAll("[data-fpver]").forEach(function(b){
+      b.onclick = async function(){
+        if (fp_dirty && !confirm("A ficha aberta tem alterações não salvas. Abrir a versão antiga mesmo assim?")) return;
+        var rv = await api("/api/ficha?historico=1&lote="+encodeURIComponent(lote)+"&idx="+b.dataset.fpver);
+        if (!rv.ficha){ toast("Versão não encontrada.","erro"); return; }
+        var f = rv.ficha; f.meta = Object.assign({}, f.meta, { versao: r.versaoAtual });   // salvar = restaurar (sem juntar)
+        var tq = window._fpTqAtual || {};
+        m.hidden = true;
+        tq._fichaPrecarregada = f; abrirFichaLote(tq); tq._fichaPrecarregada = null;
+        setTimeout(function(){ fp_markDirty(); fp_statusAuto("🕘 Versão antiga aberta — clique em Salvar Ficha para restaurar"); clearTimeout(fp_tAuto); }, 700);
+      };
+    });
+  }catch(e){ corpo.innerHTML = "<div style='color:#B91C1C'>Erro: "+esc(e.message)+"</div>"; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -15631,8 +15725,11 @@ function _sgConferirFicha(){
   return ruins;
 }
 
-function fp_simSave(btn){
-  var _sgRuins = _sgConferirFicha();
+function fp_simSave(btn, opts){
+  opts = opts || {};
+  if (!btn && !opts.soColetar) btn = document.querySelector('#fp-app .fp-btn-primary') || { textContent:"", disabled:false };
+  var _sgRuins = opts.soColetar ? [] : _sgConferirFicha();
+  if (_sgRuins.length && opts.auto){ fp_statusAuto("● Não salvo automaticamente: corrija a SG em vermelho"); return; }
   if (_sgRuins.length){
     _sgRuins[0].scrollIntoView({behavior:'smooth', block:'center'}); _sgRuins[0].focus();
     toast("🚫 "+_sgRuins.length+" SG fora do padrão (ex.: 1010). Corrija para 1.010 antes de salvar a ficha.", "erro");
@@ -15765,13 +15862,20 @@ function fp_simSave(btn){
     meta: { status: "em andamento" },
     audit: fp_audit
   };
+  if (opts.soColetar) return { lote: loteVal, dados: dados };
+  fp_salvarRascunho(loteVal, dados);          // garante o rascunho local antes de enviar
 
-  btn.textContent='⏳ Salvando…'; btn.disabled=true;
+  if (fp_salvando){ fp_pendenteSalvar = true; if (!opts.auto) toast("⏳ Já está salvando — suas alterações vão em seguida.","aviso"); return; }
+  fp_salvando = true;
+  var _txtBtn = btn.textContent;
+  btn.textContent = opts.auto ? _txtBtn : '⏳ Salvando…'; if(!opts.auto) btn.disabled=true;
   var versaoEnviada = fp_versaoCarregada;
   api('/api/ficha', {method:'POST', body:{ lote: loteVal, dados: dados, versaoEsperada: versaoEnviada }})
     .then(function(r){
+      fp_salvando = false;
       fp_dirty=false;
       fp_versaoCarregada = r.versao; // atualiza versão local após save bem-sucedido
+      fp_apagarRascunho(loteVal);
       if (r.mesclado){
         var quem = r.mescladoDe && r.mescladoDe.salvoPor ? "@"+r.mescladoDe.salvoPor : "outra pessoa";
         toast("🔀 "+quem+" também tinha salvo esta ficha. As duas versões foram juntadas sem perder dados — recarregando a ficha.", "ok");
@@ -15779,12 +15883,15 @@ function fp_simSave(btn){
       }
       var s=document.getElementById('fp-saveStatus');
       var hora = new Date(r.salvoEm).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-      if(s){s.textContent='✓ Salvo às '+hora+' (v'+r.versao+')';s.className='fp-unsaved';}
+      if(s){s.textContent=(opts.auto?'✓ Salvo automaticamente às ':'✓ Salvo às ')+hora+' (v'+r.versao+')';s.className='fp-unsaved';}
       btn.textContent='💾 Salvar Ficha'; btn.disabled=false;
       setTimeout(function(){if(!fp_dirty&&s) s.textContent='';},4000);
+      if (fp_pendenteSalvar){ fp_pendenteSalvar = false; if (fp_dirty) fp_agendarAutoSave(1500); }
     })
     .catch(function(e){
+      fp_salvando = false;
       btn.textContent='💾 Salvar Ficha'; btn.disabled=false;
+      if (opts.auto){ fp_statusAuto("● Sem conexão — alterações guardadas neste aparelho; tenta de novo em 30 s"); fp_agendarAutoSave(30000); return; }
       if (e && e.status === 409) {
         fp_tratarConflito(e.data, function(){ abrirFichaLote(window._fpTqAtual); });
         return;
@@ -16418,6 +16525,7 @@ function abrirFichaLote(tq){
   '<div class="fp-save-bar">'+
     '<span class="fp-unsaved" id="fp-saveStatus"></span>'+
     '<div style="display:flex;gap:8px">'+
+      ((sessao && (sessao.papel==="admin"||sessao.papel==="gestor")) ? '<button class="fp-btn" type="button" onclick="fp_abrirVersoes()">🕘 Versões</button>' : '')+
       '<button class="fp-btn fp-btn-primary" onclick="fp_simSave(this)">💾 Salvar Ficha</button>'+
     '</div>'+
   '</div>'+
@@ -16478,8 +16586,8 @@ function abrirFichaLote(tq){
     fp_preencherFicha(fichaPrecarregada);
   } else if (lote && lote !== "—") {
     api('/api/ficha?lote='+encodeURIComponent(lote))
-      .then(function(r){ if(r.ficha) fp_preencherFicha(r.ficha); })
-      .catch(function(){}); // silencioso — ficha nova não tem dados ainda
+      .then(function(r){ if(r.ficha) fp_preencherFicha(r.ficha); setTimeout(function(){ fp_oferecerRascunho(lote, r.ficha); }, 400); })
+      .catch(function(){ setTimeout(function(){ fp_oferecerRascunho(lote, null); }, 400); }); // offline: oferece rascunho
   }
 }
 

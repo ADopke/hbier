@@ -4,7 +4,7 @@
 // GET  /api/ficha?lista=1                       → lista todos os lotes com ficha
 
 import {
-  ler, gravar, lerVarios, bancoConfigurado,
+  ler, gravar, lerVarios, bancoConfigurado, travar, soltar,
   exigirLogin, corpo, erro, protegido
 } from "./_lib.js";
 
@@ -42,11 +42,12 @@ export default protegido(async function(req, res) {
     const lote = (req.query.lote || "").trim();
     if (!lote) return erro(res, 400, "Parâmetro lote obrigatório.");
     const hist = (await ler(`ficha:hist:${lote}`)) || [];
+    const atualF = await ler(`ficha:${lote}`);
     if (req.query.idx != null) {
       const h = hist[parseInt(req.query.idx, 10)];
       return res.json({ ficha: h ? h.ficha : null });
     }
-    return res.json({ versoes: hist.map((h, i) => ({ idx: i, guardadoEm: h.guardadoEm,
+    return res.json({ versaoAtual: (atualF && atualF.meta && atualF.meta.versao) || 0, versoes: hist.map((h, i) => ({ idx: i, guardadoEm: h.guardadoEm,
       versao: h.ficha && h.ficha.meta && h.ficha.meta.versao, salvoPor: h.ficha && h.ficha.meta && h.ficha.meta.salvoPor,
       salvoEm: h.ficha && h.ficha.meta && h.ficha.meta.salvoEm, bateladas: (h.ficha && h.ficha.bateladas || []).length })) });
   }
@@ -68,6 +69,10 @@ export default protegido(async function(req, res) {
       return erro(res, 400, "Campo dados obrigatório.");
 
     const chave = lote.trim();
+    // uma gravação por vez nesta ficha: a próxima espera a anterior terminar e já lê a versão nova
+    const dono = await travar(`ficha:${chave}`);
+    if (!dono) return erro(res, 503, "Ficha ocupada por outra gravação — tente salvar de novo em alguns segundos.");
+    try {
     const atual = await ler(`ficha:${chave}`);
     const versaoAtual = (atual && atual.meta && atual.meta.versao) || 0;
     const esperada = Number(corpo(req).versaoEsperada);
@@ -108,6 +113,9 @@ export default protegido(async function(req, res) {
     }
 
     return res.json({ ok: true, salvoEm: dados.meta.salvoEm, versao: dados.meta.versao, mesclado, mescladoDe });
+    } finally {
+      await soltar(`ficha:${chave}`, dono);
+    }
   }
 
   erro(res, 405, "Método não permitido.");

@@ -54,6 +54,24 @@ export async function gravar(chave, valor) {
   return redis(["SET", `${PREFIXO}:${chave}`, JSON.stringify(valor)]);
 }
 
+/** Trava curta (uma gravação por vez na mesma chave). Espera até `esperaMs` pela vez. */
+export async function travar(chave, validadeMs = 8000, esperaMs = 6000) {
+  const k = `${PREFIXO}:lock:${chave}`;
+  const dono = Math.random().toString(36).slice(2);
+  const ate = Date.now() + esperaMs;
+  while (true) {
+    const ok = await redis(["SET", k, dono, "NX", "PX", String(validadeMs)]);
+    if (ok === "OK") return dono;
+    if (Date.now() > ate) return null;
+    await new Promise((r) => setTimeout(r, 150));
+  }
+}
+export async function soltar(chave, dono) {
+  if (!dono) return;
+  const k = `${PREFIXO}:lock:${chave}`;
+  try { const atual = await redis(["GET", k]); if (atual === dono) await redis(["DEL", k]); } catch (e) {}
+}
+
 /** Lê várias chaves de uma vez — usado pelos relatórios. */
 export async function lerVarios(chaves) {
   if (!chaves.length) return [];

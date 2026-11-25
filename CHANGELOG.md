@@ -44,6 +44,27 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.12.4 — 25/11/2026
+
+**Ficha de Produção: rascunho local, salvamento automático, trava e versões**
+
+- **Rascunho no aparelho**: cada alteração na ficha fica guardada no próprio
+  navegador (1 s após digitar). Se o app fechar, recarregar ou cair a
+  internet, ao reabrir a ficha aparece "Há alterações NÃO SALVAS… Recuperar?"
+- **Salvamento automático**: 15 s depois da última alteração a ficha é salva
+  sozinha ("✓ Salvo automaticamente às 10:42"); ao fechar a ficha com
+  alterações, salva antes. Sem internet: mantém o rascunho e tenta de novo
+  em 30 s. SG inválida impede só o automático (avisa no rodapé)
+- **Uma gravação por vez** (servidor): trava curta por ficha no banco — duas
+  gravações simultâneas não leem mais a mesma versão; a segunda espera a
+  primeira e é juntada com ela
+- **🕘 Versões** (admin/gestor) no rodapé da ficha: lista as versões
+  anteriores (data, quem, nº de bateladas); "Abrir esta versão" carrega na
+  ficha e "Salvar Ficha" restaura
+- Corrigido: salvar a ficha sem botão (ex.: ao desfazer maturação) dava erro
+
+---
+
 ## 3.12.3 — 25/11/2026
 
 **Ficha de Produção: nunca mais apagar o que outra pessoa salvou**
