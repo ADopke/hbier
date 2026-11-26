@@ -4023,7 +4023,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.15.1";
+var VERSAO = "3.15.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12294,13 +12294,29 @@ async function carregarTanques(){
                   "<span style='font-weight:400;color:#B45309;font-size:.7rem'>(total envasado: "+fmtNum(Math.round(totalEnvasado))+" L)</span>"+
                 "</div>"
               : "";
+            // v3.15.2 — desenho do tanque (cilindrocônico) com o nível
+            var cid = "tqclip-"+String(tq.id||tq.nome).replace(/[^a-z0-9]/gi,"");
+            var TOPO = 30, FUNDO = 168, yNiv = FUNDO - (FUNDO-TOPO)*pct/100;
+            var corLiq = pct < 15 ? "#DC2626" : "#F2B632";
+            var corpo = "M14 30 Q14 10 48 8 Q82 10 82 30 L82 130 L52 168 L44 168 L14 130 Z";
+            var svgTq = "<svg width='72' height='143' viewBox='0 0 96 190' role='img' aria-label='Nível "+pct+"%' style='flex-shrink:0'>"+
+              "<defs><clipPath id='"+cid+"'><path d='"+corpo+"'/></clipPath></defs>"+
+              "<path d='"+corpo+"' fill='#FFFFFF'/>"+
+              "<g clip-path='url(#"+cid+")'><rect x='0' y='"+yNiv+"' width='96' height='"+(200-yNiv)+"' fill='"+corLiq+"'/>"+
+                (pct > 2 ? "<rect x='0' y='"+(yNiv-4)+"' width='96' height='5' fill='#FFF7DB'/>" : "")+"</g>"+
+              "<g stroke='#9CA3AF' stroke-width='1'><line x1='82' y1='49' x2='88' y2='49'/><line x1='82' y1='70' x2='86' y2='70'/><line x1='82' y1='90' x2='88' y2='90'/><line x1='82' y1='110' x2='86' y2='110'/><line x1='82' y1='130' x2='88' y2='130'/></g>"+
+              "<path d='"+corpo+"' fill='none' stroke='#6B7280' stroke-width='2.5'/>"+
+              "<rect x='44' y='168' width='8' height='8' fill='#6B7280'/>"+
+              "<line x1='22' y1='130' x2='16' y2='186' stroke='#6B7280' stroke-width='2.5'/><line x1='74' y1='130' x2='80' y2='186' stroke='#6B7280' stroke-width='2.5'/>"+
+              "<text x='48' y='24' text-anchor='middle' style='fill:#4B5563;font-size:12px;font-weight:700'>"+esc(tq.nome)+"</text></svg>";
             return "<div style='margin-bottom:6px'>"+
-              "<div style='display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px'>"+
-                "<span style='font-size:.65rem;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.04em'>Nível estimado</span>"+
-                "<span style='font-size:.8rem;font-weight:900;color:"+corNivel+"'>"+fmtNum(litRestantes)+" L <span style='font-size:.65rem;font-weight:600;opacity:.7'>("+pct+"%)</span></span>"+
-              "</div>"+
-              "<div style='height:7px;background:rgba(0,0,0,.08);border-radius:99px;overflow:hidden'>"+
-                "<div style='height:100%;width:"+pct+"%;background:"+corNivel+";border-radius:99px;transition:width .5s'></div>"+
+              "<div style='display:flex;align-items:center;gap:12px'>"+svgTq+
+                "<div>"+
+                  "<div style='font-size:.65rem;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.04em'>Nível estimado</div>"+
+                  "<div style='font-size:1.35rem;font-weight:900;color:"+corNivel+";line-height:1.1'>"+fmtNum(Math.round(litRestantes))+" L</div>"+
+                  "<div style='font-size:.78rem;font-weight:600;color:#374151'>"+pct+"% de "+fmtNum(volTotal)+" L</div>"+
+                  (totalEnvasado > 0 ? "<div style='font-size:.72rem;color:#6B7280;margin-top:3px'>já saíram "+fmtNum(Math.round(totalEnvasado))+" L</div>" : "")+
+                "</div>"+
               "</div>"+
               badgeSaldo+
             "</div>";

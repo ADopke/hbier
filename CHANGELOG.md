@@ -44,6 +44,16 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.15.2 — 26/11/2026
+
+**Tanques: nível estimado em desenho de tanque**
+
+- A barra do "Nível estimado" virou um desenho de tanque cilindrocônico com a
+  cerveja no nível (âmbar; vermelho abaixo de 15%), régua ao lado e o nome do tanque
+- Ao lado: litros restantes, % da capacidade e quanto já saiu (barris + PET/garrafa)
+
+---
+
 ## 3.15.1 — 26/11/2026
 
 **Painel do gestor: escolher o mês**
