@@ -4037,7 +4037,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.17.0";
+var VERSAO = "3.17.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -18754,6 +18754,18 @@ window.fp_atualizarVolTotalBateladas = fp_atualizarVolTotalBateladas;
 window.fp_simSave          = fp_simSave;
 window.abrirFichaLote      = abrirFichaLote;
 window.abrirFichaPorLote   = abrirFichaPorLote;
+// v3.17.1 — funções chamadas direto pelo HTML (onclick) precisam estar no window
+if (typeof _ddepTanqueMudou === "function") window._ddepTanqueMudou = _ddepTanqueMudou;
+if (typeof abrirDossiePorLote === "function") window.abrirDossiePorLote = abrirDossiePorLote;
+if (typeof calcBarril === "function") window.calcBarril = calcBarril;
+if (typeof fecharModalObs === "function") window.fecharModalObs = fecharModalObs;
+if (typeof filtrarLotes === "function") window.filtrarLotes = filtrarLotes;
+if (typeof fp_abrirDossie === "function") window.fp_abrirDossie = fp_abrirDossie;
+if (typeof fp_abrirVersoes === "function") window.fp_abrirVersoes = fp_abrirVersoes;
+if (typeof fp_recalcEficTodas === "function") window.fp_recalcEficTodas = fp_recalcEficTodas;
+if (typeof fp_registrarLancamento === "function") window.fp_registrarLancamento = fp_registrarLancamento;
+if (typeof leiturasCarregar === "function") window.leiturasCarregar = leiturasCarregar;
+
 
 /* ==================================================================
    Acompanhamento e relatórios

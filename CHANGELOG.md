@@ -44,6 +44,16 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.17.1 — 26/11/2026
+
+- Corrigido: botão "📄 Dossiê" (aba Lotes e ficha) não fazia nada — a função
+  não estava acessível pelo botão. Mesma correção para outros botões que
+  tinham o mesmo problema: "🕘 Versões" da ficha, recalcular eficiência das
+  bateladas, filtro da aba Lotes, cálculo de barris, troca de tanque no
+  lançamento, fechar observação e recarregar Leituras
+
+---
+
 ## 3.17.0 — 26/11/2026
 
 **🔥 Purga da caldeira**
