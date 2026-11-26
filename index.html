@@ -2083,6 +2083,11 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
       <section>
         <div class="sec-head" style="flex-wrap:wrap;gap:8px">
           <span class="sec-title">📊 Painel do gestor</span>
+          <span style="display:inline-flex;align-items:center;gap:4px">
+            <button class="btn mini secundario" id="btnPgMesAnt" title="Mês anterior">‹</button>
+            <b id="pgMesLabel" style="min-width:110px;text-align:center"></b>
+            <button class="btn mini secundario" id="btnPgMesProx" title="Próximo mês">›</button>
+          </span>
           <span class="sec-sub" id="pgQuando"></span>
           <button class="btn mini secundario" id="btnPgAtualizar" style="margin-left:auto">↻ Atualizar</button>
         </div>
@@ -4018,7 +4023,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.15.0";
+var VERSAO = "3.15.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -15534,6 +15539,12 @@ function _pgDataItem(it, seg){
   return chaveSemanaData(d);
 }
 function _pgBarra(real, meta, ritmoPct, un){
+  if (_pgMesOff !== 0 && meta){
+    var pf = Math.round(real/meta*100), cf = pf >= 100 ? "#16A34A" : (pf >= 85 ? "#D97706" : "#DC2626");
+    return "<div style='display:flex;justify-content:space-between;font-size:.8rem'><b>"+fmtNum(Math.round(real))+" / "+fmtNum(Math.round(meta))+" "+un+"</b><span style='color:"+cf+";font-weight:800'>"+pf+"%</span></div>"+
+      "<div style='height:10px;background:#EEE;border-radius:6px;margin-top:3px;overflow:hidden'><div style='height:100%;width:"+Math.min(100,pf)+"%;background:"+cf+"'></div></div>"+
+      "<div style='font-size:.7rem;color:var(--muted);margin-top:2px'>"+(pf >= 100 ? "✔ meta batida" : "✖ meta não batida — faltaram "+fmtNum(Math.round(meta-real))+" "+un)+"</div>";
+  }
   if (!meta) return "<div style='font-size:.8rem;color:var(--muted)'>"+fmtNum(Math.round(real))+" "+un+" · meta não definida</div>";
   var pct = Math.round(real/meta*100), cor = pct >= ritmoPct ? "#16A34A" : (pct >= ritmoPct*0.85 ? "#D97706" : "#DC2626");
   return "<div style='display:flex;justify-content:space-between;font-size:.8rem'><b>"+fmtNum(Math.round(real))+" / "+fmtNum(Math.round(meta))+" "+un+"</b><span style='color:"+cor+";font-weight:800'>"+pct+"%</span></div>"+
@@ -15542,13 +15553,20 @@ function _pgBarra(real, meta, ritmoPct, un){
       "<div title='onde deveria estar hoje' style='position:absolute;top:-2px;bottom:-2px;left:"+Math.min(100,ritmoPct)+"%;width:2px;background:#111'></div></div>"+
     "<div style='font-size:.7rem;color:var(--muted);margin-top:2px'>"+(pct >= ritmoPct ? "✔ no ritmo" : "abaixo do ritmo — hoje deveria estar em "+Math.round(ritmoPct)+"%")+" · falta "+fmtNum(Math.max(0,Math.round(meta-real)))+" "+un+"</div>";
 }
+var _pgMesOff = 0;   // 0 = mês atual, -1 = mês anterior…
 async function carregarPainelGestor(){
   var box = $("pgConteudo");
   box.innerHTML = "<div class='vazio'>Carregando…</div>";
-  var hoje = new Date(), ano = hoje.getFullYear(), mes = hoje.getMonth(), hojeISO = chaveSemanaData(hoje);
+  var hoje = new Date(), ref = new Date(hoje.getFullYear(), hoje.getMonth() + _pgMesOff, 1);
+  var ano = ref.getFullYear(), mes = ref.getMonth(), mesAtual = _pgMesOff === 0;
+  var hojeISO = chaveSemanaData(hoje);
+  $("pgMesLabel").textContent = MESES_LONGOS[mes] + "/" + String(ano).slice(2);
+  $("btnPgMesProx").disabled = mesAtual;
   var semanas = semanasDoMes(ano, mes);
-  var segAnt = segundaDe(hoje); segAnt.setDate(segAnt.getDate() - 7);
-  if (!semanas.some(function(s){ return chaveSemanaData(s) === chaveSemanaData(segAnt); })) semanas.unshift(segAnt);
+  if (mesAtual){
+    var segAnt = segundaDe(hoje); segAnt.setDate(segAnt.getDate() - 7);
+    if (!semanas.some(function(s){ return chaveSemanaData(s) === chaveSemanaData(segAnt); })) semanas.unshift(segAnt);
+  }
   var pIns = carregarInsumos().catch(function(){ return []; });
   try{
     var res = await Promise.all([
@@ -15575,12 +15593,12 @@ async function carregarPainelGestor(){
           var q = parseFloat(it.resultado.qtdEnvasada)||0; envUn += q;
           envL += _litrosReaisEnvase({ formato: it.formato, qtd: q, excessoMl: it.resultado.excessoMl, litrosInicio: it.resultado.litrosInicio, litrosFim: it.resultado.litrosFim, reguaValidada: it.resultado.reguaValidada });
         }
-        if ((it.tipo === "brassagem" || it.tipo === "envase") && !it.resultado && di < hojeISO)
+        if ((it.tipo === "brassagem" || it.tipo === "envase") && !it.resultado && di < hojeISO && (mesAtual || doMes))
           pend.push({ data: di, txt: (it.tipo === "brassagem" ? "⚗️ Brassagem " : "🍾 Envase ")+(it.estilo||it.produto||"")+(it.formato?" "+it.formato:"")+(it.tanque?" · "+it.tanque:"")+(it.lote?" · "+it.lote:"") });
       });
     });
     pend.sort(function(a,b){ return a.data.localeCompare(b.data); });
-    var diasMes = new Date(ano, mes+1, 0).getDate(), ritmo = hoje.getDate() / diasMes * 100;
+    var diasMes = new Date(ano, mes+1, 0).getDate(), ritmo = mesAtual ? hoje.getDate() / diasMes * 100 : 100;
     var metaBarris = Object.values(meta.barris || {}).reduce(function(a,b){ return a + (+b||0); }, 0);
 
     // tanques
@@ -15608,25 +15626,31 @@ async function carregarPainelGestor(){
     box.innerHTML =
       "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:12px'>"+
         "<div style='"+card+"'><div style='font-weight:800;margin-bottom:4px'>⚗️ Brassado em "+MESES_LONGOS[mes]+"</div>"+_pgBarra(brassReal, +meta.brass||0, ritmo, "L")+
-          (brassPrev > brassReal ? "<div style='font-size:.7rem;color:#8B6914;margin-top:2px'>+ "+fmtNum(Math.round(brassPrev-brassReal))+" L programados ainda sem resultado</div>" : "")+"</div>"+
+          (brassPrev > brassReal ? "<div style='font-size:.7rem;color:#8B6914;margin-top:2px'>+ "+fmtNum(Math.round(brassPrev-brassReal))+" L programados "+(mesAtual?"ainda ":"")+"sem resultado</div>" : "")+"</div>"+
         "<div style='"+card+"'><div style='font-weight:800;margin-bottom:4px'>🍾 Envasado em "+MESES_LONGOS[mes]+"</div>"+_pgBarra(envUn, +meta.envTotal||0, ritmo, "un")+
           "<div style='font-size:.7rem;color:var(--muted);margin-top:2px'>≈ "+fmtNum(Math.round(envL))+" L em PET/garrafa</div></div>"+
         "<div style='"+card+"'><div style='font-weight:800;margin-bottom:4px'>🛢 Barris em "+MESES_LONGOS[mes]+"</div>"+_pgBarra(barrisL, metaBarris, ritmo, "L")+"</div>"+
-        "<div style='"+card+"'><div style='font-weight:800;margin-bottom:4px'>🍺 Tanques</div>"+
+        "<div style='"+card+"'><div style='font-weight:800;margin-bottom:4px'>🍺 Tanques"+(mesAtual?"":" <small style='font-weight:600;color:var(--muted)'>(agora)</small>")+"</div>"+
           "<div style='font-size:1.6rem;font-weight:900'>"+ocupados+" <span style='font-size:.9rem;font-weight:600;color:var(--muted)'>de "+tanques.length+" ocupados</span></div>"+
           "<div style='font-size:.75rem;color:var(--muted)'>"+["fermentando","maturando","pronto","critico","brassagem","livre"].filter(function(k){ return cont[k]; }).map(function(k){ return cont[k]+" "+({fermentando:"fermentando",maturando:"maturando",pronto:"pronto p/ envase",critico:"atenção",brassagem:"brassagem prevista",livre:"livre"})[k]; }).join(" · ")+"</div></div>"+
       "</div>"+
-      "<div style='"+card+";margin-bottom:12px;border-color:"+(alertas.length?"#DC2626":"#16A34A")+"'><div style='font-weight:800;margin-bottom:4px'>"+(alertas.length?"🔔 Alertas ("+alertas.length+")":"✅ Nenhum alerta")+"</div>"+
+      (mesAtual ? "" : "<div style='background:#EFF6FF;border:1px solid #3B82F6;color:#1E3A8A;border-radius:8px;padding:6px 10px;font-size:.78rem;margin-bottom:10px'>ℹ️ Produção e pendências são de "+MESES_LONGOS[mes]+"/"+ano+". Alertas e tanques mostram a situação de <b>agora</b> — o app não guarda como os tanques estavam no passado.</div>")+
+      "<div style='"+card+";margin-bottom:12px;border-color:"+(alertas.length?"#DC2626":"#16A34A")+"'><div style='font-weight:800;margin-bottom:4px'>"+(alertas.length?"🔔 Alertas ("+alertas.length+")":"✅ Nenhum alerta")+(mesAtual?"":" <small style='font-weight:600;color:var(--muted)'>(agora)</small>")+"</div>"+
         alertas.map(function(a){ return "<div style='font-size:.82rem;padding:2px 0'>"+a+"</div>"; }).join("")+"</div>"+
-      "<div style='"+card+";margin-bottom:12px'><div style='font-weight:800;margin-bottom:4px'>📋 Pendências de lançamento</div>"+
+      "<div style='"+card+";margin-bottom:12px'><div style='font-weight:800;margin-bottom:4px'>📋 Pendências de lançamento"+(mesAtual?"":" de "+MESES_LONGOS[mes])+"</div>"+
         (pend.length ? pend.map(function(p){ return "<div style='font-size:.82rem;padding:2px 0'><b>"+_dsData(p.data)+"</b> — "+esc(p.txt)+"</div>"; }).join("")
-                     : "<div style='font-size:.82rem;color:var(--muted)'>Tudo lançado até ontem. 👍</div>")+"</div>"+
-      "<div style='"+card+";overflow-x:auto'><div style='font-weight:800;margin-bottom:4px'>🍺 Situação dos tanques</div>"+
+                     : "<div style='font-size:.82rem;color:var(--muted)'>"+(mesAtual?"Tudo lançado até ontem. 👍":"Tudo lançado neste mês. 👍")+"</div>")+"</div>"+
+      "<div style='"+card+";overflow-x:auto'><div style='font-weight:800;margin-bottom:4px'>🍺 Situação dos tanques"+(mesAtual?"":" (agora)")+"</div>"+
         "<table class='pg-tab'><thead><tr><th>Tanque</th><th style='text-align:left'>Estágio</th><th style='text-align:left'>Lote</th><th>Dias</th><th style='text-align:left'>Leitura / adições</th></tr></thead><tbody>"+linhasTq+"</tbody></table></div>";
     $("pgQuando").textContent = "atualizado "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   }catch(e){ box.innerHTML = "<div style='color:#B91C1C'>"+esc(e.message)+"</div>"; }
 }
-document.addEventListener("click", function(ev){ if (ev.target && ev.target.id === "btnPgAtualizar") carregarPainelGestor(); });
+document.addEventListener("click", function(ev){
+  var id = ev.target && ev.target.id;
+  if (id === "btnPgAtualizar") carregarPainelGestor();
+  if (id === "btnPgMesAnt"){ _pgMesOff--; carregarPainelGestor(); }
+  if (id === "btnPgMesProx" && _pgMesOff < 0){ _pgMesOff++; carregarPainelGestor(); }
+});
 
 
 /* ==================================================================

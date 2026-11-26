@@ -44,6 +44,17 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.15.1 — 26/11/2026
+
+**Painel do gestor: escolher o mês**
+
+- Setas ‹ mês › ao lado do título do Painel
+- Mês já fechado: barras mostram o resultado final × meta ("✔ meta batida" /
+  "✖ faltaram X"), sem a marca de ritmo; pendências = tudo do mês sem resultado
+- Alertas e tanques continuam mostrando a situação de agora (marcados "(agora)")
+
+---
+
 ## 3.15.0 — 26/11/2026
 
 **Nova aba 📊 Painel (admin e gestor)**
