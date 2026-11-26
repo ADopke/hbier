@@ -3975,7 +3975,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.13.1";
+var VERSAO = "3.13.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -13895,11 +13895,13 @@ $("btnExportarTanquesExcel").addEventListener("click", function(){
 $("btnFichaFechar").addEventListener("click", function(){
   if (typeof fp_dirty !== "undefined" && fp_dirty){ try{ fp_simSave(null, {auto:true}); }catch(e){} toast("💾 Salvando as alterações antes de fechar…","ok"); }
   $("modalFicha").hidden = true;
+  fp_pararPresenca(true);
 });
 $("modalFicha").addEventListener("click", function(e){
   if (e.target !== $("modalFicha")) return;
   if (typeof fp_dirty !== "undefined" && fp_dirty){ try{ fp_simSave(null, {auto:true}); }catch(err){} }
   $("modalFicha").hidden = true;
+  fp_pararPresenca(true);
 });
 
 $("btnFichaImprimir").addEventListener("click", function(){
@@ -15400,6 +15402,51 @@ function fp_oferecerRascunho(lote, fichaServidor){
   }
 }
 
+/* ── Presença na ficha (v3.13.2): quem mais está com ela aberta + aviso quando outra pessoa salva ── */
+var fp_presTimer = null, fp_presLote = "";
+function fp_iniciarPresenca(lote){
+  fp_pararPresenca();
+  fp_presLote = String(lote||"").trim(); if (!fp_presLote || fp_presLote === "—") return;
+  var tick = async function(){
+    if ($("modalFicha").hidden || !document.getElementById("fp-app")) { fp_pararPresenca(true); return; }
+    try{
+      var r = await api("/api/ficha",{method:"POST",body:{acao:"presenca", lote:fp_presLote}});
+      fp_mostrarPresenca(r);
+    }catch(e){}
+  };
+  setTimeout(tick, 1500);
+  fp_presTimer = setInterval(tick, 30000);
+}
+function fp_pararPresenca(avisarSaida){
+  clearInterval(fp_presTimer); fp_presTimer = null;
+  if (avisarSaida && fp_presLote){ try{ api("/api/ficha",{method:"POST",body:{acao:"presenca", lote:fp_presLote, saindo:true}}).catch(function(){}); }catch(e){} }
+}
+function fp_mostrarPresenca(r){
+  var app = document.getElementById("fp-app"); if (!app || !r) return;
+  var bar = document.getElementById("fp-presenca");
+  if (!bar){
+    bar = document.createElement("div"); bar.id = "fp-presenca";
+    bar.style.cssText = "position:sticky;top:0;z-index:30;display:flex;flex-direction:column;gap:4px";
+    app.insertBefore(bar, app.firstChild);
+  }
+  var html = "";
+  if (r.outros && r.outros.length)
+    html += "<div style='background:#EFF6FF;border:1.5px solid #3B82F6;color:#1E3A8A;border-radius:8px;padding:6px 10px;font-size:.8rem;font-weight:700'>👤 "+
+      r.outros.map(function(o){ return "@"+esc(o); }).join(", ")+(r.outros.length>1?" também estão":" também está")+" com esta ficha aberta agora — combinem quem edita o quê.</div>";
+  if (r.versao && fp_versaoCarregada && r.versao > fp_versaoCarregada && r.salvoPor && r.salvoPor !== (sessao && sessao.login)){
+    var hora = r.salvoEm ? new Date(r.salvoEm).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) : "";
+    html += "<div style='background:#FEF3C7;border:1.5px solid #F59E0B;color:#78350F;border-radius:8px;padding:6px 10px;font-size:.8rem;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap'>"+
+      "🔄 @"+esc(r.salvoPor)+" salvou esta ficha às "+hora+" (v"+r.versao+"). O que você vê aqui está desatualizado."+
+      "<button type='button' id='fpAtualizarPres' class='fp-btn' style='padding:3px 10px;margin-left:auto'>"+(fp_dirty?"Salvar e atualizar":"Atualizar ficha")+"</button></div>";
+  }
+  bar.innerHTML = html;
+  var b = document.getElementById("fpAtualizarPres");
+  if (b) b.onclick = function(){
+    if (fp_dirty){ fp_simSave(null);   // o servidor junta com a versão nova e recarrega a ficha (aviso 🔀)
+    } else if (window._fpTqAtual) abrirFichaLote(window._fpTqAtual);
+  };
+}
+
 /* ── 🕘 Versões da ficha (admin/gestor) ── */
 async function fp_abrirVersoes(){
   var app = document.getElementById('fp-app'); if (!app) return;
@@ -16735,6 +16782,7 @@ function abrirFichaLote(tq){
   fp_injetarBotoesHistorico();
 
   $("modalFicha").hidden = false;
+  fp_iniciarPresenca(lote);
 
   /* — popula select de receitas na ficha — */
   rec_initFichaSelect();

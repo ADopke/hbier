@@ -60,6 +60,20 @@ export default protegido(async function(req, res) {
     return res.json({ ficha: ficha || null });
   }
 
+  /* ── POST presença: quem está com a ficha aberta + versão atual (a cada 30 s) ── */
+  if (req.method === "POST" && corpo(req).acao === "presenca") {
+    const lote = String(corpo(req).lote || "").trim();
+    if (!lote) return erro(res, 400, "lote obrigatório.");
+    const agora = Date.now();
+    const pres = (await ler(`presenca:${lote}`)) || {};
+    Object.keys(pres).forEach((k) => { if (agora - pres[k] > 75000) delete pres[k]; });
+    if (corpo(req).saindo) delete pres[usuario.login]; else pres[usuario.login] = agora;
+    await gravar(`presenca:${lote}`, pres);
+    const f = await ler(`ficha:${lote}`);
+    return res.json({ ok: true, outros: Object.keys(pres).filter((k) => k !== usuario.login),
+      versao: (f && f.meta && f.meta.versao) || 0, salvoPor: f && f.meta && f.meta.salvoPor, salvoEm: f && f.meta && f.meta.salvoEm });
+  }
+
   /* ── POST salva ficha ── */
   if (req.method === "POST") {
     let { lote, dados } = corpo(req);

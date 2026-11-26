@@ -44,6 +44,20 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.13.2 — 26/11/2026
+
+**Ficha: aviso de quem está editando**
+
+- Com a ficha aberta, o app avisa a cada 30 s: "👤 @rhafael também está com
+  esta ficha aberta agora"
+- Se outra pessoa salvar enquanto a ficha está aberta: faixa amarela
+  "🔄 @pablo salvou esta ficha às 10:41 (v12) — O que você vê está
+  desatualizado" com botão "Atualizar ficha" (ou "Salvar e atualizar" se
+  houver alterações — o servidor junta as duas versões)
+- `POST /api/ficha {acao:"presenca"}` (presença expira em 75 s)
+
+---
+
 ## 3.13.1 — 26/11/2026
 
 **Alerta de leitura atrasada**
