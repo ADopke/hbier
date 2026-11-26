@@ -2093,6 +2093,13 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         </div>
         <div id="pgConteudo" style="padding:0 14px 14px"><div class="vazio">Carregando…</div></div>
       </section>
+      <section id="secPurga">
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
+          <span class="sec-title">🔥 Purga da caldeira</span>
+          <span class="sec-sub">tela de bloqueio em dia de brassagem</span>
+        </div>
+        <div id="purgaConteudo" style="padding:0 14px 14px"><div class="vazio">Carregando…</div></div>
+      </section>
       <section id="secAvisos">
         <div class="sec-head" style="flex-wrap:wrap;gap:8px">
           <span class="sec-title">🔔 Avisos no celular</span>
@@ -4030,7 +4037,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.16.1";
+var VERSAO = "3.17.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4356,6 +4363,7 @@ async function abrirApp(){
   $("abaLotes").hidden    = !["admin","gestor"].includes(sessao.papel);
   $("abaPainel").hidden   = !["admin","gestor"].includes(sessao.papel);
   try{ _waConferirInicio(); }catch(e){}
+  try{ _purgaIniciar(); }catch(e){}
   // segunda-feira: confere insumos × estoque e avisa o gestor (rotina de compras)
   if (["admin","gestor"].includes(sessao.papel) && new Date().getDay() === 1){
     setTimeout(function(){
@@ -15595,7 +15603,7 @@ async function carregarPainelGestor(){
     if (!semanas.some(function(s){ return chaveSemanaData(s) === chaveSemanaData(segAnt); })) semanas.unshift(segAnt);
   }
   var pIns = carregarInsumos().catch(function(){ return []; });
-  try{ carregarAvisosCfg(); }catch(e){}
+  try{ carregarAvisosCfg(); carregarPurgaCfg(); }catch(e){}
   try{
     var res = await Promise.all([
       api("/api/tanques").catch(function(){ return {tanques:[]}; }),
@@ -15646,6 +15654,7 @@ async function carregarPainelGestor(){
     tanques.forEach(function(t){ if (t.adicoes && t.estagio !== "livre") t.adicoes.itens.forEach(function(x){ if (!x.usado) alertas.push("🚫 <b>"+esc(t.nome)+"</b> ("+esc(t.lote||"")+") sem "+esc(x.nome)+" registrado"); }); });
     tanques.filter(function(t){ return t.estagio === "critico"; }).forEach(function(t){ alertas.push("🚨 <b>"+esc(t.nome)+"</b> "+esc(t.estagioLabel||"atenção")+" — "+(t.diasTanque||0)+" dias no tanque"); });
     if (pend.length) alertas.push("📋 "+pend.length+" brassagem/envase de dias anteriores sem resultado lançado");
+    try{ var pu = await api("/api/avisos?purga=1"); if (mesAtual && pu.cfg.ativo && pu.temBrassagem && !pu.registro && pu.agora >= pu.cfg.hora) alertas.unshift("🔥 <b>Purga da caldeira NÃO confirmada</b> — hoje tem brassagem (aviso desde "+esc(pu.cfg.hora)+")"); }catch(e){}
     var errosDia = erros.filter(function(e){ return Date.now() - new Date(e.em) < 86400000; }).length;
     if (errosDia) alertas.push("🐞 "+errosDia+" erro(s) do app nas últimas 24h (ver Relatórios)");
     try{ await pIns; var ins = window._insAlertas; if (ins && ins.length) alertas.push("🛒 "+ins.length+" insumo(s) abaixo do necessário para as próximas brassagens"); }catch(e){}
@@ -15862,6 +15871,82 @@ function _waConferirInicio(){
   }
 }
 
+/* ==================================================================
+   🔥 Purga da caldeira (v3.17.0): em dia de brassagem, a partir do horário marcado,
+   tela vermelha que bloqueia o app dos operadores até alguém confirmar que ligou
+   ================================================================== */
+var _purgaTimer = null, _purgaInfo = null;
+async function _purgaChecar(){
+  if (typeof sessao === "undefined" || !sessao) return;
+  try{ _purgaInfo = await api("/api/avisos?purga=1"); }catch(e){ return; }
+  var r = _purgaInfo;
+  var pendente = r.cfg.ativo && r.temBrassagem && !r.registro && r.agora >= r.cfg.hora;
+  if (sessao.papel === "colaborador"){
+    if (pendente) _purgaMostrar(); else _purgaFechar();
+  }
+}
+function _purgaFechar(){ var o = document.getElementById("purgaTela"); if (o) o.remove(); }
+function _purgaMostrar(){
+  if (document.getElementById("purgaTela")) return;
+  var o = document.createElement("div"); o.id = "purgaTela";
+  o.style.cssText = "position:fixed;inset:0;z-index:10000;background:#B91C1C;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:18px;animation:tq-pulse-cx 1.4s ease-in-out infinite";
+  o.innerHTML =
+    "<div style='font-size:5rem;line-height:1'>🔥</div>"+
+    "<div style='font-family:\"Barlow Condensed\",sans-serif;font-weight:900;font-size:clamp(2.2rem,8vw,4rem);letter-spacing:.03em;line-height:1.05'>LIGAR A PURGA<br>DA CALDEIRA</div>"+
+    "<div style='font-size:1.1rem;font-weight:700;max-width:520px'>Hoje tem brassagem. Ligue a purga agora e depois confirme aqui.</div>"+
+    "<button type='button' id='purgaBtn' style='position:relative;overflow:hidden;background:#fff;color:#7F1D1D;border:0;border-radius:14px;padding:18px 28px;font-size:1.3rem;font-weight:900;min-width:280px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none'>"+
+      "<span id='purgaFill' style='position:absolute;left:0;top:0;bottom:0;width:0;background:#86EFAC'></span>"+
+      "<span style='position:relative'>✅ Liguei a purga</span></button>"+
+    "<div style='font-size:.85rem;opacity:.9'>Segure o botão por 2 segundos</div>";
+  document.body.appendChild(o);
+  var btn = o.querySelector("#purgaBtn"), fill = o.querySelector("#purgaFill"), t0 = 0, raf = 0, feito = false;
+  var parar = function(){ cancelAnimationFrame(raf); if (!feito){ fill.style.width = "0"; } };
+  var passo = function(){
+    var p = Math.min(1, (Date.now() - t0) / 2000); fill.style.width = (p*100)+"%";
+    if (p < 1){ raf = requestAnimationFrame(passo); return; }
+    feito = true;
+    api("/api/avisos",{method:"POST",body:{acao:"purga"}}).then(function(r){
+      _purgaFechar();
+      var h = new Date(r.registro.em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+      toast("🔥 Purga confirmada por @"+r.registro.por+" às "+h+".","ok");
+    }).catch(function(e){ feito = false; fill.style.width = "0"; toast("Não consegui registrar: "+e.message+" — tente de novo.","erro"); });
+  };
+  btn.addEventListener("pointerdown", function(ev){ ev.preventDefault(); if (feito) return; t0 = Date.now(); raf = requestAnimationFrame(passo); });
+  ["pointerup","pointerleave","pointercancel"].forEach(function(n){ btn.addEventListener(n, parar); });
+  btn.addEventListener("contextmenu", function(ev){ ev.preventDefault(); });
+}
+function _purgaIniciar(){
+  clearInterval(_purgaTimer);
+  _purgaChecar();
+  _purgaTimer = setInterval(_purgaChecar, 60000);
+}
+document.addEventListener("visibilitychange", function(){ if (!document.hidden) _purgaChecar(); });
+async function carregarPurgaCfg(){
+  var box = $("purgaConteudo"); if (!box) return;
+  try{
+    var r = await api("/api/avisos?purga=1"); _purgaInfo = r;
+    var hojeTxt = !r.temBrassagem ? "<span style='color:var(--muted)'>Hoje não tem brassagem programada.</span>"
+      : r.registro ? "<span style='color:#16A34A;font-weight:800'>✅ Purga de hoje ligada — @"+esc(r.registro.por)+" às "+new Date(r.registro.em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+"</span>"
+      : (r.agora >= r.cfg.hora ? "<span style='color:#DC2626;font-weight:900'>🔥 Purga de hoje AINDA NÃO CONFIRMADA</span>"
+                               : "<span style='color:#8B6914;font-weight:700'>Brassagem hoje — aviso às "+esc(r.cfg.hora)+"</span>");
+    box.innerHTML =
+      "<div style='margin-bottom:8px'>"+hojeTxt+"</div>"+
+      "<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap'>"+
+        "<label style='display:inline-flex;align-items:center;gap:4px'><input type='checkbox' id='purgaAtivo'"+(r.cfg.ativo?" checked":"")+" style='width:auto'> Aviso ligado</label>"+
+        "<label style='display:inline-flex;align-items:center;gap:4px'>Horário <input type='time' id='purgaHora' value='"+esc(r.cfg.hora)+"' style='width:110px'></label>"+
+        "<button class='btn mini' id='btnPurgaSalvar'>💾 Salvar</button></div>"+
+      "<div style='font-size:.72rem;color:var(--muted);margin-top:6px'>Só em dia com brassagem na Programação. Bloqueia o app dos operadores até alguém segurar \"Liguei a purga\". Admin/gestor não são bloqueados.</div>"+
+      (r.hist && r.hist.length ? "<div style='font-size:.75rem;margin-top:8px'><b>Últimos registros:</b> "+r.hist.map(function(h){ return _dsData(h.data).slice(0,5)+" @"+esc(h.por)+" "+new Date(h.em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}); }).join(" · ")+"</div>" : "");
+  }catch(e){ box.innerHTML = "<div style='color:#B91C1C'>"+esc(e.message)+"</div>"; }
+}
+document.addEventListener("click", async function(ev){
+  if (!ev.target || ev.target.id !== "btnPurgaSalvar") return;
+  try{
+    await api("/api/avisos",{method:"POST",body:{acao:"purgaCfg", ativo: $("purgaAtivo").checked, hora: $("purgaHora").value}});
+    toast("💾 Aviso da purga salvo.","ok"); carregarPurgaCfg();
+  }catch(e){ toast(e.message,"erro"); }
+});
+
 /* ── 🔔 Avisos no celular (Web Push) ── */
 function _b64ParaBytes(b64){
   var pad = "=".repeat((4 - b64.length % 4) % 4), raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
@@ -15897,7 +15982,7 @@ async function carregarAvisosCfg(){
   try{
     var res = await Promise.all([api("/api/avisos?cfg=1"), _pushInscricaoAtual()]);
     var cfg = res[0].cfg, inscritos = res[0].inscritos || [], aqui = !!res[1];
-    var NOMES = { dia: "📅 Programação do dia", semana: "🗓 Programação da semana", alertas: "⚠️ Alertas dos tanques" };
+    var NOMES = { dia: "📅 Programação do dia", semana: "🗓 Programação da semana", alertas: "⚠️ Alertas dos tanques", purga: "🔥 Lembrete da purga (só dia de brassagem)" };
     var DIAS_C = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
     var horas = []; for (var h = 5; h <= 22; h++) horas.push(h);
     box.innerHTML =

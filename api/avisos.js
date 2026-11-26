@@ -14,7 +14,10 @@ const CFG_PADRAO = {
   dia:     { ativo: true,  hora: 6, dias: [1, 2, 3, 4, 5, 6], para: [] },
   semana:  { ativo: true,  hora: 7, dias: [1], para: [] },
   alertas: { ativo: false, hora: 8, dias: [1, 2, 3, 4, 5, 6], para: [] },
+  purga:   { ativo: false, hora: 7, dias: [1, 2, 3, 4, 5, 6], para: [] },
 };
+const PURGA_PADRAO = { ativo: true, hora: "07:30" };
+const PURGA_INICIO = "2026-11-27";   // não bloquear no dia em que a função entrou no ar
 
 async function vapid() {
   let k = await ler("push:vapid");
@@ -55,9 +58,12 @@ function destinatarios(av, subs) {
   if (av.para && av.para.length) return av.para;
   return Object.keys(subs).filter((l) => (subs[l] || []).some((s) => ["admin", "gestor"].includes(s.papel)));
 }
-async function textoDia(iso, dow) {
-  const itens = ((await ler(`prog:${segundaISO(iso)}`)) || [])
+async function itensDoDia(iso, dow) {
+  return ((await ler(`prog:${segundaISO(iso)}`)) || [])
     .filter((it) => (it.dataISO ? it.dataISO === iso : it.dia === DIAS[dow]));
+}
+async function textoDia(iso, dow) {
+  const itens = await itensDoDia(iso, dow);
   const b = itens.filter((i) => i.tipo === "brassagem").length;
   const e = itens.filter((i) => i.tipo === "envase").length;
   const r = itens.filter((i) => i.tipo === "barril").length;
@@ -86,6 +92,10 @@ export default protegido(async function (req, res) {
       if (tipo === "dia") payload = { title: `📲 Programação de ${DIAS[t.dow].toLowerCase()} ${t.iso.slice(8, 10)}/${t.iso.slice(5, 7)}`,
         body: `${await textoDia(t.iso, t.dow)} — toque para enviar no WhatsApp`, url: `/?wa=dia&data=${t.iso}`, tag: "wa-dia" };
       if (tipo === "semana") payload = { title: "📲 Programação da semana", body: "Toque para enviar o resumo da semana no WhatsApp", url: `/?wa=semana&data=${t.iso}`, tag: "wa-semana" };
+      if (tipo === "purga") {
+        if (!(await itensDoDia(t.iso, t.dow)).some((i) => i.tipo === "brassagem") || (await ler(`purga:${t.iso}`))) continue;
+        payload = { title: "🔥 LIGAR A PURGA DA CALDEIRA", body: "Hoje tem brassagem. Ligue a purga e confirme no app.", url: "/", tag: "purga" };
+      }
       if (tipo === "alertas") payload = { title: "🔔 Alertas dos tanques", body: "Toque para ver os alertas e mandar as cobranças no WhatsApp", url: "/?wa=alertas", tag: "wa-alertas" };
       const n = await enviar(destinatarios(av, subs), payload);
       await gravar(marca, { em: new Date().toISOString(), n });
@@ -101,6 +111,21 @@ export default protegido(async function (req, res) {
   }
   if (!u) return erro(res, 401, "Sessão expirada. Entre novamente.");
   const gestor = ["admin", "gestor"].includes(u.papel);
+
+  /* ── 🔥 purga da caldeira em dia de brassagem ── */
+  if (req.method === "GET" && req.query.purga) {
+    const t = agoraSP();
+    const cfg = { ...PURGA_PADRAO, ...((await ler("purga:cfg")) || {}) };
+    const itens = await itensDoDia(t.iso, t.dow);
+    const hist = [];
+    if (gestor) for (let i = 0; i < 7; i++) {
+      const d = new Date(t.iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - i);
+      const k = d.toISOString().slice(0, 10), r = await ler(`purga:${k}`);
+      if (r) hist.push({ data: k, ...r });
+    }
+    return res.json({ ok: true, hoje: t.iso, agora: `${String(t.hora).padStart(2, "0")}:${String(new Date(Date.now() - 3 * 3600000).getUTCMinutes()).padStart(2, "0")}`,
+      cfg, temBrassagem: t.iso >= PURGA_INICIO && itens.some((i) => i.tipo === "brassagem"), registro: await ler(`purga:${t.iso}`), hist });
+  }
 
   if (req.method === "GET" && req.query.cfg) {
     if (!gestor) return erro(res, 403, "Apenas admin ou gestor.");
@@ -126,6 +151,22 @@ export default protegido(async function (req, res) {
     subs[u.login] = (subs[u.login] || []).filter((s) => s.sub.endpoint !== d.endpoint);
     await gravar("push:subs", subs);
     return res.json({ ok: true });
+  }
+  if (d.acao === "purga") {
+    const t = agoraSP(), k = `purga:${t.iso}`;
+    const ja = await ler(k);
+    if (ja) return res.json({ ok: true, registro: ja });
+    const reg = { por: u.login, em: new Date().toISOString() };
+    await gravar(k, reg);
+    return res.json({ ok: true, registro: reg });
+  }
+  if (d.acao === "purgaCfg") {
+    if (!gestor) return erro(res, 403, "Apenas admin ou gestor.");
+    const h = String(d.hora || "").match(/^(\d{1,2}):(\d{2})$/);
+    if (!h || +h[1] > 23 || +h[2] > 59) return erro(res, 400, "Horário inválido (use hh:mm).");
+    const cfg = { ativo: d.ativo !== false, hora: `${h[1].padStart(2, "0")}:${h[2]}` };
+    await gravar("purga:cfg", cfg);
+    return res.json({ ok: true, cfg });
   }
   if (d.acao === "teste") {
     await vapid();

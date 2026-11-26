@@ -44,6 +44,24 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.17.0 — 26/11/2026
+
+**🔥 Purga da caldeira**
+
+- Em dia com brassagem na Programação, a partir do horário marcado (padrão
+  07:30), o app dos operadores fica coberto por uma tela vermelha "LIGAR A PURGA
+  DA CALDEIRA" até alguém segurar "✅ Liguei a purga" por 2 s. Registra quem e
+  a que horas; confirmou uma vez, some para todos. O app confere a cada minuto e
+  ao voltar para a tela
+- Admin/gestor não são bloqueados: veem "🔥 Purga NÃO confirmada" nos alertas do
+  Painel e o registro dos últimos 7 dias em Painel › Purga da caldeira, onde
+  também se liga/desliga e se muda o horário
+- Opcional: lembrete no celular em Painel › Avisos ("🔥 Lembrete da purga", só
+  dispara em dia de brassagem e se ainda não foi confirmada; desligado)
+- Começa a valer em 27/11/2026
+
+---
+
 ## 3.16.1 — 26/11/2026
 
 - Corrigido: "Teste iodo" das bateladas não era salvo na ficha (o campo é uma
