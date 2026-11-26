@@ -44,6 +44,13 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.19.1 — 26/11/2026
+
+- Dose padrão de ácido lático: 250 mL por batelada (aviso de excesso acima de 300 mL).
+  Receita com dose própria em Tratamento de Água continua valendo a da receita
+
+---
+
 ## 3.19.0 — 26/11/2026
 
 **🧪 Ácido lático e pH da mostura por batelada**
