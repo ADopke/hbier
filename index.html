@@ -4046,7 +4046,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.18.1";
+var VERSAO = "3.19.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -15233,6 +15233,14 @@ function fp_addBatelada(opts){
 
   var list=document.getElementById('fp-bat-list');
   if(!list){ console.error('fp-bat-list não encontrado'); return; }
+  if (!restaurando){
+    var antes = list.querySelectorAll('.fp-bat-card'), ant = antes[antes.length-1];
+    if (ant && fp_acidoAvaliar(ant) === 'pendente'){
+      toast("🔒 Batelada "+antes.length+": registre o pH 5 min (entre "+fmtPh(ACIDO_PADRAO.min)+" e "+fmtPh(ACIDO_PADRAO.max)+") ou libere com justificativa antes de abrir a próxima.","erro");
+      ant.scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+  }
   // Volume da batelada anterior: só avisa (fica em vermelho até preencher)
   if (!restaurando) {
     var cardsAnt = list.querySelectorAll('.fp-bat-card');
@@ -15290,14 +15298,27 @@ function fp_addBatelada(opts){
       '<div class="fp-field"><label>Vel. agitador (Hz)</label><input type="number" placeholder="45"></div>'+
     '</div>'+
     '<div class="fp-vol-row">'+
-      '<div class="fp-field"><label>pH após 5 min</label><input type="number" step="0.1" placeholder="5,4"></div>'+
+      '<div class="fp-field"><label>pH após 5 min</label><input type="number" step="0.01" placeholder="5,4" data-ph5></div>'+
       '<div class="fp-field"><label>Previsão iodo (hh:mm)</label><input type="time" data-iodo></div>'+
       '<div class="fp-field"><label>Teste iodo</label><select data-iodo-teste><option value="">—</option><option>✅ Negativo (ok)</option><option>⚠️ Positivo (amilase)</option></select></div>'+
       '<div class="fp-field"><label>Vel. agitador transf. (Hz)</label><input type="number" placeholder="15"></div>'+
     '</div>'+
+    /* v3.19.0 — ácido lático com o malte + pH 5 min controlado (fora de .fp-vol-row de propósito: não mexe na ordem dos campos salvos) */
+    '<div class="fp-acido-bloco" style="margin-top:8px;border:1.5px solid #93C5FD;border-radius:8px;padding:8px 10px;background:rgba(59,130,246,.05)">'+
+      '<div class="fp-small-label" style="margin:0 0 6px">🧪 Ácido lático (junto com o malte) → pH 5 min entre 5,0 e 5,2</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">'+
+        '<div class="fp-field"><label>Ácido lático (mL)</label><input type="number" step="1" data-acido="ml" placeholder="150"></div>'+
+        '<div class="fp-field"><label>Ácido extra (mL)</label><input type="number" step="1" data-acido="extra" placeholder="se precisar"></div>'+
+        '<div class="fp-field"><label>pH após correção</label><input type="number" step="0.01" data-acido="ph2" placeholder="5,1"></div>'+
+      '</div>'+
+      '<div class="fp-acido-status" style="margin-top:6px;font-size:.82rem;font-weight:700"></div>'+
+      '<div class="fp-acido-just" hidden style="margin-top:6px;font-size:.8rem;padding:5px 8px;border-radius:6px;background:#FFEDD5;border:1px solid #F97316;color:#7C2D12"></div>'+
+      '<button type="button" class="fp-acido-liberar" hidden onclick="fp_acidoLiberar(this)" style="margin-top:6px;font-size:.75rem;padding:4px 10px;border:1px solid #F97316;border-radius:6px;background:#FFF7ED;color:#9A3412;cursor:pointer;font-weight:700">🟠 Liberar com justificativa</button>'+
+    '</div>'+
 
     /* ── LAUTER ── */
     '<div class="fp-divider"></div>'+
+    '<div class="fp-lauter-bloco" style="position:relative">'+
     '<div class="fp-small-label">🔽 Lauter</div>'+
     '<div class="fp-vol-row">'+
       '<div class="fp-field"><label>Enxague da tina (L)</label><input type="number" placeholder="30"></div>'+
@@ -15324,6 +15345,7 @@ function fp_addBatelada(opts){
       '<div class="fp-lav-log"></div>'+
     '</div></div>'+
     '<button class="fp-add-row-btn fp-add-lav-btn" onclick="fp_addLavRow(this)">＋ Adicionar lavagem</button>'+
+    '</div>'+
 
     /* ── FERVURA ── */
     '<div class="fp-divider"></div>'+
@@ -15415,6 +15437,12 @@ function fp_addBatelada(opts){
   if(batBody && !batBody.querySelector('.fp-audit-hist-wrap')){
     batBody.appendChild(fp_criarBotaoHistorico());
   }
+
+  if (!restaurando){
+    var mlNovo = card.querySelector('[data-acido="ml"]');
+    if (mlNovo && !mlNovo.value) mlNovo.value = String(_acidoDosePadrao());
+  }
+  fp_acidoAvaliar(card);
 
   fp_atualizarNumBateladas();
   fp_markDirty();
@@ -15663,6 +15691,12 @@ async function carregarPainelGestor(){
     tanques.forEach(function(t){ if (t.adicoes && t.estagio !== "livre") t.adicoes.itens.forEach(function(x){ if (!x.usado) alertas.push("🚫 <b>"+esc(t.nome)+"</b> ("+esc(t.lote||"")+") sem "+esc(x.nome)+" registrado"); }); });
     tanques.filter(function(t){ return t.estagio === "critico"; }).forEach(function(t){ alertas.push("🚨 <b>"+esc(t.nome)+"</b> "+esc(t.estagioLabel||"atenção")+" — "+(t.diasTanque||0)+" dias no tanque"); });
     if (pend.length) alertas.push("📋 "+pend.length+" brassagem/envase de dias anteriores sem resultado lançado");
+    try{
+      var fr = await _fermCarregar(true);
+      (fr.lotes||[]).forEach(function(l){ (l.acidoJust||[]).forEach(function(j){
+        if (Date.now() - new Date(j.em) < 7*86400000) alertas.push("🟠 <b>"+esc(l.lote)+"</b> batelada "+j.bat+": Lauter liberado com pH "+(j.ph!=null?String(j.ph).replace(".", ","):"?")+" por @"+esc(j.por)+" — "+esc(j.motivo));
+      }); });
+    }catch(e){}
     try{ var pu = await api("/api/avisos?purga=1"); if (mesAtual && pu.cfg.ativo && pu.temBrassagem && !pu.registro && pu.agora >= pu.cfg.hora) alertas.unshift("🔥 <b>Purga da caldeira NÃO confirmada</b> — hoje tem brassagem (aviso desde "+esc(pu.cfg.hora)+")"); }catch(e){}
     var errosDia = erros.filter(function(e){ return Date.now() - new Date(e.em) < 86400000; }).length;
     if (errosDia) alertas.push("🐞 "+errosDia+" erro(s) do app nas últimas 24h (ver Relatórios)");
@@ -15880,6 +15914,69 @@ function _waConferirInicio(){
   }
 }
 
+
+
+/* ==================================================================
+   🧪 Ácido lático / pH da mostura (v3.19.0): dose padrão por batelada, pH 5 min
+   entre 5,0 e 5,2 e Lauter travado até registrar (ou liberar com justificativa)
+   ================================================================== */
+var ACIDO_PADRAO = { ml: 150, min: 5.0, max: 5.2, alertaPct: 20 };
+function fmtPh(v){ return String(v.toFixed(1)).replace(".", ","); }
+function _acNum(v){ var n = parseFloat(String(v==null?"":v).replace(",", ".")); return isNaN(n) ? null : n; }
+function _acidoDosePadrao(){ var r = _acNum((document.getElementById("fpa-lactico")||{}).value); return r && r > 20 ? r : ACIDO_PADRAO.ml; }
+function fp_acidoAvaliar(card){
+  if (!card) return "ok";
+  var q = function(sel){ return card.querySelector(sel); };
+  var bloco = q(".fp-acido-bloco"); if (!bloco) return "ok";
+  var mlEl = q('[data-acido="ml"]'), exEl = q('[data-acido="extra"]'), ph2El = q('[data-acido="ph2"]'), ph5El = q("[data-ph5]");
+  if (mlEl && !mlEl.value && !card.dataset.acidoLegado) mlEl.placeholder = String(_acidoDosePadrao());
+  var ph5 = _acNum(ph5El && ph5El.value), ph2 = _acNum(ph2El && ph2El.value);
+  var ph = ph2 != null ? ph2 : ph5;
+  var just = card.dataset.acidoJust ? JSON.parse(card.dataset.acidoJust) : null;
+  var lauter = q(".fp-lauter-bloco");
+  var lauterTemDado = lauter && Array.prototype.some.call(lauter.querySelectorAll("input"), function(i){ return i.value; });
+  var st = q(".fp-acido-status"), jb = q(".fp-acido-just"), lb = q(".fp-acido-liberar");
+  var estado, msg, cor;
+  var total = (_acNum(mlEl && mlEl.value) || 0) + (_acNum(exEl && exEl.value) || 0), padrao = _acidoDosePadrao();
+  if (ph == null){ estado = "pendente"; msg = "🔒 Meça o pH 5 min depois do malte + ácido. O Lauter libera com pH entre "+fmtPh(ACIDO_PADRAO.min)+" e "+fmtPh(ACIDO_PADRAO.max)+"."; cor = "#1D4ED8"; }
+  else if (ph > ACIDO_PADRAO.max){ estado = "pendente"; msg = "🚫 pH "+String(ph).replace(".", ",")+" alto — adicione ácido extra em etapas pequenas (ex.: 10 mL), espere e meça de novo em \"pH após correção\"."; cor = "#B91C1C"; }
+  else if (ph < ACIDO_PADRAO.min){ estado = "pendente"; msg = "🚫 pH "+String(ph).replace(".", ",")+" baixo — avise o responsável. Ácido demais não tem correção simples."; cor = "#B91C1C"; }
+  else { estado = "ok"; msg = "✅ pH "+String(ph).replace(".", ",")+" dentro da faixa"+(total ? " · "+fmtNum(total)+" mL de ácido" : ""); cor = "#15803D"; }
+  if (estado === "pendente" && just) estado = "justificado";
+  if (estado === "pendente" && (card.dataset.acidoLegado || lauterTemDado)) estado = "legado";
+  if (total && total > padrao * (1 + ACIDO_PADRAO.alertaPct/100)) msg += " · ⚠️ "+fmtNum(total)+" mL é mais de "+ACIDO_PADRAO.alertaPct+"% acima do padrão ("+fmtNum(padrao)+" mL): a água ou o malte podem ter mudado.";
+  if (st){ st.textContent = msg; st.style.color = cor; }
+  if (jb){ jb.hidden = !just; if (just) jb.textContent = "🟠 Liberado com justificativa por @"+just.por+" em "+_dsDataHora(just.em)+(just.ph!=null?" (pH "+String(just.ph).replace(".", ",")+")":"")+": "+just.motivo; }
+  if (lb) lb.hidden = !(estado === "pendente" && ph != null);
+  if (lauter){
+    var travar = estado === "pendente";
+    lauter.querySelectorAll("input,select,button").forEach(function(i){ i.disabled = travar; });
+    lauter.style.opacity = travar ? ".45" : "";
+    var aviso = lauter.querySelector(".fp-lauter-trava");
+    if (travar && !aviso){
+      aviso = document.createElement("div"); aviso.className = "fp-lauter-trava";
+      aviso.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none";
+      aviso.innerHTML = "<span style='background:#1E3A8A;color:#fff;border-radius:8px;padding:6px 12px;font-weight:800;font-size:.85rem;opacity:1'>🔒 Registre o pH da mostura ("+fmtPh(ACIDO_PADRAO.min)+"–"+fmtPh(ACIDO_PADRAO.max)+") para liberar o Lauter</span>";
+      lauter.appendChild(aviso);
+    } else if (!travar && aviso) aviso.remove();
+  }
+  card.dataset.acidoEstado = estado;
+  return estado;
+}
+function fp_acidoLiberar(btn){
+  var card = btn.closest(".fp-bat-card"); if (!card) return;
+  var ph2 = _acNum((card.querySelector('[data-acido="ph2"]')||{}).value), ph5 = _acNum((card.querySelector("[data-ph5]")||{}).value);
+  var motivo = (prompt("Por que liberar o Lauter com o pH fora de "+fmtPh(ACIDO_PADRAO.min)+"–"+fmtPh(ACIDO_PADRAO.max)+"?\n(fica registrado com seu nome e aparece para o gestor)") || "").trim();
+  if (motivo.length < 8){ if (motivo) toast("Escreva um motivo um pouco mais completo.","aviso"); return; }
+  card.dataset.acidoJust = JSON.stringify({ motivo: motivo, por: (sessao && sessao.login) || "?", em: new Date().toISOString(), ph: ph2 != null ? ph2 : ph5 });
+  fp_acidoAvaliar(card); fp_markDirty();
+  toast("🟠 Lauter liberado com justificativa.","ok");
+}
+window.fp_acidoLiberar = fp_acidoLiberar;
+document.addEventListener("input", function(ev){
+  var t = ev.target; if (!t || !t.closest) return;
+  if (t.matches("[data-acido],[data-ph5]")) fp_acidoAvaliar(t.closest(".fp-bat-card"));
+});
 
 /* ==================================================================
    🧬 Fermentos (v3.18.0): geração calculada pela origem (fermento novo = G1;
@@ -16341,6 +16438,7 @@ async function carregarInsumos(opts){
       (r.enzimas||[]).forEach(function(l){ soma(l[0], _insNum(l[2]) * bats, "g", b.estilo); });
       (r.sais||[]).forEach(function(l){ soma(l[0], _insNum(l[1]) * litros / 100, "g", b.estilo); });
       (r.adjuntos||[]).forEach(function(l){ soma(l[0], _insNum(l[4]) * bats, "un", b.estilo); });
+      var acML = _insNum((r.agua||{}).lactico); soma("Ácido lático", (acML > 20 ? acML : ACIDO_PADRAO.ml) * bats, "mL", b.estilo);
     });
 
     var estoque = (_insEstoque.itens||[]).slice();
@@ -17127,11 +17225,16 @@ function fp_simSave(btn, opts){
         });
         var iodoEl = card.querySelector('[data-iodo-teste]');   // v3.16.1: o select não entrava em "volumes"
         var iodoTeste = iodoEl ? iodoEl.value : '';
+        var acido = (function(){
+          var g = function(k){ var e = card.querySelector('[data-acido="'+k+'"]'); return e ? e.value : ''; };
+          var j = card.dataset.acidoJust ? JSON.parse(card.dataset.acidoJust) : null;
+          return { ml: g('ml'), extra: g('extra'), ph2: g('ph2'), just: j };
+        })();
         var volResultEl = card.querySelector('.fp-bat-vol-result');
         var volResult = volResultEl && volResultEl.value ? parseFloat(volResultEl.value) : null;
         var ogEl = card.querySelector('.fp-og-real');
         var ogReal = ogEl && ogEl.value ? parseFloat(String(ogEl.value).replace(',', '.')) : null;
-        return { etapas: etapas, volumes: volVals, volKeys: volKeys, iodoTeste: iodoTeste, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog, volResult: volResult, ogReal: ogReal };
+        return { etapas: etapas, volumes: volVals, volKeys: volKeys, iodoTeste: iodoTeste, acido: acido, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog, volResult: volResult, ogReal: ogReal };
       });
     })(),
     sais:        coletarTabela('fp-tbl-sais'),
@@ -17993,6 +18096,11 @@ function fp_preencherFicha(ficha){
           }
         }
         if (bat.iodoTeste){ var iSel = card.querySelector('[data-iodo-teste]'); if (iSel) iSel.value = bat.iodoTeste; }
+        if (bat.acido){
+          ['ml','extra','ph2'].forEach(function(k){ var e = card.querySelector('[data-acido="'+k+'"]'); if (e && bat.acido[k] != null) e.value = bat.acido[k]; });
+          if (bat.acido.just) card.dataset.acidoJust = JSON.stringify(bat.acido.just);
+        } else card.dataset.acidoLegado = '1';   // batelada salva antes do controle de pH: não trava
+        fp_acidoAvaliar(card);
         // atualiza resumo automático de etapas
         fp_atualizarResumoEtapas(card);
         // calcula eficiência real

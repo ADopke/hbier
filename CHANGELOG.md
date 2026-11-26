@@ -44,6 +44,26 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.19.0 — 26/11/2026
+
+**🧪 Ácido lático e pH da mostura por batelada**
+
+- Ficha › Batelada › Mostura: bloco "Ácido lático (junto com o malte)" com
+  dose já preenchida (150 mL, ou a dose da receita em Tratamento de Água),
+  "Ácido extra (mL)" e "pH após correção"
+- O "pH após 5 min" passa a ser controlado: faixa 5,0 a 5,2. Fora da faixa:
+  pH alto → orientação para ácido extra em etapas e medir de novo; pH baixo →
+  avisar o responsável
+- 🔒 O Lauter da batelada fica travado (campos cinza) até o pH estar na faixa,
+  e a próxima batelada não abre enquanto a anterior estiver pendente
+- 🟠 "Liberar com justificativa": destrava com o motivo, nome e hora; aparece
+  na batelada, no dossiê e nos alertas do Painel (últimos 7 dias)
+- ⚠️ Aviso se o total de ácido passar de 20% acima do padrão (mais de 180 mL)
+- Insumos × estoque passa a contar o ácido lático (mL por batelada programada)
+- Bateladas salvas antes desta versão não são travadas
+
+---
+
 ## 3.18.1 — 26/11/2026
 
 - 🧬 Fermentos saiu do Painel e foi para a aba Tanques (logo abaixo da Busca de

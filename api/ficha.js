@@ -55,6 +55,7 @@ export default protegido(async function(req, res) {
         geracao: fe.geracao != null && fe.geracao !== "" ? Number(fe.geracao) : num(lev.geracao),
         origem: fe.origem || "", origemLote: fe.origemLote || "", fornecedorLote: fe.fornecedorLote || "",
         inoculadoEm: lev.data || "",
+        acidoJust: (f.bateladas || []).map((b, bi) => (b && b.acido && b.acido.just) ? { bat: bi + 1, ...b.acido.just } : null).filter(Boolean),
         coleta: { realizada: !!col.realizada, em: col.realizadaEm || "", por: col.realizadaPor || "", destino: col.destino || "", prevista: col.dataPrevista || "" },
       };
     }).filter(Boolean);
