@@ -3975,7 +3975,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.13.3";
+var VERSAO = "3.14.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -14036,7 +14036,8 @@ function filtrarLotes(){
       "<td style='text-align:center'><span class='tag "+statusCls+"'>"+esc(l.status)+"</span></td>"+
       "<td style='text-align:center;font-size:.8rem;color:var(--muted)'>"+esc(salvoEm)+"</td>"+
       "<td style='font-size:.8rem;color:var(--muted)'>"+esc(l.salvoPor||"—")+"</td>"+
-      "<td><button class='btn mini' onclick='abrirFichaPorLote("+JSON.stringify(l.lote)+")'>📋 Abrir</button></td>"+
+      "<td style='white-space:nowrap'><button class='btn mini' onclick='abrirFichaPorLote("+JSON.stringify(l.lote)+")'>📋 Abrir</button> "+
+        "<button class='btn mini' title='Dossiê do lote (imprimir/PDF)' onclick='abrirDossiePorLote("+JSON.stringify(l.lote)+")'>📄</button></td>"+
     "</tr>";
   }).join("");
 }
@@ -15468,6 +15469,157 @@ function fp_mostrarPresenca(r){
   };
 }
 
+/* ── 📄 Dossiê do lote (v3.14.0): a ficha inteira + envase/fechamento + auditoria, numa página para imprimir/PDF ── */
+async function abrirDossiePorLote(lote){
+  try{ await abrirFichaPorLote(lote); }catch(e){ toast(e.message,"erro"); return; }
+  setTimeout(fp_abrirDossie, 1400);
+}
+function _dsData(iso){ if(!iso) return "—"; var d = new Date(String(iso).length===10 ? iso+"T12:00:00" : iso); return isNaN(d) ? esc(iso) : d.toLocaleDateString("pt-BR"); }
+function _dsDataHora(iso){ if(!iso) return "—"; var d = new Date(iso); return isNaN(d) ? esc(iso) : d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}); }
+async function fp_abrirDossie(){
+  var app = document.getElementById("fp-app"); if (!app) return;
+  var lote = (app.dataset.fpLote || "").trim(); if (!lote || lote === "—") { toast("Lote não identificado."); return; }
+  var norm = function(l){ return String(l||"").toUpperCase().replace(/\s+/g," ").trim(); };
+  var L = norm(lote);
+  toast("📄 Montando o dossiê do lote…","ok");
+
+  // 1) gráfico: desenha mesmo que a aba Gráficos não esteja aberta
+  var pg = document.getElementById("fp-panel-graficos"), pgAtiva = pg && pg.classList.contains("active");
+  if (pg && !pgAtiva){ pg.classList.add("active"); pg.style.position="absolute"; pg.style.left="-9999px"; pg.style.width="900px"; }
+  try{ if (typeof fp_renderGraficos === "function") fp_renderGraficos(); }catch(e){}
+  await new Promise(function(r){ setTimeout(r, 900); });
+
+  // 2) copia a ficha trocando campos por texto
+  var clone = app.cloneNode(true);
+  var origCtl = app.querySelectorAll("input,select,textarea"), cloneCtl = clone.querySelectorAll("input,select,textarea");
+  for (var i = 0; i < cloneCtl.length; i++){
+    var o = origCtl[i], c = cloneCtl[i]; if (!o || !c) continue;
+    if (o.type === "hidden"){ c.remove(); continue; }
+    var t;
+    if (o.type === "checkbox" || o.type === "radio") t = o.checked ? "☑" : "☐";
+    else if (o.tagName === "SELECT") t = o.selectedIndex >= 0 && o.options[o.selectedIndex] ? o.options[o.selectedIndex].text : "";
+    else t = o.value;
+    var sp = document.createElement("span"); sp.className = "ds-v"; sp.textContent = (t === "" || t == null) ? "—" : t;
+    c.replaceWith(sp);
+  }
+  var origCv = app.querySelectorAll("canvas"), cloneCv = clone.querySelectorAll("canvas");
+  for (var j = 0; j < cloneCv.length; j++){
+    var img = null;
+    try{ if (origCv[j] && origCv[j].width > 0) { var url = origCv[j].toDataURL("image/png"); if (String(url).indexOf("data:image") === 0){ img = document.createElement("img"); img.src = url; } if (img) img.style.cssText = "width:100%;height:auto"; } }catch(e){}
+    if (img) cloneCv[j].replaceWith(img); else cloneCv[j].remove();
+  }
+  if (pg && !pgAtiva){ pg.classList.remove("active"); pg.style.position=""; pg.style.left=""; pg.style.width=""; }
+  clone.querySelectorAll("button,.fp-tabs,#fp-tabs,.fp-save-bar,#fp-presenca,.fp-role-badge,.fp-lock-icon,.fp-sec-toggle,.fp-tab-pct,.fp-add-row-btn,script").forEach(function(e){ e.remove(); });
+  clone.querySelectorAll("[id]").forEach(function(e){ e.removeAttribute("id"); });
+  clone.removeAttribute("id");
+  clone.querySelectorAll(".fp-sec.collapsed").forEach(function(e){ e.classList.remove("collapsed"); });
+  clone.querySelectorAll("[hidden]").forEach(function(e){ e.removeAttribute("hidden"); });
+  clone.querySelectorAll(".fp-panel").forEach(function(e){ e.classList.add("active"); });
+  clone.querySelectorAll("th:last-child,td:last-child").forEach(function(e){ if (!e.textContent.trim()) e.remove(); }); // coluna do ✕
+
+  // 3) envase, barris e fechamento (tanque atual + lotes zerados)
+  var envases = [], barris = [], fechamento = null, tanqueNome = "", volIni = 0;
+  var tqAtual = (window._dadosTanques || _dadosTanques || []).find(function(t){ return norm(t.lote) === L; });
+  if (tqAtual){
+    tanqueNome = tqAtual.nome; volIni = parseFloat(tqAtual.volume) || 0;
+    envases = (tqAtual.historico||[]).filter(function(m){ return m.tipo === "envase" && norm(m.lote) === L && (m.temResultado || m.qtd); });
+    var nomeUp = String(tqAtual.nome||"").toUpperCase().replace(/[-\s]/g,"");
+    barris = ((typeof barrisPorTanque !== "undefined" && barrisPorTanque[nomeUp]) || []).filter(function(r){ return norm(r.lote) === L; });
+  }
+  try{
+    var tqs = ["tq01","tq02","tq03","tq04","tq05","tq06","tq07","tq08"];
+    var hs = await Promise.all(tqs.map(function(id){ return api("/api/tanques?acao=historico&tanqueId="+id).then(function(r){ return { id:id, h:r.historico||[] }; }).catch(function(){ return { id:id, h:[] }; }); }));
+    hs.forEach(function(x){ x.h.forEach(function(s){
+      if (norm(s.lote) !== L) return;
+      if (!fechamento || String(s.encerradoEm||"") > String(fechamento.encerradoEm||"")) fechamento = Object.assign({ tanque: x.id.toUpperCase() }, s);
+    }); });
+  }catch(e){}
+  if (tqAtual) fechamento = null;              // ainda está no tanque: vale o estado atual
+  if (fechamento){
+    tanqueNome = fechamento.tanque; volIni = parseFloat(fechamento.volume) || 0;
+    envases = fechamento.encasePet || []; barris = fechamento.barris || [];
+  }
+  var litPet = envases.reduce(function(s,m){ return s + _litrosReaisEnvase(m); }, 0);
+  var litBar = barris.reduce(function(s,r){ return s + (parseFloat(r.total)||0); }, 0);
+  var totalEnv = litPet + litBar;
+  var linhasEnv = envases.slice().sort(function(a,b){ return String(a.dataISO||"").localeCompare(String(b.dataISO||"")); }).map(function(m){
+    var regua = (m.litrosInicio || m.litrosFim) ? fmtNum(m.litrosInicio||0)+" → "+fmtNum(m.litrosFim||0)+" L" : "—";
+    return "<tr><td>"+_dsData(m.dataISO)+"</td><td>"+esc(m.formato||"")+"</td><td style='text-align:right'>"+esc(m.qtd||"")+"</td><td style='text-align:right'>"+regua+(m.reguaValidada?" ✔":"")+"</td><td style='text-align:right'><b>"+fmtNum(Math.round(_litrosReaisEnvase(m)*10)/10)+" L</b></td></tr>";
+  }).join("") + barris.slice().sort(function(a,b){ return String(a.dataISO||a.semana||"").localeCompare(String(b.dataISO||b.semana||"")); }).map(function(r){
+    var desc = (r.linhas||[]).map(function(l){ return esc(l.formato)+" ×"+esc(l.qtd); }).join(", ");
+    return "<tr><td>"+_dsData(r.dataISO||r.semana)+"</td><td>Barril</td><td>"+desc+"</td><td>—</td><td style='text-align:right'><b>"+fmtNum(parseFloat(r.total)||0)+" L</b></td></tr>";
+  }).join("");
+  var quebra = fechamento && fechamento.quebraTanque != null ? fechamento.quebraTanque : (volIni ? Math.max(0, volIni - totalEnv) : null);
+  var secEnvase =
+    "<div class='ds-bloco'><h2>🍺 Envase e fechamento do tanque</h2>"+
+    "<div class='ds-kpis'>"+
+      "<div><small>Tanque</small><b>"+esc(tanqueNome||"—")+"</b></div>"+
+      "<div><small>Volume inicial</small><b>"+(volIni?fmtNum(volIni)+" L":"—")+"</b></div>"+
+      "<div><small>Envasado (PET/garrafa)</small><b>"+fmtNum(Math.round(litPet))+" L</b></div>"+
+      "<div><small>Barris</small><b>"+fmtNum(Math.round(litBar))+" L</b></div>"+
+      "<div><small>Total envasado</small><b>"+fmtNum(Math.round(totalEnv))+" L</b></div>"+
+      "<div><small>Quebra</small><b>"+(quebra!=null?fmtNum(Math.round(quebra))+" L"+(volIni?" ("+(Math.round(quebra/volIni*1000)/10).toString().replace(".",",")+"%)":""):"—")+"</b></div>"+
+    "</div>"+
+    (linhasEnv ? "<table class='ds-tab'><thead><tr><th>Data</th><th>Formato</th><th>Qtd</th><th>Régua (início → fim)</th><th>Litros</th></tr></thead><tbody>"+linhasEnv+"</tbody></table>"
+               : "<p class='ds-muted'>Nenhum envase lançado para este lote.</p>")+
+    (fechamento ? "<p><b>Tanque zerado</b> em "+_dsDataHora(fechamento.encerradoEm)+" por @"+esc(fechamento.encerradoPor||"—")+
+                  " — fechamento: "+(fechamento.tipoFechamento==="soma"?"soma da litragem no Beer Sales":"quebra")+".</p>"
+                : "<p class='ds-muted'>Lote ainda não zerado"+(tqAtual?" (no "+esc(tqAtual.nome)+", "+esc(tqAtual.estagioLabel||tqAtual.estagio||"")+")":"")+".</p>")+
+    "</div>";
+
+  // 4) auditoria: quem preencheu o quê, quando
+  var aud = [];
+  Object.keys(fp_audit || {}).forEach(function(k){ (fp_audit[k]||[]).forEach(function(a){ if (a) aud.push(a); }); });
+  aud.sort(function(a,b){ return String(a.em||"").localeCompare(String(b.em||"")); });
+  var porPessoa = {}; aud.forEach(function(a){ porPessoa[a.por||"—"] = (porPessoa[a.por||"—"]||0) + 1; });
+  var secAud = "<div class='ds-bloco ds-quebra'><h2>🔏 Registro de preenchimento</h2>"+
+    (aud.length ? "<p>"+Object.keys(porPessoa).map(function(p){ return "@"+esc(p)+": "+porPessoa[p]+" registro(s)"; }).join(" · ")+"</p>"+
+      "<table class='ds-tab'><thead><tr><th>Quando</th><th>Quem</th><th>Valor gravado</th></tr></thead><tbody>"+
+      aud.slice(-400).map(function(a){ return "<tr><td>"+_dsDataHora(a.em)+"</td><td>@"+esc(a.por||"—")+"</td><td>"+esc(a.val==null?"":String(a.val))+"</td></tr>"; }).join("")+
+      "</tbody></table>" : "<p class='ds-muted'>Sem registros de auditoria nesta ficha.</p>")+
+    "<p class='ds-muted'>Ficha: versão "+(fp_versaoCarregada||"—")+(fp_dirty?" + alterações ainda não salvas nesta tela":"")+".</p></div>";
+
+  // 5) monta a página
+  var antigo = document.getElementById("dossieLote"); if (antigo) antigo.remove();
+  var d = document.createElement("div"); d.id = "dossieLote";
+  d.innerHTML =
+    "<style>"+
+    "#dossieLote{position:fixed;inset:0;z-index:9999;background:#fff;color:#111;overflow:auto;padding:0 0 40px}"+
+    "#dossieLote .ds-barra{position:sticky;top:0;z-index:2;background:#3B2A1A;color:#fff;display:flex;gap:8px;align-items:center;padding:8px 14px}"+
+    "#dossieLote .ds-barra b{flex:1}"+
+    "#dossieLote .ds-pag{max-width:1000px;margin:0 auto;padding:16px}"+
+    "#dossieLote h1{font-size:1.4rem;margin:0 0 2px}#dossieLote h2{font-size:1.05rem;margin:18px 0 8px;border-bottom:2px solid #3B2A1A;padding-bottom:3px}"+
+    "#dossieLote .ds-muted{color:#666;font-size:.8rem}"+
+    "#dossieLote .ds-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-bottom:8px}"+
+    "#dossieLote .ds-kpis div{border:1px solid #ddd;border-radius:6px;padding:5px 8px}#dossieLote .ds-kpis small{display:block;color:#666;font-size:.68rem}"+
+    "#dossieLote .ds-tab{width:100%;border-collapse:collapse;font-size:.78rem}#dossieLote .ds-tab th,#dossieLote .ds-tab td{border:1px solid #ddd;padding:3px 6px;text-align:left}"+
+    "#dossieLote .ds-tab th{background:#f3eee8}"+
+    "#dossieLote .ds-v{font-weight:600;white-space:pre-wrap}"+
+    "#dossieLote .fp-panel{display:block!important}#dossieLote .fp-sec-body{display:block!important}"+
+    "#dossieLote .fp-app{max-height:none!important;overflow:visible!important;height:auto!important}"+
+    "#dossieLote .fp-content{max-height:none!important;overflow:visible!important}"+
+    "#dossieLote .fp-sec,#dossieLote .fp-bat-card,#dossieLote tr{break-inside:avoid}"+
+    "@media print{body>*:not(#dossieLote){display:none!important}#dossieLote{position:static;overflow:visible;padding:0}"+
+      "#dossieLote .ds-barra{display:none}#dossieLote .ds-pag{max-width:none;padding:0}.ds-quebra{break-before:page}"+
+      "@page{size:A4;margin:12mm}}"+
+    "</style>"+
+    "<div class='ds-barra'><b>📄 Dossiê do lote "+esc(lote)+"</b>"+
+      "<button type='button' class='btn' id='dsImprimir'>🖨 Imprimir / salvar PDF</button>"+
+      "<button type='button' class='btn' id='dsFechar'>✕ Fechar</button></div>"+
+    "<div class='ds-pag'>"+
+      "<h1>HBier — Dossiê do lote "+esc(lote)+"</h1>"+
+      "<div class='ds-muted'>Gerado em "+new Date().toLocaleString("pt-BR")+" por @"+esc((sessao&&sessao.login)||"—")+" · app v"+esc(VERSAO)+"</div>"+
+      secEnvase+
+      "<div class='ds-bloco'><h2>📋 Ficha de produção</h2></div>"+
+      "<div class='ds-ficha'></div>"+
+      secAud+
+    "</div>";
+  d.querySelector(".ds-ficha").appendChild(clone);
+  document.body.appendChild(d);
+  d.querySelector("#dsFechar").onclick = function(){ d.remove(); };
+  d.querySelector("#dsImprimir").onclick = function(){ window.print(); };
+}
+
 /* ── 🕘 Versões da ficha (admin/gestor) ── */
 async function fp_abrirVersoes(){
   var app = document.getElementById('fp-app'); if (!app) return;
@@ -16760,6 +16912,7 @@ function abrirFichaLote(tq){
     '<span class="fp-unsaved" id="fp-saveStatus"></span>'+
     '<div style="display:flex;gap:8px">'+
       ((sessao && (sessao.papel==="admin"||sessao.papel==="gestor")) ? '<button class="fp-btn" type="button" onclick="fp_abrirVersoes()">🕘 Versões</button>' : '')+
+      '<button class="fp-btn" type="button" onclick="fp_abrirDossie()" title="Página completa do lote para imprimir ou salvar em PDF">📄 Dossiê</button>'+
       '<button class="fp-btn fp-btn-primary" onclick="fp_simSave(this)">💾 Salvar Ficha</button>'+
     '</div>'+
   '</div>'+

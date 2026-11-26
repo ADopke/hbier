@@ -44,6 +44,22 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.14.0 — 26/11/2026
+
+**📄 Dossiê do lote (imprimir / salvar em PDF)**
+
+- Botão "📄 Dossiê" na barra de baixo da ficha e "📄" ao lado de cada lote na aba Lotes
+- Uma página só com: resumo de envase e fechamento (tanque, volume inicial,
+  envasado em PET/garrafa, barris, total, quebra em L e %, data/quem zerou),
+  tabela dos envases (formato, qtd, régua início → fim, litros) e barris,
+  a ficha inteira (receita, sais, fermentáveis, lúpulos, mosturação, bateladas,
+  volumes, OG, leituras de fermentação/maturação, Clearmax/levedura, dry hop,
+  aprovação, coleta), o gráfico, e o registro de preenchimento (quem gravou o
+  quê e quando)
+- "🖨 Imprimir / salvar PDF" usa a impressão do navegador (A4); no celular, escolha "Salvar como PDF"
+
+---
+
 ## 3.13.3 — 26/11/2026
 
 **Ficha: salva só o que você alterou**
