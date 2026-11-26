@@ -4105,9 +4105,33 @@ function mostrar(tela){
   });
 }
 
+// ── Ambiente de teste: faixa fixa no topo + botão para recopiar os dados da fábrica ──
+function _mostrarFaixaTeste(info){
+  if (document.getElementById("faixaTeste")) return;
+  var f = document.createElement("div"); f.id = "faixaTeste";
+  f.style.cssText = "position:sticky;top:0;z-index:5000;background:repeating-linear-gradient(45deg,#FACC15,#FACC15 14px,#FDE047 14px,#FDE047 28px);"+
+    "color:#422006;font-weight:900;font-size:.85rem;padding:6px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:3px solid #A16207";
+  var quando = info && info.copiadoEm ? new Date(info.copiadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "—";
+  f.innerHTML = "<span>🧪 AMBIENTE DE TESTE — nada aqui afeta o app da fábrica</span>"+
+    "<span style='font-weight:600'>dados copiados da fábrica em "+quando+"</span>"+
+    "<span style='flex:1'></span>"+
+    (info && info.copiaDisponivel ? "<button type='button' id='btnCopiarFabrica' style='background:#422006;color:#FDE047;border:none;border-radius:6px;padding:4px 10px;font-weight:800;cursor:pointer'>🔄 Copiar dados da fábrica agora</button>"
+      : "<span style='font-weight:600'>⚠ cópia indisponível (falta configurar a chave somente-leitura)</span>");
+  document.body.insertBefore(f, document.body.firstChild);
+  document.title = "🧪 TESTE · " + document.title;
+  var b = document.getElementById("btnCopiarFabrica");
+  if (b) b.onclick = async function(){
+    if (!confirm("Substituir os dados do TESTE pelos dados atuais da fábrica?\n\nO que você alterou no teste será sobrescrito. A fábrica não é alterada.")) return;
+    b.disabled = true; b.textContent = "Copiando…";
+    try{ var r = await api("/api/auth",{method:"POST",body:{acao:"copiarProducao"}}); toast("🔄 "+r.copiadas+" registros copiados da fábrica.","ok"); setTimeout(function(){ location.reload(); }, 1200); }
+    catch(e){ toast(e.message,"erro"); b.disabled = false; b.textContent = "🔄 Copiar dados da fábrica agora"; }
+  };
+}
+
 async function iniciar(){
   try{
     var r = await api("/api/auth");
+    if (r.teste) _mostrarFaixaTeste(r.teste);
     if (!r.banco) return mostrar("telaBanco");
     if (!r.instalado) return mostrar("telaInstalar");
     if (!r.usuario) return mostrar("telaLogin");

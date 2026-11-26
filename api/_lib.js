@@ -7,10 +7,20 @@ import crypto from "node:crypto";
 /*  Banco de dados — Upstash Redis via API REST (sem dependências)     */
 /* ------------------------------------------------------------------ */
 
-const REDIS_URL =
-  process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN =
-  process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+// Ambiente de TESTE (deploy "Preview" da Vercel): usa SÓ o banco de teste
+// (variáveis com prefixo TESTE_). Se não estiver configurado, não cai no banco
+// da fábrica — recusa gravar. Produção continua exatamente como antes.
+export const EH_TESTE = process.env.VERCEL_ENV === "preview";
+const REDIS_URL = EH_TESTE
+  ? (process.env.TESTE_KV_REST_API_URL || process.env.TESTE_UPSTASH_REDIS_REST_URL)
+  : (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL);
+const REDIS_TOKEN = EH_TESTE
+  ? (process.env.TESTE_KV_REST_API_TOKEN || process.env.TESTE_UPSTASH_REDIS_REST_TOKEN)
+  : (process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN);
+
+// Banco da FÁBRICA em modo somente leitura — usado no teste só para copiar os dados
+const PROD_URL_LEITURA   = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const PROD_TOKEN_LEITURA = process.env.KV_REST_API_READ_ONLY_TOKEN || process.env.UPSTASH_REDIS_REST_READ_ONLY_TOKEN;
 
 export function bancoConfigurado() {
   return Boolean(REDIS_URL && REDIS_TOKEN);
@@ -39,6 +49,33 @@ async function redis(comando) {
 }
 
 const PREFIXO = "hbier";
+
+/* ── Cópia fábrica → teste (só no ambiente de teste) ── */
+async function redisEm(url, token, comando) {
+  const resp = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(comando) });
+  if (!resp.ok) throw new Error(`Erro no banco (${resp.status}): ${await resp.text()}`);
+  return (await resp.json()).result;
+}
+export function copiaDisponivel() {
+  return EH_TESTE && Boolean(REDIS_URL && REDIS_TOKEN && PROD_URL_LEITURA && PROD_TOKEN_LEITURA && PROD_URL_LEITURA !== REDIS_URL);
+}
+export async function copiarProducaoParaTeste() {
+  if (!copiaDisponivel()) throw new Error("Cópia indisponível: só no ambiente de teste, com banco de teste e chave somente-leitura da fábrica configurados.");
+  let cursor = "0", copiadas = 0;
+  do {
+    const [prox, chaves] = await redisEm(PROD_URL_LEITURA, PROD_TOKEN_LEITURA, ["SCAN", cursor, "MATCH", `${PREFIXO}:*`, "COUNT", "200"]);
+    cursor = prox;
+    const alvo = (chaves || []).filter((k) => !k.startsWith(`${PREFIXO}:lock:`));
+    if (alvo.length) {
+      const vals = await redisEm(PROD_URL_LEITURA, PROD_TOKEN_LEITURA, ["MGET", ...alvo]);
+      for (let i = 0; i < alvo.length; i++) {
+        if (vals[i] !== null && vals[i] !== undefined) { await redis(["SET", alvo[i], vals[i]]); copiadas++; }
+      }
+    }
+  } while (cursor !== "0");
+  await redis(["SET", `${PREFIXO}:teste:copiadoEm`, JSON.stringify(new Date().toISOString())]);
+  return copiadas;
+}
 
 export async function ler(chave) {
   const valor = await redis(["GET", `${PREFIXO}:${chave}`]);

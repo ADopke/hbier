@@ -44,6 +44,18 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## Ambiente de teste (ramo `teste`)
+
+- Deploy "Preview" da Vercel usa só o banco de teste (`TESTE_KV_REST_API_URL`
+  / `TESTE_KV_REST_API_TOKEN`); sem elas, não grava em nada (nunca cai no
+  banco da fábrica). Produção inalterada
+- Na primeira visita com o banco de teste vazio, copia os dados da fábrica
+  lendo com a chave somente-leitura (`KV_REST_API_READ_ONLY_TOKEN`)
+- Faixa amarela "🧪 AMBIENTE DE TESTE" fixa no topo, com data da cópia e
+  botão "🔄 Copiar dados da fábrica agora" (admin)
+
+---
+
 ## 3.12.4 — 25/11/2026
 
 **Ficha de Produção: rascunho local, salvamento automático, trava e versões**

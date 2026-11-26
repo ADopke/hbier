@@ -15,6 +15,9 @@ import {
   erro,
   protegido,
   novoId,
+  EH_TESTE,
+  copiaDisponivel,
+  copiarProducaoParaTeste,
 } from "./_lib.js";
 import { tarefasPadrao } from "./_seed.js";
 
@@ -24,18 +27,33 @@ export default protegido(async function handler(req, res) {
     if (!bancoConfigurado()) {
       return res.json({ banco: false });
     }
-    const usuarios = await listaUsuarios();
+    let usuarios = await listaUsuarios();
+    // Ambiente de teste vazio: copia os dados da fábrica (somente leitura lá) na primeira visita
+    if (EH_TESTE && usuarios.length === 0 && copiaDisponivel()) {
+      await copiarProducaoParaTeste();
+      usuarios = await listaUsuarios();
+    }
     const usuario = await usuarioLogado(req);
     return res.json({
       banco: true,
       instalado: usuarios.length > 0,
       usuario,
+      teste: EH_TESTE ? { copiadoEm: await ler("teste:copiadoEm"), copiaDisponivel: copiaDisponivel() } : null,
     });
   }
 
   if (req.method !== "POST") return erro(res, 405, "Método não permitido.");
 
   const { acao } = corpo(req);
+
+  /* ---------- só no ambiente de teste: recopiar os dados da fábrica ---------- */
+  if (acao === "copiarProducao") {
+    if (!EH_TESTE) return erro(res, 403, "Disponível só no ambiente de teste.");
+    const u = await exigirLogin(req, res); if (!u) return;
+    if (u.papel !== "admin") return erro(res, 403, "Apenas admin.");
+    const n = await copiarProducaoParaTeste();
+    return res.json({ ok: true, copiadas: n });
+  }
 
   /* ---------- primeiro acesso: cria o administrador ---------- */
   if (acao === "instalar") {
