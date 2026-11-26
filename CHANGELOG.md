@@ -44,6 +44,21 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.13.0 — 26/11/2026
+
+**Backup diário do banco e registro de erros**
+
+- **💾 Backups** (Relatórios, só admin): cópia automática de todo o banco
+  todo dia às 03:00 (Vercel Cron → `/api/backup`), compactada, guardando 7
+  dias + os 5 manuais mais recentes. Botões: fazer backup agora, ⬇ baixar
+  (JSON, para guardar no Drive) e ↩ restaurar (pede "RESTAURAR"; antes faz
+  um backup do estado atual)
+- **🐞 Erros na tela dos usuários** (Relatórios, só admin): erros de tela,
+  falhas 5xx do servidor e quedas de conexão são registrados com usuário,
+  versão, aba e navegador (`/api/logs`, últimos 400)
+
+---
+
 ## 3.12.4 — 25/11/2026
 
 **Ficha de Produção: rascunho local, salvamento automático, trava e versões**

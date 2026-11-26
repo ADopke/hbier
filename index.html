@@ -2605,6 +2605,31 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         </div>
         <ul class="lista" id="listaFalhas"></ul>
       </section>
+
+      <!-- ===== Admin: backups e erros (v3.13.0) ===== -->
+      <section id="secBackups" class="so-admin">
+        <div class="sec-head">
+          <span class="sec-title">💾 Backups do banco</span>
+          <span class="sec-sub">cópia automática todo dia às 03:00 · guarda 7 dias</span>
+        </div>
+        <div style="padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn mini" id="btnBackupAgora">💾 Fazer backup agora</button>
+          <button class="btn mini secundario" id="btnBackupAtualizar">Atualizar lista</button>
+        </div>
+        <div id="listaBackups" style="padding:0 14px 14px;font-size:.84rem"></div>
+      </section>
+
+      <section id="secErros" class="so-admin">
+        <div class="sec-head">
+          <span class="sec-title">🐞 Erros na tela dos usuários</span>
+          <span class="sec-sub" id="errosResumo"></span>
+        </div>
+        <div style="padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn mini secundario" id="btnErrosAtualizar">Atualizar</button>
+          <button class="btn mini secundario" id="btnErrosLimpar">Limpar lista</button>
+        </div>
+        <div id="listaErros" style="padding:0 14px 14px;font-size:.8rem"></div>
+      </section>
     </div>
 
     <!-- ---------- ABA STATUS DOS TANQUES ---------- -->
@@ -3950,7 +3975,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.12.4";
+var VERSAO = "3.13.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4081,13 +4106,110 @@ function toast(msg, tipo){
   toastTimer = setTimeout(function(){ t.remove(); }, 3200);
 }
 
+/* ── Relatórios › admin: backups e erros ── */
+function _fmtDataHora(iso){ try{ return new Date(iso).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}); }catch(e){ return iso||""; } }
+function _fmtBytes(n){ n = +n||0; return n > 1048576 ? (n/1048576).toFixed(1)+" MB" : (n/1024).toFixed(0)+" KB"; }
+async function _carregarAdminRel(){
+  var ehAdmin = sessao && sessao.papel === "admin";
+  document.querySelectorAll("#painelRelatorios .so-admin").forEach(function(el){ el.hidden = !ehAdmin; });
+  if (!ehAdmin) return;
+  _listarBackups(); _listarErros();
+}
+async function _listarBackups(){
+  var box = $("listaBackups"); box.innerHTML = "Carregando…";
+  try{
+    var r = await api("/api/backup?lista=1"), bs = r.backups || [];
+    if (!bs.length){ box.innerHTML = "<div style='color:var(--muted)'>Nenhum backup ainda. O primeiro automático sai hoje às 03:00 — ou clique em “Fazer backup agora”.</div>"; return; }
+    var NOM = { diario:"automático", manual:"manual", "pre-restauracao":"antes de restaurar" };
+    box.innerHTML = "<table style='width:100%;border-collapse:collapse'><thead><tr style='text-align:left;color:var(--muted)'><th>Backup</th><th>Tipo</th><th>Registros</th><th>Tamanho</th><th></th></tr></thead><tbody>"+
+      bs.map(function(b){
+        return "<tr style='border-top:1px solid var(--linha)'><td>"+_fmtDataHora(b.em)+"</td><td>"+(NOM[b.motivo]||b.motivo)+(b.por&&b.por!=="automático"?" · @"+esc(b.por):"")+"</td>"+
+          "<td>"+fmtNum(b.chaves)+"</td><td>"+_fmtBytes(b.bytesJson)+"</td>"+
+          "<td style='text-align:right;white-space:nowrap'><a class='btn mini secundario' href='/api/backup?baixar="+encodeURIComponent(b.id)+"'>⬇ baixar</a> "+
+          "<button class='btn mini secundario' data-restaurar='"+esc(b.id)+"' style='color:#B91C1C'>↩ restaurar</button></td></tr>";
+      }).join("")+"</tbody></table>"+
+      "<div style='color:var(--muted);font-size:.74rem;margin-top:6px'>Dica: baixe um backup de vez em quando e guarde no Drive — fica uma cópia fora do servidor.</div>";
+    box.querySelectorAll("[data-restaurar]").forEach(function(b){
+      b.onclick = async function(){
+        var t = prompt("⚠️ RESTAURAR o banco para o backup "+b.dataset.restaurar+"?\n\nTudo o que foi gravado depois dele (fichas, programação, tanques…) volta ao que era naquele momento. Antes, o app guarda um backup do estado atual.\n\nDigite RESTAURAR para confirmar:");
+        if (t !== "RESTAURAR") return;
+        try{ var rr = await api("/api/backup",{method:"POST",body:{acao:"restaurar", data:b.dataset.restaurar, confirmar:"RESTAURAR"}});
+          toast("↩ "+rr.restauradas+" registros restaurados. Backup do estado anterior: "+rr.backupAntes,"ok"); _listarBackups(); }
+        catch(e){ toast(e.message,"erro"); }
+      };
+    });
+  }catch(e){ box.innerHTML = "<div style='color:#B91C1C'>"+esc(e.message)+"</div>"; }
+}
+async function _listarErros(){
+  var box = $("listaErros"); box.innerHTML = "Carregando…";
+  try{
+    var r = await api("/api/logs"), es = r.erros || [];
+    $("errosResumo").textContent = es.length ? es.length+" registro(s)" : "";
+    if (!es.length){ box.innerHTML = "<div style='color:var(--muted)'>Nenhum erro registrado. 🎉</div>"; return; }
+    box.innerHTML = es.slice(0,150).map(function(e){
+      return "<details style='border-top:1px solid var(--linha);padding:5px 0'><summary style='cursor:pointer'><b>"+_fmtDataHora(e.em)+"</b> · @"+esc(e.quem)+" · v"+esc(e.versao)+" · "+esc(e.onde)+
+        "<div style='color:#B91C1C'>"+esc(e.msg)+"</div></summary>"+
+        "<pre style='white-space:pre-wrap;font-size:.7rem;color:var(--muted);margin:4px 0'>"+esc(e.stack||"")+"\n"+esc(e.nav||"")+"</pre></details>";
+    }).join("");
+  }catch(e){ box.innerHTML = "<div style='color:#B91C1C'>"+esc(e.message)+"</div>"; }
+}
+document.addEventListener("click", async function(ev){
+  var id = ev.target && ev.target.id;
+  if (id === "btnBackupAgora"){ ev.target.disabled = true; ev.target.textContent = "Fazendo backup…";
+    try{ var r = await api("/api/backup",{method:"POST",body:{acao:"agora"}}); toast("💾 Backup feito: "+fmtNum(r.backup.chaves)+" registros ("+_fmtBytes(r.backup.bytesJson)+")","ok"); _listarBackups(); }
+    catch(e){ toast(e.message,"erro"); }
+    ev.target.disabled = false; ev.target.textContent = "💾 Fazer backup agora"; }
+  if (id === "btnBackupAtualizar") _listarBackups();
+  if (id === "btnErrosAtualizar") _listarErros();
+  if (id === "btnErrosLimpar" && confirm("Limpar a lista de erros?")){ try{ await api("/api/logs",{method:"POST",body:{acao:"limpar"}}); _listarErros(); }catch(e){ toast(e.message,"erro"); } }
+});
+
+/* ── Registro de erros (v3.13.0): erros de tela e falhas do servidor vão para /api/logs ── */
+var _errFila = [], _errVistos = {}, _errTimer = null;
+function _abaAtual(){ var b = document.querySelector("[data-aba].ativa"); return b ? b.dataset.aba : ""; }
+function registrarErro(msg, stack, onde){
+  try{
+    msg = String(msg || "").slice(0, 400); if (!msg) return;
+    if (/ResizeObserver loop|Script error\.?$/i.test(msg)) return;      // ruído de navegador
+    var chave = msg + "|" + (onde||"");
+    if (_errVistos[chave]) return; _errVistos[chave] = 1;              // 1x por sessão
+    _errFila.push({ msg: msg, stack: String(stack||"").slice(0,1200), onde: (onde||"") + (onde?" · ":"") + "aba " + _abaAtual(),
+                    url: location.pathname + location.search, versao: (typeof VERSAO !== "undefined" ? VERSAO : ""), em: new Date().toISOString() });
+    clearTimeout(_errTimer); _errTimer = setTimeout(_enviarErros, 4000);
+  }catch(e){}
+}
+function _enviarErros(){
+  if (!_errFila.length) return;
+  var lote = _errFila.splice(0, 20);
+  try{
+    var corpoTxt = JSON.stringify({ erros: lote });
+    if (navigator.sendBeacon && document.visibilityState === "hidden") navigator.sendBeacon("/api/logs", new Blob([corpoTxt], {type:"application/json"}));
+    else fetch("/api/logs", { method:"POST", headers:{"Content-Type":"application/json"}, body: corpoTxt, keepalive:true }).catch(function(){});
+  }catch(e){}
+}
+window.addEventListener("error", function(ev){
+  registrarErro(ev.message || (ev.error && ev.error.message), ev.error && ev.error.stack, (ev.filename||"").split("/").pop()+":"+(ev.lineno||""));
+});
+window.addEventListener("unhandledrejection", function(ev){
+  var r = ev.reason || {}; if (r && r.status && r.status < 500) return;   // 4xx = validação normal
+  registrarErro(r.message || String(r), r.stack, "promessa");
+});
+document.addEventListener("visibilitychange", function(){ if (document.visibilityState === "hidden") _enviarErros(); });
+
 async function api(rota, opcoes){
   var conf = Object.assign({headers:{"Content-Type":"application/json"}}, opcoes||{});
   if (conf.body && typeof conf.body !== "string") conf.body = JSON.stringify(conf.body);
-  var r = await fetch(rota, conf);
+  var r;
+  try { r = await fetch(rota, conf); }
+  catch(eRede){
+    if (rota.indexOf("/api/logs") !== 0) registrarErro("Sem conexão com o servidor ("+String(rota).split("?")[0]+")", "", "rede");
+    throw new Error("Sem conexão com o servidor. Verifique a internet.");
+  }
   var dados = {};
   try { dados = await r.json(); } catch(e){}
   if (!r.ok) {
+    if (r.status >= 500 && rota.indexOf("/api/logs") !== 0)
+      registrarErro("Erro "+r.status+" em "+String(rota).split("?")[0]+": "+(dados.erro||dados.mensagem||""), "", (conf.method||"GET")+" "+String(rota).split("?")[0]);
     var err = new Error(dados.mensagem || dados.erro || "Falha na comunicação com o servidor.");
     err.status = r.status;
     err.data   = dados;
@@ -5059,6 +5181,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
     if (b.dataset.aba === "prog") carregarProg();
     if (b.dataset.aba === "manut") carregarEquipamentos();
     if (b.dataset.aba === "relatorios" && !relCarregado) carregarRelatorio();
+    if (b.dataset.aba === "relatorios") _carregarAdminRel();
     if (b.dataset.aba === "equipe" && !acompCarregado) carregarAcompanhamento();
     if (b.dataset.aba === "metas") carregarMetas();
     if (b.dataset.aba === "limpeza") setTimeout(function(){ carregarLimpeza(); }, 0);

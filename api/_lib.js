@@ -40,6 +40,10 @@ async function redis(comando) {
 
 const PREFIXO = "hbier";
 
+/** Comando direto no banco (uso interno: backup/restauração). Chaves já com prefixo. */
+export async function comandoBanco(cmd) { return redis(cmd); }
+export const PREFIXO_BANCO = PREFIXO;
+
 export async function ler(chave) {
   const valor = await redis(["GET", `${PREFIXO}:${chave}`]);
   if (valor === null || valor === undefined) return null;
