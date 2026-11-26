@@ -392,6 +392,17 @@ export default protegido(async function handler(req, res) {
         diasFermentando,
         diasMaturando,
         maturacaoInicioISO: maturacaoInicio || null,
+        // Última leitura de temperatura (ferm/matur) do lote atual — alerta de leitura atrasada
+        ultimaLeitura: (function () {
+          if (!ref || !ref.lote || brassHoje) return null;
+          const f = fichasAtivas[ref.lote] || null; if (!f) return { em: null, horas: null };
+          let ult = "";
+          (f.fermLog || []).forEach((r) => { const v = Array.isArray(r) ? r : (r && r.vals) || []; if (v[0] && (v[3] || v[1])) ult = v[0] > ult ? v[0] : ult; });
+          (f.maturLog || []).forEach((r) => { const v = Array.isArray(r) ? r : (r && r.vals) || []; if (v[0] && v[2]) ult = v[0] > ult ? v[0] : ult; });
+          if (!ult) return { em: null, horas: null };
+          const t = new Date(String(ult).length <= 16 ? ult + ":00-03:00" : ult).getTime();
+          return { em: ult, horas: isFinite(t) ? Math.max(0, Math.round((Date.now() - t) / 3600000)) : null };
+        })(),
         // Adições obrigatórias do lote (Clearmax Pro, Clearmax L, levedura) — lidas da Ficha de Produção
         adicoes: (function () {
           if (!ref || !ref.lote || brassHoje) return null;

@@ -3975,7 +3975,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.13.0";
+var VERSAO = "3.13.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -11739,6 +11739,28 @@ async function irParaBrassagem(semana, id){
 /* ==================================================================
    Aba "Leituras do Dia"
    ================================================================== */
+// ── Alerta de leitura atrasada (v3.13.1): tanque ativo sem leitura de temperatura há mais de 24 h ──
+var LEITURA_LIMITE_H = 24;
+function _leituraAtrasada(t){
+  if (!t || !t.ultimaLeitura) return false;
+  if (["fermentando","maturando","critico","pronto","envasando"].indexOf(t.estagio) === -1) return false;
+  var h = t.ultimaLeitura.horas;
+  if (h == null) return (t.diasTanque || 0) >= 1;     // nenhuma leitura e já está há 1+ dia no tanque
+  return h > LEITURA_LIMITE_H;
+}
+function _txtLeitura(t){
+  var u = t.ultimaLeitura || {};
+  if (u.horas == null) return "sem nenhuma leitura registrada";
+  return u.horas >= 48 ? "há "+Math.floor(u.horas/24)+" dias sem leitura" : "há "+u.horas+" h sem leitura";
+}
+function _badgeLeitura(t){
+  if (!_leituraAtrasada(t)) {
+    var u = t && t.ultimaLeitura; if (!u || u.horas == null) return "";
+    return " <span style='font-size:.72rem;color:var(--muted)'>· última leitura há "+u.horas+" h</span>";
+  }
+  return " <span style='font-size:.74rem;font-weight:800;background:#DC2626;color:#fff;padding:2px 8px;border-radius:9px'>⏱ "+_txtLeitura(t)+"</span>";
+}
+
 async function leiturasCarregar(){
   var el = $("leiturasConteudo");
   var lbl = $("leiturasDataLabel");
@@ -11766,7 +11788,7 @@ async function leiturasCarregar(){
         html += "<div class='card' style='border-left:4px solid "+cor+";padding:12px 14px'>" +
           "<div style='display:flex;align-items:center;gap:8px;margin-bottom:10px'>" +
             "<span style='font-size:1.1rem;font-weight:600'>"+icone+" "+esc(t.id)+"</span>" +
-            loteStr +
+            loteStr + _badgeLeitura(t) +
             "<span style='margin-left:auto;font-size:.78rem;background:"+cor+"22;color:"+cor+";padding:2px 8px;border-radius:9px'>"+label+"</span>" +
           "</div>" +
           "<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>" +
@@ -11794,7 +11816,7 @@ async function leiturasCarregar(){
         html += "<div class='card' style='border-left:4px solid "+cor+";padding:12px 14px'>" +
           "<div style='display:flex;align-items:center;gap:8px;margin-bottom:10px'>" +
             "<span style='font-size:1.1rem;font-weight:600'>"+icone+" "+esc(t.id)+"</span>" +
-            loteStr +
+            loteStr + _badgeLeitura(t) +
             "<span style='margin-left:auto;font-size:.78rem;background:"+cor+"22;color:"+cor+";padding:2px 8px;border-radius:9px'>"+label+"</span>" +
           "</div>" +
           "<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>" +
@@ -12060,6 +12082,10 @@ async function carregarTanques(){
         (contagem.fermentando? "<span style='background:#FFFBEB;border:1px solid #F59E0B;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#92400E'>🍺 "+contagem.fermentando+" fermentando</span>" : "")+
         (contagem.maturando  ? "<span style='background:#EFF6FF;border:1px solid #3B82F6;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#1D4ED8'>🧊 "+contagem.maturando+" maturando</span>" : "")+
         (contagem.critico    ? "<span style='background:#fff;border:1px solid #DC2626;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:600;color:#DC2626'>🚨 "+contagem.critico+" atenção</span>" : "")+
+        (function(){
+          var atr = _dadosTanques.filter(_leituraAtrasada);
+          return atr.length ? "<span style='background:#DC2626;border:1px solid #991B1B;border-radius:20px;padding:3px 12px;font-size:.82rem;font-weight:900;color:#fff'>⏱ SEM LEITURA +"+LEITURA_LIMITE_H+"h: "+atr.map(function(t){ return esc(t.nome); }).join(", ")+"</span>" : "";
+        })()+
         (function(){
           var falta = {};
           _dadosTanques.forEach(function(t){
@@ -12532,6 +12558,16 @@ async function carregarTanques(){
           })()+
           "<span style='font-size:.7rem;color:var(--muted);margin-left:auto;white-space:nowrap'>"+fmtNum(tq.capacidade)+" L</span>"+
         "</div>"+
+
+        // ── ALERTA LEITURA ATRASADA ──
+        (function(){
+          if (eLivre || !_leituraAtrasada(tq)) return "";
+          return "<div style='margin-bottom:6px;background:#FEF2F2;border:2.5px solid #DC2626;border-radius:9px;padding:7px 11px;display:flex;align-items:center;gap:8px'>"+
+            "<span style='font-size:1.3rem'>⏱</span><div><div style='font-family:\"Barlow Condensed\",sans-serif;font-weight:900;color:#991B1B;letter-spacing:.03em'>LEITURA ATRASADA</div>"+
+            "<div style='font-size:.74rem;color:#7F1D1D;font-weight:600'>"+esc(tq.nome)+" "+_txtLeitura(tq)+
+            (tq.ultimaLeitura && tq.ultimaLeitura.em ? " (última: "+esc(String(tq.ultimaLeitura.em).replace("T"," ").slice(8,10)+"/"+String(tq.ultimaLeitura.em).slice(5,7)+" "+String(tq.ultimaLeitura.em).slice(11,16))+")" : "")+
+            " — lançar na aba Leituras.</div></div></div>";
+        })()+
 
         // ── ALERTA ADIÇÕES: Clearmax Pro (glúten), Clearmax L, levedura ──
         (function(){

@@ -44,6 +44,21 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.13.1 — 26/11/2026
+
+**Alerta de leitura atrasada**
+
+- Tanque em fermentação/maturação/pronto sem leitura de temperatura há mais
+  de 24 h (ou sem nenhuma leitura com 1+ dia no tanque) mostra faixa vermelha
+  "⏱ LEITURA ATRASADA — há 30 h sem leitura (última: 25/11 08:10)" no card
+- Resumo no topo da aba Tanques: "⏱ SEM LEITURA +24h: TQ03, TQ05"
+- Aba Leituras: selo vermelho no tanque atrasado; nos demais, "última leitura
+  há X h"
+- Servidor calcula `ultimaLeitura` (data e horas) pelo fermLog/maturLog da
+  ficha do lote
+
+---
+
 ## 3.13.0 — 26/11/2026
 
 **Backup diário do banco e registro de erros**
