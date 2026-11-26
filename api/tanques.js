@@ -420,7 +420,7 @@ export default protegido(async function handler(req, res) {
             itens: [
               item("clearmax",  "Clearmax Pro", a => a.doseLabel || ""),
               item("clearmaxL", "Clearmax L",   a => { const q = a.qtdInp || a.qtd || ""; return q ? q + " mL" : ""; }),
-              item("lev",       "Levedura",     a => [a.geracao ? "Geração " + a.geracao : "", a.temp ? a.temp + "°C" : ""].filter(Boolean).join(" · ")),
+              item("lev",       "Levedura",     a => [a.cepa ? "🧬 " + a.cepa : "", a.geracao ? "G" + String(a.geracao).replace(/\D/g, "") : "", a.temp ? a.temp + "°C" : ""].filter(Boolean).join(" · ")),
             ],
           };
         })(),

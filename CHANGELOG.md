@@ -44,6 +44,27 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.18.0 — 26/11/2026
+
+**🧬 Geração do fermento calculada pelo app**
+
+- Ficha › Inoculação de levedura: novo campo "Origem do fermento" —
+  🆕 fermento novo (G1, com lote do fornecedor) ou ♻️ reaproveitar a coleta de
+  um lote (lista as coletas confirmadas com cepa, geração, data e dias guardado;
+  mesma cepa da receita primeiro). A geração é preenchida sozinha (origem + 1).
+  "✏️ Informar manualmente" fica como reserva
+- Avisos na escolha: 🚫 passa do limite de gerações da cepa, 🚫 coleta guardada há
+  mais de 15 dias, ⚠️ cepa diferente da receita, ⚠️ última geração permitida
+- Limites iniciais: W-34/70 = 18, London ESB = 8, Lona = 1 (não é coletada);
+  máximo 15 dias guardado — editáveis no Painel
+- Painel › 🧬 Fermentos: por cepa, geração atual com barra até o limite, árvore
+  (G1 lote → G2 lote → …), coletas disponíveis com idade, alertas, lista de lotes
+- Card do tanque: a linha da Levedura mostra cepa e geração ("🧬 W-34/70 · G6")
+- Lotes antigos: a geração digitada antes ("12ª") vira 12 e conta normalmente
+- Novo `GET /api/ficha?fermentos=1` e `POST {acao:"fermentosCfg"}`; ficha ganha `fermento`
+
+---
+
 ## 3.17.1 — 26/11/2026
 
 - Corrigido: botão "📄 Dossiê" (aba Lotes e ficha) não fazia nada — a função

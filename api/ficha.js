@@ -37,6 +37,43 @@ export default protegido(async function(req, res) {
     return res.json({ lotes });
   }
 
+  /* ── 🧬 Fermentos (v3.18.0): geração de cada lote, origem e coletas ── */
+  if (req.method === "GET" && req.query.fermentos === "1") {
+    const idx = (await ler("fichas:index")) || [];
+    const fichas = idx.length ? await lerVarios(idx.map((l) => `ficha:${l}`)) : [];
+    const recIds = [...new Set(fichas.map((f) => f?.cabecalho?.receitaId).filter(Boolean))];
+    const recs = recIds.length ? await lerVarios(recIds.map((id) => `receita:${id}`)) : [];
+    const cepaRec = {};
+    recIds.forEach((id, i) => { const lv = recs[i]?.levedura || {}; cepaRec[id] = [lv.linhagem, lv.fabricante ? `(${lv.fabricante})` : ""].filter(Boolean).join(" "); });
+    const num = (v) => { const m = String(v || "").match(/\d+/); return m ? Number(m[0]) : null; };
+    const lotes = idx.map((lote, i) => {
+      const f = fichas[i]; if (!f) return null;
+      const fe = f.fermento || {}, lev = (f.adicoesTanque && f.adicoesTanque.lev) || {}, col = f.coleta || {};
+      return {
+        lote, estilo: f.cabecalho?.estilo || "", tanque: f.cabecalho?.tanque || "", status: f.meta?.status || "",
+        cepa: fe.cepa || cepaRec[f.cabecalho?.receitaId] || "",
+        geracao: fe.geracao != null && fe.geracao !== "" ? Number(fe.geracao) : num(lev.geracao),
+        origem: fe.origem || "", origemLote: fe.origemLote || "", fornecedorLote: fe.fornecedorLote || "",
+        inoculadoEm: lev.data || "",
+        coleta: { realizada: !!col.realizada, em: col.realizadaEm || "", por: col.realizadaPor || "", destino: col.destino || "", prevista: col.dataPrevista || "" },
+      };
+    }).filter(Boolean);
+    const usos = {};
+    lotes.forEach((l) => { if (l.origemLote) (usos[l.origemLote] = usos[l.origemLote] || []).push(l.lote); });
+    lotes.forEach((l) => { l.usadoEm = usos[l.lote] || []; });
+    const cfg = { limites: { "W-34/70": 18, "London ESB": 8, "Lona": 1 }, diasMax: 15, ...((await ler("fermentos:cfg")) || {}) };
+    return res.json({ ok: true, lotes, cfg });
+  }
+  if (req.method === "POST" && corpo(req).acao === "fermentosCfg") {
+    if (!["admin", "gestor"].includes(usuario.papel)) return erro(res, 403, "Apenas admin ou gestor.");
+    const c = corpo(req).cfg || {};
+    const limites = {};
+    Object.keys(c.limites || {}).slice(0, 30).forEach((k) => { const n = Number(c.limites[k]); if (String(k).trim() && n > 0) limites[String(k).trim().slice(0, 40)] = Math.round(n); });
+    const cfg = { limites, diasMax: Math.max(1, Math.min(90, Number(c.diasMax) || 15)) };
+    await gravar("fermentos:cfg", cfg);
+    return res.json({ ok: true, cfg });
+  }
+
   /* ── GET versões anteriores de uma ficha ── */
   if (req.method === "GET" && req.query.historico === "1") {
     const lote = (req.query.lote || "").trim();

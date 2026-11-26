@@ -2093,6 +2093,13 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         </div>
         <div id="pgConteudo" style="padding:0 14px 14px"><div class="vazio">Carregando…</div></div>
       </section>
+      <section id="secFermentos">
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
+          <span class="sec-title">🧬 Fermentos</span>
+          <span class="sec-sub">geração por cepa, coletas disponíveis e limites</span>
+        </div>
+        <div id="fermConteudo" style="padding:0 14px 14px"><div class="vazio">Carregando…</div></div>
+      </section>
       <section id="secPurga">
         <div class="sec-head" style="flex-wrap:wrap;gap:8px">
           <span class="sec-title">🔥 Purga da caldeira</span>
@@ -4037,7 +4044,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.17.1";
+var VERSAO = "3.18.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -15603,7 +15610,7 @@ async function carregarPainelGestor(){
     if (!semanas.some(function(s){ return chaveSemanaData(s) === chaveSemanaData(segAnt); })) semanas.unshift(segAnt);
   }
   var pIns = carregarInsumos().catch(function(){ return []; });
-  try{ carregarAvisosCfg(); carregarPurgaCfg(); }catch(e){}
+  try{ carregarAvisosCfg(); carregarPurgaCfg(); carregarFermentosPainel(); }catch(e){}
   try{
     var res = await Promise.all([
       api("/api/tanques").catch(function(){ return {tanques:[]}; }),
@@ -15870,6 +15877,144 @@ function _waConferirInicio(){
     setTimeout(function(){ _waDaUrl(url); }, 800);
   }
 }
+
+
+/* ==================================================================
+   🧬 Fermentos (v3.18.0): geração calculada pela origem (fermento novo = G1;
+   reaproveitado do lote X = geração de X + 1), limite por cepa e validade da coleta
+   ================================================================== */
+var _fermCache = null, _fermCacheEm = 0;
+async function _fermCarregar(forcar){
+  if (!forcar && _fermCache && Date.now() - _fermCacheEm < 60000) return _fermCache;
+  _fermCache = await api("/api/ficha?fermentos=1"); _fermCacheEm = Date.now(); return _fermCache;
+}
+function _fermChave(cepa){ return _normTxt(cepa).replace(/\s+/g, ""); }
+function _fermLimite(cepa, cfg){
+  var k = _fermChave(cepa); if (!k) return null;
+  var lim = null;
+  Object.keys((cfg && cfg.limites) || {}).forEach(function(n){ var kn = _fermChave(n); if (kn && k.indexOf(kn) >= 0) lim = cfg.limites[n]; });
+  return lim;
+}
+function _fermMesma(a, b){
+  var ka = _fermChave(a), kb = _fermChave(b); if (!ka || !kb) return false;
+  return ka === kb || ka.indexOf(kb) >= 0 || kb.indexOf(ka) >= 0 || (ka.match(/\d{2,}\/?\d*/)||[" "])[0] === (kb.match(/\d{2,}\/?\d*/)||["_"])[0];
+}
+function _fermDias(iso){ if (!iso) return null; var d = new Date(iso); return isNaN(d) ? null : Math.floor((Date.now() - d) / 86400000); }
+async function fp_levPreencherOrigens(){
+  var sel = document.getElementById("fp-lev-origem"); if (!sel) return;
+  var app = document.getElementById("fp-app"), meuLote = app ? (app.dataset.fpLote||"").trim() : "";
+  var salvo = window._fpFermSalvo || null;
+  var r; try{ r = await _fermCarregar(); }catch(e){ return; }
+  var cepa = (document.getElementById("fpl-cepa")||{}).value || "";
+  var disp = r.lotes.filter(function(l){
+    return l.lote !== meuLote && l.coleta.realizada && /colet/i.test(l.coleta.destino || "Coletar") && l.geracao;
+  }).sort(function(a,b){ return String(b.coleta.em).localeCompare(String(a.coleta.em)); });
+  var mesma = disp.filter(function(l){ return !cepa || _fermMesma(l.cepa, cepa); });
+  var outras = disp.filter(function(l){ return cepa && !_fermMesma(l.cepa, cepa); });
+  var opt = function(l){
+    var dias = _fermDias(l.coleta.em), venc = dias != null && dias > r.cfg.diasMax;
+    var usado = l.usadoEm.filter(function(x){ return x !== meuLote; });
+    return "<option value='lote:"+esc(l.lote)+"'>"+(venc?"⚠ ":"")+esc(l.lote)+" — "+esc(l.cepa||"cepa ?")+" — G"+l.geracao+" → G"+(l.geracao+1)+
+      " — coletado "+(l.coleta.em ? _dsData(l.coleta.em).slice(0,5) : "?")+(dias!=null?" ("+dias+" d"+(venc?", VENCIDO":"")+")":"")+(usado.length?" · já usado em "+usado.join(", "):"")+"</option>";
+  };
+  sel.innerHTML = "<option value=''>— Selecione —</option><option value='novo'>🆕 Fermento novo (pacote / compra) → G1</option>"+
+    (mesma.length ? "<optgroup label='♻️ Reaproveitar coleta"+(cepa?" — mesma cepa":"")+"'>"+mesma.map(opt).join("")+"</optgroup>" : "")+
+    (outras.length ? "<optgroup label='Outras cepas'>"+outras.map(opt).join("")+"</optgroup>" : "")+
+    "<option value='manual'>✏️ Informar a geração manualmente</option>";
+  window._fermLotes = r;
+  if (salvo && salvo.origem){
+    var v = salvo.origem === "lote" ? "lote:"+salvo.origemLote : salvo.origem;
+    if (salvo.origem === "lote" && !sel.querySelector("option[value='lote:"+CSS.escape(salvo.origemLote)+"']")){
+      var o = document.createElement("option"); o.value = v; o.textContent = salvo.origemLote+" — G"+(Number(salvo.geracao)-1)+" → G"+salvo.geracao; sel.appendChild(o);
+    }
+    sel.value = v; fp_levOrigemMudou(true);
+  } else {
+    var g = (document.getElementById("fp-lev-geracao")||{}).value;
+    if (g){ sel.value = "manual"; fp_levOrigemMudou(true); }
+  }
+}
+function fp_levOrigemMudou(restaurando){
+  var sel = document.getElementById("fp-lev-origem"), gEl = document.getElementById("fp-lev-geracao");
+  var forn = document.getElementById("fp-lev-forn-box"), av = document.getElementById("fp-lev-aviso");
+  if (!sel || !gEl) return;
+  var v = sel.value, r = window._fermLotes || { lotes: [], cfg: { limites:{}, diasMax:15 } };
+  var cepa = (document.getElementById("fpl-cepa")||{}).value || "";
+  forn.hidden = v !== "novo";
+  gEl.readOnly = v !== "manual";
+  var msg = "", cor = "";
+  if (v === "novo"){ if (!restaurando || !gEl.value) gEl.value = "1"; }
+  else if (v.indexOf("lote:") === 0){
+    var l = r.lotes.find(function(x){ return x.lote === v.slice(5); });
+    if (l){
+      gEl.value = String(l.geracao + 1);
+      var lim = _fermLimite(cepa || l.cepa, r.cfg), dias = _fermDias(l.coleta.em);
+      if (lim && l.geracao + 1 > lim){ msg = "🚫 G"+(l.geracao+1)+" passa do limite de "+lim+" gerações para "+(cepa||l.cepa)+". Use fermento novo."; cor = "red"; }
+      else if (dias != null && dias > r.cfg.diasMax){ msg = "🚫 Fermento coletado há "+dias+" dias (máximo "+r.cfg.diasMax+"). Use fermento novo ou outra coleta."; cor = "red"; }
+      else if (cepa && l.cepa && !_fermMesma(cepa, l.cepa)){ msg = "⚠️ Cepa diferente da receita: coleta é "+l.cepa+", receita pede "+cepa+"."; cor = "amber"; }
+      else if (lim && l.geracao + 1 >= lim){ msg = "⚠️ Última geração permitida ("+lim+") para esta cepa. Próxima: fermento novo."; cor = "amber"; }
+      else msg = "✅ G"+(l.geracao+1)+" — veio do "+l.lote+(lim ? " · limite "+lim : "");
+    }
+  } else if (v === "manual"){ if (!restaurando) gEl.value = ""; gEl.focus(); msg = "Digite o número da geração."; }
+  av.hidden = !msg; av.textContent = msg;
+  av.style.background = cor === "red" ? "#FEF2F2" : cor === "amber" ? "#FEF3C7" : "#F0FDF4";
+  av.style.border = "1px solid "+(cor === "red" ? "#DC2626" : cor === "amber" ? "#F59E0B" : "#16A34A");
+  av.style.color = cor === "red" ? "#B91C1C" : cor === "amber" ? "#78350F" : "#15803D";
+  if (!restaurando) fp_markDirty();
+}
+window.fp_levOrigemMudou = fp_levOrigemMudou;
+
+/* ── Painel › 🧬 Fermentos ── */
+async function carregarFermentosPainel(){
+  var box = $("fermConteudo"); if (!box) return;
+  try{
+    var r = await _fermCarregar(true), cfg = r.cfg;
+    var porCepa = {};
+    r.lotes.forEach(function(l){ if (!l.cepa && !l.geracao) return; var k = l.cepa || "Cepa não informada"; (porCepa[k] = porCepa[k] || []).push(l); });
+    // junta variações de nome da mesma cepa
+    var grupos = [];
+    Object.keys(porCepa).forEach(function(k){ var g = grupos.find(function(x){ return _fermMesma(x.nome, k); }); if (g) g.lotes = g.lotes.concat(porCepa[k]); else grupos.push({ nome: k, lotes: porCepa[k].slice() }); });
+    var porLote = {}; r.lotes.forEach(function(l){ porLote[l.lote] = l; });
+    var arvore = function(l){ var c = [], x = l, n = 0; while (x && n < 40){ c.unshift(x); x = x.origemLote ? porLote[x.origemLote] : null; n++; } return c; };
+    var alertas = [];
+    var html = grupos.map(function(g){
+      var lim = _fermLimite(g.nome, cfg);
+      g.lotes.sort(function(a,b){ return String(b.inoculadoEm||b.coleta.em||"").localeCompare(String(a.inoculadoEm||a.coleta.em||"")); });
+      var atual = g.lotes.find(function(l){ return l.geracao; });
+      var disp = g.lotes.filter(function(l){ return l.coleta.realizada && /colet/i.test(l.coleta.destino||"Coletar") && !l.usadoEm.length; });
+      disp.forEach(function(l){
+        var d = _fermDias(l.coleta.em);
+        if (d != null && d > cfg.diasMax) alertas.push("🧫 "+esc(l.lote)+": fermento coletado há "+d+" dias (máx. "+cfg.diasMax+") — descartar");
+        if (lim && l.geracao >= lim) alertas.push("🧬 "+esc(l.lote)+": G"+l.geracao+" já está no limite de "+lim+" — não reaproveitar");
+      });
+      var cadeia = atual ? arvore(atual) : [];
+      return "<div style='border:1px solid var(--linha,#ddd);border-radius:10px;padding:10px 12px;margin-bottom:10px'>"+
+        "<div style='display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap'><b>🧬 "+esc(g.nome)+"</b>"+
+          "<span style='font-size:.8rem'>"+(atual ? "geração atual <b style='font-size:1rem'>G"+atual.geracao+"</b>" : "")+(lim ? " · limite "+lim : " · sem limite cadastrado")+"</span></div>"+
+        (lim && atual ? "<div style='height:8px;background:#EEE;border-radius:6px;margin:6px 0;overflow:hidden'><div style='height:100%;width:"+Math.min(100, atual.geracao/lim*100)+"%;background:"+(atual.geracao>=lim?"#DC2626":atual.geracao>=lim-2?"#D97706":"#16A34A")+"'></div></div>" : "")+
+        (cadeia.length > 1 ? "<div style='font-size:.75rem;color:var(--muted);margin:4px 0'>"+cadeia.map(function(x){ return "G"+(x.geracao||"?")+" "+esc(x.lote); }).join(" → ")+"</div>" : "")+
+        "<div style='font-size:.8rem;margin-top:4px'><b>Coletado e disponível:</b> "+(disp.length ? disp.map(function(l){ var d = _fermDias(l.coleta.em);
+            return "<span style='display:inline-block;margin:2px 6px 2px 0;padding:1px 7px;border-radius:6px;background:"+(d!=null&&d>cfg.diasMax?"#FEE2E2":"#DCFCE7")+"'>"+esc(l.lote)+" · G"+(l.geracao||"?")+" · "+(d!=null?d+" d":"?")+"</span>"; }).join("") : "<span style='color:var(--muted)'>nenhum</span>")+"</div>"+
+        "<details style='margin-top:4px'><summary style='cursor:pointer;font-size:.78rem'>Lotes ("+g.lotes.length+")</summary><table class='pg-tab'><thead><tr><th>Lote</th><th>Geração</th><th>Origem</th><th>Inoculado</th><th>Coleta</th></tr></thead><tbody>"+
+          g.lotes.map(function(l){ return "<tr><td>"+esc(l.lote)+"</td><td><b>"+(l.geracao?"G"+l.geracao:"—")+"</b></td><td>"+(l.origem==="novo"?"🆕 novo"+(l.fornecedorLote?" ("+esc(l.fornecedorLote)+")":""):l.origemLote?"♻️ "+esc(l.origemLote):"—")+"</td><td>"+(l.inoculadoEm?_dsData(l.inoculadoEm):"—")+"</td><td>"+(l.coleta.realizada?(/purg/i.test(l.coleta.destino)?"🗑 purgado":"🧫 "+_dsData(l.coleta.em)):(l.coleta.destino?esc(l.coleta.destino)+" (prev.)":"—"))+(l.usadoEm.length?" → "+l.usadoEm.map(esc).join(", "):"")+"</td></tr>"; }).join("")+
+        "</tbody></table></details></div>";
+    }).join("");
+    box.innerHTML =
+      (alertas.length ? "<div style='background:#FEF2F2;border:1.5px solid #DC2626;border-radius:8px;padding:6px 10px;font-size:.82rem;margin-bottom:8px'>"+alertas.join("<br>")+"</div>" : "")+
+      (html || "<div style='color:var(--muted)'>Nenhum lote com cepa/geração registrada ainda.</div>")+
+      "<div style='display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:.8rem;margin-top:6px'><b>Limites:</b> "+
+        "<input id='fermLimites' value='"+esc(Object.keys(cfg.limites).map(function(k){ return k+"="+cfg.limites[k]; }).join("; "))+"' style='flex:1;min-width:220px' title='cepa=gerações; separadas por ponto e vírgula'>"+
+        "<label>Máx. dias guardado <input id='fermDias' type='number' value='"+cfg.diasMax+"' style='width:60px'></label>"+
+        "<button class='btn mini' id='btnFermSalvar'>💾 Salvar</button></div>";
+    window._fermAlertas = alertas;
+  }catch(e){ box.innerHTML = "<div style='color:#B91C1C'>"+esc(e.message)+"</div>"; }
+}
+document.addEventListener("click", async function(ev){
+  if (!ev.target || ev.target.id !== "btnFermSalvar") return;
+  var limites = {};
+  $("fermLimites").value.split(/[;\n]/).forEach(function(p){ var m = p.split("="); if (m.length === 2 && m[0].trim() && +m[1] > 0) limites[m[0].trim()] = +m[1]; });
+  try{ await api("/api/ficha",{method:"POST",body:{acao:"fermentosCfg", cfg:{ limites: limites, diasMax: +$("fermDias").value }}}); toast("💾 Limites salvos.","ok"); carregarFermentosPainel(); }
+  catch(e){ toast(e.message,"erro"); }
+});
 
 /* ==================================================================
    🔥 Purga da caldeira (v3.17.0): em dia de brassagem, a partir do horário marcado,
@@ -16997,6 +17142,7 @@ function fp_simSave(btn, opts){
         lev: levBloco && levBloco.dataset.confirmado ? {
           confirmado:true, data:levBloco.dataset.data||'', hora:levBloco.dataset.hora||'', quem:levBloco.dataset.quem||'',
           geracao:(document.getElementById('fp-lev-geracao')||{}).value||'',
+          cepa:(document.getElementById('fpl-cepa')||{}).value||'',
           temp:(document.getElementById('fp-lev-temp')||{}).value||''
         } : null
       };
@@ -17016,6 +17162,13 @@ function fp_simSave(btn, opts){
       var realEm  = (document.getElementById('fp-coleta-realizada-em')||{}).value  || '';
       var realPor = (document.getElementById('fp-coleta-realizada-por')||{}).value || '';
       return { dataPrevista: data, destino: destino, realizada: feita, realizadaEm: realEm, realizadaPor: realPor };
+    })(),
+    fermento: (function(){
+      var sel = document.getElementById('fp-lev-origem'), v = sel ? sel.value : '';
+      var g = (document.getElementById('fp-lev-geracao')||{}).value || '';
+      return { origem: v.indexOf('lote:') === 0 ? 'lote' : v, origemLote: v.indexOf('lote:') === 0 ? v.slice(5) : '',
+        fornecedorLote: (document.getElementById('fp-lev-fornecedor')||{}).value || '',
+        geracao: (String(g).match(/\d+/)||[''])[0], cepa: (document.getElementById('fpl-cepa')||{}).value || '' };
     })(),
     meta: { status: "em andamento" },
     audit: fp_audit
@@ -17066,6 +17219,7 @@ function fp_simSave(btn, opts){
 }
 
 function abrirFichaLote(tq){
+  window._fpFermSalvo = null;
   window._fpTqAtual = tq; // guarda para reabrir em caso de conflito
   window._fpProgChecks = window._fpProgChecks || null; // preserva se veio do botão da prog, senão null
   /* — dados do cabeçalho vindos do objeto tq — */
@@ -17480,7 +17634,10 @@ function abrirFichaLote(tq){
         '<div class="fp-aplic-extra" style="width:100%;margin-top:8px">'+
           '<div class="fp-field"><label>Data inoculação</label><input type="date" id="fp-lev-data"></div>'+
           '<div class="fp-field"><label>Hora inoculação</label><input type="time" id="fp-lev-hora"></div>'+
-          '<div class="fp-field"><label>Geração levedura</label><input placeholder="12ª" id="fp-lev-geracao"></div>'+
+          '<div class="fp-field span2" style="grid-column:1/-1"><label>🧬 Origem do fermento</label><select id="fp-lev-origem" onchange="fp_levOrigemMudou()" style="width:100%"><option value="">— Selecione —</option></select></div>'+
+          '<div class="fp-field" id="fp-lev-forn-box" hidden><label>Lote do fornecedor</label><input id="fp-lev-fornecedor" placeholder="ex.: 4123B"></div>'+
+          '<div class="fp-field"><label>Geração levedura</label><input placeholder="calculada" id="fp-lev-geracao" readonly style="font-weight:800"></div>'+
+          '<div id="fp-lev-aviso" hidden style="grid-column:1/-1;width:100%;padding:6px 10px;border-radius:6px;font-size:.82rem;font-weight:700"></div>'+
           '<div class="fp-field"><label>Temp. tanque inoculado (°C)</label><input type="number" placeholder="18" id="fp-lev-temp"></div>'+
         '</div>'+
       '</div>'+
@@ -17743,6 +17900,7 @@ function abrirFichaLote(tq){
 
   $("modalFicha").hidden = false;
   fp_iniciarPresenca(lote);
+  setTimeout(function(){ try{ fp_levPreencherOrigens(); }catch(e){} }, 1300);
 
   /* — popula select de receitas na ficha — */
   rec_initFichaSelect();
@@ -17928,6 +18086,13 @@ function fp_preencherFicha(ficha){
       if(tmpEl  && at.lev.temp)    tmpEl.value = at.lev.temp;
       var dfLev=document.getElementById('fp-desfazer-lev'); if(dfLev) dfLev.hidden=false;
     }
+  }
+  if (ficha.fermento || (ficha.adicoesTanque && ficha.adicoesTanque.lev)){
+    window._fpFermSalvo = ficha.fermento || null;
+    var gEl0 = document.getElementById('fp-lev-geracao');
+    if (gEl0 && ficha.fermento && ficha.fermento.geracao) gEl0.value = ficha.fermento.geracao;
+    var fEl0 = document.getElementById('fp-lev-fornecedor');
+    if (fEl0 && ficha.fermento && ficha.fermento.fornecedorLote) fEl0.value = ficha.fermento.fornecedorLote;
   }
   // recalcula stats e volumes após restaurar
   setTimeout(fp_calcFermStats, 100);
