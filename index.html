@@ -2093,6 +2093,13 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         </div>
         <div id="pgConteudo" style="padding:0 14px 14px"><div class="vazio">Carregando…</div></div>
       </section>
+      <section id="secAvisos">
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
+          <span class="sec-title">🔔 Avisos no celular</span>
+          <span class="sec-sub">lembrete no horário marcado → toque e envia no WhatsApp</span>
+        </div>
+        <div id="avConteudo" style="padding:0 14px 14px"><div class="vazio">Carregando…</div></div>
+      </section>
       <section id="secQuebra">
         <div class="sec-head" style="flex-wrap:wrap;gap:8px">
           <span class="sec-title">📉 Relatório de quebra</span>
@@ -4023,7 +4030,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.15.3";
+var VERSAO = "3.16.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4348,6 +4355,7 @@ async function abrirApp(){
   $("abaRelatorios").hidden = sessao.papel !== "admin";
   $("abaLotes").hidden    = !["admin","gestor"].includes(sessao.papel);
   $("abaPainel").hidden   = !["admin","gestor"].includes(sessao.papel);
+  try{ _waConferirInicio(); }catch(e){}
   // segunda-feira: confere insumos × estoque e avisa o gestor (rotina de compras)
   if (["admin","gestor"].includes(sessao.papel) && new Date().getDay() === 1){
     setTimeout(function(){
@@ -7032,7 +7040,8 @@ var _progRolouHoje = "";
 function _progLayoutModo(){ try{ return localStorage.getItem("progLayout") || "compacto"; }catch(e){ return "compacto"; } }
 function _progLayoutSet(m){ try{ localStorage.setItem("progLayout", m); }catch(e){} }
 
-function _progAplicarLayout(){
+function _progAplicarLayout(){ _progAplicarLayout0(); try{ _waBotoesProg(); }catch(e){} }
+function _progAplicarLayout0(){
   var lista = $("progLista"); if (!lista) return;
   var modo = _progLayoutModo();
   // barra de ferramentas (criada uma vez)
@@ -12641,7 +12650,8 @@ async function carregarTanques(){
             "<span style='font-size:1.3rem'>⏱</span><div><div style='font-family:\"Barlow Condensed\",sans-serif;font-weight:900;color:#991B1B;letter-spacing:.03em'>LEITURA ATRASADA</div>"+
             "<div style='font-size:.74rem;color:#7F1D1D;font-weight:600'>"+esc(tq.nome)+" "+_txtLeitura(tq)+
             (tq.ultimaLeitura && tq.ultimaLeitura.em ? " (última: "+esc(String(tq.ultimaLeitura.em).replace("T"," ").slice(8,10)+"/"+String(tq.ultimaLeitura.em).slice(5,7)+" "+String(tq.ultimaLeitura.em).slice(11,16))+")" : "")+
-            " — lançar na aba Leituras.</div></div></div>";
+            " — lançar na aba Leituras.</div></div>"+
+            "<button type='button' data-wa-tq='"+esc(tq.id)+"' data-wa-alerta='leitura' title='Mandar cobrança no WhatsApp' style='margin-left:auto;flex-shrink:0;background:#25D366;color:#fff;border:0;border-radius:7px;padding:4px 9px;font-size:.72rem;font-weight:800;cursor:pointer'>📲 WhatsApp</button></div>";
         })()+
 
         // ── ALERTA ADIÇÕES: Clearmax Pro (glúten), Clearmax L, levedura ──
@@ -12666,7 +12676,8 @@ async function carregarTanques(){
               "<span style='font-size:1.6rem;line-height:1'>🚫</span>"+
               "<div><div style='font-family:\"Barlow Condensed\",sans-serif;font-weight:900;font-size:1.12rem;color:#fff;letter-spacing:.04em'>SEM "+esc(it.nome.toUpperCase())+" REGISTRADO</div>"+
               "<div style='font-size:.74rem;color:#FEE2E2;font-weight:600'>"+(MOTIVO[it.chave]||"")+" "+
-              (ad.temFicha ? "Confirme na Ficha do Lote." : "Ficha de Produção do lote não encontrada.")+"</div></div></div>";
+              (ad.temFicha ? "Confirme na Ficha do Lote." : "Ficha de Produção do lote não encontrada.")+"</div></div>"+
+              "<button type='button' data-wa-tq='"+esc(tq.id)+"' data-wa-alerta='"+esc(it.chave)+"' title='Mandar cobrança no WhatsApp' style='margin-left:auto;flex-shrink:0;background:#25D366;color:#fff;border:0;border-radius:7px;padding:4px 9px;font-size:.72rem;font-weight:800;cursor:pointer;background:#fff;color:#166534'>📲</button></div>";
           }).join("");
           return "<div style='margin-bottom:8px;display:flex;flex-direction:column;gap:5px'>"+linhas+"</div>";
         })()+
@@ -15584,6 +15595,7 @@ async function carregarPainelGestor(){
     if (!semanas.some(function(s){ return chaveSemanaData(s) === chaveSemanaData(segAnt); })) semanas.unshift(segAnt);
   }
   var pIns = carregarInsumos().catch(function(){ return []; });
+  try{ carregarAvisosCfg(); }catch(e){}
   try{
     var res = await Promise.all([
       api("/api/tanques").catch(function(){ return {tanques:[]}; }),
@@ -15668,6 +15680,263 @@ document.addEventListener("click", function(ev){
   if (id === "btnPgMesProx" && _pgMesOff < 0){ _pgMesOff++; carregarPainelGestor(); }
 });
 
+
+
+/* ==================================================================
+   📲 WhatsApp (v3.16.0): mensagem pronta da programação e dos alertas dos tanques
+   ================================================================== */
+var DIAS_WA = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+function _waISO(d){ return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
+function _waDataItem(it, segISO){
+  if (it.dataISO) return it.dataISO;
+  var OFF = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5,"Domingo":6};
+  if (!it.dia || OFF[it.dia] === undefined) return "";
+  var d = new Date(segISO+"T12:00:00"); d.setDate(d.getDate()+OFF[it.dia]); return _waISO(d);
+}
+async function _waItensSemana(segISO){
+  var sg = new Date(segISO+"T12:00:00"), ant = new Date(sg), prox = new Date(sg);
+  ant.setDate(ant.getDate()-7); prox.setDate(prox.getDate()+7);
+  var rs = await Promise.all([segISO, _waISO(ant), _waISO(prox)].map(function(k){ return api("/api/prog?semana="+k).catch(function(){ return {itens:[]}; }); }));
+  var fim = new Date(sg); fim.setDate(fim.getDate()+6); var fimISO = _waISO(fim);
+  var vistos = {}, out = [];
+  rs.forEach(function(r, i){
+    var k = [segISO, _waISO(ant), _waISO(prox)][i];
+    (r.itens||[]).forEach(function(it){
+      var di = _waDataItem(it, k); if (!di || di < segISO || di > fimISO) return;
+      if (it.id && vistos[it.id]) return; if (it.id) vistos[it.id] = 1;
+      out.push(Object.assign({ _data: di }, it));
+    });
+  });
+  return out;
+}
+function _waLinha(it, Lb){
+  var ok = it.resultado ? "✅ " : "";
+  var est = it.estilo || it.produto || "";
+  if (it.tipo === "brassagem"){
+    var v = parseFloat(String(it.volPrev||"").replace(",", ".")) || 0;
+    return "• "+ok+est+(it.tanque?" — "+it.tanque:"")+(v?" — "+fmtNum(v)+" L ("+Math.max(1, Math.round(v/(Lb||1450)))+" bateladas)":"")+(it.lote?" — lote "+it.lote:"");
+  }
+  if (it.tipo === "envase")
+    return "• "+ok+est+(it.formato?" "+it.formato:"")+(it.qtd?" — "+fmtNum(it.qtd)+" un":"")+(it.tanque?" — "+it.tanque:"")+(it.lote?" ("+it.lote+")":"");
+  if (it.tipo === "barril")
+    return "• "+ok+"Barril "+est+(it.formato?" "+it.formato:"")+(it.qtd?" — "+fmtNum(it.qtd)+" un":"")+(it.tanque?" — "+it.tanque:"");
+  return "• "+ok+(it.titulo || it.descricao || est || it.tipo || "");
+}
+function _waBlocoDia(itens, Lb){
+  var g = { brassagem:[], envase:[], barril:[], outro:[] };
+  itens.forEach(function(it){ (g[it.tipo] || g.outro).push(_waLinha(it, Lb)); });
+  var t = "";
+  if (g.brassagem.length) t += "⚗️ Brassagem\n"+g.brassagem.join("\n")+"\n\n";
+  if (g.envase.length)    t += "🍾 Envase\n"+g.envase.join("\n")+"\n\n";
+  if (g.barril.length)    t += "🛢 Barris\n"+g.barril.join("\n")+"\n\n";
+  if (g.outro.length)     t += "📌 Outros\n"+g.outro.join("\n")+"\n\n";
+  return t || "Nada programado.\n\n";
+}
+function _waAlertasTanques(tanques){
+  var L = [];
+  (tanques||[]).forEach(function(t){
+    if (t.estagio === "livre") return;
+    if (_leituraAtrasada(t)) L.push("• "+t.nome+(t.lote?" ("+t.lote+")":"")+": "+_txtLeitura(t));
+    if (t.adicoes) t.adicoes.itens.forEach(function(x){ if (!x.usado) L.push("• "+t.nome+(t.lote?" ("+t.lote+")":"")+": sem "+x.nome+" registrado"); });
+    if (t.estagio === "critico") L.push("• "+t.nome+(t.lote?" ("+t.lote+")":"")+": "+(t.estagioLabel||"atenção")+" — "+(t.diasTanque||0)+" dias no tanque");
+  });
+  return L;
+}
+function _waDataCurta(iso){ var p = iso.split("-"); return p[2]+"/"+p[1]; }
+async function waTextoDia(iso){
+  var cfg = await _carregarCfgPlan(), Lb = +cfg.litrosBatelada || 1450;
+  var d = new Date(iso+"T12:00:00"), segISO = _waISO(segundaDe(d));
+  var res = await Promise.all([_waItensSemana(segISO), api("/api/tanques").catch(function(){ return {tanques:[]}; })]);
+  var itens = res[0].filter(function(it){ return it._data === iso; });
+  var al = _waAlertasTanques(res[1].tanques);
+  return "🍺 HBier — Programação de "+DIAS_WA[d.getDay()].toLowerCase()+" "+_waDataCurta(iso)+"\n\n"+_waBlocoDia(itens, Lb)+
+    (al.length ? "⏱ Atenção\n"+al.join("\n")+"\n\n" : "")+"Bom trabalho! 👊";
+}
+async function waTextoSemana(iso){
+  var cfg = await _carregarCfgPlan(), Lb = +cfg.litrosBatelada || 1450;
+  var sg = segundaDe(new Date(iso+"T12:00:00")), segISO = _waISO(sg);
+  var itens = await _waItensSemana(segISO);
+  var fim = new Date(sg); fim.setDate(fim.getDate()+6);
+  var t = "🍺 HBier — Programação da semana "+_waDataCurta(segISO)+" a "+_waDataCurta(_waISO(fim))+"\n";
+  for (var i = 0; i < 7; i++){
+    var d = new Date(sg); d.setDate(d.getDate()+i); var di = _waISO(d);
+    var doDia = itens.filter(function(it){ return it._data === di; });
+    if (!doDia.length) continue;
+    var linhas = doDia.map(function(it){ return _waLinha(it, Lb).replace(/^• /, "• "+({brassagem:"⚗️ ",envase:"🍾 ",barril:"🛢 "}[it.tipo]||"📌 ")); });
+    t += "\n📅 "+DIAS_WA[d.getDay()]+" "+_waDataCurta(di)+"\n"+linhas.join("\n")+"\n";
+  }
+  if (!itens.length) t += "\nNada programado.\n";
+  return t+"\nBoa semana! 👊";
+}
+async function waTextoAlertas(){
+  var r = await api("/api/tanques").catch(function(){ return {tanques:[]}; });
+  var al = _waAlertasTanques(r.tanques);
+  return al.length ? "⚠️ HBier — Pendências nos tanques ("+_waDataCurta(_hojeISO())+")\n\n"+al.join("\n")+"\n\nPor favor, regularizem e lancem no app. 🙏"
+                   : "✅ HBier — Nenhuma pendência nos tanques hoje ("+_waDataCurta(_hojeISO())+").";
+}
+function waTextoTanque(t, alerta){
+  var lote = t.lote ? " ("+t.lote+")" : "";
+  if (alerta === "leitura") return "⏱ "+t.nome+lote+": "+_txtLeitura(t)+".\nLançar a leitura na aba Leituras do app.";
+  var it = t.adicoes && t.adicoes.itens.find(function(x){ return x.chave === alerta; });
+  return "⚠️ "+t.nome+lote+": sem "+(it ? it.nome : alerta)+" registrado.\nConfirme na Ficha do Lote.";
+}
+function abrirWhatsApp(texto, titulo){
+  var antigo = document.getElementById("waModal"); if (antigo) antigo.remove();
+  var m = document.createElement("div"); m.id = "waModal";
+  m.style.cssText = "position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:12px";
+  m.innerHTML = "<div style='background:#fff;color:#111;border-radius:12px;max-width:520px;width:100%;max-height:92vh;display:flex;flex-direction:column;padding:12px 14px;gap:8px'>"+
+    "<div style='display:flex;align-items:center;gap:8px'><b style='flex:1'>📲 "+esc(titulo||"Enviar no WhatsApp")+"</b><button type='button' id='waFechar' class='btn mini secundario'>✕</button></div>"+
+    "<div style='font-size:.75rem;color:#555'>Confira ou edite o texto. Ao abrir, escolha o contato ou o grupo.</div>"+
+    "<textarea id='waTexto' style='width:100%;min-height:240px;flex:1;font-size:.85rem;padding:8px;border:1px solid #ccc;border-radius:8px;font-family:inherit'></textarea>"+
+    "<div style='display:flex;gap:8px;flex-wrap:wrap'>"+
+      "<a id='waAbrir' target='_blank' rel='noopener' style='flex:1;text-align:center;background:#25D366;color:#fff;border-radius:8px;padding:10px;font-weight:800;text-decoration:none'>Abrir WhatsApp</a>"+
+      "<button type='button' id='waCopiar' class='btn secundario'>Copiar texto</button></div></div>";
+  document.body.appendChild(m);
+  var ta = m.querySelector("#waTexto"); ta.value = texto;
+  var link = function(){ m.querySelector("#waAbrir").href = "https://wa.me/?text="+encodeURIComponent(ta.value); };
+  link(); ta.addEventListener("input", link);
+  m.querySelector("#waFechar").onclick = function(){ m.remove(); };
+  m.addEventListener("click", function(ev){ if (ev.target === m) m.remove(); });
+  m.querySelector("#waAbrir").addEventListener("click", function(){ setTimeout(function(){ m.remove(); }, 400); });
+  m.querySelector("#waCopiar").onclick = function(){
+    try{ navigator.clipboard.writeText(ta.value).then(function(){ toast("Texto copiado.","ok"); }); }catch(e){ ta.select(); document.execCommand("copy"); toast("Texto copiado.","ok"); }
+  };
+}
+async function waAbrir(tipo, iso){
+  toast("📲 Montando a mensagem…","ok");
+  try{
+    if (tipo === "dia")     abrirWhatsApp(await waTextoDia(iso || _hojeISO()), "Programação do dia");
+    if (tipo === "semana")  abrirWhatsApp(await waTextoSemana(iso || _hojeISO()), "Programação da semana");
+    if (tipo === "alertas") abrirWhatsApp(await waTextoAlertas(), "Alertas dos tanques");
+  }catch(e){ toast(e.message,"erro"); }
+}
+// botões na programação (cabeçalho de cada dia + semana)
+function _waBotoesProg(){
+  var lista = $("progLista"); if (!lista) return;
+  lista.querySelectorAll(".prog-dia-sep").forEach(function(sep){
+    if (sep.querySelector(".wa-dia-btn")) return;
+    var m = (sep.textContent||"").match(/(\d{2})\/(\d{2})/); if (!m) return;
+    var ano = segProg.getFullYear(); if (+m[2] < segProg.getMonth()+1 - 6) ano++;
+    var b = document.createElement("button"); b.type = "button"; b.className = "wa-dia-btn";
+    b.dataset.waDia = ano+"-"+m[2]+"-"+m[1]; b.title = "Mandar a programação deste dia no WhatsApp"; b.textContent = "📲";
+    b.style.cssText = "margin-left:8px;background:#25D366;color:#fff;border:0;border-radius:6px;padding:1px 7px;font-size:.8rem;cursor:pointer;vertical-align:middle";
+    sep.appendChild(b);
+  });
+  var bar = $("progToolbar");
+  if (bar && !bar.querySelector(".wa-sem-btn")){
+    var bs = document.createElement("button"); bs.type = "button"; bs.className = "pt-btn wa-sem-btn"; bs.textContent = "📲 Semana no WhatsApp";
+    bs.style.cssText = "background:#25D366;color:#fff;border-color:#25D366";
+    var linha = bar.querySelector(".pt-linha") || bar; linha.insertBefore(bs, linha.firstChild);
+  }
+}
+document.addEventListener("click", function(ev){
+  var b = ev.target.closest && ev.target.closest("[data-wa-dia],.wa-sem-btn,[data-wa-tq]");
+  if (!b) return;
+  ev.preventDefault(); ev.stopPropagation();
+  if (b.dataset.waDia) waAbrir("dia", b.dataset.waDia);
+  else if (b.classList.contains("wa-sem-btn")) waAbrir("semana", _waISO(segProg));
+  else if (b.dataset.waTq){
+    var t = (_dadosTanques||[]).find(function(x){ return x.id === b.dataset.waTq; });
+    if (t) abrirWhatsApp(waTextoTanque(t, b.dataset.waAlerta), "Cobrança — "+t.nome);
+  }
+}, true);
+// aviso tocado no celular: /?wa=dia&data=… (app fechado) ou mensagem do service worker (app aberto)
+function _waDaUrl(url){
+  try{
+    var q = new URL(url, location.origin).searchParams, tipo = q.get("wa");
+    if (!tipo) return false;
+    if (typeof sessao === "undefined" || !sessao){ window._waPendente = url; return true; }
+    waAbrir(tipo, q.get("data") || "");
+    return true;
+  }catch(e){ return false; }
+}
+if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", function(ev){
+  if (ev.data && ev.data.tipo === "abrirWa") _waDaUrl(ev.data.url);
+});
+function _waConferirInicio(){
+  var url = window._waPendente || location.href;
+  window._waPendente = null;
+  if (new URL(url, location.origin).searchParams.get("wa")){
+    try{ history.replaceState(null, "", location.pathname); }catch(e){}
+    setTimeout(function(){ _waDaUrl(url); }, 800);
+  }
+}
+
+/* ── 🔔 Avisos no celular (Web Push) ── */
+function _b64ParaBytes(b64){
+  var pad = "=".repeat((4 - b64.length % 4) % 4), raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+  var out = new Uint8Array(raw.length); for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out;
+}
+function _pushSuportado(){ return ("serviceWorker" in navigator) && ("PushManager" in window) && ("Notification" in window); }
+async function _pushInscricaoAtual(){
+  if (!_pushSuportado()) return null;
+  try{ var reg = await navigator.serviceWorker.ready; return await reg.pushManager.getSubscription(); }catch(e){ return null; }
+}
+async function avisosAtivar(){
+  if (!_pushSuportado()){
+    toast("Este navegador não aceita notificações. No iPhone: abra no Safari › Compartilhar › Adicionar à Tela de Início, e ative pelo app instalado.","aviso"); return;
+  }
+  var perm = await Notification.requestPermission();
+  if (perm !== "granted"){ toast("Notificações bloqueadas. Libere nas configurações do navegador para este site.","erro"); return; }
+  try{
+    var reg = await navigator.serviceWorker.ready;
+    var k = (await api("/api/avisos?vapid=1")).chave;
+    var sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: _b64ParaBytes(k) });
+    var ap = /iPhone|iPad/.test(navigator.userAgent) ? "iPhone" : /Android/.test(navigator.userAgent) ? "Android" : /Windows/.test(navigator.userAgent) ? "Windows" : /Mac/.test(navigator.userAgent) ? "Mac" : "outro";
+    await api("/api/avisos",{method:"POST",body:{acao:"inscrever", sub: sub.toJSON(), aparelho: ap}});
+    toast("🔔 Avisos ativados neste aparelho.","ok"); carregarAvisosCfg();
+  }catch(e){ toast("Não consegui ativar: "+e.message,"erro"); }
+}
+async function avisosDesativar(){
+  var sub = await _pushInscricaoAtual(); if (!sub) return;
+  try{ await api("/api/avisos",{method:"POST",body:{acao:"cancelar", endpoint: sub.endpoint}}); await sub.unsubscribe(); toast("Avisos desativados neste aparelho.","ok"); carregarAvisosCfg(); }
+  catch(e){ toast(e.message,"erro"); }
+}
+async function carregarAvisosCfg(){
+  var box = $("avConteudo"); if (!box) return;
+  try{
+    var res = await Promise.all([api("/api/avisos?cfg=1"), _pushInscricaoAtual()]);
+    var cfg = res[0].cfg, inscritos = res[0].inscritos || [], aqui = !!res[1];
+    var NOMES = { dia: "📅 Programação do dia", semana: "🗓 Programação da semana", alertas: "⚠️ Alertas dos tanques" };
+    var DIAS_C = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+    var horas = []; for (var h = 5; h <= 22; h++) horas.push(h);
+    box.innerHTML =
+      "<div style='display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px'>"+
+        (aqui ? "<span style='color:#16A34A;font-weight:800'>✅ Avisos ativos neste aparelho</span><button class='btn mini secundario' id='btnAvTeste'>Enviar teste</button><button class='btn mini secundario' id='btnAvDesativar'>Desativar aqui</button>"
+              : "<button class='btn mini' id='btnAvAtivar'>🔔 Ativar avisos neste aparelho</button><span style='font-size:.72rem;color:var(--muted)'>Faça isso no celular de quem vai receber. No iPhone, só pelo app instalado na tela inicial.</span>")+
+      "</div>"+
+      "<div style='font-size:.75rem;color:var(--muted);margin-bottom:6px'>Aparelhos inscritos: "+(inscritos.length ? inscritos.map(function(i){ return "@"+esc(i.login)+" ("+i.aparelhos+")"; }).join(", ") : "nenhum ainda")+
+        ". O aviso chega dentro da hora marcada (ex.: 6h → entre 6:00 e 6:59).</div>"+
+      "<div style='overflow-x:auto'><table class='pg-tab' id='avTabela'><thead><tr><th>Aviso</th><th>Ligado</th><th>Hora</th><th>Dias</th><th>Para</th></tr></thead><tbody>"+
+      Object.keys(NOMES).map(function(k){
+        var a = cfg[k];
+        return "<tr data-av='"+k+"'><td><b>"+NOMES[k]+"</b></td>"+
+          "<td><input type='checkbox' data-c='ativo'"+(a.ativo?" checked":"")+" style='width:auto'></td>"+
+          "<td><select data-c='hora' style='min-width:70px'>"+horas.map(function(h){ return "<option value='"+h+"'"+(+a.hora===h?" selected":"")+">"+h+"h</option>"; }).join("")+"</select></td>"+
+          "<td style='white-space:nowrap'>"+[1,2,3,4,5,6,0].map(function(d){ return "<label style='display:inline-flex;align-items:center;gap:2px;margin-right:4px;font-size:.72rem'><input type='checkbox' data-dia='"+d+"'"+((a.dias||[]).indexOf(d)>=0?" checked":"")+" style='width:auto;min-width:0'>"+DIAS_C[d]+"</label>"; }).join("")+"</td>"+
+          "<td>"+(inscritos.length ? inscritos.map(function(i){ return "<label style='display:inline-flex;align-items:center;gap:2px;margin-right:6px;font-size:.72rem'><input type='checkbox' data-para='"+esc(i.login)+"'"+((a.para||[]).indexOf(i.login)>=0?" checked":"")+" style='width:auto;min-width:0'>@"+esc(i.login)+"</label>"; }).join("") : "")+
+            "<div style='font-size:.66rem;color:var(--muted)'>nenhum marcado = admin e gestores</div></td></tr>";
+      }).join("")+"</tbody></table></div>"+
+      "<div style='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap'><button class='btn mini' id='btnAvSalvar'>💾 Salvar avisos</button>"+
+        "<button class='btn mini secundario' data-wa-agora='dia'>📲 Dia agora</button><button class='btn mini secundario' data-wa-agora='semana'>📲 Semana agora</button><button class='btn mini secundario' data-wa-agora='alertas'>📲 Alertas agora</button></div>";
+  }catch(e){ box.innerHTML = "<div style='color:#B91C1C'>"+esc(e.message)+"</div>"; }
+}
+document.addEventListener("click", async function(ev){
+  var t = ev.target; if (!t) return;
+  if (t.id === "btnAvAtivar") avisosAtivar();
+  if (t.id === "btnAvDesativar") avisosDesativar();
+  if (t.id === "btnAvTeste"){ try{ var r = await api("/api/avisos",{method:"POST",body:{acao:"teste"}}); toast(r.enviados ? "🔔 Teste enviado — deve chegar em segundos." : "Nenhum aparelho recebeu. Ative de novo neste aparelho.", r.enviados?"ok":"aviso"); }catch(e){ toast(e.message,"erro"); } }
+  if (t.dataset && t.dataset.waAgora) waAbrir(t.dataset.waAgora, _hojeISO());
+  if (t.id === "btnAvSalvar"){
+    var cfg = {};
+    document.querySelectorAll("#avTabela tr[data-av]").forEach(function(tr){
+      cfg[tr.dataset.av] = { ativo: tr.querySelector("[data-c=ativo]").checked, hora: +tr.querySelector("[data-c=hora]").value,
+        dias: Array.prototype.map.call(tr.querySelectorAll("[data-dia]:checked"), function(x){ return +x.dataset.dia; }),
+        para: Array.prototype.map.call(tr.querySelectorAll("[data-para]:checked"), function(x){ return x.dataset.para; }) };
+    });
+    try{ await api("/api/avisos",{method:"POST",body:{acao:"cfg", cfg:cfg}}); toast("💾 Avisos salvos.","ok"); }catch(e){ toast(e.message,"erro"); }
+  }
+});
 
 /* ==================================================================
    📉 Relatório de quebra (v3.15.0): envases (régua × calculado, perdas de embalagem) e lotes zerados

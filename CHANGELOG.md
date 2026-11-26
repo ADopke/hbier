@@ -44,6 +44,28 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.16.0 — 26/11/2026
+
+**📲 WhatsApp + 🔔 avisos no celular**
+
+- Botão "📲" em cada dia da Programação e "📲 Semana no WhatsApp" na barra:
+  monta a mensagem (brassagens com tanque/volume/bateladas/lote, envases com
+  formato/qtd/tanque, barris, ✅ no que já tem resultado, "Atenção" com os
+  alertas dos tanques) e abre o WhatsApp para escolher contato ou grupo.
+  Dá para editar o texto ou só copiar
+- Botão "📲 WhatsApp" nos alertas dos tanques (leitura atrasada, sem Clearmax
+  Pro/L, sem levedura): cobrança pronta do tanque
+- Painel › 🔔 Avisos no celular: ativar notificações no aparelho, teste, e
+  configurar 3 avisos (programação do dia, da semana, alertas dos tanques) —
+  liga/desliga, hora (5h a 22h), dias da semana e quem recebe. Tocar no aviso
+  abre o app com a mensagem pronta para o WhatsApp
+- Servidor: `api/avisos.js` (Web Push com chaves geradas e guardadas no banco),
+  dependência `web-push`, 18 crons diários (um por hora, 5h–22h de Brasília);
+  na Vercel Hobby cada um dispara dentro da hora marcada
+- `sw.js` 3.16.0: recebe os avisos e abre o app ao tocar
+
+---
+
 ## 3.15.3 — 26/11/2026
 
 - Desenho do tanque mais estreito (60 px) e textos ao lado sem quebra de linha

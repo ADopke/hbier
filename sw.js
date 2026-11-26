@@ -1,4 +1,4 @@
-const VERSAO = "3.0.4";
+const VERSAO = "3.16.0";
 const CACHE  = "hbier-v" + VERSAO;
 
 // Lista de arquivos para pré-cache
@@ -58,4 +58,28 @@ self.addEventListener("fetch", function(ev){
       return cached || network;
     })
   );
+});
+
+// PUSH (v3.16.0) — avisos em horário marcado (programação do dia, semana, alertas)
+self.addEventListener("push", function(ev){
+  var d = {};
+  try { d = ev.data ? ev.data.json() : {}; } catch(e){ d = { title: "HBier", body: ev.data ? ev.data.text() : "" }; }
+  ev.waitUntil(self.registration.showNotification(d.title || "HBier", {
+    body: d.body || "", icon: "/icon.svg", badge: "/icon.svg", tag: d.tag || "hbier",
+    data: { url: d.url || "/" }, renotify: true
+  }));
+});
+self.addEventListener("notificationclick", function(ev){
+  ev.notification.close();
+  var url = (ev.notification.data && ev.notification.data.url) || "/";
+  ev.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function(lista){
+    for (var i = 0; i < lista.length; i++){
+      var c = lista[i];
+      if (c.url.indexOf(self.location.origin) === 0 && "focus" in c){
+        c.postMessage({ tipo: "abrirWa", url: url });
+        return c.focus();
+      }
+    }
+    return self.clients.openWindow(url);
+  }));
 });
