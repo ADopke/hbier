@@ -44,6 +44,14 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.18.1 — 26/11/2026
+
+- 🧬 Fermentos saiu do Painel e foi para a aba Tanques (logo abaixo da Busca de
+  Lotes), recolhível; o cabeçalho mostra quantas coletas estão disponíveis e
+  quantas têm alerta. Todos veem; só admin/gestor editam os limites
+
+---
+
 ## 3.18.0 — 26/11/2026
 
 **🧬 Geração do fermento calculada pelo app**

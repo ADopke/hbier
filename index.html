@@ -2093,13 +2093,6 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         </div>
         <div id="pgConteudo" style="padding:0 14px 14px"><div class="vazio">Carregando…</div></div>
       </section>
-      <section id="secFermentos">
-        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
-          <span class="sec-title">🧬 Fermentos</span>
-          <span class="sec-sub">geração por cepa, coletas disponíveis e limites</span>
-        </div>
-        <div id="fermConteudo" style="padding:0 14px 14px"><div class="vazio">Carregando…</div></div>
-      </section>
       <section id="secPurga">
         <div class="sec-head" style="flex-wrap:wrap;gap:8px">
           <span class="sec-title">🔥 Purga da caldeira</span>
@@ -2729,6 +2722,15 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
             </div>
           </div>
         </div>
+      </section>
+      <!-- 🧬 Fermentos (v3.18.1: movido do Painel para cá) -->
+      <section id="secFermentos" style="margin-top:0">
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px;cursor:pointer" id="fermCabecalho">
+          <span class="sec-title">🧬 Fermentos</span>
+          <span id="fermResumo" style="font-size:.8rem;color:var(--muted);margin-left:auto">geração por cepa e coletas disponíveis</span>
+          <span id="fermChevron" style="font-size:.9rem;color:var(--muted);transition:transform .2s">▼</span>
+        </div>
+        <div id="fermConteudo" hidden style="padding:0 14px 14px"><div class="vazio">Carregando…</div></div>
       </section>
       <section>
         <div class="sec-head" style="flex-wrap:wrap;gap:8px">
@@ -4044,7 +4046,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.18.0";
+var VERSAO = "3.18.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -5258,7 +5260,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
     $("painelLotes").hidden      = b.dataset.aba !== "lotes";
     $("painelReceitas").hidden   = b.dataset.aba !== "receitas";
     if (b.dataset.aba === "base" && !baseCarregada) carregarBase();
-    if (b.dataset.aba === "tanques") carregarTanques();
+    if (b.dataset.aba === "tanques"){ carregarTanques(); try{ _fermResumoAba(); }catch(e){} }
     if (b.dataset.aba === "prog") carregarProg();
     if (b.dataset.aba === "manut") carregarEquipamentos();
     if (b.dataset.aba === "relatorios" && !relCarregado) carregarRelatorio();
@@ -15610,7 +15612,7 @@ async function carregarPainelGestor(){
     if (!semanas.some(function(s){ return chaveSemanaData(s) === chaveSemanaData(segAnt); })) semanas.unshift(segAnt);
   }
   var pIns = carregarInsumos().catch(function(){ return []; });
-  try{ carregarAvisosCfg(); carregarPurgaCfg(); carregarFermentosPainel(); }catch(e){}
+  try{ carregarAvisosCfg(); carregarPurgaCfg(); }catch(e){}
   try{
     var res = await Promise.all([
       api("/api/tanques").catch(function(){ return {tanques:[]}; }),
@@ -16001,12 +16003,32 @@ async function carregarFermentosPainel(){
     box.innerHTML =
       (alertas.length ? "<div style='background:#FEF2F2;border:1.5px solid #DC2626;border-radius:8px;padding:6px 10px;font-size:.82rem;margin-bottom:8px'>"+alertas.join("<br>")+"</div>" : "")+
       (html || "<div style='color:var(--muted)'>Nenhum lote com cepa/geração registrada ainda.</div>")+
+      (!["admin","gestor"].includes(sessao.papel) ? "<div style='font-size:.75rem;color:var(--muted);margin-top:6px'>Limites: "+esc(Object.keys(cfg.limites).map(function(k){ return k+" "+cfg.limites[k]+" gerações"; }).join(" · "))+" · máx. "+cfg.diasMax+" dias guardado</div>" :
       "<div style='display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:.8rem;margin-top:6px'><b>Limites:</b> "+
         "<input id='fermLimites' value='"+esc(Object.keys(cfg.limites).map(function(k){ return k+"="+cfg.limites[k]; }).join("; "))+"' style='flex:1;min-width:220px' title='cepa=gerações; separadas por ponto e vírgula'>"+
         "<label>Máx. dias guardado <input id='fermDias' type='number' value='"+cfg.diasMax+"' style='width:60px'></label>"+
-        "<button class='btn mini' id='btnFermSalvar'>💾 Salvar</button></div>";
+        "<button class='btn mini' id='btnFermSalvar'>💾 Salvar</button></div>");
     window._fermAlertas = alertas;
   }catch(e){ box.innerHTML = "<div style='color:#B91C1C'>"+esc(e.message)+"</div>"; }
+}
+document.addEventListener("click", function(ev){
+  var h = ev.target && ev.target.closest && ev.target.closest("#fermCabecalho"); if (!h) return;
+  var c = $("fermConteudo"), ab = c.hidden;
+  c.hidden = !ab; $("fermChevron").style.transform = ab ? "rotate(180deg)" : "";
+  if (ab) carregarFermentosPainel();
+});
+async function _fermResumoAba(){
+  try{
+    var r = await _fermCarregar(true), cfg = r.cfg, n = 0, disp = 0;
+    r.lotes.forEach(function(l){
+      if (!(l.coleta.realizada && /colet/i.test(l.coleta.destino||"Coletar") && !l.usadoEm.length)) return;
+      disp++;
+      var d = _fermDias(l.coleta.em), lim = _fermLimite(l.cepa, cfg);
+      if ((d != null && d > cfg.diasMax) || (lim && l.geracao >= lim)) n++;
+    });
+    var el = $("fermResumo"); if (!el) return;
+    el.innerHTML = disp+" coleta(s) disponível(is)"+(n ? " · <b style='color:#DC2626'>⚠ "+n+" com alerta</b>" : "");
+  }catch(e){}
 }
 document.addEventListener("click", async function(ev){
   if (!ev.target || ev.target.id !== "btnFermSalvar") return;
