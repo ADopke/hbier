@@ -44,6 +44,13 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.15.3 — 26/11/2026
+
+- Desenho do tanque mais estreito (60 px) e textos ao lado sem quebra de linha
+  ("8.400 L", "79% de 8.300 L", "já saíram 1.720 L" ficam inteiros)
+
+---
+
 ## 3.15.2 — 26/11/2026
 
 **Tanques: nível estimado em desenho de tanque**
