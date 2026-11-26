@@ -435,6 +435,7 @@ export default protegido(async function handler(req, res) {
           semana:  proximaBrass.semana,
           dataISO: proximaBrass.em,
           volPrev: proximaBrass.volume,
+          checks:  { moagemMalte: !!(proximaBrass.checks && proximaBrass.checks.moagemMalte), cipTanque: !!(proximaBrass.checks && proximaBrass.checks.cipTanque) },
         } : null,
         proximasBrassagens: proximasBrassagensTodas.map(b => ({
           id:      b.id,

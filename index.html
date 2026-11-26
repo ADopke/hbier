@@ -4046,7 +4046,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.19.1";
+var VERSAO = "3.19.2";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12989,8 +12989,18 @@ async function carregarTanques(){
           diasTanque: null,
           historico: []
         };
-        // Lote previsto ainda não tem checks reais (brassagem não realizada) — bloquear batelada
-        window._fpProgChecks = { moagem: false, cip: false };
+        // v3.19.2: usa os checks reais da brassagem prevista (Moagem/CIP marcados na Programação)
+        var pb = tq && tq.proximaBrass && (!loteProx || !tq.proximaBrass.lote || tq.proximaBrass.lote === loteProx) ? tq.proximaBrass : null;
+        var ckp = pb && pb.checks;
+        window._fpProgChecks = ckp ? { moagem: !!ckp.moagemMalte, cip: !!ckp.cipTanque } : { moagem: false, cip: false };
+        if (pb && pb.semana && pb.id && !(ckp && ckp.moagemMalte && ckp.cipTanque)){
+          // confere direto na Programação (pode ter sido marcado agora, depois de carregar os tanques)
+          api("/api/prog?semana="+encodeURIComponent(pb.semana)).then(function(rp){
+            var it = (rp.itens||[]).find(function(x){ return x.id === pb.id; }), c = (it && it.checks) || {};
+            window._fpProgChecks = { moagem: !!c.moagemMalte, cip: !!c.cipTanque };
+          }).catch(function(){});
+        }
+        tqProx.proximaBrass = pb;
         abrirFichaLote(tqProx);
       });
     });

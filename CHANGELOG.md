@@ -44,6 +44,15 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.19.2 — 26/11/2026
+
+- Corrigido: ficha aberta pelo bloco "Próximo" do tanque recusava "+ Adicionar
+  batelada" ("Marque Moagem Malte e CIP Tanque…") mesmo com os dois marcados na
+  Programação — o app considerava sempre "não marcado" para brassagem prevista.
+  Agora lê os checks reais da brassagem (e confere na Programação ao abrir)
+
+---
+
 ## 3.19.1 — 26/11/2026
 
 - Dose padrão de ácido lático: 250 mL por batelada (aviso de excesso acima de 300 mL).
