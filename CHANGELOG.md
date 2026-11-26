@@ -44,6 +44,34 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.15.0 — 26/11/2026
+
+**Nova aba 📊 Painel (admin e gestor)**
+
+- **Painel do gestor**: brassado, envasado e barris do mês × meta, com marca de
+  "onde deveria estar hoje" (ritmo do mês); tanques ocupados por estágio;
+  alertas (leitura atrasada, Clearmax/levedura sem registro, tanque em atenção,
+  lançamentos pendentes, erros do app, insumos a comprar); pendências de
+  lançamento (brassagens/envases de dias anteriores sem resultado); tabela com a
+  situação de cada tanque
+- **Relatório de quebra** (mês, 3, 6 ou 12 meses): por formato e por mês —
+  unidades, litros calculados, litros pela régua, diferença régua − calculado
+  (L e %), sleeves/PET/tampas perdidos (qtd e %); por lote zerado — volume,
+  envasado, quebra (L e %, em vermelho acima de 5%); lista de envases com o
+  motivo informado para a diferença de régua
+- **Insumos × estoque**: soma o que as brassagens programadas (próximas 2/4/6
+  semanas, sem resultado) vão consumir pela receita de cada estilo (malte em
+  kg/batelada, lúpulo e enzimas em g/batelada, sais em g/HL) e compara com o
+  estoque cadastrado ali mesmo (quantidade, unidade, mínimo). Mostra saldo
+  depois das brassagens e quanto comprar
+- Toda segunda-feira, ao abrir o app, admin/gestor recebem aviso se houver
+  insumo para comprar/conferir
+- Novo `api/estoque.js` (chave `estoque`)
+- Dossiê: lote que ainda está no tanque mostra "Restante no tanque (estimado)"
+  em vez de quebra
+
+---
+
 ## 3.14.0 — 26/11/2026
 
 **📄 Dossiê do lote (imprimir / salvar em PDF)**

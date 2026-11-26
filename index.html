@@ -1311,6 +1311,11 @@
 .fp-prog-bar-fill{height:100%;border-radius:4px;background:var(--fp-marrom);transition:width .3s ease}
 /* content */
 .fp-content{padding:14px 16px;background:var(--fp-bg)}
+.pg-tab{width:100%;border-collapse:collapse;font-size:.8rem}
+.pg-tab th{text-align:left;background:rgba(0,0,0,.04);font-weight:700}
+.pg-tab th,.pg-tab td{border-bottom:1px solid var(--linha,#ddd);padding:4px 6px;vertical-align:top}
+.pg-tab td.n,.pg-tab th.n{text-align:right;white-space:nowrap}
+.pg-tab input,.pg-tab select{width:100%;min-width:60px;padding:3px 5px;font-size:.8rem}
 .fp-panel{display:none}
 .fp-panel.active{display:block}
 /* section card */
@@ -1612,6 +1617,7 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
         <button data-aba="tanques">🍺 Tanques</button>
         <button data-aba="lotes" id="abaLotes" hidden>📋 Lotes</button>
         <button data-aba="receitas" id="abaReceitas" hidden>📖 Receitas</button>
+        <button data-aba="painel" id="abaPainel" hidden>📊 Painel</button>
         <button data-aba="metas">🎯 Metas</button>
         <button data-aba="limpeza">🧹 Limpeza</button>
         <button data-aba="manut">Manutenções</button>
@@ -2072,6 +2078,43 @@ table.fp-data td .fp-audit-badge{display:block;font-size:9px;margin:1px 0 0;padd
     </div>
 
     <!-- ---------- ABA METAS ---------- -->
+    <!-- ===== 📊 Painel do gestor (v3.15.0) ===== -->
+    <div id="painelGestor" hidden>
+      <section>
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
+          <span class="sec-title">📊 Painel do gestor</span>
+          <span class="sec-sub" id="pgQuando"></span>
+          <button class="btn mini secundario" id="btnPgAtualizar" style="margin-left:auto">↻ Atualizar</button>
+        </div>
+        <div id="pgConteudo" style="padding:0 14px 14px"><div class="vazio">Carregando…</div></div>
+      </section>
+      <section id="secQuebra">
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
+          <span class="sec-title">📉 Relatório de quebra</span>
+          <select id="qbPeriodo" style="margin-left:auto">
+            <option value="1">Mês atual</option>
+            <option value="3" selected>Últimos 3 meses</option>
+            <option value="6">Últimos 6 meses</option>
+            <option value="12">Últimos 12 meses</option>
+          </select>
+          <button class="btn mini secundario" id="btnQbGerar">Gerar</button>
+        </div>
+        <div id="qbConteudo" style="padding:0 14px 14px"><div style="color:var(--muted);font-size:.85rem">Escolha o período e clique em Gerar.</div></div>
+      </section>
+      <section id="secInsumos">
+        <div class="sec-head" style="flex-wrap:wrap;gap:8px">
+          <span class="sec-title">🛒 Insumos × estoque</span>
+          <select id="insSemanas" style="margin-left:auto">
+            <option value="2">Próximas 2 semanas</option>
+            <option value="4" selected>Próximas 4 semanas</option>
+            <option value="6">Próximas 6 semanas</option>
+          </select>
+          <button class="btn mini secundario" id="btnInsCalcular">Calcular</button>
+        </div>
+        <div id="insConteudo" style="padding:0 14px 14px"><div class="vazio">Carregando…</div></div>
+      </section>
+    </div>
+
     <div id="painelMetas" hidden>
       <section>
         <!-- Navegação mês/ano -->
@@ -3975,7 +4018,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.14.0";
+var VERSAO = "3.15.0";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -4299,6 +4342,15 @@ async function abrirApp(){
   $("abaEquipe").hidden = !["admin","gestor"].includes(sessao.papel);
   $("abaRelatorios").hidden = sessao.papel !== "admin";
   $("abaLotes").hidden    = !["admin","gestor"].includes(sessao.papel);
+  $("abaPainel").hidden   = !["admin","gestor"].includes(sessao.papel);
+  // segunda-feira: confere insumos × estoque e avisa o gestor (rotina de compras)
+  if (["admin","gestor"].includes(sessao.papel) && new Date().getDay() === 1){
+    setTimeout(function(){
+      carregarInsumos({silencioso:true}).then(function(a){
+        if (a && a.length) toast("🛒 Segunda-feira: "+a.length+" insumo(s) para comprar/conferir — veja 📊 Painel › Insumos × estoque.","aviso");
+      }).catch(function(){});
+    }, 4000);
+  }
   $("abaReceitas").hidden = !["admin","gestor"].includes(sessao.papel);
   $("campoPara").hidden = !["admin","gestor"].includes(sessao.papel);
   donoAtual = sessao.login;
@@ -5173,6 +5225,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
     $("painelBase").hidden      = b.dataset.aba !== "base";
     $("painelRelatorios").hidden = b.dataset.aba !== "relatorios";
     $("painelMetas").hidden      = b.dataset.aba !== "metas";
+    $("painelGestor").hidden     = b.dataset.aba !== "painel";
     $("painelLimpeza").hidden    = b.dataset.aba !== "limpeza";
     $("painelLotes").hidden      = b.dataset.aba !== "lotes";
     $("painelReceitas").hidden   = b.dataset.aba !== "receitas";
@@ -5184,6 +5237,7 @@ document.querySelectorAll(".abas button").forEach(function(b){
     if (b.dataset.aba === "relatorios") _carregarAdminRel();
     if (b.dataset.aba === "equipe" && !acompCarregado) carregarAcompanhamento();
     if (b.dataset.aba === "metas") carregarMetas();
+    if (b.dataset.aba === "painel") carregarPainelGestor();
     if (b.dataset.aba === "limpeza") setTimeout(function(){ carregarLimpeza(); }, 0);
     if (b.dataset.aba === "lotes") carregarLotes();
     if (b.dataset.aba === "receitas") rec_carregarLista();
@@ -15469,6 +15523,335 @@ function fp_mostrarPresenca(r){
   };
 }
 
+
+/* ==================================================================
+   📊 Painel do gestor (v3.15.0): produção do mês × meta, tanques, pendências e alertas
+   ================================================================== */
+function _pgDataItem(it, seg){
+  if (it.dataISO) return it.dataISO;
+  var OFF = {"Segunda":0,"Terça":1,"Quarta":2,"Quinta":3,"Sexta":4,"Sábado":5,"Domingo":6};
+  var d = new Date(seg); if (it.dia && OFF[it.dia] !== undefined) d.setDate(d.getDate() + OFF[it.dia]);
+  return chaveSemanaData(d);
+}
+function _pgBarra(real, meta, ritmoPct, un){
+  if (!meta) return "<div style='font-size:.8rem;color:var(--muted)'>"+fmtNum(Math.round(real))+" "+un+" · meta não definida</div>";
+  var pct = Math.round(real/meta*100), cor = pct >= ritmoPct ? "#16A34A" : (pct >= ritmoPct*0.85 ? "#D97706" : "#DC2626");
+  return "<div style='display:flex;justify-content:space-between;font-size:.8rem'><b>"+fmtNum(Math.round(real))+" / "+fmtNum(Math.round(meta))+" "+un+"</b><span style='color:"+cor+";font-weight:800'>"+pct+"%</span></div>"+
+    "<div style='position:relative;height:10px;background:#EEE;border-radius:6px;margin-top:3px;overflow:hidden'>"+
+      "<div style='height:100%;width:"+Math.min(100,pct)+"%;background:"+cor+"'></div>"+
+      "<div title='onde deveria estar hoje' style='position:absolute;top:-2px;bottom:-2px;left:"+Math.min(100,ritmoPct)+"%;width:2px;background:#111'></div></div>"+
+    "<div style='font-size:.7rem;color:var(--muted);margin-top:2px'>"+(pct >= ritmoPct ? "✔ no ritmo" : "abaixo do ritmo — hoje deveria estar em "+Math.round(ritmoPct)+"%")+" · falta "+fmtNum(Math.max(0,Math.round(meta-real)))+" "+un+"</div>";
+}
+async function carregarPainelGestor(){
+  var box = $("pgConteudo");
+  box.innerHTML = "<div class='vazio'>Carregando…</div>";
+  var hoje = new Date(), ano = hoje.getFullYear(), mes = hoje.getMonth(), hojeISO = chaveSemanaData(hoje);
+  var semanas = semanasDoMes(ano, mes);
+  var segAnt = segundaDe(hoje); segAnt.setDate(segAnt.getDate() - 7);
+  if (!semanas.some(function(s){ return chaveSemanaData(s) === chaveSemanaData(segAnt); })) semanas.unshift(segAnt);
+  var pIns = carregarInsumos().catch(function(){ return []; });
+  try{
+    var res = await Promise.all([
+      api("/api/tanques").catch(function(){ return {tanques:[]}; }),
+      metaLer(ano, mes),
+      Promise.all(semanas.map(function(sg){ return api("/api/prog?semana="+chaveSemanaData(sg)).catch(function(){ return {itens:[],barreis:{}}; }); })),
+      (sessao.papel === "admin" ? api("/api/logs").catch(function(){ return {erros:[]}; }) : Promise.resolve({erros:[]}))
+    ]);
+    var tanques = res[0].tanques || [], meta = res[1] || {}, progs = res[2], erros = res[3].erros || [];
+    var prefMes = ano+"-"+String(mes+1).padStart(2,"0");
+    var brassReal = 0, brassPrev = 0, envUn = 0, envL = 0, barrisL = 0, pend = [];
+    semanas.forEach(function(sg, i){
+      var r = progs[i] || {}, chSem = chaveSemanaData(sg);
+      ((r.barreis||{})["barril-"+chSem] || []).forEach(function(rb){
+        var di = rb.dataISO || _pgDataItem(rb, sg);
+        if (String(di).slice(0,7) === prefMes) barrisL += parseFloat(rb.total)||0;
+      });
+      (r.itens||[]).forEach(function(it){
+        var di = _pgDataItem(it, sg), doMes = String(di).slice(0,7) === prefMes;
+        if (it.tipo === "brassagem"){
+          var vp = parseFloat(String(it.volPrev||"").replace(",", ".")) || 0;
+          if (doMes){ brassPrev += vp; if (it.resultado) brassReal += vp; }
+        } else if (it.tipo === "envase" && doMes && it.resultado && it.resultado.qtdEnvasada){
+          var q = parseFloat(it.resultado.qtdEnvasada)||0; envUn += q;
+          envL += _litrosReaisEnvase({ formato: it.formato, qtd: q, excessoMl: it.resultado.excessoMl, litrosInicio: it.resultado.litrosInicio, litrosFim: it.resultado.litrosFim, reguaValidada: it.resultado.reguaValidada });
+        }
+        if ((it.tipo === "brassagem" || it.tipo === "envase") && !it.resultado && di < hojeISO)
+          pend.push({ data: di, txt: (it.tipo === "brassagem" ? "⚗️ Brassagem " : "🍾 Envase ")+(it.estilo||it.produto||"")+(it.formato?" "+it.formato:"")+(it.tanque?" · "+it.tanque:"")+(it.lote?" · "+it.lote:"") });
+      });
+    });
+    pend.sort(function(a,b){ return a.data.localeCompare(b.data); });
+    var diasMes = new Date(ano, mes+1, 0).getDate(), ritmo = hoje.getDate() / diasMes * 100;
+    var metaBarris = Object.values(meta.barris || {}).reduce(function(a,b){ return a + (+b||0); }, 0);
+
+    // tanques
+    var cont = {}; tanques.forEach(function(t){ cont[t.estagio] = (cont[t.estagio]||0) + 1; });
+    var ocupados = tanques.filter(function(t){ return t.estagio !== "livre"; }).length;
+    var linhasTq = tanques.map(function(t){
+      var falta = (t.adicoes && t.estagio !== "livre") ? t.adicoes.itens.filter(function(x){ return !x.usado; }).map(function(x){ return x.nome; }) : [];
+      return "<tr><td><b>"+esc(t.nome)+"</b></td><td>"+esc(t.estagioIcone||"")+" "+esc(t.estagioLabel||t.estagio||"")+"</td><td>"+esc(t.lote||"—")+"</td>"+
+        "<td style='text-align:right'>"+(t.diasTanque!=null && t.estagio!=="livre" ? t.diasTanque+"d" : "")+"</td>"+
+        "<td>"+(_leituraAtrasada(t) ? "<span style='color:#DC2626;font-weight:800'>⏱ "+_txtLeitura(t)+"</span>" : (t.ultimaLeitura && t.estagio!=="livre" ? "<span style='color:var(--muted)'>"+_txtLeitura(t)+"</span>" : ""))+
+        (falta.length ? " <span style='color:#DC2626;font-weight:800'>🚫 sem "+esc(falta.join(", "))+"</span>" : "")+"</td></tr>";
+    }).join("");
+
+    // alertas
+    var alertas = [];
+    tanques.filter(_leituraAtrasada).forEach(function(t){ alertas.push("⏱ <b>"+esc(t.nome)+"</b> sem leitura há mais de "+LEITURA_LIMITE_H+"h"); });
+    tanques.forEach(function(t){ if (t.adicoes && t.estagio !== "livre") t.adicoes.itens.forEach(function(x){ if (!x.usado) alertas.push("🚫 <b>"+esc(t.nome)+"</b> ("+esc(t.lote||"")+") sem "+esc(x.nome)+" registrado"); }); });
+    tanques.filter(function(t){ return t.estagio === "critico"; }).forEach(function(t){ alertas.push("🚨 <b>"+esc(t.nome)+"</b> "+esc(t.estagioLabel||"atenção")+" — "+(t.diasTanque||0)+" dias no tanque"); });
+    if (pend.length) alertas.push("📋 "+pend.length+" brassagem/envase de dias anteriores sem resultado lançado");
+    var errosDia = erros.filter(function(e){ return Date.now() - new Date(e.em) < 86400000; }).length;
+    if (errosDia) alertas.push("🐞 "+errosDia+" erro(s) do app nas últimas 24h (ver Relatórios)");
+    try{ await pIns; var ins = window._insAlertas; if (ins && ins.length) alertas.push("🛒 "+ins.length+" insumo(s) abaixo do necessário para as próximas brassagens"); }catch(e){}
+
+    var card = "background:var(--card,#fff);border:1px solid var(--linha,#ddd);border-radius:10px;padding:10px 12px";
+    box.innerHTML =
+      "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:12px'>"+
+        "<div style='"+card+"'><div style='font-weight:800;margin-bottom:4px'>⚗️ Brassado em "+MESES_LONGOS[mes]+"</div>"+_pgBarra(brassReal, +meta.brass||0, ritmo, "L")+
+          (brassPrev > brassReal ? "<div style='font-size:.7rem;color:#8B6914;margin-top:2px'>+ "+fmtNum(Math.round(brassPrev-brassReal))+" L programados ainda sem resultado</div>" : "")+"</div>"+
+        "<div style='"+card+"'><div style='font-weight:800;margin-bottom:4px'>🍾 Envasado em "+MESES_LONGOS[mes]+"</div>"+_pgBarra(envUn, +meta.envTotal||0, ritmo, "un")+
+          "<div style='font-size:.7rem;color:var(--muted);margin-top:2px'>≈ "+fmtNum(Math.round(envL))+" L em PET/garrafa</div></div>"+
+        "<div style='"+card+"'><div style='font-weight:800;margin-bottom:4px'>🛢 Barris em "+MESES_LONGOS[mes]+"</div>"+_pgBarra(barrisL, metaBarris, ritmo, "L")+"</div>"+
+        "<div style='"+card+"'><div style='font-weight:800;margin-bottom:4px'>🍺 Tanques</div>"+
+          "<div style='font-size:1.6rem;font-weight:900'>"+ocupados+" <span style='font-size:.9rem;font-weight:600;color:var(--muted)'>de "+tanques.length+" ocupados</span></div>"+
+          "<div style='font-size:.75rem;color:var(--muted)'>"+["fermentando","maturando","pronto","critico","brassagem","livre"].filter(function(k){ return cont[k]; }).map(function(k){ return cont[k]+" "+({fermentando:"fermentando",maturando:"maturando",pronto:"pronto p/ envase",critico:"atenção",brassagem:"brassagem prevista",livre:"livre"})[k]; }).join(" · ")+"</div></div>"+
+      "</div>"+
+      "<div style='"+card+";margin-bottom:12px;border-color:"+(alertas.length?"#DC2626":"#16A34A")+"'><div style='font-weight:800;margin-bottom:4px'>"+(alertas.length?"🔔 Alertas ("+alertas.length+")":"✅ Nenhum alerta")+"</div>"+
+        alertas.map(function(a){ return "<div style='font-size:.82rem;padding:2px 0'>"+a+"</div>"; }).join("")+"</div>"+
+      "<div style='"+card+";margin-bottom:12px'><div style='font-weight:800;margin-bottom:4px'>📋 Pendências de lançamento</div>"+
+        (pend.length ? pend.map(function(p){ return "<div style='font-size:.82rem;padding:2px 0'><b>"+_dsData(p.data)+"</b> — "+esc(p.txt)+"</div>"; }).join("")
+                     : "<div style='font-size:.82rem;color:var(--muted)'>Tudo lançado até ontem. 👍</div>")+"</div>"+
+      "<div style='"+card+";overflow-x:auto'><div style='font-weight:800;margin-bottom:4px'>🍺 Situação dos tanques</div>"+
+        "<table class='pg-tab'><thead><tr><th>Tanque</th><th style='text-align:left'>Estágio</th><th style='text-align:left'>Lote</th><th>Dias</th><th style='text-align:left'>Leitura / adições</th></tr></thead><tbody>"+linhasTq+"</tbody></table></div>";
+    $("pgQuando").textContent = "atualizado "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  }catch(e){ box.innerHTML = "<div style='color:#B91C1C'>"+esc(e.message)+"</div>"; }
+}
+document.addEventListener("click", function(ev){ if (ev.target && ev.target.id === "btnPgAtualizar") carregarPainelGestor(); });
+
+
+/* ==================================================================
+   📉 Relatório de quebra (v3.15.0): envases (régua × calculado, perdas de embalagem) e lotes zerados
+   ================================================================== */
+async function gerarRelatorioQuebra(){
+  var box = $("qbConteudo"); box.innerHTML = "<div class='vazio'>Buscando envases e lotes…</div>";
+  var meses = +$("qbPeriodo").value || 3, hoje = new Date();
+  var ini = new Date(hoje.getFullYear(), hoje.getMonth() - (meses-1), 1), iniISO = chaveSemanaData(ini), hojeISO = chaveSemanaData(hoje);
+  var semanas = [], sg = segundaDe(ini);
+  while (sg <= hoje){ semanas.push(new Date(sg)); sg.setDate(sg.getDate()+7); }
+  try{
+    var tqs = ["tq01","tq02","tq03","tq04","tq05","tq06","tq07","tq08"];
+    var res = await Promise.all([
+      Promise.all(semanas.map(function(x){ return api("/api/prog?semana="+chaveSemanaData(x)).catch(function(){ return {itens:[]}; }); })),
+      Promise.all(tqs.map(function(id){ return api("/api/tanques?acao=historico&tanqueId="+id).then(function(r){ return { id:id, h:r.historico||[] }; }).catch(function(){ return { id:id, h:[] }; }); }))
+    ]);
+    var envs = [];
+    semanas.forEach(function(x, i){
+      ((res[0][i]||{}).itens||[]).forEach(function(it){
+        if (it.tipo !== "envase" || !it.resultado || !it.resultado.qtdEnvasada) return;
+        var di = _pgDataItem(it, x); if (di < iniISO || di > hojeISO) return;
+        var r = it.resultado, q = parseFloat(r.qtdEnvasada)||0;
+        var m = { formato: it.formato, qtd: q, excessoMl: r.excessoMl };
+        var calc = q * ((LITROS_FORMATO[it.formato]||0) + _excessoEfetivoMl(m)/1000);
+        var li = parseFloat(r.litrosInicio), lf = parseFloat(r.litrosFim);
+        var regua = (li > 0 && lf >= 0 && li > lf) ? li - lf : null;
+        envs.push({ data: di, mes: di.slice(0,7), formato: it.formato || "—", estilo: it.estilo || it.produto || "", lote: it.lote || "", tanque: it.tanque || "",
+          qtd: q, calc: calc, regua: regua, sleeve: +r.sleevePerd||0, pet: +r.petPerd||0, tampas: +r.tampasPerd||0, validada: !!r.reguaValidada, just: r.reguaJustificativa || "" });
+      });
+    });
+    var lotes = [];
+    res[1].forEach(function(x){ x.h.forEach(function(l){
+      var em = String(l.encerradoEm||"").slice(0,10); if (!em || em < iniISO) return;
+      lotes.push({ lote: l.lote, estilo: l.estilo, tanque: x.id.toUpperCase(), em: em, vol: parseFloat(l.volume)||0, env: parseFloat(l.totalEnvasado)||0,
+        quebra: l.quebraTanque, soma: l.tipoFechamento === "soma" });
+    }); });
+    lotes.sort(function(a,b){ return b.em.localeCompare(a.em); });
+
+    var agrupa = function(chave){
+      var g = {};
+      envs.forEach(function(e){
+        var k = e[chave]; var a = g[k] = g[k] || { n:0, qtd:0, calc:0, reguaN:0, reguaL:0, reguaCalc:0, sleeve:0, pet:0, tampas:0 };
+        a.n++; a.qtd += e.qtd; a.calc += e.calc; a.sleeve += e.sleeve; a.pet += e.pet; a.tampas += e.tampas;
+        if (e.regua != null){ a.reguaN++; a.reguaL += e.regua; a.reguaCalc += e.calc; }
+      });
+      return g;
+    };
+    var pct = function(a, b){ return b ? (Math.round(a/b*1000)/10).toString().replace(".", ",")+"%" : "—"; };
+    var linhaAg = function(rotulo, a){
+      var dif = a.reguaL - a.reguaCalc;
+      return "<tr><td><b>"+esc(rotulo)+"</b></td><td class='n'>"+a.n+"</td><td class='n'>"+fmtNum(a.qtd)+"</td><td class='n'>"+fmtNum(Math.round(a.calc))+"</td>"+
+        "<td class='n'>"+(a.reguaN ? fmtNum(Math.round(a.reguaL))+" <small>("+a.reguaN+")</small>" : "—")+"</td>"+
+        "<td class='n' style='color:"+(dif > 0.5 ? "#DC2626" : "inherit")+"'>"+(a.reguaN ? (dif>0?"+":"")+fmtNum(Math.round(dif))+" L · "+pct(dif, a.reguaCalc) : "—")+"</td>"+
+        "<td class='n'>"+fmtNum(a.sleeve)+" <small>"+pct(a.sleeve, a.qtd)+"</small></td><td class='n'>"+fmtNum(a.pet)+" <small>"+pct(a.pet, a.qtd)+"</small></td><td class='n'>"+fmtNum(a.tampas)+" <small>"+pct(a.tampas, a.qtd)+"</small></td></tr>";
+    };
+    var cab = "<thead><tr><th></th><th class='n'>Envases</th><th class='n'>Unid.</th><th class='n'>L calculado</th><th class='n'>L pela régua</th><th class='n'>Régua − calc.</th><th class='n'>Sleeves perd.</th><th class='n'>PET perd.</th><th class='n'>Tampas perd.</th></tr></thead>";
+    var porFmt = agrupa("formato"), porMes = agrupa("mes"), tot = agrupa("x")["undefined"];
+    var nomeMes = function(k){ var p = k.split("-"); return MESES_LONGOS[+p[1]-1]+"/"+p[0].slice(2); };
+    var lotesSomaQ = lotes.filter(function(l){ return !l.soma && l.quebra != null; });
+    var qTot = lotesSomaQ.reduce(function(s,l){ return s + (+l.quebra||0); }, 0), vTot = lotesSomaQ.reduce(function(s,l){ return s + l.vol; }, 0);
+
+    box.innerHTML = !envs.length && !lotes.length ? "<div style='color:var(--muted)'>Nenhum envase ou lote zerado no período.</div>" :
+      "<div style='font-size:.75rem;color:var(--muted);margin-bottom:6px'>"+_dsData(iniISO)+" a "+_dsData(hojeISO)+" · <b>Régua − calculado</b>: positivo = saiu mais cerveja do tanque do que a contagem de unidades explica (enchimento a mais, derramamento ou régua mal lida). Só entram envases com régua de início e fim lançadas.</div>"+
+      "<div style='font-weight:800;margin:8px 0 4px'>Por formato</div><div style='overflow-x:auto'><table class='pg-tab'>"+cab+"<tbody>"+
+        Object.keys(porFmt).sort().map(function(k){ return linhaAg(k, porFmt[k]); }).join("")+(tot ? linhaAg("Total", tot) : "")+"</tbody></table></div>"+
+      "<div style='font-weight:800;margin:12px 0 4px'>Por mês</div><div style='overflow-x:auto'><table class='pg-tab'>"+cab+"<tbody>"+
+        Object.keys(porMes).sort().map(function(k){ return linhaAg(nomeMes(k), porMes[k]); }).join("")+"</tbody></table></div>"+
+      "<div style='font-weight:800;margin:12px 0 4px'>Por lote zerado no período "+(vTot ? "<span style='font-weight:600;color:var(--muted)'>— quebra total "+fmtNum(Math.round(qTot))+" L ("+pct(qTot, vTot)+" do volume)</span>" : "")+"</div>"+
+      (lotes.length ? "<div style='overflow-x:auto'><table class='pg-tab'><thead><tr><th>Lote</th><th>Tanque</th><th>Zerado</th><th class='n'>Volume</th><th class='n'>Envasado</th><th class='n'>Quebra</th><th class='n'>%</th></tr></thead><tbody>"+
+        lotes.map(function(l){
+          var q = l.soma ? null : (+l.quebra||0);
+          return "<tr><td><b>"+esc(l.lote)+"</b><br><small>"+esc(l.estilo||"")+"</small></td><td>"+esc(l.tanque)+"</td><td>"+_dsData(l.em)+"</td><td class='n'>"+fmtNum(l.vol)+" L</td><td class='n'>"+fmtNum(Math.round(l.env))+" L</td>"+
+            "<td class='n'>"+(l.soma ? "<small>somado no Beer Sales</small>" : fmtNum(Math.round(q))+" L")+"</td><td class='n' style='font-weight:800;color:"+(q!=null && l.vol && q/l.vol > 0.05 ? "#DC2626" : "inherit")+"'>"+(q!=null ? pct(q, l.vol) : "—")+"</td></tr>";
+        }).join("")+"</tbody></table></div>" : "<div style='color:var(--muted);font-size:.82rem'>Nenhum lote zerado no período.</div>")+
+      "<details style='margin-top:12px'><summary style='cursor:pointer;font-weight:700'>Ver os "+envs.length+" envases</summary><div style='overflow-x:auto'><table class='pg-tab'><thead><tr><th>Data</th><th>Lote</th><th>Formato</th><th class='n'>Unid.</th><th class='n'>Calc.</th><th class='n'>Régua</th><th class='n'>Dif.</th><th class='n'>Sleeve/PET/Tampa</th><th>Motivo da diferença</th></tr></thead><tbody>"+
+        envs.sort(function(a,b){ return b.data.localeCompare(a.data); }).map(function(e){
+          var d = e.regua != null ? e.regua - e.calc : null;
+          return "<tr><td>"+_dsData(e.data)+"</td><td>"+esc(e.lote||e.estilo)+"</td><td>"+esc(e.formato)+"</td><td class='n'>"+fmtNum(e.qtd)+"</td><td class='n'>"+fmtNum(Math.round(e.calc))+"</td>"+
+            "<td class='n'>"+(e.regua!=null ? fmtNum(Math.round(e.regua))+(e.validada?" ✔":"") : "—")+"</td><td class='n'>"+(d!=null ? (d>0?"+":"")+fmtNum(Math.round(d)) : "—")+"</td>"+
+            "<td class='n'>"+e.sleeve+" / "+e.pet+" / "+e.tampas+"</td><td><small>"+esc(e.just)+"</small></td></tr>";
+        }).join("")+"</tbody></table></div></details>";
+  }catch(e){ box.innerHTML = "<div style='color:#B91C1C'>"+esc(e.message)+"</div>"; }
+}
+document.addEventListener("click", function(ev){ if (ev.target && ev.target.id === "btnQbGerar") gerarRelatorioQuebra(); });
+
+/* ==================================================================
+   🛒 Insumos × estoque (v3.15.0): o que as brassagens programadas vão consumir × o estoque cadastrado
+   ================================================================== */
+var _insEstoque = null;
+function _insConv(valor, de, para){
+  if (de === para) return valor;
+  if (de === "g" && para === "kg") return valor/1000;
+  if (de === "kg" && para === "g") return valor*1000;
+  if (de === "mL" && para === "L") return valor/1000;
+  if (de === "L" && para === "mL") return valor*1000;
+  return valor;
+}
+function _insNum(v){ return parseFloat(String(v==null?"":v).replace(",", ".")) || 0; }
+async function carregarInsumos(opts){
+  opts = opts || {};
+  var box = $("insConteudo"); if (!opts.silencioso) box.innerHTML = "<div class='vazio'>Calculando…</div>";
+  var semanasN = +(($("insSemanas")||{}).value) || 4;
+  var hoje = new Date(), hojeISO = chaveSemanaData(hoje), sg0 = segundaDe(hoje), semanas = [];
+  for (var i = 0; i < semanasN; i++){ var d = new Date(sg0); d.setDate(d.getDate() + 7*i); semanas.push(d); }
+  try{
+    var cfg = await _carregarCfgPlan(); var Lb = +cfg.litrosBatelada || 1450;
+    var res = await Promise.all([
+      api("/api/estoque").catch(function(){ return { itens: [] }; }),
+      api("/api/receita?lista=1").catch(function(){ return { receitas: [] }; }),
+      Promise.all(semanas.map(function(x){ return api("/api/prog?semana="+chaveSemanaData(x)).catch(function(){ return {itens:[]}; }); }))
+    ]);
+    _insEstoque = res[0];
+    var receitas = (res[1].receitas||[]).slice().sort(function(a,b){ return String(b.atualizadoEm||"").localeCompare(String(a.atualizadoEm||"")); });
+    try{ await _estilosReceitas(); }catch(e){}
+    var brass = [];
+    semanas.forEach(function(x, i){
+      ((res[2][i]||{}).itens||[]).forEach(function(it){
+        if (it.tipo !== "brassagem" || it.resultado) return;
+        var di = _pgDataItem(it, x); if (di < hojeISO) return;
+        brass.push({ data: di, estilo: it.estilo || it.produto || "", vol: _insNum(it.volPrev), tanque: it.tanque || "", lote: it.lote || "" });
+      });
+    });
+    brass.sort(function(a,b){ return a.data.localeCompare(b.data); });
+    // receita de cada estilo (a mais recente com o mesmo estilo/nome)
+    var recPorEstilo = {}, idsBuscar = {};
+    brass.forEach(function(b){
+      var k = _normTxt(_estiloCanonico(b.estilo) || b.estilo);
+      var rec = receitas.find(function(r){ return _normTxt(r.estilo && r.estilo !== "—" ? r.estilo : r.nome) === k; }) ||
+                receitas.find(function(r){ return _normTxt(r.nome) === k; });
+      b.receitaId = rec ? rec.id : null; b.receitaNome = rec ? rec.nome : null;
+      if (rec) idsBuscar[rec.id] = 1;
+    });
+    var ids = Object.keys(idsBuscar);
+    var completas = await Promise.all(ids.map(function(id){ return api("/api/receita?id="+encodeURIComponent(id)).then(function(r){ return r.receita; }).catch(function(){ return null; }); }));
+    ids.forEach(function(id, i){ recPorEstilo[id] = completas[i]; });
+
+    var nec = {};
+    var soma = function(nome, qtd, un, estilo){
+      nome = String(nome||"").trim(); if (!nome || !(qtd > 0)) return;
+      var k = _normTxt(nome), n = nec[k] = nec[k] || { nome: nome, un: un, qtd: 0, usos: {} };
+      n.qtd += _insConv(qtd, un, n.un); n.usos[estilo] = 1;
+    };
+    brass.forEach(function(b){
+      var r = b.receitaId && recPorEstilo[b.receitaId]; if (!r) return;
+      var bats = b.vol ? Math.max(1, Math.round(b.vol / Lb)) : ((cfg.bateladasTanque||{})[String(b.tanque).toUpperCase().replace(/[-\s]/g,"")] || +cfg.bateladasDia || 6);
+      var litros = b.vol || bats * Lb;
+      b.bats = bats;
+      (r.fermentaveis||[]).forEach(function(l){ soma(l[0], _insNum(l[5]) * bats, "kg", b.estilo); });
+      (r.lupulos||[]).forEach(function(l){ soma(l[0], _insNum(l[4]) * bats, "g", b.estilo); });
+      (r.enzimas||[]).forEach(function(l){ soma(l[0], _insNum(l[2]) * bats, "g", b.estilo); });
+      (r.sais||[]).forEach(function(l){ soma(l[0], _insNum(l[1]) * litros / 100, "g", b.estilo); });
+      (r.adjuntos||[]).forEach(function(l){ soma(l[0], _insNum(l[4]) * bats, "un", b.estilo); });
+    });
+
+    var estoque = (_insEstoque.itens||[]).slice();
+    var porNome = {}; estoque.forEach(function(e){ porNome[_normTxt(e.nome)] = e; });
+    var linhas = [], alertas = [];
+    Object.keys(nec).forEach(function(k){
+      var n = nec[k], e = porNome[k];
+      var unE = e ? e.unidade : (n.un === "g" && n.qtd >= 1000 ? "kg" : n.un);
+      var precisa = _insConv(n.qtd, n.un, unE), tem = e ? +e.qtd||0 : 0, min = e ? +e.minimo||0 : 0, saldo = tem - precisa;
+      var st = !e ? "sem" : (saldo < 0 ? "falta" : (saldo < min ? "min" : "ok"));
+      if (st === "sem" || st === "falta" || st === "min") alertas.push(n.nome);
+      linhas.push({ nome: n.nome, un: unE, precisa: precisa, tem: tem, min: min, saldo: saldo, st: st, comprar: Math.max(0, precisa + min - tem), usos: Object.keys(n.usos), cadastrado: !!e });
+    });
+    estoque.forEach(function(e){ if (!nec[_normTxt(e.nome)]) linhas.push({ nome: e.nome, un: e.unidade, precisa: 0, tem: +e.qtd||0, min: +e.minimo||0, saldo: +e.qtd||0, st: (+e.qtd||0) < (+e.minimo||0) ? "min" : "ok", comprar: Math.max(0, (+e.minimo||0) - (+e.qtd||0)), usos: [], cadastrado: true }); });
+    linhas.forEach(function(l){ if (!l.precisa && l.st === "min") alertas.push(l.nome); });
+    var ordem = { falta:0, sem:1, min:2, ok:3 };
+    linhas.sort(function(a,b){ return (ordem[a.st]-ordem[b.st]) || a.nome.localeCompare(b.nome, "pt-BR"); });
+    window._insAlertas = alertas;
+    if (opts.silencioso) return alertas;
+
+    var podeEditar = ["admin","gestor"].includes(sessao.papel);
+    var fmtQ = function(v, un){ return fmtNum(Math.round(v * (un === "kg" || un === "L" ? 10 : 1)) / (un === "kg" || un === "L" ? 10 : 1)); };
+    var ST = { falta: "<b style='color:#DC2626'>🛒 Comprar</b>", sem: "<b style='color:#DC2626'>🛒 Sem estoque cadastrado</b>", min: "<b style='color:#D97706'>⚠ Abaixo do mínimo</b>", ok: "<span style='color:#16A34A'>✔ OK</span>" };
+    var semRec = brass.filter(function(b){ return !b.receitaId; });
+    box.innerHTML =
+      "<div style='font-size:.78rem;color:var(--muted);margin-bottom:6px'>"+(brass.length ? brass.length+" brassagem(ns) programada(s) a partir de hoje, sem resultado lançado: "+
+        brass.map(function(b){ return _dsData(b.data).slice(0,5)+" "+esc(b.estilo)+(b.bats?" ("+b.bats+" bat)":""); }).join(" · ") : "Nenhuma brassagem programada no período.")+
+        " · consumo pela receita (kg/batelada, g/batelada, sais em g/HL), "+fmtNum(Lb)+" L por batelada.</div>"+
+      (semRec.length ? "<div style='background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:6px 10px;font-size:.8rem;margin-bottom:8px'>⚠ Sem receita cadastrada para: "+semRec.map(function(b){ return esc(b.estilo); }).filter(function(v,i,a){ return a.indexOf(v)===i; }).join(", ")+" — esses insumos não entram na conta.</div>" : "")+
+      (alertas.length ? "<div style='background:#FEF2F2;border:1.5px solid #DC2626;border-radius:8px;padding:6px 10px;font-size:.82rem;font-weight:700;margin-bottom:8px'>🛒 "+alertas.length+" insumo(s) para comprar ou conferir: "+alertas.map(esc).join(", ")+"</div>" : "")+
+      "<div style='overflow-x:auto'><table class='pg-tab' id='insTabela'><thead><tr><th>Insumo</th><th class='n'>Necessário</th><th class='n'>Em estoque</th><th>Unid.</th><th class='n'>Mínimo</th><th class='n'>Saldo depois</th><th>Situação</th></tr></thead><tbody>"+
+        linhas.map(function(l){
+          var un = "<select data-c='unidade'"+(podeEditar?"":" disabled")+">"+["kg","g","un","L","mL"].map(function(u){ return "<option"+(u===l.un?" selected":"")+">"+u+"</option>"; }).join("")+"</select>";
+          return "<tr data-nome='"+esc(l.nome)+"' data-cad='"+(l.cadastrado?1:0)+"'><td><b>"+esc(l.nome)+"</b>"+(l.usos.length?"<br><small style='color:var(--muted)'>"+esc(l.usos.join(", "))+"</small>":"")+"</td>"+
+            "<td class='n'>"+(l.precisa ? fmtQ(l.precisa, l.un) : "—")+"</td>"+
+            "<td class='n'>"+(podeEditar ? "<input data-c='qtd' inputmode='decimal' value='"+(l.cadastrado ? String(l.tem).replace(".", ",") : "")+"' placeholder='0' style='max-width:90px;text-align:right'>" : fmtQ(l.tem, l.un))+"</td>"+
+            "<td>"+un+"</td>"+
+            "<td class='n'>"+(podeEditar ? "<input data-c='minimo' inputmode='decimal' value='"+(l.min ? String(l.min).replace(".", ",") : "")+"' placeholder='0' style='max-width:80px;text-align:right'>" : fmtQ(l.min, l.un))+"</td>"+
+            "<td class='n' style='color:"+(l.saldo<0?"#DC2626":"inherit")+";font-weight:700'>"+fmtQ(l.saldo, l.un)+"</td>"+
+            "<td>"+ST[l.st]+(l.comprar > 0 ? "<br><small>comprar ≈ "+fmtQ(l.comprar, l.un)+" "+esc(l.un)+"</small>" : "")+"</td></tr>";
+        }).join("")+"</tbody></table></div>"+
+      (podeEditar ? "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center'>"+
+        "<button class='btn mini secundario' id='btnInsAdd'>＋ Adicionar insumo</button>"+
+        "<button class='btn mini' id='btnInsSalvar'>💾 Salvar estoque</button>"+
+        "<span style='font-size:.72rem;color:var(--muted)'>"+(_insEstoque.atualizadoEm ? "Estoque atualizado em "+_dsDataHora(_insEstoque.atualizadoEm)+" por @"+esc(_insEstoque.atualizadoPor||"") : "Estoque ainda não cadastrado — preencha a coluna \"Em estoque\" e salve.")+"</span></div>" : "");
+  }catch(e){ if (!opts.silencioso) box.innerHTML = "<div style='color:#B91C1C'>"+esc(e.message)+"</div>"; return []; }
+}
+document.addEventListener("click", async function(ev){
+  var id = ev.target && ev.target.id;
+  if (id === "btnInsCalcular") carregarInsumos();
+  if (id === "btnInsAdd"){
+    var nome = (prompt("Nome do insumo (igual ao da receita, ex.: Malte Pilsen):") || "").trim(); if (!nome) return;
+    var tb = document.querySelector("#insTabela tbody"); if (!tb) return;
+    var tr = document.createElement("tr"); tr.dataset.nome = nome; tr.dataset.cad = "1";
+    tr.innerHTML = "<td><b>"+esc(nome)+"</b></td><td class='n'>—</td><td class='n'><input data-c='qtd' inputmode='decimal' placeholder='0' style='max-width:90px;text-align:right'></td>"+
+      "<td><select data-c='unidade'><option>kg</option><option>g</option><option>un</option><option>L</option><option>mL</option></select></td>"+
+      "<td class='n'><input data-c='minimo' inputmode='decimal' placeholder='0' style='max-width:80px;text-align:right'></td><td></td><td><small>novo — salve</small></td>";
+    tb.insertBefore(tr, tb.firstChild); tr.querySelector("input").focus();
+  }
+  if (id === "btnInsSalvar"){
+    var itens = [];
+    document.querySelectorAll("#insTabela tbody tr").forEach(function(tr){
+      var q = tr.querySelector("[data-c=qtd]"), mn = tr.querySelector("[data-c=minimo]"), un = tr.querySelector("[data-c=unidade]");
+      if (!q) return;
+      if (tr.dataset.cad !== "1" && q.value.trim() === "" && (!mn || mn.value.trim() === "")) return;   // necessário mas não cadastrado e deixado em branco
+      itens.push({ nome: tr.dataset.nome, qtd: q.value, minimo: mn ? mn.value : 0, unidade: un ? un.value : "kg" });
+    });
+    try{ await api("/api/estoque",{method:"POST",body:{itens:itens}}); toast("💾 Estoque salvo ("+itens.length+" itens).","ok"); carregarInsumos(); }
+    catch(e){ toast(e.message,"erro"); }
+  }
+});
+
 /* ── 📄 Dossiê do lote (v3.14.0): a ficha inteira + envase/fechamento + auditoria, numa página para imprimir/PDF ── */
 async function abrirDossiePorLote(lote){
   try{ await abrirFichaPorLote(lote); }catch(e){ toast(e.message,"erro"); return; }
@@ -15558,7 +15941,7 @@ async function fp_abrirDossie(){
       "<div><small>Envasado (PET/garrafa)</small><b>"+fmtNum(Math.round(litPet))+" L</b></div>"+
       "<div><small>Barris</small><b>"+fmtNum(Math.round(litBar))+" L</b></div>"+
       "<div><small>Total envasado</small><b>"+fmtNum(Math.round(totalEnv))+" L</b></div>"+
-      "<div><small>Quebra</small><b>"+(quebra!=null?fmtNum(Math.round(quebra))+" L"+(volIni?" ("+(Math.round(quebra/volIni*1000)/10).toString().replace(".",",")+"%)":""):"—")+"</b></div>"+
+      "<div><small>"+(fechamento?"Quebra":"Restante no tanque (estimado)")+"</small><b>"+(quebra!=null?fmtNum(Math.round(quebra))+" L"+(volIni?" ("+(Math.round(quebra/volIni*1000)/10).toString().replace(".",",")+"%)":""):"—")+"</b></div>"+
     "</div>"+
     (linhasEnv ? "<table class='ds-tab'><thead><tr><th>Data</th><th>Formato</th><th>Qtd</th><th>Régua (início → fim)</th><th>Litros</th></tr></thead><tbody>"+linhasEnv+"</tbody></table>"
                : "<p class='ds-muted'>Nenhum envase lançado para este lote.</p>")+
