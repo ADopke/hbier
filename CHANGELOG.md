@@ -44,6 +44,15 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.16.1 — 26/11/2026
+
+- Corrigido: "Teste iodo" das bateladas não era salvo na ficha (o campo é uma
+  lista de opções e o app só gravava as caixas de digitação da batelada).
+  Agora vai em `bateladas[].iodoTeste` e volta ao reabrir. Testes marcados
+  antes desta versão não foram gravados e precisam ser marcados de novo
+
+---
+
 ## 3.16.0 — 26/11/2026
 
 **📲 WhatsApp + 🔔 avisos no celular**

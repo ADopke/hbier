@@ -4030,7 +4030,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.16.0";
+var VERSAO = "3.16.1";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -15275,7 +15275,7 @@ function fp_addBatelada(opts){
     '<div class="fp-vol-row">'+
       '<div class="fp-field"><label>pH após 5 min</label><input type="number" step="0.1" placeholder="5,4"></div>'+
       '<div class="fp-field"><label>Previsão iodo (hh:mm)</label><input type="time" data-iodo></div>'+
-      '<div class="fp-field"><label>Teste iodo</label><select><option value="">—</option><option>✅ Negativo (ok)</option><option>⚠️ Positivo (amilase)</option></select></div>'+
+      '<div class="fp-field"><label>Teste iodo</label><select data-iodo-teste><option value="">—</option><option>✅ Negativo (ok)</option><option>⚠️ Positivo (amilase)</option></select></div>'+
       '<div class="fp-field"><label>Vel. agitador transf. (Hz)</label><input type="number" placeholder="15"></div>'+
     '</div>'+
 
@@ -16873,11 +16873,13 @@ function fp_simSave(btn, opts){
           row.querySelectorAll('input').forEach(function(el){ vals.push(el.value); });
           lavLog.push(vals);
         });
+        var iodoEl = card.querySelector('[data-iodo-teste]');   // v3.16.1: o select não entrava em "volumes"
+        var iodoTeste = iodoEl ? iodoEl.value : '';
         var volResultEl = card.querySelector('.fp-bat-vol-result');
         var volResult = volResultEl && volResultEl.value ? parseFloat(volResultEl.value) : null;
         var ogEl = card.querySelector('.fp-og-real');
         var ogReal = ogEl && ogEl.value ? parseFloat(String(ogEl.value).replace(',', '.')) : null;
-        return { etapas: etapas, volumes: volVals, volKeys: volKeys, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog, volResult: volResult, ogReal: ogReal };
+        return { etapas: etapas, volumes: volVals, volKeys: volKeys, iodoTeste: iodoTeste, obs: obs, obsKey: obsKey, adicoes: adicoes, lavLog: lavLog, volResult: volResult, ogReal: ogReal };
       });
     })(),
     sais:        coletarTabela('fp-tbl-sais'),
@@ -17725,6 +17727,7 @@ function fp_preencherFicha(ficha){
             eIdx++;
           }
         }
+        if (bat.iodoTeste){ var iSel = card.querySelector('[data-iodo-teste]'); if (iSel) iSel.value = bat.iodoTeste; }
         // atualiza resumo automático de etapas
         fp_atualizarResumoEtapas(card);
         // calcula eficiência real
