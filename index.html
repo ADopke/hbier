@@ -3975,7 +3975,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.13.2";
+var VERSAO = "3.13.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -15337,6 +15337,27 @@ function fp_removerBatelada(btn){
 }
 var fp_dirty=false;
 var fp_versaoCarregada=0; // versão da ficha no momento do carregamento (optimistic locking)
+/* v3.13.3 — "salvar só o que mudou": fotografia da ficha ao abrir; ao salvar, manda a lista
+   de campos alterados. Se outra pessoa salvou no meio, o servidor aplica só esses campos
+   sobre a versão dela (não devolve valores antigos de campos que você nem tocou). */
+var fp_base = null;
+function fp_diff(base, novo, caminho, out){
+  caminho = caminho || []; out = out || [];
+  var ehObj = function(v){ return v && typeof v === "object"; };
+  if (ehObj(base) && ehObj(novo) && Array.isArray(base) === Array.isArray(novo)){
+    if (Array.isArray(novo) && novo.length < base.length){ out.push([caminho, novo]); return out; } // linha apagada: troca a lista
+    var ks = {}; Object.keys(base).forEach(function(k){ ks[k]=1; }); Object.keys(novo).forEach(function(k){ ks[k]=1; });
+    Object.keys(ks).forEach(function(k){
+      var c = caminho.concat([Array.isArray(novo) ? Number(k) : k]);
+      if (!(k in novo)) return;                        // campo que sumiu: não apaga nada
+      if (!(k in base)) { out.push([c, novo[k]]); return; }
+      fp_diff(base[k], novo[k], c, out);
+    });
+    return out;
+  }
+  if (JSON.stringify(base) !== JSON.stringify(novo)) out.push([caminho, novo]);
+  return out;
+}
 
 // Trata erro 409 (conflito de versão) nos saves da ficha
 function fp_tratarConflito(errData, onRecarregar){
@@ -15396,7 +15417,7 @@ function fp_oferecerRascunho(lote, fichaServidor){
     abrirFichaLote(tq);
     tq._fichaPrecarregada = null;
     // a versão base continua a do servidor: ao salvar, o servidor junta com o que mudou lá
-    setTimeout(function(){ fp_versaoCarregada = r.versaoBase || 0; fp_markDirty(); toast("📝 Rascunho recuperado — confira e clique em Salvar Ficha.","ok"); }, 600);
+    setTimeout(function(){ fp_versaoCarregada = r.versaoBase || 0; fp_base = null; fp_markDirty(); toast("📝 Rascunho recuperado — confira e clique em Salvar Ficha.","ok"); }, 600);
   } else {
     fp_apagarRascunho(lote);
   }
@@ -16076,8 +16097,15 @@ function fp_simSave(btn, opts){
   var _txtBtn = btn.textContent;
   btn.textContent = opts.auto ? _txtBtn : '⏳ Salvando…'; if(!opts.auto) btn.disabled=true;
   var versaoEnviada = fp_versaoCarregada;
-  api('/api/ficha', {method:'POST', body:{ lote: loteVal, dados: dados, versaoEsperada: versaoEnviada }})
+  var _corpo = { lote: loteVal, dados: dados, versaoEsperada: versaoEnviada };
+  if (fp_base && versaoEnviada){
+    var _alt = fp_diff(fp_base, dados).filter(function(a){ return a[0][0] !== "meta" && a[0][0] !== "audit"; });
+    _corpo.alteracoes = _alt;
+  }
+  var _enviado = JSON.parse(JSON.stringify(dados));
+  api('/api/ficha', {method:'POST', body:_corpo})
     .then(function(r){
+      fp_base = r.mesclado ? null : _enviado;   // a próxima gravação compara com o que acabou de ir
       fp_salvando = false;
       fp_dirty=false;
       fp_versaoCarregada = r.versao; // atualiza versão local após save bem-sucedido
@@ -17038,6 +17066,12 @@ function fp_preencherFicha(ficha){
   }
   // guarda versão para optimistic locking
   fp_versaoCarregada = (ficha.meta && ficha.meta.versao) ? ficha.meta.versao : 0;
+  // fotografia para "salvar só o que mudou": a ficha como ficou na tela depois de carregar
+  fp_base = null;
+  if (fp_versaoCarregada) setTimeout(function(){
+    if (fp_dirty) return;
+    try{ var c = fp_simSave(null, {soColetar:true}); if (c && c.dados) fp_base = JSON.parse(JSON.stringify(c.dados)); }catch(e){}
+  }, 1500);
   // indicador de salvo
   if(ficha.meta && ficha.meta.salvoEm){
     var s=document.getElementById('fp-saveStatus');

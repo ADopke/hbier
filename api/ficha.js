@@ -97,7 +97,8 @@ export default protegido(async function(req, res) {
     // (campos vazios são completados, bateladas/leituras a mais são mantidas).
     let mesclado = false, mescladoDe = null;
     if (atual && isFinite(esperada) && esperada < versaoAtual) {
-      dados = mesclarFicha(dados, atual);
+      const alt = corpo(req).alteracoes;
+      dados = Array.isArray(alt) ? aplicarAlteracoes(atual, alt, dados) : mesclarFicha(dados, atual);
       mesclado = true;
       mescladoDe = { salvoPor: atual.meta && atual.meta.salvoPor, salvoEm: atual.meta && atual.meta.salvoEm, versao: versaoAtual };
     }
@@ -165,11 +166,51 @@ function unirLog(novo, velho) {
   out.sort((a, b) => String((a || [])[0] || "").localeCompare(String((b || [])[0] || "")));
   return out;
 }
+/* ── "Só o que mudou": parte da versão gravada (da outra pessoa) e aplica apenas os
+   campos que esta tela alterou. Leituras e auditoria continuam sendo unidas linha a linha. ── */
+const LOGS = ["fermLog", "maturLog", "audit"];
+// auditoria é { chave: [{por, em, val}] } — junta as duas, sem repetir registros
+function unirAudit(novo, velho) {
+  const ehObj = (v) => v && typeof v === "object" && !Array.isArray(v);
+  if (!ehObj(velho)) return ehObj(novo) ? novo : {};
+  if (!ehObj(novo)) return velho;
+  const out = { ...velho };
+  Object.keys(novo).forEach((k) => {
+    const a = Array.isArray(novo[k]) ? novo[k] : [], b = Array.isArray(out[k]) ? out[k] : [];
+    const vistos = new Set(a.map((x) => JSON.stringify(x)));
+    out[k] = a.concat(b.filter((x) => !vistos.has(JSON.stringify(x))))
+      .sort((x, y) => String((x && x.em) || "").localeCompare(String((y && y.em) || "")));
+  });
+  return out;
+}
+function aplicarAlteracoes(atual, alteracoes, novo) {
+  const out = JSON.parse(JSON.stringify(atual));
+  delete out.meta;
+  alteracoes.forEach((a) => {
+    if (!Array.isArray(a) || !Array.isArray(a[0]) || !a[0].length) return;
+    const cam = a[0];
+    if (cam[0] === "meta" || LOGS.includes(cam[0])) return;
+    let o = out;
+    for (let i = 0; i < cam.length - 1; i++) {
+      const k = cam[i];
+      if (o[k] === null || typeof o[k] !== "object") o[k] = typeof cam[i + 1] === "number" ? [] : {};
+      o = o[k];
+    }
+    o[cam[cam.length - 1]] = a[1];
+  });
+  LOGS.forEach((k) => {
+    if (k === "audit") out.audit = unirAudit(novo.audit, atual.audit);
+    else out[k] = unirLog(novo[k], atual[k]);
+  });
+  out.meta = { ...(novo.meta || {}) };
+  return out;
+}
 function mesclarFicha(novo, velho) {
   const out = { ...novo };
   Object.keys(velho).forEach((k) => {
     if (k === "meta") return;
-    if (k === "fermLog" || k === "maturLog" || k === "audit") out[k] = unirLog(novo[k], velho[k]);
+    if (k === "audit") out[k] = unirAudit(novo[k], velho[k]);
+    else if (k === "fermLog" || k === "maturLog") out[k] = unirLog(novo[k], velho[k]);
     else out[k] = completar(novo[k], velho[k]);
   });
   return out;

@@ -44,6 +44,21 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.13.3 — 26/11/2026
+
+**Ficha: salva só o que você alterou**
+
+- Ao abrir, o app guarda uma "fotografia" da ficha. Ao salvar, envia junto a
+  lista de campos que você realmente mudou
+- Se outra pessoa salvou no meio, o servidor parte da versão dela e aplica só os
+  seus campos — antes, valores antigos da sua tela podiam voltar por cima do que
+  ela tinha corrigido
+- Leituras (fermentação/maturação) continuam unidas linha a linha
+- Corrigido: na junção antiga, o histórico de auditoria dos campos (quem
+  preencheu/alterou) podia ser perdido
+
+---
+
 ## 3.13.2 — 26/11/2026
 
 **Ficha: aviso de quem está editando**
