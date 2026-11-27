@@ -44,6 +44,13 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.19.5 — 27/11/2026
+
+- Tanque enchendo: texto das bateladas mais curto e em duas linhas ("1 bat. lançada" / "1 em andamento")
+  para não empurrar a coluna "Próximo"
+
+---
+
 ## 3.19.4 — 27/11/2026
 
 - Tanques, dia de brassagem: o desenho do tanque enche conforme as bateladas

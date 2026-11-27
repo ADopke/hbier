@@ -4052,7 +4052,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.19.4";
+var VERSAO = "3.19.5";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -12347,12 +12347,13 @@ async function carregarTanques(){
               "<text x='48' y='24' text-anchor='middle' style='fill:#4B5563;font-size:12px;font-weight:700'>"+esc(tq.nome)+"</text></svg>";
             return "<div style='margin-bottom:6px'>"+
               "<div style='display:flex;align-items:center;gap:8px'>"+svgTq+
-                "<div style='min-width:0;white-space:nowrap'>"+
+                "<div style='min-width:0;white-space:nowrap;overflow:hidden'>"+
                   "<div style='font-size:.65rem;font-weight:700;color:"+(enchendo?"#B45309":"#6B7280")+";text-transform:uppercase;letter-spacing:.04em'>"+(enchendo?"🔥 Enchendo":"Nível estimado")+"</div>"+
                   "<div style='font-size:1.12rem;font-weight:900;color:"+corNivel+";line-height:1.15'>"+fmtNum(Math.round(litRestantes))+" L</div>"+
                   "<div style='font-size:.72rem;font-weight:600;color:#374151'>"+pct+"% de "+fmtNum(volTotal)+" L</div>"+
                   (totalEnvasado > 0 ? "<div style='font-size:.68rem;color:#6B7280;margin-top:3px'>já saíram "+fmtNum(Math.round(totalEnvasado))+" L</div>" : "")+
-                  (enchendo ? "<div style='font-size:.68rem;color:#92400E;margin-top:3px;font-weight:700'>"+tq.brassEmCurso.lancadas+" batelada(s) lançada(s)"+(tq.brassEmCurso.bateladas > tq.brassEmCurso.lancadas ? " · "+(tq.brassEmCurso.bateladas - tq.brassEmCurso.lancadas)+" em andamento" : "")+"</div>" : "")+
+                  (enchendo ? "<div style='font-size:.68rem;color:#92400E;margin-top:3px;font-weight:700;line-height:1.25'>"+tq.brassEmCurso.lancadas+" bat. lançada"+(tq.brassEmCurso.lancadas===1?"":"s")+
+                    (tq.brassEmCurso.bateladas > tq.brassEmCurso.lancadas ? "<br>"+(tq.brassEmCurso.bateladas - tq.brassEmCurso.lancadas)+" em andamento" : "")+"</div>" : "")+
                 "</div>"+
               "</div>"+
               badgeSaldo+
