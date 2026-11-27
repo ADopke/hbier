@@ -44,6 +44,16 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.19.4 — 27/11/2026
+
+- Tanques, dia de brassagem: o desenho do tanque enche conforme as bateladas
+  são lançadas na ficha (soma do volume de cada batelada), em vez de aparecer
+  cheio. Mostra "🔥 Enchendo", litros, % e "N batelada(s) lançada(s) · N em
+  andamento"; a cerveja pulsa e tem um brilho passando
+- Servidor: `brassEmCurso {bateladas, lancadas, litros, previsto}` em /api/tanques
+
+---
+
 ## 3.19.3 — 27/11/2026
 
 - Ficha: campo de horário preenchido com hora mais de 15 min à frente do

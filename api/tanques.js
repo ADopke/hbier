@@ -208,7 +208,7 @@ export default protegido(async function handler(req, res) {
     // (fonte de verdade: a presença de linhas em maturLog na ficha)
     const lotesAtivos = [...new Set(
       brassagens
-        .filter(b => !b.planejada && !b.previstahoje && b.lote)
+        .filter(b => (!b.planejada || b.previstahoje) && b.lote)   // v3.19.4: inclui a brassagem de hoje (enchimento por batelada)
         .map(b => b.lote)
     )];
     const cfgPlan = (await ler("config:planejamento")) || {};
@@ -388,6 +388,14 @@ export default protegido(async function handler(req, res) {
         volExtra:     manual[tq.id] ? (parseFloat(manual[tq.id].volExtra) || 0) : 0,
         volExtraLog:  manual[tq.id] ? (manual[tq.id].volExtraLog || []) : [],
         og:           ref && !brassHoje ? (brass ? brass.og : "") : "",
+        // v3.19.4 — brassagem de hoje: litros já transferidos pelas bateladas lançadas na ficha
+        brassEmCurso: (function () {
+          if (!brassHoje || !brassHoje.lote) return null;
+          const f = fichasAtivas[brassHoje.lote]; const bats = (f && f.bateladas) || [];
+          let litros = 0, lancadas = 0;
+          bats.forEach((b) => { const v = Number(b && b.volResult); if (v > 0) { litros += v; lancadas++; } });
+          return { bateladas: bats.length, lancadas, litros, previsto: Number(String(brassHoje.volume || "").replace(",", ".")) || 0 };
+        })(),
         diasTanque,
         diasFermentando,
         diasMaturando,
