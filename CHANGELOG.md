@@ -44,6 +44,15 @@ var DATA_VERSAO = "22/07/2026";
 
 # Histórico
 
+## 3.19.3 — 27/11/2026
+
+- Ficha: campo de horário preenchido com hora mais de 15 min à frente do
+  relógio fica amarelo com "⚠️ 12:41 é depois de agora (11:38). Confere?" e o
+  botão "✔ Está certo". Até 8 h à frente — mais do que isso o app entende que é
+  horário de outro dia (ficha preenchida depois) e não avisa
+
+---
+
 ## 3.19.2 — 26/11/2026
 
 - Corrigido: ficha aberta pelo bloco "Próximo" do tanque recusava "+ Adicionar

@@ -4046,7 +4046,7 @@ window._sugerirLote = function _sugerirLote(){
    Ao publicar uma atualização, altere as duas linhas abaixo
    e registre a mudança no arquivo CHANGELOG.md.
    ================================================================== */
-var VERSAO = "3.19.2";
+var VERSAO = "3.19.3";
 // DATA_VERSAO: calculada automaticamente a partir da data do deploy.
 // O service worker guarda a data de instalação; se não tiver, usa hoje.
 var DATA_VERSAO = (function(){
@@ -15925,6 +15925,37 @@ function _waConferirInicio(){
 }
 
 
+
+
+/* ==================================================================
+   ⏰ Horário no futuro (v3.19.3): campo de hora da ficha mais de 15 min à frente
+   do relógio fica amarelo com "Confere?" (até 8 h à frente — acima disso entende
+   que é de outro dia, ex.: ficha preenchida no dia seguinte)
+   ================================================================== */
+function fp_horaFuturaChecar(el){
+  if (!el || el.type !== "time") return;
+  var nota = el.parentNode && el.parentNode.querySelector(".fp-hora-futura");
+  var limpar = function(){ if (nota) nota.remove(); el.style.borderColor = ""; el.style.background = ""; };
+  var m = /^(\d{1,2}):(\d{2})/.exec(el.value || "");
+  if (!m || el.dataset.horaConfirmada === el.value){ limpar(); return; }
+  var agora = new Date(), minAgora = agora.getHours()*60 + agora.getMinutes();
+  var dif = (+m[1]*60 + +m[2]) - minAgora;
+  if (!(dif > 15 && dif <= 8*60)){ limpar(); return; }
+  var hAgora = ("0"+agora.getHours()).slice(-2)+":"+("0"+agora.getMinutes()).slice(-2);
+  el.style.borderColor = "#F59E0B"; el.style.background = "#FEF3C7";
+  if (!nota){
+    nota = document.createElement("div"); nota.className = "fp-hora-futura";
+    nota.style.cssText = "margin-top:3px;font-size:.72rem;font-weight:700;color:#78350F;background:#FEF3C7;border:1px solid #F59E0B;border-radius:6px;padding:3px 6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap";
+    el.parentNode.appendChild(nota);
+  }
+  nota.innerHTML = "⚠️ "+esc(el.value)+" é depois de agora ("+hAgora+"). Confere?"+
+    "<button type='button' style='font-size:.7rem;padding:1px 7px;border:1px solid #B45309;border-radius:5px;background:#fff;color:#78350F;cursor:pointer;font-weight:700'>✔ Está certo</button>";
+  nota.querySelector("button").onclick = function(){ el.dataset.horaConfirmada = el.value; limpar(); };
+}
+document.addEventListener("change", function(ev){
+  var t = ev.target;
+  if (t && t.type === "time" && t.closest && t.closest("#fp-app")) fp_horaFuturaChecar(t);
+}, true);
 
 /* ==================================================================
    🧪 Ácido lático / pH da mostura (v3.19.0): dose padrão por batelada, pH 5 min
